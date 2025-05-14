@@ -9,9 +9,9 @@ import SwiftUI
 
 // MARK: - Global Background Definition
 extension Color {
-    static let pillrNavy = Color(hex: "#48426B")
-    static let pillrSoftBlue = Color(hex: "#48426B")
-    static let pillrDeepBlue = Color(hex: "#48426B")
+    static let pillrNavy = Color(hex: "#000000")
+    static let pillrSoftBlue = Color(hex: "#000000")
+    static let pillrDeepBlue = Color(hex: "#000000")
 }
 
 extension LinearGradient {
