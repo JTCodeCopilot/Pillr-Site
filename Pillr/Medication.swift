@@ -15,6 +15,7 @@ struct Medication: Identifiable, Codable, Hashable {
     var frequency: String // e.g., "Once daily", "Twice daily"
     var timeToTake: Date // Specific time, can be simplified if not needed
     var notes: String?
+    var notificationID: UUID? // ID for the scheduled notification
 }
 
 struct MedicationLog: Identifiable, Codable, Hashable {

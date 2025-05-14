@@ -43,9 +43,17 @@ struct GyroGlassViewModifier: ViewModifier {
     var shadowOpacity: Double = 0.15
     var shadowRadius: CGFloat = 12
     var shineOpacity: Double = 0.5
+    var shineIntensity: Double = 1.0
+    var shimmerSpeed: Double = 1.0
     
     @StateObject private var motionManager = MotionManager.shared
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reducedMotion
+    @State private var shimmerOffset: CGFloat = 0
+    
+    // Timer for subtle shimmer animation - only runs if reduced motion is off
+    let timer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
     func body(content: Content) -> some View {
         content
@@ -58,27 +66,64 @@ struct GyroGlassViewModifier: ViewModifier {
                     .strokeBorder(lineWidth: 0)
                     .overlay(
                         GeometryReader { geometry in
-                            let width = geometry.size.width
-                            let height = geometry.size.height
-                            
-                            // Convert motion to normalized coordinates with dampening
-                            let normalizedRoll = ((motionManager.roll / .pi * 2) + 0.5) * 0.7
-                            let normalizedPitch = ((motionManager.pitch / .pi * 2) + 0.5) * 0.7
-                            
-                            RoundedRectangle(cornerRadius: cornerRadius)
-                                .strokeBorder(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(shineOpacity * 0.4),
-                                            Color.white.opacity(shineOpacity * 0.7 * normalizedRoll),
-                                            Color.white.opacity(shineOpacity * 0.2),
-                                            Color.white.opacity(shineOpacity * 0.6 * normalizedPitch)
-                                        ],
-                                        startPoint: UnitPoint(x: 0.3 + (normalizedRoll * 0.4), y: 0.2),
-                                        endPoint: UnitPoint(x: 0.7 + (normalizedPitch * 0.2), y: 0.8 + (normalizedRoll * 0.2))
-                                    ),
-                                    lineWidth: borderWidth * 0.8
-                                )
+                            // Only show gyroscope effects if reduced motion is off
+                            if !reducedMotion {
+                                // Convert motion to normalized coordinates with natural dampening
+                                let normalizedRoll = min(max(((motionManager.roll / .pi * 3) + 0.5) * 0.8, 0), 1)
+                                let normalizedPitch = min(max(((motionManager.pitch / .pi * 3) + 0.5) * 0.8, 0), 1)
+                                
+                                // Calculate shimmer direction based on device motion
+                                let dynamicShimmerX = normalizedRoll * 0.6
+                                let dynamicShimmerY = normalizedPitch * 0.6
+                                let gyroShimmerOffset = (shimmerOffset + (normalizedRoll + normalizedPitch) * 10).truncatingRemainder(dividingBy: 360)
+                                
+                                // Main highlight - adapts to color scheme
+                                ZStack {
+                                    // Edge shine that follows gyroscope movement
+                                    RoundedRectangle(cornerRadius: cornerRadius)
+                                        .strokeBorder(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color(hex: colorScheme == .dark ? "#A4C8FF" : "#E0F0FF").opacity(shineOpacity * 0.4 * shineIntensity),
+                                                    Color(hex: colorScheme == .dark ? "#E6F7FF" : "#A0D8FF").opacity(shineOpacity * 0.9 * normalizedRoll * shineIntensity),
+                                                    Color(hex: colorScheme == .dark ? "#CCE0FF" : "#B0E0FF").opacity(shineOpacity * 0.3 * shineIntensity),
+                                                    Color(hex: colorScheme == .dark ? "#F0FAFF" : "#C4E5FF").opacity(shineOpacity * 0.8 * normalizedPitch * shineIntensity)
+                                                ],
+                                                startPoint: UnitPoint(x: 0.2 + (normalizedRoll * 0.6), y: 0.1 + (normalizedPitch * 0.2)),
+                                                endPoint: UnitPoint(x: 0.8 - (normalizedPitch * 0.3), y: 0.9 - (normalizedRoll * 0.3))
+                                            ),
+                                            lineWidth: borderWidth * 1.2
+                                        )
+                                    
+                                    // Shimmer highlight with reduced intensity for better focus
+                                    RoundedRectangle(cornerRadius: cornerRadius)
+                                        .strokeBorder(
+                                            AngularGradient(
+                                                gradient: Gradient(colors: [
+                                                    Color.clear,
+                                                    Color.white.opacity(0.04 * shineIntensity * (1 + normalizedRoll)),
+                                                    Color.white.opacity(0.15 * shineIntensity * (1 + normalizedPitch)),
+                                                    Color.white.opacity(0.04 * shineIntensity * (1 + normalizedRoll)),
+                                                    Color.clear
+                                                ]),
+                                                center: UnitPoint(x: 0.3 + normalizedRoll * 0.4, y: 0.3 + normalizedPitch * 0.4),
+                                                startAngle: .degrees(gyroShimmerOffset),
+                                                endAngle: .degrees(gyroShimmerOffset + 270)
+                                            ),
+                                            lineWidth: borderWidth * 0.5
+                                        )
+                                }
+                                .blendMode(.softLight)
+                                .onReceive(timer) { _ in
+                                    // Animate the shimmer effect with speed influenced by motion
+                                    let motionIntensity = sqrt(pow(motionManager.roll, 2) + pow(motionManager.pitch, 2))
+                                    let adjustedSpeed = shimmerSpeed * (1 + motionIntensity)
+                                    
+                                    withAnimation(.linear(duration: 0.05)) {
+                                        shimmerOffset = (shimmerOffset + 0.5 * adjustedSpeed).truncatingRemainder(dividingBy: 100)
+                                    }
+                                }
+                            }
                         }
                     )
                     .blendMode(.softLight)
@@ -97,7 +142,7 @@ struct GyroGlassViewModifier: ViewModifier {
                         lineWidth: borderWidth
                     )
             )
-            .shadow(color: Color.white.opacity(0.15), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color(hex: colorScheme == .dark ? "#F4EBD0" : "#FFFFFF").opacity(0.15), radius: 2, x: 0, y: 1) // Inner shadow at top
             .shadow(color: Color.black.opacity(shadowOpacity), radius: 2, x: 0, y: -1) // Inner shadow at bottom
     }
 }
@@ -112,6 +157,7 @@ struct GlassViewModifier: ViewModifier {
     var shadowRadius: CGFloat = 12
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
@@ -132,7 +178,7 @@ struct GlassViewModifier: ViewModifier {
                         lineWidth: borderWidth
                     )
             )
-            .shadow(color: Color.white.opacity(0.15), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color.white.opacity(colorScheme == .dark ? 0.15 : 0.1), radius: 2, x: 0, y: 1) // Inner shadow at top
             .shadow(color: Color.black.opacity(shadowOpacity), radius: 2, x: 0, y: -1) // Inner shadow at bottom
     }
 }
@@ -167,7 +213,9 @@ extension View {
         adaptivePadding: Bool = true,
         shadowOpacity: Double = 0.15,
         shadowRadius: CGFloat = 12,
-        shineOpacity: Double = 0.5
+        shineOpacity: Double = 0.5,
+        shineIntensity: Double = 1.0,
+        shimmerSpeed: Double = 1.0
     ) -> some View {
         self.modifier(GyroGlassViewModifier(
             cornerRadius: cornerRadius,
@@ -177,7 +225,9 @@ extension View {
             adaptivePadding: adaptivePadding,
             shadowOpacity: shadowOpacity,
             shadowRadius: shadowRadius,
-            shineOpacity: shineOpacity
+            shineOpacity: shineOpacity,
+            shineIntensity: shineIntensity,
+            shimmerSpeed: shimmerSpeed
         ))
     }
 }
@@ -185,6 +235,7 @@ extension View {
 // Helper for consistent styling of text inputs
 struct GlassTextFieldStyle: TextFieldStyle {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorScheme) private var colorScheme
     
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
@@ -195,19 +246,19 @@ struct GlassTextFieldStyle: TextFieldStyle {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(Material.ultraThinMaterial)
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(red: 0.18, green: 0.26, blue: 0.43).opacity(0.1))
+                        .fill(Color(red: 0.18, green: 0.26, blue: 0.43).opacity(colorScheme == .dark ? 0.1 : 0.05))
                 }
             )
             .cornerRadius(10)
-            .foregroundColor(.white)
+            .foregroundColor(colorScheme == .dark ? .white : .primary)
             .accentColor(.cyan) // Cursor color
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.5),
-                                Color.white.opacity(0.2)
+                                Color.white.opacity(colorScheme == .dark ? 0.5 : 0.3),
+                                Color.white.opacity(colorScheme == .dark ? 0.2 : 0.1)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -215,14 +266,16 @@ struct GlassTextFieldStyle: TextFieldStyle {
                         lineWidth: 1
                     )
             )
-            .shadow(color: Color.white.opacity(0.15), radius: 2, x: 0, y: 1) // Inner shadow at top
-            .shadow(color: Color.black.opacity(0.12), radius: 2, x: 0, y: -1) // Inner shadow at bottom
+            .shadow(color: Color.white.opacity(colorScheme == .dark ? 0.15 : 0.05), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.12 : 0.05), radius: 2, x: 0, y: -1) // Inner shadow at bottom
             .font(horizontalSizeClass == .regular ? .body : .callout)
     }
 }
 
 // Text editor glass style for consistent look
 struct GlassTextEditorStyle: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+    
     func body(content: Content) -> some View {
         content
             .padding(5)
@@ -231,18 +284,18 @@ struct GlassTextEditorStyle: ViewModifier {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(Material.ultraThinMaterial)
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(red: 0.18, green: 0.26, blue: 0.43).opacity(0.1))
+                        .fill(Color(red: 0.18, green: 0.26, blue: 0.43).opacity(colorScheme == .dark ? 0.1 : 0.05))
                 }
             )
             .cornerRadius(10)
-            .foregroundColor(.white)
+            .foregroundColor(colorScheme == .dark ? .white : .primary)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.5),
-                                Color.white.opacity(0.2)
+                                Color.white.opacity(colorScheme == .dark ? 0.5 : 0.3),
+                                Color.white.opacity(colorScheme == .dark ? 0.2 : 0.1)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -250,8 +303,8 @@ struct GlassTextEditorStyle: ViewModifier {
                         lineWidth: 1
                     )
             )
-            .shadow(color: Color.white.opacity(0.15), radius: 2, x: 0, y: 1) // Inner shadow at top
-            .shadow(color: Color.black.opacity(0.12), radius: 2, x: 0, y: -1) // Inner shadow at bottom
+            .shadow(color: Color.white.opacity(colorScheme == .dark ? 0.15 : 0.05), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.12 : 0.05), radius: 2, x: 0, y: -1) // Inner shadow at bottom
     }
 }
 

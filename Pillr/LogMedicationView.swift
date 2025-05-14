@@ -24,7 +24,7 @@ struct LogMedicationView: View {
                 ZStack {
                     // Use the same background as ContentView for consistency in sheets
                     LinearGradient.pillrBackground
-                    .ignoresSafeArea()
+                        .ignoresSafeArea()
                     
                     ScrollView {
                         VStack(spacing: calculateVerticalSpacing(for: geometry)) {
@@ -124,6 +124,7 @@ struct LogMedicationView: View {
                     }
                 }
             }
+            .background(LinearGradient.pillrBackground.ignoresSafeArea())
             .onAppear {
                 NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
                     if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {

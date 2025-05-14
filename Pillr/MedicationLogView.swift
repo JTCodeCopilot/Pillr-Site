@@ -18,7 +18,7 @@ struct MedicationLogView: View {
                 ZStack {
                     // Background color - match the exact gradient from ContentView
                     LinearGradient.pillrBackground
-                    .ignoresSafeArea()
+                        .ignoresSafeArea()
                     
                     List {
                         if store.logs.isEmpty {
@@ -44,6 +44,7 @@ struct MedicationLogView: View {
                     .padding(.horizontal, horizontalInsets(for: geometry))
                 }
             }
+            .background(LinearGradient.pillrBackground.ignoresSafeArea())
         }
         .navigationViewStyle(.stack)
     }
