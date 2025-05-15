@@ -13,9 +13,15 @@ struct Medication: Identifiable, Codable, Hashable {
     var name: String
     var dosage: String // e.g., "50mg", "1 tablet"
     var frequency: String // e.g., "Once daily", "Twice daily"
-    var timeToTake: Date // Specific time, can be simplified if not needed
+    var timeToTake: Date // Primary time to take - legacy support
+    var reminderTimes: [Date] = [] // Multiple reminder times for medications
     var notes: String?
-    var notificationID: UUID? // ID for the scheduled notification
+    var notificationID: UUID? // Legacy support for single notification
+    var notificationIDs: [UUID] = [] // IDs for multiple scheduled notifications
+    var pillCount: Int? // Total count of pills available
+    var pillsPerDose: Int = 1 // Number of pills taken per dose
+    var refillThreshold: Int? // Threshold to trigger refill reminder
+    var isSkipped: Bool = false // Whether to skip this medication for now
 }
 
 struct MedicationLog: Identifiable, Codable, Hashable {
@@ -24,4 +30,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
     var medicationName: String // Denormalized for easy display
     var takenAt: Date
     var notes: String?
+    var skipped: Bool = false // Whether this log represents a skipped dose
+    var pillsConsumed: Int? // Number of pills consumed in this dose
+    var reminderIndex: Int? // Which reminder this log corresponds to (if multiple reminders)
 }

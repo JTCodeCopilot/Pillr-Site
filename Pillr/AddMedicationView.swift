@@ -19,18 +19,23 @@ struct AddMedicationView: View {
     @State private var dosage: String = ""
     @State private var frequency: String = ""
     @State private var timeToTake: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+    @State private var reminderTimes: [Date] = []
     @State private var notes: String = ""
     @State private var enableNotification: Bool = true
+    @State private var pillCountString: String = ""
+    @State private var pillsPerDoseString: String = "1"
+    @State private var refillThresholdString: String = ""
+    @State private var trackPillCount: Bool = false
     
     // For dynamically adjusting scroll position when keyboard appears
     @State private var keyboardHeight: CGFloat = 0
     @FocusState private var focusedField: Field?
     
     enum Field {
-        case name, dosage, frequency, notes
+        case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold
     }
 
-    let frequencies = ["Once daily", "Twice daily", "As needed", "Every 4 hours", "Every 6 hours"]
+    let frequencies = ["Once daily", "Twice daily", "Three times daily", "Four times daily", "As needed", "Every 4 hours", "Every 6 hours"]
 
     var body: some View {
         NavigationView {
@@ -64,6 +69,7 @@ struct AddMedicationView: View {
                                         ForEach(frequencies, id: \.self) { freq in
                                             Button(freq) {
                                                 self.frequency = freq
+                                                setupReminderTimesForFrequency(freq)
                                                 focusedField = .notes
                                             }
                                         }
@@ -107,45 +113,180 @@ struct AddMedicationView: View {
                                 .focused($focusedField, equals: .frequency)
                                 .id(Field.frequency)
                                 
-                                VStack(alignment: .leading, spacing: 5) {
-                                    Text("Time to Take")
-                                        .font(.headline)
-                                        .foregroundColor(.white.opacity(0.9))
-                                    
-                                    DatePicker("Time to Take", selection: $timeToTake, displayedComponents: .hourAndMinute)
-                                        .datePickerStyle(.compact)
-                                        .labelsHidden()
-                                        .padding(10)
-                                        .background(
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .fill(Material.ultraThinMaterial)
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .fill(Color.pillrNavy.opacity(0.1))
+                                // Multiple Reminder Times (when frequency has multiple doses)
+                                if needsMultipleReminders {
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        Text("Reminder Times")
+                                            .font(.headline)
+                                            .foregroundColor(.white.opacity(0.9))
+                                        
+                                        ForEach(0..<reminderTimes.count, id: \.self) { index in
+                                            HStack {
+                                                Text("Dose #\(index + 1):")
+                                                    .foregroundColor(.white.opacity(0.8))
+                                                    .frame(width: 80, alignment: .leading)
+                                                
+                                                DatePicker("", selection: $reminderTimes[index], displayedComponents: .hourAndMinute)
+                                                    .datePickerStyle(.compact)
+                                                    .labelsHidden()
+                                                    .colorScheme(.dark)
+                                                    .accentColor(Color.pillrAccent)
+                                                    .frame(maxWidth: .infinity)
                                             }
-                                        )
-                                        .cornerRadius(10)
-                                        .colorScheme(.dark)
-                                        .accentColor(Color.pillrAccent)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .stroke(
-                                                    LinearGradient(
-                                                        colors: [
-                                                            Color.white.opacity(0.5),
-                                                            Color.white.opacity(0.2)
-                                                        ],
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    ),
-                                                    lineWidth: 1
+                                            .padding(10)
+                                            .background(
+                                                ZStack {
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .fill(Material.ultraThinMaterial)
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .fill(Color.pillrNavy.opacity(0.1))
+                                                }
+                                            )
+                                            .cornerRadius(10)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(
+                                                        LinearGradient(
+                                                            colors: [
+                                                                Color.white.opacity(0.5),
+                                                                Color.white.opacity(0.2)
+                                                            ],
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        ),
+                                                        lineWidth: 1
+                                                    )
+                                            )
+                                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                        }
+                                    }
+                                } else {
+                                    // Single Reminder Time
+                                    if frequency != "As needed" {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Text("Time to Take")
+                                                .font(.headline)
+                                                .foregroundColor(.white.opacity(0.9))
+                                            
+                                            DatePicker("Time to Take", selection: $timeToTake, displayedComponents: .hourAndMinute)
+                                                .datePickerStyle(.compact)
+                                                .labelsHidden()
+                                                .padding(10)
+                                                .background(
+                                                    ZStack {
+                                                        RoundedRectangle(cornerRadius: 10)
+                                                            .fill(Material.ultraThinMaterial)
+                                                        RoundedRectangle(cornerRadius: 10)
+                                                            .fill(Color.pillrNavy.opacity(0.1))
+                                                    }
                                                 )
-                                        )
-                                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                                .cornerRadius(10)
+                                                .colorScheme(.dark)
+                                                .accentColor(Color.pillrAccent)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .stroke(
+                                                            LinearGradient(
+                                                                colors: [
+                                                                    Color.white.opacity(0.5),
+                                                                    Color.white.opacity(0.2)
+                                                                ],
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            ),
+                                                            lineWidth: 1
+                                                        )
+                                                )
+                                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                        }
+                                        .accessibilityElement(children: .combine)
+                                        .accessibilityLabel("Time to take medication")
+                                        .accessibilityValue(formatTime(timeToTake))
+                                    }
                                 }
-                                .accessibilityElement(children: .combine)
-                                .accessibilityLabel("Time to take medication")
-                                .accessibilityValue(formatTime(timeToTake))
+                                
+                                // Track Pill Count Toggle
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Toggle(isOn: $trackPillCount) {
+                                        Text("Track Pill Count")
+                                            .font(.headline)
+                                            .foregroundColor(.white.opacity(0.9))
+                                    }
+                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrAccent))
+                                    .padding(10)
+                                    .background(
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Material.ultraThinMaterial)
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Color.pillrNavy.opacity(0.1))
+                                        }
+                                    )
+                                    .cornerRadius(10)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(
+                                                LinearGradient(
+                                                    colors: [
+                                                        Color.white.opacity(0.5),
+                                                        Color.white.opacity(0.2)
+                                                    ],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                ),
+                                                lineWidth: 1
+                                            )
+                                    )
+                                    
+                                    if trackPillCount {
+                                        Text("When enabled, the app will track your remaining pills and remind you when to refill")
+                                            .font(.footnote)
+                                            .foregroundColor(.white.opacity(0.7))
+                                            .padding(.horizontal, 10)
+                                            .padding(.bottom, 5)
+                                    }
+                                }
+                                
+                                if trackPillCount {
+                                    // Pill Count Field
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text("Total Pill Count")
+                                            .font(.headline)
+                                            .foregroundColor(.white.opacity(0.9))
+                                        
+                                        TextField("Enter total pills", text: $pillCountString)
+                                            .keyboardType(.numberPad)
+                                            .textFieldStyle(GlassTextFieldStyle())
+                                            .focused($focusedField, equals: .pillCount)
+                                    }
+                                    .id(Field.pillCount)
+                                    
+                                    // Pills Per Dose Field
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text("Pills Per Dose")
+                                            .font(.headline)
+                                            .foregroundColor(.white.opacity(0.9))
+                                        
+                                        TextField("Enter pills per dose", text: $pillsPerDoseString)
+                                            .keyboardType(.numberPad)
+                                            .textFieldStyle(GlassTextFieldStyle())
+                                            .focused($focusedField, equals: .pillsPerDose)
+                                    }
+                                    .id(Field.pillsPerDose)
+                                    
+                                    // Refill Threshold Field
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text("Refill Reminder Threshold")
+                                            .font(.headline)
+                                            .foregroundColor(.white.opacity(0.9))
+                                        
+                                        TextField("Pills remaining to trigger reminder", text: $refillThresholdString)
+                                            .keyboardType(.numberPad)
+                                            .textFieldStyle(GlassTextFieldStyle())
+                                            .focused($focusedField, equals: .refillThreshold)
+                                    }
+                                    .id(Field.refillThreshold)
+                                }
                                 
                                 // Notification Toggle
                                 VStack(alignment: .leading, spacing: 5) {
@@ -181,7 +322,7 @@ struct AddMedicationView: View {
                                     )
                                     
                                     if enableNotification {
-                                        Text("You'll receive a notification at the scheduled time")
+                                        Text("You'll receive a notification at \(needsMultipleReminders ? "each" : "the") scheduled time")
                                             .font(.footnote)
                                             .foregroundColor(.white.opacity(0.7))
                                             .padding(.horizontal, 10)
@@ -301,9 +442,70 @@ struct AddMedicationView: View {
         }
     }
     
+    // Check if we need multiple reminder fields
+    private var needsMultipleReminders: Bool {
+        switch frequency {
+        case "Twice daily", "Three times daily", "Four times daily":
+            return true
+        default:
+            return false
+        }
+    }
+    
+    // Setup reminder times based on the frequency
+    private func setupReminderTimesForFrequency(_ frequency: String) {
+        let calendar = Calendar.current
+        
+        switch frequency {
+        case "Twice daily":
+            let morningTime = calendar.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+            let eveningTime = calendar.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
+            reminderTimes = [morningTime, eveningTime]
+            enableNotification = true
+            
+        case "Three times daily":
+            let morningTime = calendar.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+            let middayTime = calendar.date(bySettingHour: 14, minute: 0, second: 0, of: Date()) ?? Date()
+            let eveningTime = calendar.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
+            reminderTimes = [morningTime, middayTime, eveningTime]
+            enableNotification = true
+            
+        case "Four times daily":
+            let earlyMorningTime = calendar.date(bySettingHour: 6, minute: 0, second: 0, of: Date()) ?? Date()
+            let middayTime = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: Date()) ?? Date()
+            let afternoonTime = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: Date()) ?? Date()
+            let bedtimeTime = calendar.date(bySettingHour: 22, minute: 0, second: 0, of: Date()) ?? Date()
+            reminderTimes = [earlyMorningTime, middayTime, afternoonTime, bedtimeTime]
+            enableNotification = true
+            
+        case "As needed":
+            reminderTimes = []
+            enableNotification = false
+            
+        default:
+            // For once daily or other frequencies, use a single time
+            reminderTimes = []
+            enableNotification = true
+        }
+    }
+    
     // Form validation status
     private var isFormValid: Bool {
-        return !name.isEmpty && !dosage.isEmpty && !frequency.isEmpty
+        let basicValid = !name.isEmpty && !dosage.isEmpty && !frequency.isEmpty
+        
+        if needsMultipleReminders && reminderTimes.isEmpty {
+            return false
+        }
+        
+        if trackPillCount {
+            // If pill count tracking is enabled, ensure these fields have valid values
+            let pillCountValid = !pillCountString.isEmpty && Int(pillCountString) != nil
+            let pillsPerDoseValid = !pillsPerDoseString.isEmpty && Int(pillsPerDoseString) != nil && Int(pillsPerDoseString)! > 0
+            
+            return basicValid && pillCountValid && pillsPerDoseValid
+        }
+        
+        return basicValid
     }
     
     // Calculate adaptive spacing values
@@ -361,6 +563,16 @@ struct AddMedicationView: View {
                     case .frequency:
                         focusedField = .notes
                     case .notes:
+                        if trackPillCount {
+                            focusedField = .pillCount
+                        } else {
+                            focusedField = nil
+                        }
+                    case .pillCount:
+                        focusedField = .pillsPerDose
+                    case .pillsPerDose:
+                        focusedField = .refillThreshold
+                    case .refillThreshold:
                         focusedField = nil
                     }
                 }
@@ -368,13 +580,21 @@ struct AddMedicationView: View {
     }
 
     private func saveMedication() {
+        let pillCount = trackPillCount ? Int(pillCountString) : nil
+        let pillsPerDose = trackPillCount ? (Int(pillsPerDoseString) ?? 1) : 1
+        let refillThreshold = trackPillCount && !refillThresholdString.isEmpty ? Int(refillThresholdString) : nil
+        
         store.addMedication(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             dosage: dosage.trimmingCharacters(in: .whitespacesAndNewlines),
             frequency: frequency,
             timeToTake: timeToTake,
+            reminderTimes: needsMultipleReminders ? reminderTimes : [],
             notes: notes.isEmpty ? nil : notes.trimmingCharacters(in: .whitespacesAndNewlines),
-            enableNotification: enableNotification
+            enableNotification: enableNotification,
+            pillCount: pillCount,
+            pillsPerDose: pillsPerDose,
+            refillThreshold: refillThreshold
         )
         
         // Reset form
@@ -382,8 +602,13 @@ struct AddMedicationView: View {
         dosage = ""
         frequency = ""
         timeToTake = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+        reminderTimes = []
         notes = ""
         enableNotification = true
+        pillCountString = ""
+        pillsPerDoseString = "1"
+        refillThresholdString = ""
+        trackPillCount = false
         
         onAdd()
     }

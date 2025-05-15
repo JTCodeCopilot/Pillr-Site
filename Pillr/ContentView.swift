@@ -32,11 +32,11 @@ extension View {
 // MARK: - Color Extension for Theme Colors
 extension Color {
     static var pillrAccent: Color {
-        return Color(hex: "#29B6F6") // Cyan-blue that works well in both light/dark modes
+        return Color(hex: "#D8B4F8") // Cyan-blue that works well in both light/dark modes
     }
     
     static var pillrSecondary: Color {
-        return Color(hex: "#80DEEA") // Light cyan for secondary elements
+        return Color(hex: "#D8B4F8") // Light cyan for secondary elements
     }
 }
 

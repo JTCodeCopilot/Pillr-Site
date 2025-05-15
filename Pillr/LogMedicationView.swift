@@ -17,6 +17,14 @@ struct LogMedicationView: View {
     @State private var actualTimeTaken: Date = Date()
     @State private var logNotes: String = ""
     @State private var keyboardHeight: CGFloat = 0
+    @State private var isSkipped: Bool = false
+    @State private var remainingPills: Int?
+    @State private var selectedDoseIndex: Int = 0
+    
+    // Whether this medication has multiple doses
+    private var hasMultipleDoses: Bool {
+        return !medicationToLog.reminderTimes.isEmpty
+    }
 
     var body: some View {
         NavigationView {
@@ -34,11 +42,109 @@ struct LogMedicationView: View {
                                 .padding(.top)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
+                            if let pillCount = remainingPills {
+                                HStack {
+                                    Image(systemName: "pills")
+                                        .foregroundColor(.white.opacity(0.8))
+                                    Text("\(pillCount) pills remaining")
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .font(.subheadline)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.bottom, 10)
+                            }
+                            
+                            // If medication has multiple doses, show a dose selector
+                            if hasMultipleDoses {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text("Which dose are you logging?")
+                                        .font(.headline)
+                                        .foregroundColor(.white.opacity(0.9))
+                                    
+                                    Picker("Dose", selection: $selectedDoseIndex) {
+                                        ForEach(0..<medicationToLog.reminderTimes.count, id: \.self) { index in
+                                            Text("Dose #\(index + 1) (\(formatTime(medicationToLog.reminderTimes[index])))")
+                                                .foregroundColor(.white)
+                                                .tag(index)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .padding(10)
+                                    .background(
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Material.ultraThinMaterial)
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Color.pillrNavy.opacity(0.1))
+                                        }
+                                    )
+                                    .cornerRadius(10)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(
+                                                LinearGradient(
+                                                    colors: [
+                                                        Color.white.opacity(0.5),
+                                                        Color.white.opacity(0.2)
+                                                    ],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                ),
+                                                lineWidth: 1
+                                            )
+                                    )
+                                }
+                                .padding(.bottom, 5)
+                            }
+                            
+                            // Skip Toggle
+                            VStack(alignment: .leading, spacing: 5) {
+                                Toggle(isOn: $isSkipped) {
+                                    Text("Skip This Dose")
+                                        .font(.headline)
+                                        .foregroundColor(.white.opacity(0.9))
+                                }
+                                .toggleStyle(SwitchToggleStyle(tint: Color.pillrAccent))
+                                .padding(10)
+                                .background(
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Material.ultraThinMaterial)
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color.pillrNavy.opacity(0.1))
+                                    }
+                                )
+                                .cornerRadius(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.white.opacity(0.5),
+                                                    Color.white.opacity(0.2)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1
+                                        )
+                                )
+                                
+                                if isSkipped {
+                                    Text("This medication will be marked as skipped and won't reduce your pill count")
+                                        .font(.footnote)
+                                        .foregroundColor(.white.opacity(0.7))
+                                        .padding(.horizontal, 10)
+                                        .padding(.bottom, 5)
+                                }
+                            }
+                            .accessibilityLabel("Skip this medication dose")
+
                             VStack(alignment: .leading) {
-                                Text("Time Taken")
+                                Text("Time \(isSkipped ? "Skipped" : "Taken")")
                                     .font(.headline)
                                     .foregroundColor(.white.opacity(0.9))
-                                DatePicker("Time Taken", selection: $actualTimeTaken)
+                                DatePicker("Time \(isSkipped ? "Skipped" : "Taken")", selection: $actualTimeTaken)
                                     .datePickerStyle(.compact)
                                     .labelsHidden()
                                     .padding(10)
@@ -80,15 +186,30 @@ struct LogMedicationView: View {
                             }
 
                             Button {
-                                store.logMedicationTaken(medication: medicationToLog, actualTime: actualTimeTaken, notes: logNotes.isEmpty ? nil : logNotes)
+                                if isSkipped {
+                                    store.skipMedication(
+                                        medication: medicationToLog, 
+                                        actualTime: actualTimeTaken, 
+                                        notes: logNotes.isEmpty ? nil : logNotes,
+                                        reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
+                                    )
+                                } else {
+                                    store.logMedicationTaken(
+                                        medication: medicationToLog, 
+                                        actualTime: actualTimeTaken, 
+                                        notes: logNotes.isEmpty ? nil : logNotes,
+                                        skipped: false,
+                                        reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
+                                    )
+                                }
                                 dismiss()
                             } label: {
-                                Text("Confirm Log")
+                                Text(isSkipped ? "Confirm Skip" : "Confirm Log")
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .padding()
                                     .frame(maxWidth: .infinity)
-                                    .background(Color.pillrNavy.opacity(1.2))
+                                    .background(isSkipped ? Color.orange.opacity(0.7) : Color.pillrNavy.opacity(1.2))
                                     .cornerRadius(15)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 15)
@@ -126,6 +247,16 @@ struct LogMedicationView: View {
             }
             .background(LinearGradient.pillrBackground.ignoresSafeArea())
             .onAppear {
+                // Load remaining pill count if available
+                remainingPills = store.getRemainingPillCount(for: medicationToLog.id)
+                
+                // Set default time to the scheduled time for the selected dose
+                if hasMultipleDoses && selectedDoseIndex < medicationToLog.reminderTimes.count {
+                    actualTimeTaken = medicationToLog.reminderTimes[selectedDoseIndex]
+                } else {
+                    actualTimeTaken = medicationToLog.timeToTake
+                }
+                
                 NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
                     if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
                         keyboardHeight = keyboardFrame.height
@@ -136,8 +267,22 @@ struct LogMedicationView: View {
                     keyboardHeight = 0
                 }
             }
+            .onChange(of: selectedDoseIndex) { newIndex in
+                // Update the time when the selected dose changes
+                if hasMultipleDoses && newIndex < medicationToLog.reminderTimes.count {
+                    actualTimeTaken = medicationToLog.reminderTimes[newIndex]
+                }
+            }
         }
         .preferredColorScheme(.dark)
+    }
+    
+    // Format time for display
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date)
     }
     
     // Calculate adaptive spacing values

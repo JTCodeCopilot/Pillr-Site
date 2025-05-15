@@ -37,13 +37,41 @@ class MedicationStore: ObservableObject {
         return medications.first { $0.id == id }
     }
 
-    func addMedication(name: String, dosage: String, frequency: String, timeToTake: Date, notes: String?, enableNotification: Bool = true) {
-        var newMed = Medication(name: name, dosage: dosage, frequency: frequency, timeToTake: timeToTake, notes: notes)
+    func addMedication(
+        name: String,
+        dosage: String,
+        frequency: String,
+        timeToTake: Date,
+        reminderTimes: [Date] = [],
+        notes: String?,
+        enableNotification: Bool = true,
+        pillCount: Int? = nil,
+        pillsPerDose: Int = 1,
+        refillThreshold: Int? = nil
+    ) {
+        var newMed = Medication(
+            name: name, 
+            dosage: dosage, 
+            frequency: frequency, 
+            timeToTake: timeToTake,
+            reminderTimes: reminderTimes,
+            notes: notes,
+            pillCount: pillCount,
+            pillsPerDose: pillsPerDose,
+            refillThreshold: refillThreshold
+        )
         
-        // Schedule notification only if enabled
+        // Schedule notifications only if enabled
         if enableNotification {
-            let notificationID = notificationManager.scheduleNotification(for: newMed)
-            newMed.notificationID = notificationID
+            if reminderTimes.isEmpty {
+                // Legacy single notification support
+                let notificationID = notificationManager.scheduleNotification(for: newMed)
+                newMed.notificationID = notificationID
+            } else {
+                // Multiple notifications support
+                let notificationIDs = notificationManager.scheduleMultipleNotifications(for: newMed)
+                newMed.notificationIDs = notificationIDs
+            }
         }
         
         medications.append(newMed)
@@ -52,20 +80,34 @@ class MedicationStore: ObservableObject {
     
     func updateMedication(_ medication: Medication, enableNotification: Bool = true) {
         if let index = medications.firstIndex(where: { $0.id == medication.id }) {
-            // Cancel old notification if it exists
+            // Cancel old notifications if they exist
             if let oldNotificationID = medications[index].notificationID {
                 notificationManager.cancelNotification(with: oldNotificationID)
+            }
+            
+            if !medications[index].notificationIDs.isEmpty {
+                notificationManager.cancelMultipleNotifications(ids: medications[index].notificationIDs)
             }
             
             // Create a mutable copy
             var updatedMedication = medication
             
-            // Schedule new notification if enabled
+            // Schedule new notifications if enabled
             if enableNotification {
-                let newNotificationID = notificationManager.scheduleNotification(for: updatedMedication)
-                updatedMedication.notificationID = newNotificationID
+                if updatedMedication.reminderTimes.isEmpty {
+                    // Legacy single notification
+                    let newNotificationID = notificationManager.scheduleNotification(for: updatedMedication)
+                    updatedMedication.notificationID = newNotificationID
+                    updatedMedication.notificationIDs = []
+                } else {
+                    // Multiple notifications
+                    let newNotificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
+                    updatedMedication.notificationIDs = newNotificationIDs
+                    updatedMedication.notificationID = nil
+                }
             } else {
                 updatedMedication.notificationID = nil
+                updatedMedication.notificationIDs = []
             }
             
             // Update in the array
@@ -74,16 +116,89 @@ class MedicationStore: ObservableObject {
         }
     }
 
-    func logMedicationTaken(medication: Medication, actualTime: Date, notes: String?) {
-        let newLog = MedicationLog(medicationID: medication.id, medicationName: medication.name, takenAt: actualTime, notes: notes)
+    func logMedicationTaken(medication: Medication, actualTime: Date, notes: String?, skipped: Bool = false, reminderIndex: Int? = nil) {
+        let pillsConsumed = skipped ? 0 : medication.pillsPerDose
+        
+        let newLog = MedicationLog(
+            medicationID: medication.id, 
+            medicationName: medication.name, 
+            takenAt: actualTime, 
+            notes: notes,
+            skipped: skipped,
+            pillsConsumed: pillsConsumed,
+            reminderIndex: reminderIndex
+        )
+        
         logs.insert(newLog, at: 0) // Add to the top
         saveLogs()
         
-        // If this medication has a notification ID, cancel the notification
-        // since the medication has been taken
-        if let notificationID = medication.notificationID {
+        // If medication has a pill count, update it
+        if let index = medications.firstIndex(where: { $0.id == medication.id }), 
+           var updatedMedication = medications[index] as Medication?,
+           !skipped, // Only reduce pill count if not skipped
+           var pillCount = updatedMedication.pillCount {
+            
+            // Reduce pill count
+            pillCount = max(0, pillCount - (medication.pillsPerDose))
+            updatedMedication.pillCount = pillCount
+            
+            // Check if we need to show refill reminder
+            if let refillThreshold = updatedMedication.refillThreshold, 
+               pillCount <= refillThreshold {
+                // Schedule a refill reminder notification
+                let content = UNMutableNotificationContent()
+                content.title = "Medication Refill Reminder"
+                content.body = "Your supply of \(updatedMedication.name) is running low. Only \(pillCount) left."
+                content.sound = UNNotificationSound.default
+                
+                let request = UNNotificationRequest(
+                    identifier: "refill-\(updatedMedication.id)",
+                    content: content,
+                    trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+                )
+                
+                UNUserNotificationCenter.current().add(request)
+            }
+            
+            medications[index] = updatedMedication
+            saveMedications()
+        }
+        
+        // Cancel the specific notification that triggered this log
+        if let specificIndex = reminderIndex, !medication.notificationIDs.isEmpty, specificIndex < medication.notificationIDs.count {
+            // Cancel the specific notification if we know which one
+            notificationManager.cancelNotification(with: medication.notificationIDs[specificIndex])
+        } else if let notificationID = medication.notificationID {
+            // Legacy support - cancel the single notification
             notificationManager.cancelNotification(with: notificationID)
         }
+    }
+    
+    func skipMedication(medication: Medication, actualTime: Date, notes: String?, reminderIndex: Int? = nil) {
+        logMedicationTaken(medication: medication, actualTime: actualTime, notes: notes, skipped: true, reminderIndex: reminderIndex)
+    }
+    
+    func toggleSkipStatus(for medicationID: UUID) {
+        if let index = medications.firstIndex(where: { $0.id == medicationID }) {
+            var updatedMedication = medications[index]
+            updatedMedication.isSkipped.toggle()
+            medications[index] = updatedMedication
+            saveMedications()
+        }
+    }
+    
+    func getRemainingPillCount(for medicationID: UUID) -> Int? {
+        return medications.first(where: { $0.id == medicationID })?.pillCount
+    }
+    
+    func needsRefill(medicationID: UUID) -> Bool {
+        guard let medication = medications.first(where: { $0.id == medicationID }),
+              let pillCount = medication.pillCount,
+              let refillThreshold = medication.refillThreshold else {
+            return false
+        }
+        
+        return pillCount <= refillThreshold
     }
 
     func deleteMedication(at offsets: IndexSet) {
@@ -91,6 +206,10 @@ class MedicationStore: ObservableObject {
         for index in offsets {
             if let notificationID = medications[index].notificationID {
                 notificationManager.cancelNotification(with: notificationID)
+            }
+            
+            if !medications[index].notificationIDs.isEmpty {
+                notificationManager.cancelMultipleNotifications(ids: medications[index].notificationIDs)
             }
         }
         
@@ -117,12 +236,29 @@ class MedicationStore: ObservableObject {
                 
                 // Reschedule notifications on app launch (in case app was terminated)
                 for (index, medication) in medications.enumerated() {
-                    // Only reschedule if it had a notification ID
-                    if medication.notificationID != nil {
-                        let notificationID = notificationManager.scheduleNotification(for: medication)
-                        // Update the notification ID
-                        medications[index].notificationID = notificationID
+                    // Cancel any existing notifications first
+                    if let notificationID = medication.notificationID {
+                        notificationManager.cancelNotification(with: notificationID)
                     }
+                    if !medication.notificationIDs.isEmpty {
+                        notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
+                    }
+                    
+                    var updatedMedication = medication
+                    
+                    // Reschedule based on whether it uses single or multiple notifications
+                    if !medication.reminderTimes.isEmpty {
+                        // Use multiple reminders
+                        let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
+                        updatedMedication.notificationIDs = notificationIDs
+                        updatedMedication.notificationID = nil
+                    } else if medication.notificationID != nil {
+                        // Legacy - use single reminder
+                        let notificationID = notificationManager.scheduleNotification(for: medication)
+                        updatedMedication.notificationID = notificationID
+                    }
+                    
+                    medications[index] = updatedMedication
                 }
                 saveMedications()
                 return
@@ -148,14 +284,47 @@ class MedicationStore: ObservableObject {
     }
     
     private func addSampleData() {
-        let sampleMed1 = Medication(name: "Vitamin D", dosage: "1000 IU", frequency: "Once daily", timeToTake: Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())!)
-        let sampleMed2 = Medication(name: "Pain Relief", dosage: "1 tablet", frequency: "As needed", timeToTake: Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!, notes: "Max 4 per day")
+        // Morning and evening reminder times for Vitamin D
+        let morningTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())!
+        let eveningTime = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date())!
+        
+        let sampleMed1 = Medication(
+            name: "Vitamin D", 
+            dosage: "1000 IU", 
+            frequency: "Twice daily", 
+            timeToTake: morningTime,
+            reminderTimes: [morningTime, eveningTime],
+            pillCount: 60,
+            pillsPerDose: 1,
+            refillThreshold: 10
+        )
+        
+        let sampleMed2 = Medication(
+            name: "Pain Relief", 
+            dosage: "1 tablet", 
+            frequency: "As needed", 
+            timeToTake: Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!, 
+            notes: "Max 4 per day",
+            pillCount: 20,
+            pillsPerDose: 1,
+            refillThreshold: 4
+        )
+        
         medications = [sampleMed1, sampleMed2]
         
         // Schedule notifications for sample data
         for (index, medication) in medications.enumerated() {
-            let notificationID = notificationManager.scheduleNotification(for: medication)
-            medications[index].notificationID = notificationID
+            var updatedMedication = medication
+            
+            if !medication.reminderTimes.isEmpty {
+                let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
+                updatedMedication.notificationIDs = notificationIDs
+            } else {
+                let notificationID = notificationManager.scheduleNotification(for: medication)
+                updatedMedication.notificationID = notificationID
+            }
+            
+            medications[index] = updatedMedication
         }
         
         saveMedications()
