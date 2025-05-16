@@ -1,0 +1,24 @@
+// Pillr Build Optimization Settings
+
+// Enable build performance optimizations
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+SWIFT_COMPILATION_MODE = singlefile
+SWIFT_WHOLE_MODULE_OPTIMIZATION = NO
+
+// Increase compiler resources
+OTHER_SWIFT_FLAGS = -Xfrontend -warn-long-function-bodies=200 -Xfrontend -warn-long-expression-type-checking=150
+
+// Build concurrent file operations
+SWIFT_BUILD_OPERATION_MAX_CONCURRENT = 0
+
+// Reduce debugging info in debug builds
+DEBUG_INFORMATION_FORMAT = dwarf
+
+// Cache build products
+SWIFT_USE_INTEGRATED_DRIVER = YES
+
+// Disable Index-While-Building
+COMPILER_INDEX_STORE_ENABLE = NO
+
+// Use fast incremental builds
+SWIFT_ENABLE_BATCH_MODE = YES

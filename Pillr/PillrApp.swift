@@ -4,6 +4,8 @@ import UserNotifications
 @main
 struct MedLogAppApp: App { // Replace MedLogAppApp with your app's name
     @StateObject var store = MedicationStore()
+    @StateObject var interactionStore = InteractionStore.shared
+    @StateObject var openAIService = OpenAIService.shared
     
     init() {
         // Request notification permission on app launch
@@ -23,6 +25,8 @@ struct MedLogAppApp: App { // Replace MedLogAppApp with your app's name
         WindowGroup {
             ContentView()
                 .environmentObject(store)
+                .environmentObject(interactionStore)
+                .environmentObject(openAIService)
         }
     }
 }

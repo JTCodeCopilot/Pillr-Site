@@ -78,8 +78,8 @@ extension AnyTransition {
     
     static var smoothTab: AnyTransition {
         .asymmetric(
-            insertion: .opacity.combined(with: .offset(x: 30, y: 0)).animation(.spring(response: 0.35, dampingFraction: 0.85, blendDuration: 0.3)),
-            removal: .opacity.combined(with: .offset(x: -30, y: 0)).animation(.spring(response: 0.35, dampingFraction: 0.85, blendDuration: 0.3))
+            insertion: .opacity.combined(with: .move(edge: .trailing).animation(.easeInOut(duration: 0.3))),
+            removal: .opacity.combined(with: .move(edge: .leading).animation(.easeInOut(duration: 0.3)))
         )
     }
 }
@@ -93,6 +93,7 @@ struct ContentView: View {
     enum Tab {
         case medications
         case log
+        case interactions
         case add
     }
 
@@ -135,12 +136,9 @@ struct ContentView: View {
                         .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .offset(y: -10)),
-                            removal: .opacity.combined(with: .offset(y: 10))
-                        ))
+                        .transition(.opacity.combined(with: .move(edge: .top).animation(.easeInOut(duration: 0.3))))
                         .id("header-\(selectedTab)")
-                        .animation(.spring(response: 0.35, dampingFraction: 0.85, blendDuration: 0.25), value: selectedTab)
+                        .animation(.easeInOut(duration: 0.3), value: selectedTab)
                         .accessibilityAddTraits(.isHeader)
 
                     TabView(selection: $selectedTab) {
@@ -153,9 +151,14 @@ struct ContentView: View {
                             .tag(Tab.log)
                             .toolbarBackground(.hidden, for: .tabBar)
                             .transition(.smoothTab)
+                            
+                        InteractionSearchView()
+                            .tag(Tab.interactions)
+                            .toolbarBackground(.hidden, for: .tabBar)
+                            .transition(.smoothTab)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    .animation(.spring(response: 0.35, dampingFraction: 0.85, blendDuration: 0.3), value: selectedTab)
+                    .animation(.easeInOut(duration: 0.3), value: selectedTab)
                     .frame(maxHeight: .infinity)
 
                     // Custom Tab Bar with dynamic padding
@@ -191,7 +194,7 @@ struct ContentView: View {
         )) {
             AddMedicationView(onAdd: {
                 // Switch back to medications list after adding
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                withAnimation(.easeInOut(duration: 0.3)) {
                     selectedTab = .medications
                 }
             })
@@ -199,27 +202,30 @@ struct ContentView: View {
         }
     }
     
-    // Adaptive font sizing based on screen width
-    private func adaptiveFontSize(for geometry: GeometryProxy) -> CGFloat {
-        let baseSize: CGFloat = 28
-        
-        if geometry.size.width < 375 {
-            return baseSize * 0.8 // Smaller iPhones
-        } else if geometry.size.width >= 834 {
-            return baseSize * 1.2 // iPads
-        } else {
-            return baseSize
-        }
-    }
-
-    var headerTitle: String {
+    // Title based on selected tab
+    private var headerTitle: String {
         switch selectedTab {
         case .medications:
-            return "Take"
+            return "My Medications"
         case .log:
-            return "Taken"
+            return "Medication Log"
+        case .interactions:
+            return "Drug Interactions"
         case .add:
-            return "Take" // Change this to show the first tab's title when add button is tapped
+            return "Add Medication" // This won't show as we use a sheet for adding
+        }
+    }
+    
+    // Responsive font sizing
+    private func adaptiveFontSize(for geometry: GeometryProxy) -> CGFloat {
+        let baseFontSize: CGFloat = 28
+        let minFontSize: CGFloat = 24
+        let maxFontSize: CGFloat = 34
+        
+        if horizontalSizeClass == .compact {
+            return min(max(baseFontSize * (geometry.size.width / 390), minFontSize), maxFontSize)
+        } else {
+            return maxFontSize
         }
     }
 }
@@ -229,96 +235,5 @@ struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
             .environmentObject(MedicationStore())
-    }
-}
-
-struct CustomTabBar: View {
-    @Binding var selectedTab: ContentView.Tab
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        HStack {
-            TabBarButton(iconName: "list.bullet.clipboard.fill", title: "Meds", tab: .medications, selectedTab: $selectedTab)
-                .transition(.opacity)
-                .accessibilityLabel("Medications")
-            Spacer()
-            TabBarButton(iconName: "pills.fill", title: "Log", tab: .log, selectedTab: $selectedTab)
-                .transition(.opacity)
-                .accessibilityLabel("Medication Log")
-            Spacer()
-            TabBarButton(iconName: "plus.circle.fill", title: "Add", tab: .add, selectedTab: $selectedTab)
-                .transition(.opacity)
-                .accessibilityLabel("Add Medication")
-        }
-        .padding(.vertical, horizontalSizeClass == .regular ? 12 : 10)
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: selectedTab)
-    }
-}
-
-struct TabBarButton: View {
-    let iconName: String
-    let title: String
-    let tab: ContentView.Tab
-    @Binding var selectedTab: ContentView.Tab
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var isPressed = false
-
-    var body: some View {
-        Button(action: {
-            isPressed = true
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.85, blendDuration: 0.25)) {
-                selectedTab = tab
-            }
-            // Reset the press state after a short delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                isPressed = false
-            }
-        }) {
-            VStack(spacing: 4) {
-                Image(systemName: iconName)
-                    .font(.system(size: iconSize, weight: selectedTab == tab ? .bold : .regular))
-                    .imageScale(horizontalSizeClass == .regular ? .large : .medium)
-                Text(title)
-                    .font(horizontalSizeClass == .regular ? .body : .caption)
-            }
-            .foregroundColor(selectedTab == tab ? Color.pillrAccent : .white.opacity(0.7))
-            .padding(.horizontal)
-            .background(
-                selectedTab == tab ? 
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white.opacity(0.1))
-                        .blur(radius: 0.5)
-                        .padding(-5) : nil
-            )
-            .overlay(
-                selectedTab == tab ?
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    Color.pillrAccent.opacity(0.5),
-                                    Color.pillrAccent.opacity(0.2)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                        .padding(-5) : nil
-            )
-            .scaleEffect(isPressed ? 0.95 : 1)
-            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
-            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: selectedTab)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(title) tab")
-            .accessibilityAddTraits(selectedTab == tab ? [.isSelected] : [])
-        }
-    }
-    
-    // Dynamic icon sizing
-    private var iconSize: CGFloat {
-        horizontalSizeClass == .regular ? 26 : 22
     }
 }
