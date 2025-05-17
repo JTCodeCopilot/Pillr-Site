@@ -17,5 +17,7 @@
 	<string>Your OpenAI API key is stored securely on device only and is used only for medication interaction checks</string>
 	<key>PremiumModeInfo</key>
 	<string>Premium mode uses our built-in API key for medication interaction checks</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
 </dict>
 </plist>

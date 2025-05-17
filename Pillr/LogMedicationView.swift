@@ -28,163 +28,88 @@ struct LogMedicationView: View {
 
     var body: some View {
         NavigationView {
-            GeometryReader { geometry in
-                ZStack {
-                    // Use the same background as ContentView for consistency in sheets
-                    LinearGradient.pillrBackground
-                        .ignoresSafeArea()
+            ZStack {
+                // Background
+                Color(hex: "#404C42")
+                    .ignoresSafeArea()
+                
+                VStack(alignment: .leading, spacing: 0) {
+                    // Header
+                    Text("Log: \(medicationToLog.name)")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .padding(.top, 15)
+                        .padding(.horizontal, 16)
+                    
+                    if let pillCount = remainingPills {
+                        Text("\(pillCount) pills remaining")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .padding(.horizontal, 16)
+                            .padding(.top, 4)
+                    }
                     
                     ScrollView {
-                        VStack(spacing: calculateVerticalSpacing(for: geometry)) {
-                            Text("Log: \(medicationToLog.name)")
-                                .font(horizontalSizeClass == .regular ? .title : .title2).bold()
-                                .foregroundColor(.white)
-                                .padding(.top)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            if let pillCount = remainingPills {
-                                HStack {
-                                    Image(systemName: "pills")
-                                        .foregroundColor(.white.opacity(0.8))
-                                    Text("\(pillCount) pills remaining")
-                                        .foregroundColor(.white.opacity(0.8))
-                                        .font(.subheadline)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.bottom, 10)
-                            }
-                            
-                            // If medication has multiple doses, show a dose selector
+                        VStack(alignment: .leading, spacing: 20) {
+                            // Multiple doses selector
                             if hasMultipleDoses {
-                                VStack(alignment: .leading, spacing: 5) {
-                                    Text("Which dose are you logging?")
-                                        .font(.headline)
-                                        .foregroundColor(.white.opacity(0.9))
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Dose")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
                                     
                                     Picker("Dose", selection: $selectedDoseIndex) {
                                         ForEach(0..<medicationToLog.reminderTimes.count, id: \.self) { index in
                                             Text("Dose #\(index + 1) (\(formatTime(medicationToLog.reminderTimes[index])))")
-                                                .foregroundColor(.white)
                                                 .tag(index)
                                         }
                                     }
                                     .pickerStyle(.menu)
-                                    .padding(10)
-                                    .background(
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Material.ultraThinMaterial)
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Color.pillrNavy.opacity(0.1))
-                                        }
-                                    )
-                                    .cornerRadius(10)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(
-                                                LinearGradient(
-                                                    colors: [
-                                                        Color.white.opacity(0.5),
-                                                        Color.white.opacity(0.2)
-                                                    ],
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                ),
-                                                lineWidth: 1
-                                            )
-                                    )
                                 }
-                                .padding(.bottom, 5)
                             }
                             
-                            // Skip Toggle
-                            VStack(alignment: .leading, spacing: 5) {
-                                Toggle(isOn: $isSkipped) {
-                                    Text("Skip This Dose")
-                                        .font(.headline)
-                                        .foregroundColor(.white.opacity(0.9))
-                                }
-                                .toggleStyle(SwitchToggleStyle(tint: Color.pillrAccent))
-                                .padding(10)
-                                .background(
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Material.ultraThinMaterial)
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.pillrNavy.opacity(0.1))
-                                    }
-                                )
-                                .cornerRadius(10)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color.white.opacity(0.5),
-                                                    Color.white.opacity(0.2)
-                                                ],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 1
-                                        )
-                                )
+                            // Skip toggle
+                            VStack(alignment: .leading, spacing: 6) {
+                                Toggle("Skip This Dose", isOn: $isSkipped)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .tint(Color.pillrAccent)
                                 
                                 if isSkipped {
-                                    Text("This medication will be marked as skipped and won't reduce your pill count")
-                                        .font(.footnote)
-                                        .foregroundColor(.white.opacity(0.7))
-                                        .padding(.horizontal, 10)
-                                        .padding(.bottom, 5)
+                                    Text("Will not reduce pill count")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
                                 }
                             }
-                            .accessibilityLabel("Skip this medication dose")
-
-                            VStack(alignment: .leading) {
+                            
+                            // Time selection
+                            VStack(alignment: .leading, spacing: 6) {
                                 Text("Time \(isSkipped ? "Skipped" : "Taken")")
-                                    .font(.headline)
-                                    .foregroundColor(.white.opacity(0.9))
-                                DatePicker("Time \(isSkipped ? "Skipped" : "Taken")", selection: $actualTimeTaken)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                
+                                DatePicker("", selection: $actualTimeTaken)
                                     .datePickerStyle(.compact)
                                     .labelsHidden()
-                                    .padding(10)
-                                    .background(
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Material.ultraThinMaterial)
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Color.pillrNavy.opacity(0.1))
-                                        }
-                                    )
-                                    .cornerRadius(10)
                                     .colorScheme(.dark)
-                                    .accentColor(.cyan)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(
-                                                LinearGradient(
-                                                    colors: [
-                                                        Color.white.opacity(0.5),
-                                                        Color.white.opacity(0.2)
-                                                    ],
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                ),
-                                                lineWidth: 1
-                                            )
-                                    )
-                                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                    .accentColor(Color.pillrAccent)
                             }
-
-                            VStack(alignment: .leading) {
+                            
+                            // Notes
+                            VStack(alignment: .leading, spacing: 6) {
                                 Text("Notes (Optional)")
-                                    .font(.headline)
-                                    .foregroundColor(.white.opacity(0.9))
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                
                                 TextEditor(text: $logNotes)
-                                    .frame(height: calculateTextEditorHeight(for: geometry))
-                                    .glassTextEditorStyle()
+                                    .frame(height: calculateTextEditorHeight(for: UIScreen.main.bounds.size))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .padding(6)
+                                    .background(Color.black.opacity(0.2))
+                                    .cornerRadius(4)
                             }
-
+                            
+                            // Submit button
                             Button {
                                 if isSkipped {
                                     store.skipMedication(
@@ -204,35 +129,18 @@ struct LogMedicationView: View {
                                 }
                                 dismiss()
                             } label: {
-                                Text(isSkipped ? "Confirm Skip" : "Confirm Log")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .padding()
+                                Text(isSkipped ? "Skip Dose" : "Log Dose")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                     .frame(maxWidth: .infinity)
-                                    .background(isSkipped ? Color.orange.opacity(0.7) : Color.pillrNavy.opacity(1.2))
-                                    .cornerRadius(15)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 15)
-                                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                    )
-                                    .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                                    .padding(.vertical, 10)
+                                    .background(isSkipped ? Color.orange.opacity(0.3) : Color.black.opacity(0.3))
+                                    .cornerRadius(4)
                             }
-                            .padding(.bottom, keyboardHeight > 0 ? keyboardHeight - 20 : 0)
+                            .padding(.top, 5)
+                            .padding(.bottom, keyboardHeight > 0 ? keyboardHeight - 20 : 20)
                         }
-                        .padding(calculateHorizontalPadding(for: geometry))
-                        .gyroGlassCardStyle(
-                            cornerRadius: 25, 
-                            material: .regularMaterial, 
-                            borderColor: Color.white.opacity(0.25),
-                            shadowOpacity: 0.18,
-                            shadowRadius: 15,
-                            shineOpacity: 0.5
-                        )
-                        .padding(calculateHorizontalPadding(for: geometry))
-                        .frame(
-                            width: calculateMaxWidth(for: geometry),
-                            alignment: .center
-                        )
+                        .padding(16)
                     }
                 }
                 .navigationBarTitleDisplayMode(.inline)
@@ -241,11 +149,10 @@ struct LogMedicationView: View {
                         Button("Cancel") {
                             dismiss()
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(hex: "#C7C7BD"))
                     }
                 }
             }
-            .background(LinearGradient.pillrBackground.ignoresSafeArea())
             .onAppear {
                 // Load remaining pill count if available
                 remainingPills = store.getRemainingPillCount(for: medicationToLog.id)
@@ -257,6 +164,7 @@ struct LogMedicationView: View {
                     actualTimeTaken = medicationToLog.timeToTake
                 }
                 
+                // Watch for keyboard
                 NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
                     if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
                         keyboardHeight = keyboardFrame.height
@@ -285,32 +193,11 @@ struct LogMedicationView: View {
         return formatter.string(from: date)
     }
     
-    // Calculate adaptive spacing values
-    private func calculateVerticalSpacing(for geometry: GeometryProxy) -> CGFloat {
-        horizontalSizeClass == .regular ? 25 : 20
-    }
-    
-    private func calculateHorizontalPadding(for geometry: GeometryProxy) -> CGFloat {
+    private func calculateTextEditorHeight(for size: CGSize) -> CGFloat {
         if horizontalSizeClass == .regular {
-            return 24 // iPad
+            return 120 // iPad
         } else {
-            return geometry.size.width < 375 ? 12 : 16 // Small vs regular phone
-        }
-    }
-    
-    private func calculateMaxWidth(for geometry: GeometryProxy) -> CGFloat {
-        if horizontalSizeClass == .regular && geometry.size.width > 768 {
-            return 650 // Constrain width on larger iPads
-        }
-        return geometry.size.width // Full width on phones
-    }
-    
-    private func calculateTextEditorHeight(for geometry: GeometryProxy) -> CGFloat {
-        if horizontalSizeClass == .regular {
-            return 150 // Taller on iPad
-        } else {
-            // Adjust based on screen size for phones
-            return geometry.size.height < 700 ? 80 : 100
+            return size.height < 700 ? 80 : 100 // Adjust for different phone sizes
         }
     }
 }

@@ -12,7 +12,6 @@ struct AddMedicationView: View {
     @EnvironmentObject var store: MedicationStore
     @Environment(\.dismiss) var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.colorScheme) private var colorScheme
     var onAdd: () -> Void
 
     @State private var name: String = ""
@@ -39,378 +38,179 @@ struct AddMedicationView: View {
 
     var body: some View {
         NavigationView {
-            GeometryReader { geometry in
-                ZStack {
-                    // Use the same background as ContentView for consistency
-                    LinearGradient.pillrBackground
-                        .ignoresSafeArea()
-                    
-                    ScrollViewReader { scrollProxy in
-                        ScrollView {
-                            VStack(spacing: calculateVerticalSpacing(for: geometry)) {
+            ZStack {
+                Color(hex: "#404C42")
+                    .ignoresSafeArea()
+                
+                ScrollViewReader { scrollProxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            // Header
+                            Text("Add New Medication")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .padding(.top, 15)
+                            
+                            // Basic information fields
+                            simpleInputField(title: "Medication Name", text: $name, field: .name)
+                                .id(Field.name)
+                            
+                            simpleInputField(title: "Dosage (e.g., 50mg)", text: $dosage, field: .dosage)
+                                .id(Field.dosage)
+                            
+                            // Frequency picker
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Frequency")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                 
-                                Text("Add New Medication")
-                                    .font(horizontalSizeClass == .regular ? .title : .title2).bold()
-                                    .foregroundColor(.white)
-                                    .padding(.top)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                
-                                inputField(title: "Medication Name", text: $name, field: .name)
-                                    .id(Field.name)
-                                
-                                inputField(title: "Dosage (e.g., 50mg)", text: $dosage, field: .dosage)
-                                    .id(Field.dosage)
-                                
-                                VStack(alignment: .leading, spacing: 5) {
-                                    Text("Frequency")
-                                        .font(.headline)
-                                        .foregroundColor(.white.opacity(0.9))
-                                    Menu {
-                                        ForEach(frequencies, id: \.self) { freq in
-                                            Button(freq) {
-                                                self.frequency = freq
-                                                setupReminderTimesForFrequency(freq)
-                                                focusedField = .notes
-                                            }
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Text(frequency.isEmpty ? "Select frequency" : frequency)
-                                                .foregroundColor(frequency.isEmpty ? .white.opacity(0.5) : .white)
-                                            Spacer()
-                                            Image(systemName: "chevron.down")
-                                                .foregroundColor(.white.opacity(0.7))
-                                        }
-                                        .padding(.vertical, 12)
-                                        .padding(.horizontal, 10)
-                                        .background(
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .fill(Material.ultraThinMaterial)
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .fill(Color.pillrNavy.opacity(0.1))
-                                            }
-                                        )
-                                        .cornerRadius(10)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .stroke(
-                                                    LinearGradient(
-                                                        colors: [
-                                                            Color.white.opacity(0.5),
-                                                            Color.white.opacity(0.2)
-                                                        ],
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    ),
-                                                    lineWidth: 1
-                                                )
-                                        )
-                                    }
-                                    .accessibilityLabel("Frequency")
-                                    .accessibilityValue(frequency.isEmpty ? "Not selected" : frequency)
-                                }
-                                .focused($focusedField, equals: .frequency)
-                                .id(Field.frequency)
-                                
-                                // Multiple Reminder Times (when frequency has multiple doses)
-                                if needsMultipleReminders {
-                                    VStack(alignment: .leading, spacing: 10) {
-                                        Text("Reminder Times")
-                                            .font(.headline)
-                                            .foregroundColor(.white.opacity(0.9))
-                                        
-                                        ForEach(0..<reminderTimes.count, id: \.self) { index in
-                                            HStack {
-                                                Text("Dose #\(index + 1):")
-                                                    .foregroundColor(.white.opacity(0.8))
-                                                    .frame(width: 80, alignment: .leading)
-                                                
-                                                DatePicker("", selection: $reminderTimes[index], displayedComponents: .hourAndMinute)
-                                                    .datePickerStyle(.compact)
-                                                    .labelsHidden()
-                                                    .colorScheme(.dark)
-                                                    .accentColor(Color.pillrAccent)
-                                                    .frame(maxWidth: .infinity)
-                                            }
-                                            .padding(10)
-                                            .background(
-                                                ZStack {
-                                                    RoundedRectangle(cornerRadius: 10)
-                                                        .fill(Material.ultraThinMaterial)
-                                                    RoundedRectangle(cornerRadius: 10)
-                                                        .fill(Color.pillrNavy.opacity(0.1))
-                                                }
-                                            )
-                                            .cornerRadius(10)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(
-                                                        LinearGradient(
-                                                            colors: [
-                                                                Color.white.opacity(0.5),
-                                                                Color.white.opacity(0.2)
-                                                            ],
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        ),
-                                                        lineWidth: 1
-                                                    )
-                                            )
-                                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                Menu {
+                                    ForEach(frequencies, id: \.self) { freq in
+                                        Button(freq) {
+                                            self.frequency = freq
+                                            setupReminderTimesForFrequency(freq)
+                                            focusedField = .notes
                                         }
                                     }
-                                } else {
-                                    // Single Reminder Time
-                                    if frequency != "As needed" {
-                                        VStack(alignment: .leading, spacing: 5) {
-                                            Text("Time to Take")
-                                                .font(.headline)
-                                                .foregroundColor(.white.opacity(0.9))
-                                            
-                                            DatePicker("Time to Take", selection: $timeToTake, displayedComponents: .hourAndMinute)
-                                                .datePickerStyle(.compact)
-                                                .labelsHidden()
-                                                .padding(10)
-                                                .background(
-                                                    ZStack {
-                                                        RoundedRectangle(cornerRadius: 10)
-                                                            .fill(Material.ultraThinMaterial)
-                                                        RoundedRectangle(cornerRadius: 10)
-                                                            .fill(Color.pillrNavy.opacity(0.1))
-                                                    }
-                                                )
-                                                .cornerRadius(10)
-                                                .colorScheme(.dark)
-                                                .accentColor(Color.pillrAccent)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 10)
-                                                        .stroke(
-                                                            LinearGradient(
-                                                                colors: [
-                                                                    Color.white.opacity(0.5),
-                                                                    Color.white.opacity(0.2)
-                                                                ],
-                                                                startPoint: .topLeading,
-                                                                endPoint: .bottomTrailing
-                                                            ),
-                                                            lineWidth: 1
-                                                        )
-                                                )
-                                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                                        }
-                                        .accessibilityElement(children: .combine)
-                                        .accessibilityLabel("Time to take medication")
-                                        .accessibilityValue(formatTime(timeToTake))
-                                    }
-                                }
-                                
-                                // Track Pill Count Toggle
-                                VStack(alignment: .leading, spacing: 5) {
-                                    Toggle(isOn: $trackPillCount) {
-                                        Text("Track Pill Count")
-                                            .font(.headline)
-                                            .foregroundColor(.white.opacity(0.9))
-                                    }
-                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrAccent))
-                                    .padding(10)
-                                    .background(
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Material.ultraThinMaterial)
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Color.pillrNavy.opacity(0.1))
-                                        }
-                                    )
-                                    .cornerRadius(10)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(
-                                                LinearGradient(
-                                                    colors: [
-                                                        Color.white.opacity(0.5),
-                                                        Color.white.opacity(0.2)
-                                                    ],
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                ),
-                                                lineWidth: 1
-                                            )
-                                    )
-                                    
-                                    if trackPillCount {
-                                        Text("When enabled, the app will track your remaining pills and remind you when to refill")
-                                            .font(.footnote)
-                                            .foregroundColor(.white.opacity(0.7))
-                                            .padding(.horizontal, 10)
-                                            .padding(.bottom, 5)
-                                    }
-                                }
-                                
-                                if trackPillCount {
-                                    // Pill Count Field
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Text("Total Pill Count")
-                                            .font(.headline)
-                                            .foregroundColor(.white.opacity(0.9))
-                                        
-                                        TextField("Enter total pills", text: $pillCountString)
-                                            .keyboardType(.numberPad)
-                                            .textFieldStyle(GlassTextFieldStyle())
-                                            .focused($focusedField, equals: .pillCount)
-                                    }
-                                    .id(Field.pillCount)
-                                    
-                                    // Pills Per Dose Field
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Text("Pills Per Dose")
-                                            .font(.headline)
-                                            .foregroundColor(.white.opacity(0.9))
-                                        
-                                        TextField("Enter pills per dose", text: $pillsPerDoseString)
-                                            .keyboardType(.numberPad)
-                                            .textFieldStyle(GlassTextFieldStyle())
-                                            .focused($focusedField, equals: .pillsPerDose)
-                                    }
-                                    .id(Field.pillsPerDose)
-                                    
-                                    // Refill Threshold Field
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Text("Refill Reminder Threshold")
-                                            .font(.headline)
-                                            .foregroundColor(.white.opacity(0.9))
-                                        
-                                        TextField("Pills remaining to trigger reminder", text: $refillThresholdString)
-                                            .keyboardType(.numberPad)
-                                            .textFieldStyle(GlassTextFieldStyle())
-                                            .focused($focusedField, equals: .refillThreshold)
-                                    }
-                                    .id(Field.refillThreshold)
-                                }
-                                
-                                // Notification Toggle
-                                VStack(alignment: .leading, spacing: 5) {
-                                    Toggle(isOn: $enableNotification) {
-                                        Text("Enable Reminder")
-                                            .font(.headline)
-                                            .foregroundColor(.white.opacity(0.9))
-                                    }
-                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrAccent))
-                                    .padding(10)
-                                    .background(
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Material.ultraThinMaterial)
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(Color.pillrNavy.opacity(0.1))
-                                        }
-                                    )
-                                    .cornerRadius(10)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(
-                                                LinearGradient(
-                                                    colors: [
-                                                        Color.white.opacity(0.5),
-                                                        Color.white.opacity(0.2)
-                                                    ],
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                ),
-                                                lineWidth: 1
-                                            )
-                                    )
-                                    
-                                    if enableNotification {
-                                        Text("You'll receive a notification at \(needsMultipleReminders ? "each" : "the") scheduled time")
-                                            .font(.footnote)
-                                            .foregroundColor(.white.opacity(0.7))
-                                            .padding(.horizontal, 10)
-                                            .padding(.bottom, 5)
-                                    }
-                                }
-                                .accessibilityLabel("Enable medication reminder notifications")
-
-                                VStack(alignment: .leading, spacing: 5) {
-                                    Text("Notes (Optional)")
-                                        .font(.headline)
-                                        .foregroundColor(.white.opacity(0.9))
-                                    TextEditor(text: $notes)
-                                        .frame(height: calculateTextEditorHeight(for: geometry))
-                                        .glassTextEditorStyle()
-                                        .focused($focusedField, equals: .notes)
-                                }
-                                .id(Field.notes)
-
-                                Button {
-                                    saveMedication()
                                 } label: {
-                                    Text("Add Medication")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .padding()
-                                        .frame(maxWidth: .infinity)
-                                        .background(isFormValid ? Color.pillrAccent : Color.pillrNavy.opacity(0.8))
-                                        .cornerRadius(15)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 15)
-                                                .stroke(
-                                                    LinearGradient(
-                                                        colors: [
-                                                            Color.white.opacity(0.5),
-                                                            Color.white.opacity(0.2)
-                                                        ],
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    ),
-                                                    lineWidth: isFormValid ? 1 : 0.5
-                                                )
-                                        )
-                                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
-                                }
-                                .disabled(!isFormValid)
-                                .opacity(isFormValid ? 1.0 : 0.6)
-                                .padding(.top, 10)
-                                .padding(.bottom, 20)
-                                
-                                // Add extra padding at the bottom for keyboard
-                                if keyboardHeight > 0 {
-                                    Spacer()
-                                        .frame(height: keyboardHeight)
+                                    HStack {
+                                        Text(frequency.isEmpty ? "Select frequency" : frequency)
+                                            .foregroundColor(frequency.isEmpty ? Color(hex: "#C7C7BD").opacity(0.5) : Color(hex: "#C7C7BD"))
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 10)
+                                    .background(Color.black.opacity(0.3))
+                                    .cornerRadius(4)
                                 }
                             }
-                            .padding(calculateHorizontalPadding(for: geometry))
-                            .gyroGlassCardStyle(
-                                cornerRadius: 25, 
-                                material: .regularMaterial,
-                                borderColor: Color.white.opacity(0.25),
-                                shadowOpacity: 0.18,
-                                shadowRadius: 15,
-                                shineOpacity: 0.5
-                            )
-                            .padding(calculateHorizontalPadding(for: geometry))
-                            .frame(
-                                width: calculateMaxWidth(for: geometry),
-                                alignment: .center
-                            )
-                        }
-                        .onChange(of: focusedField) { field in
-                            if let field = field {
-                                withAnimation {
-                                    scrollProxy.scrollTo(field, anchor: .top)
+                            .id(Field.frequency)
+                            
+                            // Multiple Reminder Times
+                            if needsMultipleReminders {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Reminder Times")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                    
+                                    ForEach(0..<reminderTimes.count, id: \.self) { index in
+                                        HStack {
+                                            Text("Dose #\(index + 1):")
+                                                .font(.system(size: 13))
+                                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                                .frame(width: 70, alignment: .leading)
+                                            
+                                            DatePicker("", selection: $reminderTimes[index], displayedComponents: .hourAndMinute)
+                                                .datePickerStyle(.compact)
+                                                .labelsHidden()
+                                                .colorScheme(.dark)
+                                                .accentColor(Color.pillrAccent)
+                                        }
+                                        .padding(.vertical, 4)
+                                    }
                                 }
+                            } else {
+                                // Single Reminder Time
+                                if frequency != "As needed" {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("Time to Take")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                        
+                                        DatePicker("", selection: $timeToTake, displayedComponents: .hourAndMinute)
+                                            .datePickerStyle(.compact)
+                                            .labelsHidden()
+                                            .colorScheme(.dark)
+                                            .accentColor(Color.pillrAccent)
+                                    }
+                                }
+                            }
+                            
+                            // Track Pill Count Toggle
+                            VStack(alignment: .leading, spacing: 6) {
+                                Toggle("Track Pill Count", isOn: $trackPillCount)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .tint(Color.pillrAccent)
+                            }
+                            
+                            if trackPillCount {
+                                // Pill Count Fields
+                                simpleInputField(title: "Total Pill Count", text: $pillCountString, field: .pillCount, keyboardType: .numberPad)
+                                    .id(Field.pillCount)
+                                
+                                simpleInputField(title: "Pills Per Dose", text: $pillsPerDoseString, field: .pillsPerDose, keyboardType: .numberPad)
+                                    .id(Field.pillsPerDose)
+                                
+                                simpleInputField(title: "Refill Reminder Threshold", text: $refillThresholdString, field: .refillThreshold, keyboardType: .numberPad)
+                                    .id(Field.refillThreshold)
+                            }
+                            
+                            // Notification Toggle
+                            VStack(alignment: .leading, spacing: 6) {
+                                Toggle("Enable Reminder", isOn: $enableNotification)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .tint(Color.pillrAccent)
+                            }
+                            
+                            // Notes
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Notes (Optional)")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                
+                                TextEditor(text: $notes)
+                                    .frame(height: horizontalSizeClass == .regular ? 120 : 80)
+                                    .padding(6)
+                                    .background(Color.black.opacity(0.2))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .cornerRadius(4)
+                                    .focused($focusedField, equals: .notes)
+                            }
+                            .id(Field.notes)
+
+                            // Add button
+                            Button {
+                                saveMedication()
+                            } label: {
+                                Text("Add Medication")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(isFormValid ? Color.pillrAccent.opacity(0.5) : Color.black.opacity(0.4))
+                                    .cornerRadius(4)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                                    )
+                            }
+                            .disabled(!isFormValid)
+                            .opacity(isFormValid ? 1.0 : 0.6)
+                            .padding(.top, 10)
+                            .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 20)
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                    .onChange(of: focusedField) { field in
+                        if let field = field {
+                            withAnimation {
+                                scrollProxy.scrollTo(field, anchor: .top)
                             }
                         }
                     }
                 }
-                .background(LinearGradient.pillrBackground.ignoresSafeArea())
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button("Cancel") {
                             dismiss()
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(hex: "#C7C7BD"))
                     }
                 }
                 .onAppear {
@@ -508,72 +308,35 @@ struct AddMedicationView: View {
         return basicValid
     }
     
-    // Calculate adaptive spacing values
-    private func calculateVerticalSpacing(for geometry: GeometryProxy) -> CGFloat {
-        horizontalSizeClass == .regular ? 25 : 20
-    }
-    
-    private func calculateHorizontalPadding(for geometry: GeometryProxy) -> CGFloat {
-        if horizontalSizeClass == .regular {
-            return 24 // iPad
-        } else {
-            return geometry.size.width < 375 ? 12 : 16 // Small vs regular phone
-        }
-    }
-    
-    private func calculateMaxWidth(for geometry: GeometryProxy) -> CGFloat {
-        if horizontalSizeClass == .regular && geometry.size.width > 768 {
-            return 650 // Constrain width on larger iPads
-        }
-        return geometry.size.width // Full width on phones
-    }
-    
-    private func calculateTextEditorHeight(for geometry: GeometryProxy) -> CGFloat {
-        if horizontalSizeClass == .regular {
-            return 150 // Taller on iPad
-        } else {
-            // Adjust based on screen size for phones
-            return geometry.size.height < 700 ? 80 : 100
-        }
-    }
-    
-    // Format time for accessibility
-    private func formatTime(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
     @ViewBuilder
-    private func inputField(title: String, text: Binding<String>, field: Field) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
+    private func simpleInputField(title: String, text: Binding<String>, field: Field, keyboardType: UIKeyboardType = .default) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.headline)
-                .foregroundColor(.white.opacity(0.9))
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color(hex: "#C7C7BD"))
+            
             TextField("Enter \(title.lowercased())", text: text)
-                .textFieldStyle(GlassTextFieldStyle())
+                .keyboardType(keyboardType)
+                .padding(8)
+                .background(Color.black.opacity(0.3))
+                .cornerRadius(4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(Color(hex: "#C7C7BD").opacity(0.1), lineWidth: 1)
+                )
                 .focused($focusedField, equals: field)
                 .submitLabel(field == .name ? .next : .done)
                 .onSubmit {
                     switch field {
-                    case .name:
-                        focusedField = .dosage
-                    case .dosage:
-                        focusedField = .frequency
-                    case .frequency:
-                        focusedField = .notes
+                    case .name: focusedField = .dosage
+                    case .dosage: focusedField = .frequency
+                    case .frequency: focusedField = .notes
                     case .notes:
-                        if trackPillCount {
-                            focusedField = .pillCount
-                        } else {
-                            focusedField = nil
-                        }
-                    case .pillCount:
-                        focusedField = .pillsPerDose
-                    case .pillsPerDose:
-                        focusedField = .refillThreshold
-                    case .refillThreshold:
-                        focusedField = nil
+                        if trackPillCount { focusedField = .pillCount }
+                        else { focusedField = nil }
+                    case .pillCount: focusedField = .pillsPerDose
+                    case .pillsPerDose: focusedField = .refillThreshold
+                    case .refillThreshold: focusedField = nil
                     }
                 }
         }
@@ -596,19 +359,6 @@ struct AddMedicationView: View {
             pillsPerDose: pillsPerDose,
             refillThreshold: refillThreshold
         )
-        
-        // Reset form
-        name = ""
-        dosage = ""
-        frequency = ""
-        timeToTake = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
-        reminderTimes = []
-        notes = ""
-        enableNotification = true
-        pillCountString = ""
-        pillsPerDoseString = "1"
-        refillThresholdString = ""
-        trackPillCount = false
         
         onAdd()
     }

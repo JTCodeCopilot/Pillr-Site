@@ -12,25 +12,25 @@ struct APIKeyView: View {
         NavigationView {
             ZStack {
                 // Background
-                LinearGradient.pillrBackground
+                Color(hex: "#404C42")
                     .ignoresSafeArea()
                 
                 ScrollView {
                     VStack(spacing: 24) {
                         Text("OpenAI API Key")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .foregroundColor(Color(hex: "#C7C7BD"))
                             .padding(.top, 20)
                         
                         // Premium Mode Card
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 Image(systemName: "star.fill")
-                                    .foregroundColor(Color.yellow)
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                 
                                 Text("Premium Mode")
                                     .font(.headline)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                 
                                 Spacer()
                                 
@@ -49,7 +49,7 @@ struct APIKeyView: View {
                             }
                             
                             Text("Enable premium mode to use our built-in API key for medication interaction checks.")
-                                .foregroundColor(.white.opacity(0.9))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
                         }
                         .padding()
                         .gyroGlassCardStyle(cornerRadius: 16, borderColor: Color.yellow.opacity(0.5))
@@ -62,7 +62,7 @@ struct APIKeyView: View {
                                 .frame(height: 1)
                             
                             Text("OR")
-                                .foregroundColor(.white.opacity(0.6))
+                                .foregroundColor(Color(hex: "#404C42").opacity(0.6))
                                 .font(.caption)
                             
                             Rectangle()
@@ -76,19 +76,19 @@ struct APIKeyView: View {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Use Your Own API Key")
                                 .font(.headline)
-                                .foregroundColor(.white)
+                                .foregroundColor(Color(hex: "#404C42"))
                                 .padding(.horizontal)
                             
                             Text("If you prefer, you can use your own OpenAI API key. Your key is stored securely on your device only.")
-                                .foregroundColor(.white.opacity(0.9))
+                                .foregroundColor(Color(hex: "#404C42").opacity(0.9))
                                 .padding(.horizontal)
                             
                             Text("You can obtain an API key from OpenAI's website by signing up for an account.")
-                                .foregroundColor(.white.opacity(0.8))
+                                .foregroundColor(Color(hex: "#404C42").opacity(0.8))
                                 .padding(.horizontal)
                             
                             Link("Get an API Key from OpenAI", destination: URL(string: "https://platform.openai.com/api-keys")!)
-                                .foregroundColor(.pillrAccent)
+                                .foregroundColor(Color.pillrAccent)
                                 .padding(.horizontal)
                                 .padding(.top, 4)
                         }
@@ -104,8 +104,8 @@ struct APIKeyView: View {
                                     .padding()
                                     .background(Color.white.opacity(0.1))
                                     .cornerRadius(10)
-                                    .foregroundColor(.white)
-                                    .accentColor(.pillrAccent)
+                                    .foregroundColor(Color(hex: "#404C42"))
+                                    .accentColor(Color.pillrAccent)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 10)
                                             .stroke(Color.white.opacity(0.3), lineWidth: 1)
@@ -114,7 +114,7 @@ struct APIKeyView: View {
                                 Button(action: saveAPIKey) {
                                     Text("Save API Key")
                                         .fontWeight(.semibold)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Color(hex: "#404C42"))
                                         .frame(maxWidth: .infinity)
                                         .padding()
                                         .background(
@@ -126,6 +126,7 @@ struct APIKeyView: View {
                                         )
                                         .cornerRadius(10)
                                 }
+                                .buttonStyle(HapticButtonStyle(style: .success))
                                 .disabled(apiKey.isEmpty)
                                 .opacity(apiKey.isEmpty ? 0.6 : 1.0)
                                 
@@ -133,7 +134,7 @@ struct APIKeyView: View {
                                     Button(action: clearAPIKey) {
                                         Text("Clear API Key")
                                             .fontWeight(.semibold)
-                                            .foregroundColor(.white)
+                                            .foregroundColor(Color(hex: "#404C42"))
                                             .frame(maxWidth: .infinity)
                                             .padding()
                                             .background(
@@ -145,6 +146,7 @@ struct APIKeyView: View {
                                             )
                                             .cornerRadius(10)
                                     }
+                                    .buttonStyle(HapticButtonStyle(style: .warning))
                                 }
                             }
                             .padding(.horizontal)
@@ -170,11 +172,13 @@ struct APIKeyView: View {
                         Button("Done") {
                             presentationMode.wrappedValue.dismiss()
                         }
-                        .foregroundColor(.pillrAccent)
+                        .foregroundColor(Color.pillrAccent)
+                        .buttonStyle(HapticButtonStyle(style: .soft))
                     }
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
     
     private func saveAPIKey() {

@@ -9,16 +9,18 @@ import SwiftUI
 
 // MARK: - Global Background Definition
 extension Color {
-    static let pillrNavy = Color(hex: "#000000")
-    static let pillrSoftBlue = Color(hex: "#000000")
-    static let pillrDeepBlue = Color(hex: "#000000")
+    static let pillrNavy = Color.black
+    static let pillrSoftBlue = Color.black
+    static let pillrDeepBlue = Color.black
 }
 
 extension LinearGradient {
     static let pillrBackground = LinearGradient(
-        gradient: Gradient(colors: [Color.pillrSoftBlue, Color.pillrNavy, Color.pillrDeepBlue]),
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
+        gradient: Gradient(colors: [
+            Color(hex: "#404C42"),  // Solid background color
+        ]),
+        startPoint: .topTrailing,
+        endPoint: .bottomLeading
     )
 }
 
@@ -32,11 +34,11 @@ extension View {
 // MARK: - Color Extension for Theme Colors
 extension Color {
     static var pillrAccent: Color {
-        return Color(hex: "#D8B4F8") // Cyan-blue that works well in both light/dark modes
+        return Color(hex: "#C7C7BD") // New accent color
     }
     
     static var pillrSecondary: Color {
-        return Color(hex: "#D8B4F8") // Light cyan for secondary elements
+        return Color(hex: "#C7C7BD") // New secondary color
     }
 }
 
@@ -86,6 +88,7 @@ extension AnyTransition {
 
 struct ContentView: View {
     @EnvironmentObject var store: MedicationStore
+    @EnvironmentObject var userSettings: UserSettings
     @State private var selectedTab: Tab = .medications
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
@@ -94,7 +97,7 @@ struct ContentView: View {
         case medications
         case log
         case interactions
-        case add
+        case settings
     }
 
     var body: some View {
@@ -102,84 +105,73 @@ struct ContentView: View {
             ZStack {
                 // 1. Dynamic Background
                 LinearGradient.pillrBackground
-                    .ignoresSafeArea()
+                    .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
                 
                 // Add subtle animated background shapes for depth
                 ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.07))
-                        .frame(width: geometry.size.width * 0.8)
-                        .blur(radius: 35)
-                        .offset(x: -geometry.size.width * 0.3, y: -geometry.size.height * 0.1)
+                    // Single large solid background
+                    Rectangle()
+                        .fill(Color(hex: "#404C42"))
+                        .ignoresSafeArea()
                     
-                    Circle()
-                        .fill(Color(red: 0.35, green: 0.45, blue: 0.65).opacity(0.15))
-                        .frame(width: geometry.size.width * 0.7)
-                        .blur(radius: 30)
-                        .offset(x: geometry.size.width * 0.3, y: geometry.size.height * 0.2)
-                        
-                    Ellipse()
-                        .fill(Color.pillrSoftBlue.opacity(0.12))
-                        .frame(width: geometry.size.width * 0.6, height: geometry.size.height * 0.3)
-                        .blur(radius: 40)
-                        .offset(x: -geometry.size.width * 0.1, y: geometry.size.height * 0.35)
+                    // Top navbar area
+                    Rectangle()
+                        .fill(Color(hex: "#404C42"))
+                        .frame(height: geometry.safeAreaInsets.top + 44)
+                        .ignoresSafeArea(edges: .top)
                 }
 
                 // 2. Main Content Area
                 VStack(spacing: 0) {
-                    // Custom Header with responsive sizing and semantic importance
-                    Text(headerTitle)
-                        .font(.system(size: adaptiveFontSize(for: geometry), weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top : 20)
-                        .padding(.bottom, 10)
-                        .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
-                        .transition(.opacity.combined(with: .move(edge: .top).animation(.easeInOut(duration: 0.3))))
-                        .id("header-\(selectedTab)")
-                        .animation(.easeInOut(duration: 0.3), value: selectedTab)
-                        .accessibilityAddTraits(.isHeader)
-
+                    // Header removed
+                    
                     TabView(selection: $selectedTab) {
                         MedicationsListView()
+                            .scrollContentBackground(.hidden)
                             .tag(Tab.medications)
                             .toolbarBackground(.hidden, for: .tabBar)
                             .transition(.smoothTab)
+                            .padding(.top, geometry.safeAreaInsets.top)
 
                         MedicationLogView()
                             .tag(Tab.log)
                             .toolbarBackground(.hidden, for: .tabBar)
                             .transition(.smoothTab)
+                            .padding(.top, geometry.safeAreaInsets.top)
                             
                         InteractionSearchView()
                             .tag(Tab.interactions)
                             .toolbarBackground(.hidden, for: .tabBar)
                             .transition(.smoothTab)
+                            .padding(.top, geometry.safeAreaInsets.top)
+                            
+                        SettingsView()
+                            .tag(Tab.settings)
+                            .toolbarBackground(.hidden, for: .tabBar)
+                            .transition(.smoothTab)
+                            .padding(.top, geometry.safeAreaInsets.top)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .animation(.easeInOut(duration: 0.3), value: selectedTab)
                     .frame(maxHeight: .infinity)
 
-                    // Custom Tab Bar with dynamic padding
-                    ZStack {
+                    // Minimal Tab Bar
+                    HStack {
                         CustomTabBar(selectedTab: $selectedTab)
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                            .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 10 : 10)
-                            .gyroGlassCardStyle(
-                                cornerRadius: 25, 
-                                material: .thinMaterial, 
-                                borderColor: .white.opacity(0.3),
-                                borderWidth: 1.2,
-                                shadowOpacity: 0.2,
-                                shadowRadius: 10,
-                                shineOpacity: 0.7
-                            )
-                            .padding(.horizontal)
-                            .frame(height: 70 + (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 10 : 0))
+                            .padding(.vertical, 5)
+                            .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 0 : 5)
                     }
-                    .background(Color.clear)
+                    .frame(height: 40 + (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 10 : 0))
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(hex: "#404C42"),
+                                Color(hex: "#404C42")
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                     .ignoresSafeArea(.keyboard)
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -188,35 +180,37 @@ struct ContentView: View {
         }
         .preferredColorScheme(.dark)
         .accessibilityValue("Pillr Medication Tracker App")
-        .sheet(isPresented: Binding<Bool>(
-            get: { selectedTab == .add },
-            set: { if !$0 { selectedTab = .medications } }
-        )) {
-            AddMedicationView(onAdd: {
-                // Switch back to medications list after adding
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    selectedTab = .medications
-                }
-            })
-            .preferredColorScheme(.dark)
-        }
     }
     
     // Title based on selected tab
     private var headerTitle: String {
         switch selectedTab {
         case .medications:
-            return "My Medications"
+            let hour = Calendar.current.component(.hour, from: Date())
+            let greeting: String
+            
+            switch hour {
+            case 5..<12:
+                greeting = "Good Morning"
+            case 12..<17:
+                greeting = "Good Afternoon"
+            case 17..<24:
+                greeting = "Good Evening"
+            default:
+                greeting = "Good Evening"
+            }
+            
+            return "\(greeting), \(userSettings.userName)"
         case .log:
             return "Medication Log"
         case .interactions:
             return "Drug Interactions"
-        case .add:
-            return "Add Medication" // This won't show as we use a sheet for adding
+        case .settings:
+            return "Settings"
         }
     }
     
-    // Responsive font sizing
+    // Simplified - no longer need adaptive font size
     private func adaptiveFontSize(for geometry: GeometryProxy) -> CGFloat {
         let baseFontSize: CGFloat = 28
         let minFontSize: CGFloat = 24
@@ -235,5 +229,6 @@ struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
             .environmentObject(MedicationStore())
+            .environmentObject(UserSettings.shared)
     }
 }

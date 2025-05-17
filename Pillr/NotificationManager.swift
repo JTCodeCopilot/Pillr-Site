@@ -255,4 +255,115 @@ class NotificationManager: ObservableObject {
     func cancelAllNotifications() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }
+}
+
+// MARK: - Notification Feedback Manager
+
+class NotificationFeedbackManager {
+    static let shared = NotificationFeedbackManager()
+    
+    private init() {}
+    
+    func triggerNotificationHaptic() {
+        // Always provide haptic feedback for medication reminders
+        // Use a rigidImpact followed by success notification for a distinctive pattern
+        DispatchQueue.main.async {
+            HapticManager.shared.rigidImpact()
+            
+            // Small delay between haptics feels more intentional
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                HapticManager.shared.successNotification()
+            }
+        }
+    }
+    
+    func triggerReminderHaptic() {
+        // For follow-up reminders, use a slightly different pattern
+        DispatchQueue.main.async {
+            HapticManager.shared.mediumImpact()
+            
+            // Small delay between haptics
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                HapticManager.shared.mediumImpact()
+            }
+            
+            // Final success notification
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                HapticManager.shared.successNotification()
+            }
+        }
+    }
+}
+
+// MARK: - Notification Delegate
+// This delegate will handle notification responses and trigger appropriate haptics
+
+class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = NotificationDelegate()
+    
+    private override init() {
+        super.init()
+    }
+    
+    // Called when a notification is delivered to a foreground app
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        
+        // Check if the notification is a medication reminder
+        if notification.request.content.categoryIdentifier == "MEDICATION_REMINDER" {
+            // Check if it's a follow-up reminder
+            if let isFollowUp = notification.request.content.userInfo["isFollowUp"] as? Bool, isFollowUp {
+                NotificationFeedbackManager.shared.triggerReminderHaptic()
+            } else {
+                NotificationFeedbackManager.shared.triggerNotificationHaptic()
+            }
+        }
+        
+        // Allow the notification to present with sound, banner, and list
+        completionHandler([.sound, .banner, .list])
+    }
+    
+    // Called when a user responds to a notification
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        
+        let userInfo = response.notification.request.content.userInfo
+        
+        // Handle different notification actions
+        switch response.actionIdentifier {
+        case "TAKE_ACTION":
+            // User tapped "Take Now" - log the medication as taken
+            if let medicationIDString = userInfo["medicationID"] as? String,
+               let medicationID = UUID(uuidString: medicationIDString) {
+                
+                // Find the medication and log it as taken
+                if let medication = MedicationStore.shared.findMedication(with: medicationID) {
+                    // Log the medication as taken
+                    MedicationStore.shared.logMedicationTaken(medication: medication, actualTime: Date(), notes: nil)
+                    
+                    // Provide success haptic feedback
+                    HapticManager.shared.successNotification()
+                }
+            }
+            
+        case "REMIND_LATER":
+            // User tapped "Remind Later" - schedule a reminder in 5 minutes
+            if let medicationIDString = userInfo["medicationID"] as? String,
+               let medicationID = UUID(uuidString: medicationIDString) {
+                
+                // Find the medication
+                if let medication = MedicationStore.shared.findMedication(with: medicationID) {
+                    // Schedule a one-time reminder for 5 minutes later
+                    NotificationManager.shared.scheduleOneTimeReminder(for: medication, afterMinutes: 5)
+                    
+                    // Provide light haptic feedback
+                    HapticManager.shared.lightImpact()
+                }
+            }
+            
+        default:
+            // User tapped the notification itself - no specific action
+            break
+        }
+        
+        completionHandler()
+    }
 } 

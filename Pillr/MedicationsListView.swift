@@ -9,12 +9,28 @@ import SwiftUI
 
 struct MedicationsListView: View {
     @EnvironmentObject var store: MedicationStore
+    @EnvironmentObject var userSettings: UserSettings
     @State private var showingLogSheetFor: Medication?
     @State private var selectedMedicationToEdit: Medication?
     @State private var showingAddSheet = false
     @State private var scrolledOffset: CGFloat = 0
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
+    
+    private var timeBasedGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        switch hour {
+        case 5..<12:
+            return "Good Morning"
+        case 12..<17:
+            return "Good Afternoon"
+        case 17..<24:
+            return "Good Evening"
+        default:
+            return "Good Evening"
+        }
+    }
     
     private var groupedMedications: [(String, [Medication])] {
         let calendar = Calendar.current
@@ -26,7 +42,7 @@ struct MedicationsListView: View {
         
         var groups: [(String, [Medication])] = []
         
-        let morningMeds = store.medications.filter { 
+        let morningMeds = store.medications.filter {
             $0.timeToTake >= morning && $0.timeToTake < noon
         }.sorted { $0.timeToTake < $1.timeToTake }
         
@@ -51,160 +67,73 @@ struct MedicationsListView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .top) {
-            // Background gradient
-            LinearGradient.pillrBackground
-                .ignoresSafeArea()
-            
-            // Decorative shapes
-            ZStack {
-                Circle()
-                    .fill(Color.purple.opacity(0.2))
-                    .frame(width: 200, height: 200)
-                    .blur(radius: 90)
-                    .offset(x: -150, y: -50)
+        ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: .top) {
+                // Background color
+                Color(hex: "#404C42")
+                    .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
                 
-                Circle()
-                    .fill(Color.blue.opacity(0.15))
-                    .frame(width: 250, height: 250)
-                    .blur(radius: 80)
-                    .offset(x: 170, y: 100)
-            }
-            .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                // Custom nav bar with parallax effect
-                HStack {
-                    Text("")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .opacity(1 - min(scrolledOffset / 80, 0.6))
-                        .padding(.leading)
-                        .shadow(color: .black.opacity(0.1), radius: 1)
-                    
-                    Spacer()
-                    
-                    Button {
-                        showingAddSheet = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 50, height: 50)
-                            .background(
-                                ZStack {
-                                    Circle()
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [Color.blue.opacity(0.7), Color.purple.opacity(0.8)],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
-                                        )
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                }
-                            )
-                            .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 3)
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                    .accessibilityLabel("Add new medication")
-                    .padding(.trailing)
-                }
-                .padding(.top, 16)
-                .padding(.bottom, 8)
-                .background(
-                    LinearGradient.pillrBackground
-                        .opacity(min(scrolledOffset / 80, 0.9))
-                        .ignoresSafeArea()
-                )
-                .zIndex(1)
+                // Decorative shapes removed - now using consistent styling from ContentView
                 
-                if store.medications.isEmpty {
-                    // Enhanced empty state
-                    VStack(spacing: 25) {
-                        Image(systemName: "pills.circle")
-                            .font(.system(size: 80))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [.blue.opacity(0.9), .purple.opacity(0.7)],
-                                    startPoint: .topLeading, 
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .padding()
-                            .background(
-                                Circle()
-                                    .fill(Color.white.opacity(0.15))
-                                    .padding(-15)
-                            )
-                            .shadow(color: .black.opacity(0.1), radius: 10)
-                        
-                        Text("Your medication list is empty")
-                            .font(.title3.weight(.semibold))
-                            .foregroundColor(.white)
-                        
-                        Text("Add your medications to get reminders \nand track when you take them")
-                            .font(.subheadline)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white.opacity(0.7))
-                            .padding(.horizontal)
-                        
-                        Button {
-                            showingAddSheet = true
-                        } label: {
-                            Text("Add Your First Medication")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding(.vertical, 14)
-                                .padding(.horizontal, 24)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [Color.blue.opacity(0.8), Color.purple.opacity(0.8)],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
-                                        )
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                )
-                                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                VStack(spacing: 0) {
+                    // Minimal nav bar removed
+                    
+                    if store.medications.isEmpty {
+                        // Minimal empty state
+                        VStack(spacing: 20) {
+                            Image(systemName: "pills")
+                                .font(.system(size: 50))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                .padding(.bottom, 10)
+                            
+                            Text("Your medication list is empty")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                            
+                            Text("Add your medications to get reminders and track when you take them")
+                                .font(.system(size: 14))
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .padding(.horizontal)
+                            
+                            Button {
+                                showingAddSheet = true
+                            } label: {
+                                Text("Add Medication")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .padding(.vertical, 10)
+                                    .padding(.horizontal, 20)
+                                    .background(Color.black.opacity(0.3))
+                                    .cornerRadius(6)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                                    )
+                            }
                         }
-                        .buttonStyle(ScaleButtonStyle())
-                        .padding(.top, 10)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal)
-                    .padding(.bottom, 40)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Your medication list is empty. Add your first medication.")
-                } else {
-                    // Coordinated ScrollView that updates scroll position for parallax
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            ForEach(groupedMedications, id: \.0) { group in
-                                VStack(alignment: .leading, spacing: 12) {
-                                    // Time period header
-                                    HStack(alignment: .firstTextBaseline) {
-                                        Text(group.0)
-                                            .font(.system(.headline, design: .rounded))
-                                            .foregroundColor(.white.opacity(0.9))
-                                        
-                                        Spacer()
-                                        
-                                        Text("\(group.1.count) \(group.1.count == 1 ? "med" : "meds")")
-                                            .font(.caption)
-                                            .foregroundColor(.white.opacity(0.6))
-                                    }
-                                    .padding(.horizontal)
-                                    
-                                    // Medications for this time period
-                                    ForEach(group.1) { med in
+                        .padding(30)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Your medication list is empty. Add your first medication.")
+                    } else {
+                        // Coordinated ScrollView that updates scroll position for parallax
+                        ScrollView {
+                            VStack(spacing: 24) {
+                                // Title with time-based greeting
+                                HStack {
+                                    Text("\(timeBasedGreeting), \(userSettings.userName)")
+                                        .font(.system(size: 22, weight: .medium))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 4)
+                                .padding(.bottom, 8)
+                                
+                                // All medications in a single list sorted by time
+                                VStack(alignment: .leading, spacing: 10) {
+                                    // Display all medications sorted by time
+                                    ForEach(store.medications.sorted(by: { $0.timeToTake < $1.timeToTake })) { med in
                                         MedicationRow(medication: med, onLogTap: {
                                             showingLogSheetFor = med
                                         }, onEditTap: {
@@ -213,31 +142,49 @@ struct MedicationsListView: View {
                                         .transition(.opacity.combined(with: .move(edge: .trailing)))
                                     }
                                 }
+                                
+                                // Space at bottom for better scrolling
+                                Spacer(minLength: 40)
                             }
-                            
-                            // Space at bottom for better scrolling
-                            Spacer(minLength: 40)
+                            .padding(.horizontal, horizontalInsets(for: UIScreen.main.bounds.width))
+                            .padding(.top, 10)
+                            .background(
+                                GeometryReader { geo in
+                                    Color.clear.preference(
+                                        key: ScrollOffsetPreferenceKey.self,
+                                        value: geo.frame(in: .global).minY
+                                    )
+                                }
+                            )
                         }
-                        .padding(.horizontal, horizontalInsets(for: UIScreen.main.bounds.width))
-                        .padding(.top, 10)
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear.preference(
-                                    key: ScrollOffsetPreferenceKey.self,
-                                    value: geo.frame(in: .global).minY
-                                )
-                            }
-                        )
-                    }
-                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                        scrolledOffset = -value
+                        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                            scrolledOffset = -value
+                        }
                     }
                 }
             }
+            
+            // Floating Add Button
+            Button(action: {
+                showingAddSheet = true
+            }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(Color(hex: "#404C42"))
+                    .frame(width: 50, height: 50)
+                    .background(Color(hex: "#C7C7BD"))
+                    .clipShape(Circle())
+                    .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
+            .buttonStyle(ScaleButtonStyle())
+            .accessibilityLabel("Add new medication")
         }
         .sheet(item: $showingLogSheetFor) { med in
             LogMedicationView(medicationToLog: med)
                 .environmentObject(store)
+                .preferredColorScheme(.dark)
         }
         .sheet(item: $selectedMedicationToEdit) { med in
             NavigationView {
@@ -245,10 +192,9 @@ struct MedicationsListView: View {
                     // The store is already updated
                 })
                 .environmentObject(store)
-                .navigationBarItems(leading: Button("Cancel") {
-                    selectedMedicationToEdit = nil
-                })
+                .navigationBarTitleDisplayMode(.inline)
             }
+            .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $showingAddSheet) {
             NavigationView {
@@ -261,6 +207,7 @@ struct MedicationsListView: View {
                         showingAddSheet = false
                     })
             }
+            .preferredColorScheme(.dark)
         }
     }
     
@@ -299,8 +246,6 @@ struct MedicationRow: View {
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var store: MedicationStore
     @State private var isPressed = false
-    @State private var isHovering = false
-    @State private var showGreenGlow = false
     
     // Check if the medication was taken today
     private var wasTakenToday: Bool {
@@ -324,7 +269,7 @@ struct MedicationRow: View {
             } else if minutes > -60 {
                 return "Past due"
             } else {
-                return "Missed"
+                return ""
             }
         } else if minutes < 30 {
             return "Soon"
@@ -351,203 +296,87 @@ struct MedicationRow: View {
             return .blue
         }
     }
-    
-    // Get gradient for button stroke
-    private var buttonStrokeStyle: AnyShapeStyle {
-        if wasTakenToday {
-            return Color.green.opacity(0.3).anyShapeStyle()
-        } else {
-            return LinearGradient(
-                colors: [
-                    Color.white.opacity(0.5),
-                    Color.white.opacity(0.2)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ).anyShapeStyle()
-        }
-    }
 
     var body: some View {
-        let mainContent = VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(medication.name)
-                        .font(.system(size: horizontalSizeClass == .regular ? 20 : 18, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
-                    
-                    Text("\(medication.dosage) - \(medication.frequency)")
-                        .font(.system(size: horizontalSizeClass == .regular ? 15 : 14))
-                        .foregroundColor(.white.opacity(0.8))
-                }
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(medication.name)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
                 
-                Spacer()
+                Text("\(medication.dosage) - \(medication.frequency)")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                 
-                // Time indicator with status
-                VStack(alignment: .trailing, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Text(timeStatus)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(timeStatusColor)
-                        
-                        Circle()
-                            .fill(timeStatusColor)
-                            .frame(width: 6, height: 6)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(timeStatusColor.opacity(0.15))
-                    )
-                    
-                    Text("\(medication.timeToTake, style: .time)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.8))
+                if let notes = medication.notes, !notes.isEmpty {
+                    Text(notes)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
             }
             
-            // Divider line
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [.white.opacity(0.15), .white.opacity(0.05), .white.opacity(0.15)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .frame(height: 1)
+            Spacer()
             
-            // Second row with notes and buttons
-            HStack(alignment: .center) {
-                if let notes = medication.notes, !notes.isEmpty {
-                    HStack(spacing: 4) {
-                        Image(systemName: "note.text")
-                            .font(.system(size: 12))
-                            .foregroundColor(.white.opacity(0.6))
-                        
-                        Text(notes)
-                            .font(.system(size: 13))
-                            .foregroundColor(.white.opacity(0.7))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
+            VStack(alignment: .trailing, spacing: 6) {
+                Text(timeStatus)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(timeStatusColor)
+                
+                HStack(spacing: 4) {
+                    Button(action: {
+                        HapticManager.shared.softImpact()
+                        onEditTap()
+                    }) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                            .padding(6)
                     }
-                } else {
-                    Spacer()
-                }
-                
-                Spacer()
-                
-                // Edit button with improved visual
-                Button {
-                    onEditTap()
-                } label: {
-                    Image(systemName: "pencil.circle.fill")
-                        .font(.system(size: horizontalSizeClass == .regular ? 20 : 18))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.white.opacity(0.9))
-                        .padding(8)
-                        .contentShape(Circle())
-                }
-                .buttonStyle(ScaleButtonStyle())
-                .accessibilityLabel("Edit \(medication.name)")
-                
-                // Take medication button with enhanced visual feedback
-                let takenText = wasTakenToday ? "Taken" : "Take"
-                
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        isPressed = true
-                        
-                        // Reset the press state after a short delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                            isPressed = false
-                            
-                            // Only show the green glow effect if the medication wasn't already taken
-                            if !wasTakenToday {
-                                // Trigger the green glow effect
-                                withAnimation(.easeInOut(duration: 0.6)) {
-                                    showGreenGlow = true
-                                }
-                                
-                                // Reset the glow after a while
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                    withAnimation(.easeOut(duration: 0.8)) {
-                                        showGreenGlow = false
-                                    }
-                                }
-                            }
-                            
-                            onLogTap()
+                    
+                    Button(action: {
+                        if !wasTakenToday {
+                            HapticManager.shared.successNotification()
+                        } else {
+                            HapticManager.shared.lightImpact()
                         }
+                        onLogTap()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: wasTakenToday ? "checkmark" : "circle")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                            
+                            Text(wasTakenToday ? "Taken" : "Take")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                        }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(
+                            wasTakenToday ?
+                                Color(hex: "#C7C7BD").opacity(0.1) :
+                                Color.black.opacity(0.3)
+                        )
+                        .cornerRadius(4)
                     }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: wasTakenToday ? "checkmark.circle.fill" : "circle.dotted")
-                            .font(.system(size: horizontalSizeClass == .regular ? 22 : 18, weight: .semibold))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(wasTakenToday ? Color.green : Color.white.opacity(0.9))
-                        
-                        Text(takenText)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(wasTakenToday ? Color.green : Color.white.opacity(0.9))
-                    }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(
-                        Capsule()
-                            .fill(wasTakenToday ? Color.green.opacity(0.2) : Color.white.opacity(0.1))
-                            .overlay(
-                                Capsule()
-                                    .stroke(buttonStrokeStyle, lineWidth: 1)
-                            )
-                    )
-                    .scaleEffect(isPressed ? 0.95 : 1)
                 }
-                .buttonStyle(ScaleButtonStyle())
-                .contentShape(Capsule())
-                .accessibilityLabel(wasTakenToday ? "\(medication.name) already taken today" : "Take \(medication.name)")
             }
         }
-        .padding(16)
-        
-        // Create the final view with all the modifiers
-        return mainContent
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial.opacity(isHovering ? 0.6 : 0.5))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.5),
-                                Color.white.opacity(0.1)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.green, lineWidth: showGreenGlow ? 2 : 0)
-                    .shadow(color: Color.green.opacity(showGreenGlow ? 0.7 : 0), radius: 8, x: 0, y: 0)
-                    .scaleEffect(showGreenGlow ? 1.03 : 1)
-            )
-            .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
-            .shadow(color: Color.green.opacity(showGreenGlow ? 0.5 : 0), radius: 15, x: 0, y: 0)
-            .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isHovering = hovering
-                }
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(formatTimeAccessible(medication.timeToTake))")
-            .accessibilityHint(wasTakenToday ? "Already taken today" : "Double tap to log as taken")
+        .padding(12)
+        .background(Color.black.opacity(0.3))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(
+                    wasTakenToday ? Color(hex: "#C7C7BD").opacity(0.3) : Color(hex: "#C7C7BD").opacity(0.1),
+                    lineWidth: 0.5
+                )
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(formatTimeAccessible(medication.timeToTake))")
+        .accessibilityHint(wasTakenToday ? "Already taken today" : "Double tap to log as taken")
     }
     
     // Format time for accessibility

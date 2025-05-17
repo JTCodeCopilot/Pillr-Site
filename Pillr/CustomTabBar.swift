@@ -6,52 +6,60 @@ struct CustomTabBar: View {
     @Namespace private var animation
     
     var body: some View {
-        ZStack(alignment: .bottom) {
-            HStack(spacing: horizontalSizeClass == .compact ? 30 : 45) {
-                TabBarButton(
-                    imageName: "pills.fill",
-                    title: "Medications",
-                    isSelected: selectedTab == .medications,
-                    namespace: animation
-                ) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        selectedTab = .medications
-                    }
-                }
-                
-                TabBarButton(
-                    imageName: "list.bullet.clipboard.fill",
-                    title: "Log",
-                    isSelected: selectedTab == .log,
-                    namespace: animation
-                ) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        selectedTab = .log
-                    }
-                }
-                
-                TabBarButton(
-                    imageName: "arrow.left.arrow.right.circle.fill",
-                    title: "Interactions",
-                    isSelected: selectedTab == .interactions,
-                    namespace: animation
-                ) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        selectedTab = .interactions
-                    }
-                }
-                
-                TabBarButton(
-                    imageName: "plus.circle.fill",
-                    title: "Add",
-                    isSelected: selectedTab == .add,
-                    namespace: animation
-                ) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        selectedTab = .add
-                    }
+        HStack(spacing: horizontalSizeClass == .compact ? 15 : 25) {
+            Spacer()
+            
+            TabBarButton(
+                imageName: "pills",
+                title: "Medications",
+                isSelected: selectedTab == .medications,
+                namespace: animation
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedTab = .medications
                 }
             }
+            
+            Spacer()
+            
+            TabBarButton(
+                imageName: "list.bullet",
+                title: "Log",
+                isSelected: selectedTab == .log,
+                namespace: animation
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedTab = .log
+                }
+            }
+            
+            Spacer()
+            
+            TabBarButton(
+                imageName: "arrow.left.arrow.right",
+                title: "Interactions",
+                isSelected: selectedTab == .interactions,
+                namespace: animation
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedTab = .interactions
+                }
+            }
+            
+            Spacer()
+            
+            TabBarButton(
+                imageName: "gearshape",
+                title: "Settings",
+                isSelected: selectedTab == .settings,
+                namespace: animation
+            ) {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedTab = .settings
+                }
+            }
+            
+            Spacer()
         }
     }
 } 

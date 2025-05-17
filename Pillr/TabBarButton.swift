@@ -6,39 +6,30 @@ struct TabBarButton: View {
     let isSelected: Bool
     let namespace: Namespace.ID
     let action: () -> Void
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
+                // Simplified icon
                 Image(systemName: imageName)
-                    .font(.system(size: iconSize, weight: isSelected ? .bold : .regular))
-                    .imageScale(.medium)
-                Text(title)
-                    .font(.caption)
+                    .font(.system(size: 18, weight: isSelected ? .medium : .regular))
+                    .foregroundColor(isSelected ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.6))
                 
+                // Minimal text - only show if selected
                 if isSelected {
-                    Color.pillrAccent
-                        .frame(height: 3)
-                        .clipShape(Capsule())
-                        .matchedGeometryEffect(id: "tab_indicator", in: namespace)
-                        .padding(.horizontal, 8)
-                } else {
-                    Color.clear
-                        .frame(height: 3)
-                        .padding(.horizontal, 8)
+                    Text(title)
+                        .font(.caption2)
+                        .foregroundColor(isSelected ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.6))
                 }
             }
-            .foregroundColor(isSelected ? Color.pillrAccent : .white.opacity(0.7))
-            .padding(.horizontal)
-            .animation(.easeInOut(duration: 0.3), value: isSelected)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(title) tab")
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         }
-    }
-    
-    // Dynamic icon sizing
-    private var iconSize: CGFloat {
-        22
+        .buttonStyle(HapticButtonStyle(style: .soft))
     }
 } 

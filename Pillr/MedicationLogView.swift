@@ -16,17 +16,40 @@ struct MedicationLogView: View {
         NavigationView {
             GeometryReader { geometry in
                 ZStack {
-                    // Background color - match the exact gradient from ContentView
-                    LinearGradient.pillrBackground
-                        .ignoresSafeArea()
+                    // Background color
+                    Color(hex: "#404C42")
+                        .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
                     
                     List {
                         if store.logs.isEmpty {
-                            Text("No medications logged yet.")
-                                .foregroundColor(.white.opacity(0.7))
-                                .listRowBackground(Color.clear)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.vertical, 50)
+                            // Minimal empty state
+                            VStack(spacing: 20) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    .padding(.bottom, 10)
+                                
+                                Text("No medication logs yet")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                
+                                Text("When you log a medication, it will appear here")
+                                    .font(.system(size: 14))
+                                    .multilineTextAlignment(.center)
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .padding(.horizontal)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(30)
+                            .background(Color.black.opacity(0.12))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(hex: "#C7C7BD").opacity(0.08), lineWidth: 0.8)
+                            )
+                            .padding(.horizontal, 20)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 30, leading: 0, bottom: 30, trailing: 0))
                         } else {
                             ForEach(store.logs) { logEntry in
                                 LogEntryRow(logEntry: logEntry)
@@ -44,8 +67,8 @@ struct MedicationLogView: View {
                     .padding(.horizontal, horizontalInsets(for: geometry))
                 }
             }
-            .background(LinearGradient.pillrBackground.ignoresSafeArea())
         }
+        .background(Color.clear)
         .navigationViewStyle(.stack)
     }
     
@@ -64,61 +87,49 @@ struct LogEntryRow: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(logEntry.medicationName)
-                .font(horizontalSizeClass == .regular ? .title3 : .headline)
-                .foregroundColor(.white)
-                .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Color(hex: "#C7C7BD"))
                 
             HStack {
-                Image(systemName: "clock.fill")
-                    .font(.system(size: horizontalSizeClass == .regular ? 14 : 12))
-                    .foregroundColor(.white.opacity(0.6))
+                Image(systemName: "clock")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
                 
                 Text("\(logEntry.takenAt, format: .dateTime)")
-                    .font(horizontalSizeClass == .regular ? .body : .subheadline)
-                    .foregroundColor(.white.opacity(0.8))
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
             }
 
             if let notes = logEntry.notes, !notes.isEmpty {
-                HStack(alignment: .top, spacing: 4) {
-                    Image(systemName: "note.text")
-                        .font(.system(size: horizontalSizeClass == .regular ? 14 : 12))
-                        .foregroundColor(.white.opacity(0.6))
-                        .padding(.top, 2)
+                Divider()
+                    .background(Color(hex: "#C7C7BD").opacity(0.1))
                     
-                    Text(notes)
-                        .font(horizontalSizeClass == .regular ? .subheadline : .caption)
-                        .italic()
-                        .foregroundColor(.white.opacity(0.6))
-                        .lineLimit(3)
-                }
+                Text(notes)
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                    .lineLimit(2)
             }
             
-            // Add visual status indicator
+            // Minimal status indicator
             HStack {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: horizontalSizeClass == .regular ? 14 : 12))
-                    .foregroundColor(.green.opacity(0.8))
+                Image(systemName: "checkmark")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
                 
-                Text("Completed")
-                    .font(horizontalSizeClass == .regular ? .footnote : .caption2)
-                    .foregroundColor(.green.opacity(0.8))
+                Text("Taken")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
             }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
-            .background(Color.green.opacity(0.1))
-            .cornerRadius(12)
+            .padding(.top, 4)
         }
-        .padding(horizontalSizeClass == .regular ? 16 : 12)
-        .gyroGlassCardStyle(
-            cornerRadius: 20, 
-            material: .ultraThinMaterial,
-            borderColor: Color.white.opacity(0.3),
-            borderWidth: 1.2,
-            shadowOpacity: 0.18,
-            shadowRadius: 10,
-            shineOpacity: 0.6
+        .padding(12)
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.08), lineWidth: 0.8)
         )
     }
 }

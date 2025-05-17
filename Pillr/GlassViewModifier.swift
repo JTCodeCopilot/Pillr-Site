@@ -37,14 +37,14 @@ class MotionManager: ObservableObject {
 struct GyroGlassViewModifier: ViewModifier {
     var cornerRadius: CGFloat = 20
     var frostedMaterial: Material = .ultraThinMaterial
-    var borderColor: Color = Color.white.opacity(0.2)
-    var borderWidth: CGFloat = 1.5
+    var borderColor: Color = Color.white.opacity(0.08)  // Even more subtle
+    var borderWidth: CGFloat = 0.8  // Thinner border
     var adaptivePadding: Bool = true
-    var shadowOpacity: Double = 0.15
-    var shadowRadius: CGFloat = 12
-    var shineOpacity: Double = 0.5
-    var shineIntensity: Double = 1.0
-    var shimmerSpeed: Double = 1.0
+    var shadowOpacity: Double = 0.08  // Reduced shadow
+    var shadowRadius: CGFloat = 8
+    var shineOpacity: Double = 0.25  // Reduced shine
+    var shineIntensity: Double = 0.5  // Reduced intensity
+    var shimmerSpeed: Double = 0.7
     
     @StateObject private var motionManager = MotionManager.shared
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -84,10 +84,10 @@ struct GyroGlassViewModifier: ViewModifier {
                                         .strokeBorder(
                                             LinearGradient(
                                                 colors: [
-                                                    Color(hex: colorScheme == .dark ? "#A4C8FF" : "#E0F0FF").opacity(shineOpacity * 0.4 * shineIntensity),
-                                                    Color(hex: colorScheme == .dark ? "#E6F7FF" : "#A0D8FF").opacity(shineOpacity * 0.9 * normalizedRoll * shineIntensity),
-                                                    Color(hex: colorScheme == .dark ? "#CCE0FF" : "#B0E0FF").opacity(shineOpacity * 0.3 * shineIntensity),
-                                                    Color(hex: colorScheme == .dark ? "#F0FAFF" : "#C4E5FF").opacity(shineOpacity * 0.8 * normalizedPitch * shineIntensity)
+                                                    Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(shineOpacity * 0.15 * shineIntensity),
+                                                    Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(shineOpacity * 0.3 * normalizedRoll * shineIntensity),
+                                                    Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(shineOpacity * 0.1 * shineIntensity),
+                                                    Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(shineOpacity * 0.2 * normalizedPitch * shineIntensity)
                                                 ],
                                                 startPoint: UnitPoint(x: 0.2 + (normalizedRoll * 0.6), y: 0.1 + (normalizedPitch * 0.2)),
                                                 endPoint: UnitPoint(x: 0.8 - (normalizedPitch * 0.3), y: 0.9 - (normalizedRoll * 0.3))
@@ -101,9 +101,9 @@ struct GyroGlassViewModifier: ViewModifier {
                                             AngularGradient(
                                                 gradient: Gradient(colors: [
                                                     Color.clear,
-                                                    Color.white.opacity(0.04 * shineIntensity * (1 + normalizedRoll)),
-                                                    Color.white.opacity(0.15 * shineIntensity * (1 + normalizedPitch)),
-                                                    Color.white.opacity(0.04 * shineIntensity * (1 + normalizedRoll)),
+                                                    Color.white.opacity(0.01 * shineIntensity * (1 + normalizedRoll)),
+                                                    Color.white.opacity(0.04 * shineIntensity * (1 + normalizedPitch)),
+                                                    Color.white.opacity(0.01 * shineIntensity * (1 + normalizedRoll)),
                                                     Color.clear
                                                 ]),
                                                 center: UnitPoint(x: 0.3 + normalizedRoll * 0.4, y: 0.3 + normalizedPitch * 0.4),
@@ -142,7 +142,7 @@ struct GyroGlassViewModifier: ViewModifier {
                         lineWidth: borderWidth
                     )
             )
-            .shadow(color: Color(hex: colorScheme == .dark ? "#F4EBD0" : "#FFFFFF").opacity(0.15), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(0.15), radius: 2, x: 0, y: 1) // Inner shadow at top
             .shadow(color: Color.black.opacity(shadowOpacity), radius: 2, x: 0, y: -1) // Inner shadow at bottom
     }
 }
@@ -150,11 +150,11 @@ struct GyroGlassViewModifier: ViewModifier {
 struct GlassViewModifier: ViewModifier {
     var cornerRadius: CGFloat = 20
     var frostedMaterial: Material = .ultraThinMaterial
-    var borderColor: Color = Color.white.opacity(0.2)
-    var borderWidth: CGFloat = 1.5
+    var borderColor: Color = Color.white.opacity(0.08)  // Match gyro version
+    var borderWidth: CGFloat = 0.8  // Match gyro version
     var adaptivePadding: Bool = true
-    var shadowOpacity: Double = 0.15
-    var shadowRadius: CGFloat = 12
+    var shadowOpacity: Double = 0.08  // Match gyro version
+    var shadowRadius: CGFloat = 8  // Match gyro version
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
@@ -169,8 +169,8 @@ struct GlassViewModifier: ViewModifier {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                borderColor.opacity(0.6),
-                                borderColor.opacity(0.3)
+                                borderColor.opacity(0.3),
+                                borderColor.opacity(0.15)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -178,7 +178,7 @@ struct GlassViewModifier: ViewModifier {
                         lineWidth: borderWidth
                     )
             )
-            .shadow(color: Color.white.opacity(colorScheme == .dark ? 0.15 : 0.1), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(0.05), radius: 2, x: 0, y: 1) // Inner shadow at top
             .shadow(color: Color.black.opacity(shadowOpacity), radius: 2, x: 0, y: -1) // Inner shadow at bottom
     }
 }
@@ -246,28 +246,28 @@ struct GlassTextFieldStyle: TextFieldStyle {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(Material.ultraThinMaterial)
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(red: 0.18, green: 0.26, blue: 0.43).opacity(colorScheme == .dark ? 0.1 : 0.05))
+                        .fill(Color(red: 0.05, green: 0.05, blue: 0.05).opacity(0.03))
                 }
             )
             .cornerRadius(10)
             .foregroundColor(colorScheme == .dark ? .white : .primary)
-            .accentColor(.cyan) // Cursor color
+            .accentColor(Color(hex: "#D8B4F8").opacity(0.8)) // Cursor color
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(colorScheme == .dark ? 0.5 : 0.3),
-                                Color.white.opacity(colorScheme == .dark ? 0.2 : 0.1)
+                                Color.white.opacity(colorScheme == .dark ? 0.2 : 0.15),
+                                Color.white.opacity(colorScheme == .dark ? 0.08 : 0.03)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 1
+                        lineWidth: 0.8
                     )
             )
-            .shadow(color: Color.white.opacity(colorScheme == .dark ? 0.15 : 0.05), radius: 2, x: 0, y: 1) // Inner shadow at top
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.12 : 0.05), radius: 2, x: 0, y: -1) // Inner shadow at bottom
+            .shadow(color: Color(hex: "#D8B4F8").opacity(0.04), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: -1) // Inner shadow at bottom
             .font(horizontalSizeClass == .regular ? .body : .callout)
     }
 }
@@ -284,7 +284,7 @@ struct GlassTextEditorStyle: ViewModifier {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(Material.ultraThinMaterial)
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(red: 0.18, green: 0.26, blue: 0.43).opacity(colorScheme == .dark ? 0.1 : 0.05))
+                        .fill(Color(red: 0.05, green: 0.05, blue: 0.05).opacity(0.03))
                 }
             )
             .cornerRadius(10)
@@ -294,17 +294,17 @@ struct GlassTextEditorStyle: ViewModifier {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(colorScheme == .dark ? 0.5 : 0.3),
-                                Color.white.opacity(colorScheme == .dark ? 0.2 : 0.1)
+                                Color.white.opacity(colorScheme == .dark ? 0.2 : 0.15),
+                                Color.white.opacity(colorScheme == .dark ? 0.08 : 0.03)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 1
+                        lineWidth: 0.8
                     )
             )
-            .shadow(color: Color.white.opacity(colorScheme == .dark ? 0.15 : 0.05), radius: 2, x: 0, y: 1) // Inner shadow at top
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.12 : 0.05), radius: 2, x: 0, y: -1) // Inner shadow at bottom
+            .shadow(color: Color(hex: "#D8B4F8").opacity(0.04), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: -1) // Inner shadow at bottom
     }
 }
 
