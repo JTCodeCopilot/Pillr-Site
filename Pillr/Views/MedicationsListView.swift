@@ -312,43 +312,33 @@ struct MedicationRow: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(timeStatusColor)
                     
-                    HStack(spacing: 4) {
-                        Button(action: {
-                            HapticManager.shared.softImpact()
-                            onEditTap()
-                        }) {
-                            Image(systemName: "pencil")
+                    // Removed chevron/divider VStack here
+                    
+                    Button(action: {
+                        if !wasTakenToday {
+                            HapticManager.shared.successNotification()
+                        } else {
+                            HapticManager.shared.lightImpact()
+                        }
+                        onLogTap()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: wasTakenToday ? "checkmark" : "circle")
                                 .font(.system(size: 14))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                                .padding(6)
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                            
+                            Text(wasTakenToday ? "Taken" : "Take")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
                         }
-                        
-                        Button(action: {
-                            if !wasTakenToday {
-                                HapticManager.shared.successNotification()
-                            } else {
-                                HapticManager.shared.lightImpact()
-                            }
-                            onLogTap()
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: wasTakenToday ? "checkmark" : "circle")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                
-                                Text(wasTakenToday ? "Taken" : "Take")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                            }
-                            .padding(.vertical, 4)
-                            .padding(.horizontal, 8)
-                            .background(
-                                wasTakenToday ?
-                                    Color(hex: "#C7C7BD").opacity(0.1) :
-                                    Color.black.opacity(0.3)
-                            )
-                            .cornerRadius(4)
-                        }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(
+                            wasTakenToday ?
+                                Color(hex: "#C7C7BD").opacity(0.1) :
+                                Color.black.opacity(0.3)
+                        )
+                        .cornerRadius(4)
                     }
                 }
             }
@@ -359,30 +349,6 @@ struct MedicationRow: View {
                     showDetails.toggle()
                 }
             }
-            .overlay(
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Image(systemName: showDetails ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 15))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                            .padding(8)
-                    }
-                }
-            )
-            .overlay(
-                HStack {
-                    Spacer()
-                    Text(showDetails ? "Tap to collapse" : "Tap for details")
-                        .font(.system(size: 10))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(1))
-                        .padding(.trailing, 24)
-                        .padding(.bottom, 12)
-                }
-                .padding(.bottom, 5),
-                alignment: .bottom
-            )
             
             if showDetails {
                 VStack(alignment: .leading, spacing: 10) {
@@ -471,6 +437,12 @@ struct MedicationRow: View {
                     lineWidth: 0.5
                 )
         )
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: showDetails ? "chevron.up" : "chevron.down")
+                .font(.system(size: 14))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .padding([.top, .trailing], 8)
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(formatTimeAccessible(medication.timeToTake))")
         .accessibilityHint(wasTakenToday ? "Already taken today. Double tap to expand details." : "Double tap to log as taken or expand details.")
