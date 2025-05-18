@@ -7,7 +7,8 @@ struct MedicationSearchResult: Identifiable {
     var description: String
 }
 
-class MedicationSearchService: ObservableObject {
+@MainActor
+final class MedicationSearchService: ObservableObject {
     @Published var isLoading = false
     @Published var searchResults: [MedicationSearchResult] = []
     @Published var error: String?
@@ -18,34 +19,26 @@ class MedicationSearchService: ObservableObject {
     
     func searchMedications(query: String) async {
         guard !query.isEmpty else {
-            DispatchQueue.main.async {
-                self.searchResults = []
-            }
+            searchResults = []
             return
         }
         
         // Use the OpenAIService to check for API key availability
         guard openAIService.hasAPIKey() else {
-            DispatchQueue.main.async {
-                self.error = "This feature requires premium access. Please enable premium mode to continue."
-                self.isLoading = false
-            }
+            error = "This feature requires premium access. Please enable premium mode to continue."
+            isLoading = false
             return
         }
         
         let activeKey = openAIService.getActiveAPIKey()
         guard let apiKey = activeKey, !apiKey.isEmpty else {
-            DispatchQueue.main.async {
-                self.error = "Premium access is required. Please enable premium mode to continue."
-                self.isLoading = false
-            }
+            error = "Premium access is required. Please enable premium mode to continue."
+            isLoading = false
             return
         }
         
-        DispatchQueue.main.async {
-            self.isLoading = true
-            self.error = nil
-        }
+        isLoading = true
+        error = nil
         
         let systemPrompt = """
         You are a helpful medical assistant that helps users identify medications based on their search. 
@@ -119,21 +112,17 @@ class MedicationSearchService: ObservableObject {
             
             let decodedResults = try decoder.decode([MedicationResult].self, from: medicationsData)
             
-            DispatchQueue.main.async {
-                self.searchResults = decodedResults.map { result in
-                    MedicationSearchResult(
-                        name: result.name.trimmingCharacters(in: .whitespacesAndNewlines),
-                        description: result.description.trimmingCharacters(in: .whitespacesAndNewlines)
-                    )
-                }
-                self.isLoading = false
+            searchResults = decodedResults.map { result in
+                MedicationSearchResult(
+                    name: result.name.trimmingCharacters(in: .whitespacesAndNewlines),
+                    description: result.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
             }
+            isLoading = false
             
         } catch {
-            DispatchQueue.main.async {
-                self.error = "Error: \(error.localizedDescription)"
-                self.isLoading = false
-            }
+            self.error = "Error: \(error.localizedDescription)"
+            isLoading = false
         }
     }
 }

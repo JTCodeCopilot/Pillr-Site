@@ -73,8 +73,6 @@ struct GyroGlassViewModifier: ViewModifier {
                                 let normalizedPitch = min(max(((motionManager.pitch / .pi * 3) + 0.5) * 0.8, 0), 1)
                                 
                                 // Calculate shimmer direction based on device motion
-                                let dynamicShimmerX = normalizedRoll * 0.6
-                                let dynamicShimmerY = normalizedPitch * 0.6
                                 let gyroShimmerOffset = (shimmerOffset + (normalizedRoll + normalizedPitch) * 10).truncatingRemainder(dividingBy: 360)
                                 
                                 // Main highlight - adapts to color scheme

@@ -359,7 +359,7 @@ struct AddMedicationView: View {
                         }
                         .padding(.horizontal, 16)
                     }
-                    .onChange(of: focusedField) { field in
+                    .onChange(of: focusedField) { _, field in
                         if let field = field {
                             withAnimation {
                                 scrollProxy.scrollTo(field, anchor: .top)

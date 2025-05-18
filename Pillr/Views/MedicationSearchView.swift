@@ -47,7 +47,7 @@ struct MedicationSearchView: View {
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
                     .font(.system(size: 16))
-                    .onChange(of: searchQuery) { newValue in
+                    .onChange(of: searchQuery) { _, newValue in
                         // Debounce the search to avoid too many API calls
                         searchTask?.cancel()
                         guard !newValue.isEmpty else {

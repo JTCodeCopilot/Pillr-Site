@@ -260,11 +260,11 @@ struct EditMedicationView: View {
                         .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 10)
                     }
                     .padding(.horizontal, 16)
-                    .onChange(of: focusedField) { field in
-                        if let field = field {
-                            withAnimation {
-                                scrollProxy.scrollTo(field, anchor: .top)
-                            }
+                }
+                .onChange(of: focusedField) { _, field in
+                    if let field = field {
+                        withAnimation {
+                            scrollProxy.scrollTo(field, anchor: .top)
                         }
                     }
                 }

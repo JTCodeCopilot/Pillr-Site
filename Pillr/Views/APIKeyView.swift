@@ -35,7 +35,7 @@ struct APIKeyView: View {
                                 Toggle("", isOn: $openAIService.isPremiumMode)
                                     .labelsHidden()
                                     .toggleStyle(SwitchToggleStyle(tint: Color.pillrAccent))
-                                    .onChange(of: openAIService.isPremiumMode) { newValue in
+                                    .onChange(of: openAIService.isPremiumMode) { _, newValue in
                                         if newValue {
                                             openAIService.enablePremiumMode()
                                             alertMessage = "Premium mode enabled! You can now use the built-in API key."

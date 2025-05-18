@@ -247,7 +247,7 @@ struct HapticButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .opacity(configuration.isPressed ? 0.9 : 1)
             .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
-            .onChange(of: configuration.isPressed) { newValue in
+            .onChange(of: configuration.isPressed) { _, newValue in
                 if newValue {
                     switch style {
                     case .light:
