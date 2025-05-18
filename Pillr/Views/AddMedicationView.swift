@@ -77,9 +77,11 @@ struct AddMedicationView: View {
                                                 .font(.system(size: 14))
                                             Text("Search")
                                                 .font(.system(size: 14, weight: .medium))
-                                            Image(systemName: "star.fill")
-                                                .font(.system(size: 8))
-                                                .foregroundColor(.yellow)
+                                            if !OpenAIService.shared.isPremiumMode {
+                                                Image(systemName: "star.fill")
+                                                    .font(.system(size: 8))
+                                                    .foregroundColor(.yellow)
+                                            }
                                         }
                                         .foregroundColor(Color(hex: "#C7C7BD"))
                                         .padding(.horizontal, 8)
@@ -135,7 +137,7 @@ struct AddMedicationView: View {
                                             Button(freq) {
                                                 self.frequency = freq
                                                 setupReminderTimesForFrequency(freq)
-                                                focusedField = .notes
+                                                // Don't automatically jump to notes
                                             }
                                         }
                                     } label: {
@@ -486,7 +488,7 @@ struct AddMedicationView: View {
         switch currentField {
         case .name: focusedField = .dosage
         case .dosage: focusedField = .frequency
-        case .frequency: focusedField = .notes
+        case .frequency: focusedField = nil // Don't auto-jump to notes
         case .notes:
             if trackPillCount { focusedField = .pillCount }
             else { focusedField = nil }
@@ -579,7 +581,7 @@ struct AddMedicationView: View {
                         switch field {
                         case .name: focusedField = .dosage
                         case .dosage: focusedField = .frequency
-                        case .frequency: focusedField = .notes
+                        case .frequency: focusedField = nil // Don't auto-jump to notes
                         case .notes:
                             if trackPillCount { focusedField = .pillCount }
                             else { focusedField = nil }

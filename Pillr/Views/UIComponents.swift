@@ -14,11 +14,13 @@ struct InteractionHeaderView: View {
             
             Spacer()
             
-            Button(action: onApiKeyTap) {
-                Image(systemName: isPremiumMode ? "star" : "key")
-                    .font(.system(size: 16))
-                    .foregroundColor(isPremiumMode ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.8))
-                    .padding(8)
+            if !isPremiumMode {
+                Button(action: onApiKeyTap) {
+                    Image(systemName: "star")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        .padding(8)
+                }
             }
         }
         .padding(.horizontal)
@@ -83,7 +85,6 @@ struct InteractionSearchInputView: View {
 
 struct APIKeyWarningView: View {
     let onEnablePremium: () -> Void
-    let onSetApiKey: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -91,54 +92,36 @@ struct APIKeyWarningView: View {
                 Image(systemName: "exclamationmark.triangle")
                     .foregroundColor(Color(hex: "#C7C7BD"))
                 
-                Text("API Key Required")
+                Text("Premium Access Required")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(Color(hex: "#C7C7BD"))
                 
                 Spacer()
             }
             
-            Text("To use the medication interaction checker, either enable Premium Mode or provide your own OpenAI API key.")
+            Text("To use the medication interaction checker, please enable Premium Mode.")
                 .font(.system(size: 13))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
             
-            HStack {
-                Button(action: onEnablePremium) {
-                    HStack {
-                        Image(systemName: "star")
-                            .font(.system(size: 12))
-                        Text("Enable Premium")
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(Color(hex: "#C7C7BD"))
-                    .cornerRadius(4)
-                }
-                
-                Button(action: onSetApiKey) {
-                    Text("Set API Key")
+            Button(action: onEnablePremium) {
+                HStack {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 12))
+                    
+                    Text("Enable Premium Mode")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .background(Color.black.opacity(0.12))
-                        .cornerRadius(4)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color(hex: "#C7C7BD").opacity(0.08), lineWidth: 0.8)
-                        )
                 }
+                .foregroundColor(Color(hex: "#404C42"))
+                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .background(Color.pillrAccent)
+                .cornerRadius(8)
             }
+            .padding(.top, 8)
+            .buttonStyle(HapticButtonStyle(style: .soft))
         }
-        .padding(12)
-        .background(Color.black.opacity(0.12))
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.yellow.opacity(0.1), lineWidth: 0.8)
-        )
+        .padding()
+        .gyroGlassCardStyle(cornerRadius: 16, borderColor: Color.yellow.opacity(0.5))
         .padding(.horizontal)
     }
 }

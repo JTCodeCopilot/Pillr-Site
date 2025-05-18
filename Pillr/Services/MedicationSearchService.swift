@@ -27,7 +27,7 @@ class MedicationSearchService: ObservableObject {
         // Use the OpenAIService to check for API key availability
         guard openAIService.hasAPIKey() else {
             DispatchQueue.main.async {
-                self.error = "This feature requires premium or an API key. Please enable premium mode or add your OpenAI API key in settings."
+                self.error = "This feature requires premium access. Please enable premium mode to continue."
                 self.isLoading = false
             }
             return
@@ -36,7 +36,7 @@ class MedicationSearchService: ObservableObject {
         let activeKey = openAIService.getActiveAPIKey()
         guard let apiKey = activeKey, !apiKey.isEmpty else {
             DispatchQueue.main.async {
-                self.error = "API key not set. Please add your OpenAI API key in settings."
+                self.error = "Premium access is required. Please enable premium mode to continue."
                 self.isLoading = false
             }
             return

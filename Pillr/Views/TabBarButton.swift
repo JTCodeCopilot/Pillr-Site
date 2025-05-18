@@ -26,9 +26,9 @@ struct TabBarButton: View {
                 // Small indicator when selected
                 if isSelected {
                     Rectangle()
-                        .frame(width: 20, height: 2)
+                        .frame(width: 25, height: 2)
                         .cornerRadius(1)
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(1))
                         .matchedGeometryEffect(id: "tabIndicator", in: namespace)
                 } else {
                     Rectangle()

@@ -17,18 +17,29 @@ class MedicationStore: ObservableObject {
     
     // Shared instance for access from notification handlers
     static let shared = MedicationStore()
+    
+    // Static method to create a lightweight preview store
+    static func previewStore() -> MedicationStore {
+        let store = MedicationStore(isPreview: true)
+        store.addSampleData()
+        return store
+    }
 
     // Simple persistence using UserDefaults for demonstration
     // For a real app, use SwiftData or Core Data
     private let medicationsKey = "medicationsData"
     private let logsKey = "medicationLogsData"
+    private let isPreviewMode: Bool
 
-    init() {
-        loadMedications()
-        loadLogs()
-        // Add some sample data if empty
-        if medications.isEmpty {
-            addSampleData()
+    init(isPreview: Bool = false) {
+        self.isPreviewMode = isPreview
+        if !isPreview {
+            loadMedications()
+            loadLogs()
+            // Add some sample data if empty
+            if medications.isEmpty {
+                addSampleData()
+            }
         }
     }
     
@@ -283,7 +294,8 @@ class MedicationStore: ObservableObject {
         self.logs = []
     }
     
-    private func addSampleData() {
+    // Made public to support previews
+    func addSampleData() {
         // Morning and evening reminder times for Vitamin D
         let morningTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())!
         let eveningTime = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date())!
@@ -312,21 +324,24 @@ class MedicationStore: ObservableObject {
         
         medications = [sampleMed1, sampleMed2]
         
-        // Schedule notifications for sample data
-        for (index, medication) in medications.enumerated() {
-            var updatedMedication = medication
-            
-            if !medication.reminderTimes.isEmpty {
-                let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
-                updatedMedication.notificationIDs = notificationIDs
-            } else {
-                let notificationID = notificationManager.scheduleNotification(for: medication)
-                updatedMedication.notificationID = notificationID
+        // Schedule notifications for sample data only if not in preview mode
+        if !isPreviewMode {
+            // Schedule notifications for each medication
+            for (index, medication) in medications.enumerated() {
+                var updatedMedication = medication
+                
+                if !medication.reminderTimes.isEmpty {
+                    let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
+                    updatedMedication.notificationIDs = notificationIDs
+                } else {
+                    let notificationID = notificationManager.scheduleNotification(for: medication)
+                    updatedMedication.notificationID = notificationID
+                }
+                
+                medications[index] = updatedMedication
             }
             
-            medications[index] = updatedMedication
+            saveMedications()
         }
-        
-        saveMedications()
     }
 }

@@ -17,21 +17,6 @@ struct MedicationsListView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     
-    private var timeBasedGreeting: String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        
-        switch hour {
-        case 5..<12:
-            return "Good Morning"
-        case 12..<17:
-            return "Good Afternoon"
-        case 17..<24:
-            return "Good Evening"
-        default:
-            return "Good Evening"
-        }
-    }
-    
     private var groupedMedications: [(String, [Medication])] {
         let calendar = Calendar.current
         let now = Date()
@@ -120,10 +105,10 @@ struct MedicationsListView: View {
                         // Coordinated ScrollView that updates scroll position for parallax
                         ScrollView {
                             VStack(spacing: 24) {
-                                // Title with time-based greeting
+                                // Title
                                 HStack {
-                                    Text("\(timeBasedGreeting), \(userSettings.userName)")
-                                        .font(.system(size: 28, weight: .semibold))
+                                    Text("Taking")
+                                        .font(.system(size: 36, weight: .semibold))
                                         .foregroundColor(Color(hex: "#C7C7BD"))
                                     Spacer()
                                 }
@@ -171,13 +156,13 @@ struct MedicationsListView: View {
                 Image(systemName: "plus")
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(Color(hex: "#404C42"))
-                    .frame(width: 50, height: 50)
+                    .frame(width: 60, height: 90)
                     .background(Color(hex: "#C7C7BD"))
-                    .clipShape(Circle())
-                    .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
+                    .cornerRadius(50)
+                    .shadow(color: Color(hex: "#2F352F").opacity(1), radius: 5, x: 0, y: 0)
             }
             .padding(.trailing, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, 70)  // Increased bottom padding to move button higher
             .buttonStyle(ScaleButtonStyle())
             .accessibilityLabel("Add new medication")
         }
@@ -240,6 +225,7 @@ struct MedicationRow: View {
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var store: MedicationStore
     @State private var isPressed = false
+    @State private var showDetails = false
     
     // Check if the medication was taken today
     private var wasTakenToday: Bool {
@@ -290,75 +276,192 @@ struct MedicationRow: View {
             return .blue
         }
     }
+    
+    // Format time for display
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(medication.name)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(medication.name)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                    
+                    Text("\(medication.dosage) - \(medication.frequency)")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                    
+                    if let notes = medication.notes, !notes.isEmpty {
+                        Text(notes)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                }
                 
-                Text("\(medication.dosage) - \(medication.frequency)")
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                Spacer()
                 
-                if let notes = medication.notes, !notes.isEmpty {
-                    Text(notes)
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text(timeStatus)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(timeStatusColor)
+                    
+                    HStack(spacing: 4) {
+                        Button(action: {
+                            HapticManager.shared.softImpact()
+                            onEditTap()
+                        }) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                                .padding(6)
+                        }
+                        
+                        Button(action: {
+                            if !wasTakenToday {
+                                HapticManager.shared.successNotification()
+                            } else {
+                                HapticManager.shared.lightImpact()
+                            }
+                            onLogTap()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: wasTakenToday ? "checkmark" : "circle")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                
+                                Text(wasTakenToday ? "Taken" : "Take")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 8)
+                            .background(
+                                wasTakenToday ?
+                                    Color(hex: "#C7C7BD").opacity(0.1) :
+                                    Color.black.opacity(0.3)
+                            )
+                            .cornerRadius(4)
+                        }
+                    }
                 }
             }
-            
-            Spacer()
-            
-            VStack(alignment: .trailing, spacing: 6) {
-                Text(timeStatus)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(timeStatusColor)
-                
-                HStack(spacing: 4) {
-                    Button(action: {
-                        HapticManager.shared.softImpact()
-                        onEditTap()
-                    }) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                            .padding(6)
+            .padding(12)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showDetails.toggle()
+                }
+            }
+            .overlay(
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Image(systemName: showDetails ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .padding(8)
                     }
+                }
+            )
+            .overlay(
+                HStack {
+                    Spacer()
+                    Text(showDetails ? "Tap to collapse" : "Tap for details")
+                        .font(.system(size: 10))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(1))
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 12)
+                }
+                .padding(.bottom, 5),
+                alignment: .bottom
+            )
+            
+            if showDetails {
+                VStack(alignment: .leading, spacing: 10) {
+                    Divider()
+                        .background(Color(hex: "#C7C7BD").opacity(0.3))
+                        .padding(.horizontal, 12)
                     
-                    Button(action: {
-                        if !wasTakenToday {
-                            HapticManager.shared.successNotification()
-                        } else {
-                            HapticManager.shared.lightImpact()
-                        }
-                        onLogTap()
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: wasTakenToday ? "checkmark" : "circle")
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Section title
+                        Text("DETAILS")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .padding(.bottom, 4)
+                        
+                        // Primary time
+                        HStack {
+                            Text("Primary time:")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            
+                            Text(formatTime(medication.timeToTake))
                                 .font(.system(size: 14))
                                 .foregroundColor(Color(hex: "#C7C7BD"))
-                            
-                            Text(wasTakenToday ? "Taken" : "Take")
-                                .font(.system(size: 13))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
                         }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 8)
-                        .background(
-                            wasTakenToday ?
-                                Color(hex: "#C7C7BD").opacity(0.1) :
-                                Color.black.opacity(0.3)
-                        )
-                        .cornerRadius(4)
+                        
+                        // Additional times if any
+                        if !medication.reminderTimes.isEmpty {
+                            Text("Reminder times:")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            
+                            ForEach(0..<medication.reminderTimes.count, id: \.self) { index in
+                                Text("• \(formatTime(medication.reminderTimes[index]))")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .padding(.leading, 8)
+                            }
+                        }
+                        
+                        // Pill count information if available
+                        if let pillCount = medication.pillCount {
+                            HStack {
+                                Text("Remaining:")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                
+                                Text("\(pillCount) pills")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                            }
+                            
+                            HStack {
+                                Text("Per dose:")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                
+                                Text("\(medication.pillsPerDose) \(medication.pillsPerDose == 1 ? "pill" : "pills")")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                            }
+                            
+                            if let threshold = medication.refillThreshold {
+                                HStack {
+                                    Text("Refill alert:")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                
+                                    Text("When below \(threshold) pills")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                }
+                            }
+                        }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
                 }
             }
         }
-        .padding(12)
         .background(Color.black.opacity(0.3))
         .cornerRadius(8)
         .overlay(
@@ -370,7 +473,21 @@ struct MedicationRow: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(formatTimeAccessible(medication.timeToTake))")
-        .accessibilityHint(wasTakenToday ? "Already taken today" : "Double tap to log as taken")
+        .accessibilityHint(wasTakenToday ? "Already taken today. Double tap to expand details." : "Double tap to log as taken or expand details.")
+        .accessibilityAction(.default) {
+            if !wasTakenToday {
+                onLogTap()
+            } else {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showDetails.toggle()
+                }
+            }
+        }
+        .accessibilityAction(named: wasTakenToday ? "View Details" : "View Details Without Logging") {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showDetails.toggle()
+            }
+        }
     }
     
     // Format time for accessibility

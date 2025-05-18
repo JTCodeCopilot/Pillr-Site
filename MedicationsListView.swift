@@ -170,4 +170,21 @@ struct MedicationRow: View {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
-} 
+}
+
+#if DEBUG
+struct MedicationsListView_Previews: PreviewProvider {
+    static var previews: some View {
+        // Create a lightweight preview
+        let previewStore = MedicationStore.previewStore()
+        let previewSettings = UserSettings.previewSettings()
+        
+        MedicationsListView()
+            .environmentObject(previewStore)
+            .environmentObject(previewSettings)
+            .background(Color(hex: "#404C42"))
+            .preferredColorScheme(.dark)
+            .previewDisplayName("MedicationsListView")
+    }
+}
+#endif 

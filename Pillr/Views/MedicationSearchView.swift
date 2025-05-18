@@ -294,26 +294,28 @@ struct MedicationSearchView: View {
             }
             
             // Note about API usage
-            VStack(spacing: 6) {
-                HStack(spacing: 4) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.yellow)
+            if !OpenAIService.shared.isPremiumMode {
+                VStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.yellow)
+                        
+                        Text("Premium Feature")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    }
                     
-                    Text("Premium Feature")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    Text("Powered by OpenAI")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .padding(.bottom, 12)
                 }
-                
-                Text("Powered by OpenAI")
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
-                    .padding(.bottom, 12)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
+                .background(Color.black.opacity(0.2))
+                .padding(.top, 10)
             }
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity)
-            .background(Color.black.opacity(0.2))
-            .padding(.top, 10)
         }
         .background(Color(hex: "#404C42"))
         .onAppear {

@@ -2,7 +2,6 @@ import Foundation
 import SwiftUI
 
 class OpenAIService: ObservableObject {
-    private var apiKey: String?
     private let premiumApiKey = "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" // Replace with your actual API key
     @Published var isLoading = false
     @Published var error: String?
@@ -16,20 +15,12 @@ class OpenAIService: ObservableObject {
         self.isPremiumMode = UserDefaults.standard.bool(forKey: "isPremiumMode")
     }
     
-    func setAPIKey(_ key: String) {
-        self.apiKey = key
-    }
-    
     func hasAPIKey() -> Bool {
-        return isPremiumMode || (apiKey != nil && !apiKey!.isEmpty)
+        return isPremiumMode
     }
     
     func getActiveAPIKey() -> String? {
-        return isPremiumMode ? premiumApiKey : apiKey
-    }
-    
-    func clearAPIKey() {
-        self.apiKey = nil
+        return isPremiumMode ? premiumApiKey : nil
     }
     
     func enablePremiumMode() {

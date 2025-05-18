@@ -29,11 +29,6 @@ struct InteractionSearchView: View {
                             onApiKeyTap: { showingAPIKeySheet = true }
                         )
                         
-                        // Premium badge if active
-                        if openAIService.isPremiumMode {
-                            PremiumBadgeView()
-                        }
-                        
                         // Search inputs
                         InteractionSearchInputView(
                             drugA: $drugA,
@@ -45,8 +40,7 @@ struct InteractionSearchView: View {
                         // API key warning (Only show if not in premium mode and no key set)
                         if !openAIService.hasAPIKey() {
                             APIKeyWarningView(
-                                onEnablePremium: { openAIService.enablePremiumMode() },
-                                onSetApiKey: { showingAPIKeySheet = true }
+                                onEnablePremium: { openAIService.enablePremiumMode() }
                             )
                         }
                         
@@ -88,7 +82,7 @@ struct InteractionSearchView: View {
     private func searchInteraction() {
         guard !drugA.isEmpty && !drugB.isEmpty else { return }
         guard openAIService.hasAPIKey() else {
-            errorMessage = "Please set an API key first"
+            errorMessage = "Premium access required to use this feature"
             showingError = true
             return
         }

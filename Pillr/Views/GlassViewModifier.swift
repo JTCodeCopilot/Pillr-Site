@@ -313,3 +313,64 @@ extension View {
         self.modifier(GlassTextEditorStyle())
     }
 }
+
+// Simplified version for previews
+struct PreviewGlassViewModifier: ViewModifier {
+    var cornerRadius: CGFloat = 20
+    var frostedMaterial: Material = .ultraThinMaterial
+    var borderColor: Color = Color.white.opacity(0.08)
+    var borderWidth: CGFloat = 0.8
+    
+    func body(content: Content) -> some View {
+        content
+            .padding(12)
+            .background(frostedMaterial)
+            .cornerRadius(cornerRadius)
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(borderColor, lineWidth: borderWidth)
+            )
+    }
+}
+
+extension View {
+    // Add a preview-friendly glass style
+    func previewGlassStyle(
+        cornerRadius: CGFloat = 20,
+        material: Material = .ultraThinMaterial
+    ) -> some View {
+        self.modifier(PreviewGlassViewModifier(
+            cornerRadius: cornerRadius,
+            frostedMaterial: material
+        ))
+    }
+    
+    // Add check for preview environment
+    @ViewBuilder
+    func optimizedGlassCardStyle(
+        cornerRadius: CGFloat = 20,
+        material: Material = .ultraThinMaterial,
+        borderColor: Color = Color.white.opacity(0.2),
+        borderWidth: CGFloat = 1.5
+    ) -> some View {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            self.previewGlassStyle(cornerRadius: cornerRadius, material: material)
+        } else {
+            self.glassCardStyle(
+                cornerRadius: cornerRadius,
+                material: material,
+                borderColor: borderColor,
+                borderWidth: borderWidth
+            )
+        }
+        #else
+        self.glassCardStyle(
+            cornerRadius: cornerRadius,
+            material: material,
+            borderColor: borderColor,
+            borderWidth: borderWidth
+        )
+        #endif
+    }
+}

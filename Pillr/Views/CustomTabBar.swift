@@ -19,11 +19,12 @@ struct CustomTabBar: View {
                     selectedTab = .medications
                 }
             }
+            .scaleEffect(1.5)
             
             Spacer()
             
             TabBarButton(
-                imageName: "list.bullet",
+                imageName: "checklist.checked",
                 title: "Log",
                 isSelected: selectedTab == .log,
                 namespace: animation
@@ -32,6 +33,7 @@ struct CustomTabBar: View {
                     selectedTab = .log
                 }
             }
+            .scaleEffect(1.5)
             
             Spacer()
             
@@ -45,6 +47,7 @@ struct CustomTabBar: View {
                     selectedTab = .interactions
                 }
             }
+            .scaleEffect(1.5)
             
             Spacer()
             
@@ -58,8 +61,9 @@ struct CustomTabBar: View {
                     selectedTab = .settings
                 }
             }
+            .scaleEffect(1.5)
             
             Spacer()
         }
     }
-} 
+}

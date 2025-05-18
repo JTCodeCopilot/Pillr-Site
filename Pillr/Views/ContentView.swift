@@ -182,34 +182,6 @@ struct ContentView: View {
         .accessibilityValue("Pillr Medication Tracker App")
     }
     
-    // Title based on selected tab
-    private var headerTitle: String {
-        switch selectedTab {
-        case .medications:
-            let hour = Calendar.current.component(.hour, from: Date())
-            let greeting: String
-            
-            switch hour {
-            case 5..<12:
-                greeting = "Good Morning"
-            case 12..<17:
-                greeting = "Good Afternoon"
-            case 17..<24:
-                greeting = "Good Evening"
-            default:
-                greeting = "Good Evening"
-            }
-            
-            return "\(greeting), \(userSettings.userName)"
-        case .log:
-            return "Medication Log"
-        case .interactions:
-            return "Drug Interactions"
-        case .settings:
-            return "Settings"
-        }
-    }
-    
     // Simplified - no longer need adaptive font size
     private func adaptiveFontSize(for geometry: GeometryProxy) -> CGFloat {
         let baseFontSize: CGFloat = 28
