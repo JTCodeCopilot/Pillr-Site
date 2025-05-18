@@ -120,6 +120,61 @@ enum HapticStyle {
     case selection
 }
 
+// HapticButtonStyle - a SwiftUI ButtonStyle that includes haptic feedback
+struct HapticFeedbackButtonStyle: ButtonStyle {
+    let style: HapticStyle
+    
+    init(style: HapticStyle = .light) {
+        self.style = style
+    }
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { isPressed in
+                if isPressed {
+                    switch style {
+                    case .light:
+                        HapticManager.shared.lightImpact()
+                    case .medium:
+                        HapticManager.shared.mediumImpact()
+                    case .heavy:
+                        HapticManager.shared.heavyImpact()
+                    case .soft:
+                        HapticManager.shared.softImpact()
+                    case .rigid:
+                        HapticManager.shared.rigidImpact()
+                    case .success:
+                        HapticManager.shared.successNotification()
+                    case .warning:
+                        HapticManager.shared.warningNotification()
+                    case .error:
+                        HapticManager.shared.errorNotification()
+                    case .selection:
+                        HapticManager.shared.selectionChanged()
+                    }
+                }
+            }
+    }
+}
+
+// Minimal Button Style - for buttons that need subtle feedback
+struct MinimalButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { isPressed in
+                if isPressed {
+                    HapticManager.shared.softImpact()
+                }
+            }
+    }
+}
+
 // Extension to View to add haptic feedback modifier
 extension View {
     func onTapWithHaptic(_ style: HapticStyle = .light, action: @escaping () -> Void) -> some View {

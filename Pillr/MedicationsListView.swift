@@ -123,12 +123,12 @@ struct MedicationsListView: View {
                                 // Title with time-based greeting
                                 HStack {
                                     Text("\(timeBasedGreeting), \(userSettings.userName)")
-                                        .font(.system(size: 22, weight: .medium))
+                                        .font(.system(size: 28, weight: .semibold))
                                         .foregroundColor(Color(hex: "#C7C7BD"))
                                     Spacer()
                                 }
                                 .padding(.horizontal, 4)
-                                .padding(.bottom, 8)
+                                .padding(.bottom, 12)
                                 
                                 // All medications in a single list sorted by time
                                 VStack(alignment: .leading, spacing: 10) {
@@ -184,7 +184,6 @@ struct MedicationsListView: View {
         .sheet(item: $showingLogSheetFor) { med in
             LogMedicationView(medicationToLog: med)
                 .environmentObject(store)
-                .preferredColorScheme(.dark)
         }
         .sheet(item: $selectedMedicationToEdit) { med in
             NavigationView {
@@ -194,7 +193,6 @@ struct MedicationsListView: View {
                 .environmentObject(store)
                 .navigationBarTitleDisplayMode(.inline)
             }
-            .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $showingAddSheet) {
             NavigationView {
@@ -202,12 +200,8 @@ struct MedicationsListView: View {
                     // Close the sheet after adding
                     showingAddSheet = false
                 })
-                    .environmentObject(store)
-                    .navigationBarItems(leading: Button("Cancel") {
-                        showingAddSheet = false
-                    })
+                .environmentObject(store)
             }
-            .preferredColorScheme(.dark)
         }
     }
     

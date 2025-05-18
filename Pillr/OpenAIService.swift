@@ -67,6 +67,7 @@ class OpenAIService: ObservableObject {
         let userPrompt = "What is the interaction between \(drugA) and \(drugB)?"
         
         // Create the request to OpenAI API
+        // Create the request to OpenAI API (reverted to original code)
         let url = URL(string: "https://api.openai.com/v1/chat/completions")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -74,7 +75,7 @@ class OpenAIService: ObservableObject {
         request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         
         let requestBody: [String: Any] = [
-            "model": "gpt-4o",
+            "model": "gpt-4o", // Reverted to original model
             "messages": [
                 ["role": "system", "content": systemPrompt],
                 ["role": "user", "content": userPrompt]

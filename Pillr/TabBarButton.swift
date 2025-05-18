@@ -8,28 +8,50 @@ struct TabBarButton: View {
     let action: () -> Void
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
+    @State private var isPressed = false
 
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 2) {
-                // Simplified icon
+        Button(action: {
+            HapticManager.shared.lightImpact()
+            action()
+        }) {
+            VStack(spacing: 4) {
+                // Icon with subtle animation
                 Image(systemName: imageName)
-                    .font(.system(size: 18, weight: isSelected ? .medium : .regular))
+                    .font(.system(size: isSelected ? 20 : 18, weight: isSelected ? .medium : .regular))
                     .foregroundColor(isSelected ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.6))
+                    .scaleEffect(isPressed ? 0.92 : 1.0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
                 
-                // Minimal text - only show if selected
+                // Small indicator when selected
                 if isSelected {
-                    Text(title)
-                        .font(.caption2)
-                        .foregroundColor(isSelected ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.6))
+                    Rectangle()
+                        .frame(width: 20, height: 2)
+                        .cornerRadius(1)
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                        .matchedGeometryEffect(id: "tabIndicator", in: namespace)
+                } else {
+                    Rectangle()
+                        .frame(width: 20, height: 2)
+                        .foregroundColor(.clear)
                 }
             }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .contentShape(Rectangle())
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(title) tab")
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         }
-        .buttonStyle(HapticButtonStyle(style: .soft))
+        .buttonStyle(PlainButtonStyle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    isPressed = true
+                }
+                .onEnded { _ in
+                    isPressed = false
+                }
+        )
     }
 } 
