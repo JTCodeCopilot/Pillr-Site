@@ -31,6 +31,14 @@ class MedicationStore: ObservableObject {
     private let logsKey = "medicationLogsData"
     private let isPreviewMode: Bool
 
+    // Computed properties for active and archived medications
+    var activeMedications: [Medication] {
+        medications.filter { !$0.isArchived }
+    }
+    var archivedMedications: [Medication] {
+        medications.filter { $0.isArchived }
+    }
+
     init(isPreview: Bool = false) {
         self.isPreviewMode = isPreview
         if !isPreview {
@@ -58,7 +66,8 @@ class MedicationStore: ObservableObject {
         enableNotification: Bool = true,
         pillCount: Int? = nil,
         pillsPerDose: Int = 1,
-        refillThreshold: Int? = nil
+        refillThreshold: Int? = nil,
+        isOneTimeWithFollowUp: Bool = false
     ) {
         var newMed = Medication(
             name: name, 
@@ -69,12 +78,18 @@ class MedicationStore: ObservableObject {
             notes: notes,
             pillCount: pillCount,
             pillsPerDose: pillsPerDose,
-            refillThreshold: refillThreshold
+            refillThreshold: refillThreshold,
+            isOneTimeWithFollowUp: isOneTimeWithFollowUp,
+            isArchived: false // Always add as not archived
         )
         
         // Schedule notifications only if enabled
         if enableNotification {
-            if reminderTimes.isEmpty {
+            if isOneTimeWithFollowUp {
+                let notificationID = notificationManager.scheduleNotification(for: newMed)
+                newMed.notificationID = notificationID
+                newMed.notificationIDs = []
+            } else if reminderTimes.isEmpty {
                 // Legacy single notification support
                 let notificationID = notificationManager.scheduleNotification(for: newMed)
                 newMed.notificationID = notificationID
@@ -341,6 +356,26 @@ class MedicationStore: ObservableObject {
                 medications[index] = updatedMedication
             }
             
+            saveMedications()
+        }
+    }
+
+    // Archive a medication
+    func archiveMedication(_ medication: Medication) {
+        if let index = medications.firstIndex(where: { $0.id == medication.id }) {
+            var updatedMedication = medications[index]
+            updatedMedication.isArchived = true
+            medications[index] = updatedMedication
+            saveMedications()
+        }
+    }
+
+    // Unarchive a medication
+    func unarchiveMedication(_ medication: Medication) {
+        if let index = medications.firstIndex(where: { $0.id == medication.id }) {
+            var updatedMedication = medications[index]
+            updatedMedication.isArchived = false
+            medications[index] = updatedMedication
             saveMedications()
         }
     }

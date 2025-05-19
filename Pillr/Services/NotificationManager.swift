@@ -60,33 +60,41 @@ class NotificationManager: ObservableObject {
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = "MEDICATION_REMINDER"
         
-        // Extract hour and minute from the medication timeToTake
+        let notificationID = UUID()
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: medication.timeToTake)
         let minute = calendar.component(.minute, from: medication.timeToTake)
-        
-        // Create date components
         var dateComponents = DateComponents()
         dateComponents.hour = hour
         dateComponents.minute = minute
         
-        // Create the trigger
+        if medication.isOneTimeWithFollowUp {
+            // Schedule a one-time notification
+            let now = Date()
+            var fireDate = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: now) ?? now
+            if fireDate < now { fireDate = Calendar.current.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate }
+            let interval = fireDate.timeIntervalSince(now)
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+            let request = UNNotificationRequest(identifier: notificationID.uuidString, content: content, trigger: trigger)
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("Error scheduling one-time notification: \(error.localizedDescription)")
+                }
+            }
+            // Schedule a one-time follow up 30 minutes later
+            scheduleOneTimeFollowUp(for: medication, after: 30, originalID: notificationID, baseInterval: interval)
+            return notificationID
+        }
+        // Default: schedule repeating notification
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        
-        // Create the notification request with a unique identifier
-        let notificationID = UUID()
         let request = UNNotificationRequest(identifier: notificationID.uuidString, content: content, trigger: trigger)
-        
-        // Add the notification request
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Error scheduling notification: \(error.localizedDescription)")
             }
         }
-        
         // Schedule the follow-up notification for 30 minutes later
         scheduleFollowUpNotification(for: medication, after: 30, originalID: notificationID)
-        
         return notificationID
     }
     
@@ -254,6 +262,30 @@ class NotificationManager: ObservableObject {
     
     func cancelAllNotifications() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+    }
+    
+    // Add a new function for one-time follow up
+    private func scheduleOneTimeFollowUp(for medication: Medication, after minutes: Int, originalID: UUID, baseInterval: TimeInterval) {
+        let content = UNMutableNotificationContent()
+        content.title = "Reminder: Medication Due"
+        content.body = "Don't forget to take your \(medication.name)"
+        content.sound = UNNotificationSound.default
+        content.userInfo = [
+            "medicationID": medication.id.uuidString,
+            "isFollowUp": true,
+            "originalNotificationID": originalID.uuidString,
+            "reminderIndex": 0
+        ]
+        content.categoryIdentifier = "MEDICATION_REMINDER"
+        let followUpInterval = baseInterval + Double(minutes * 60)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: followUpInterval, repeats: false)
+        let followUpID = "\(originalID.uuidString)_followup"
+        let request = UNNotificationRequest(identifier: followUpID, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling one-time follow-up notification: \(error.localizedDescription)")
+            }
+        }
     }
 }
 

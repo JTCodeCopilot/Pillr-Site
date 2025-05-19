@@ -27,6 +27,7 @@ struct AddMedicationView: View {
     @State private var refillThresholdString: String = ""
     @State private var trackPillCount: Bool = false
     @State private var showMedicationSearch: Bool = false
+    @State private var isOneTimeWithFollowUp: Bool = false
     
     // For dynamically adjusting scroll position when keyboard appears
     @State private var keyboardHeight: CGFloat = 0
@@ -298,6 +299,18 @@ struct AddMedicationView: View {
                                     }
                                 }
                                 .toggleStyle(SwitchToggleStyle(tint: Color.accentColor))
+                                Toggle(isOn: $isOneTimeWithFollowUp) {
+                                    HStack {
+                                        Image(systemName: "1.circle")
+                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                            .frame(width: 25, alignment: .center)
+                                        Text("Remind me once with follow up")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                    }
+                                }
+                                .toggleStyle(SwitchToggleStyle(tint: Color.accentColor))
+                                .disabled(!enableNotification)
                             }
                             .padding()
                             .background(Color.black.opacity(0.2))
@@ -605,12 +618,13 @@ struct AddMedicationView: View {
             dosage: dosage.trimmingCharacters(in: .whitespacesAndNewlines),
             frequency: frequency,
             timeToTake: timeToTake,
-            reminderTimes: needsMultipleReminders ? reminderTimes : [],
+            reminderTimes: (needsMultipleReminders && !isOneTimeWithFollowUp) ? reminderTimes : [],
             notes: notes.isEmpty ? nil : notes.trimmingCharacters(in: .whitespacesAndNewlines),
             enableNotification: enableNotification,
             pillCount: pillCount,
             pillsPerDose: pillsPerDose,
-            refillThreshold: refillThreshold
+            refillThreshold: refillThreshold,
+            isOneTimeWithFollowUp: isOneTimeWithFollowUp
         )
         
         onAdd()

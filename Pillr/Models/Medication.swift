@@ -22,6 +22,8 @@ struct Medication: Identifiable, Codable, Hashable {
     var pillsPerDose: Int = 1 // Number of pills taken per dose
     var refillThreshold: Int? // Threshold to trigger refill reminder
     var isSkipped: Bool = false // Whether to skip this medication for now
+    var isOneTimeWithFollowUp: Bool = false // If true, only schedule a one-time notification and a follow up
+    var isArchived: Bool = false // Whether this medication is archived
 }
 
 struct MedicationLog: Identifiable, Codable, Hashable {

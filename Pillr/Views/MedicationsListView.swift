@@ -16,6 +16,9 @@ struct MedicationsListView: View {
     @State private var scrolledOffset: CGFloat = 0
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
+    @State private var showingArchivedSheet = false
+    @State private var medicationToArchive: Medication? = nil
+    @State private var showArchiveAlert = false
     
     private var groupedMedications: [(String, [Medication])] {
         let calendar = Calendar.current
@@ -117,15 +120,36 @@ struct MedicationsListView: View {
                                 
                                 // All medications in a single list sorted by time
                                 VStack(alignment: .leading, spacing: 10) {
-                                    // Display all medications sorted by time
-                                    ForEach(store.medications.sorted(by: { $0.timeToTake < $1.timeToTake })) { med in
+                                    // Display all active medications sorted by time
+                                    ForEach(store.activeMedications.sorted(by: { $0.timeToTake < $1.timeToTake })) { med in
                                         MedicationRow(medication: med, onLogTap: {
                                             showingLogSheetFor = med
                                         }, onEditTap: {
                                             selectedMedicationToEdit = med
+                                        }, onArchiveTap: {
+                                            medicationToArchive = med
+                                            showArchiveAlert = true
                                         })
                                         .transition(.opacity.combined(with: .move(edge: .trailing)))
                                     }
+                                }
+                                // Archived Medications Section
+                                if !store.archivedMedications.isEmpty {
+                                    Button(action: { showingArchivedSheet = true }) {
+                                        HStack {
+                                            Image(systemName: "archivebox")
+                                            Text("View Archived Medications (")
+                                            Text("\(store.archivedMedications.count)")
+                                            Text(")")
+                                        }
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                        .padding(.vertical, 8)
+                                        .padding(.horizontal, 16)
+                                        .background(Color.black.opacity(0.2))
+                                        .cornerRadius(8)
+                                    }
+                                    .padding(.top, 8)
                                 }
                                 
                                 // Space at bottom for better scrolling
@@ -188,6 +212,62 @@ struct MedicationsListView: View {
                 .environmentObject(store)
             }
         }
+        // Archived Medications Sheet
+        .sheet(isPresented: $showingArchivedSheet) {
+            NavigationView {
+                ZStack {
+                    Color(hex: "#404C42").ignoresSafeArea()
+                    List {
+                        ForEach(store.archivedMedications) { med in
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(med.name)
+                                        .font(.headline)
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                    Text(med.dosage)
+                                        .font(.subheadline)
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                }
+                                Spacer()
+                                Button(action: { store.unarchiveMedication(med) }) {
+                                    Text("Unarchive")
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundColor(Color(hex: "#404C42"))
+                                        .padding(.vertical, 6)
+                                        .padding(.horizontal, 16)
+                                        .background(Color(hex: "#C7C7BD"))
+                                        .cornerRadius(8)
+                                }
+                            }
+                            .listRowBackground(Color(hex: "#404C42"))
+                        }
+                    }
+                    .scrollContentBackground(.hidden)
+                }
+                .navigationTitle("Archived Medications")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") { showingArchivedSheet = false }
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                    }
+                }
+            }
+        }
+        .alert(isPresented: $showArchiveAlert) {
+            Alert(
+                title: Text("Archive Medication"),
+                message: Text("Are you sure you want to archive \(medicationToArchive?.name ?? "this medication")? You can restore it later from the archive."),
+                primaryButton: .destructive(Text("Archive")) {
+                    if let med = medicationToArchive {
+                        store.archiveMedication(med)
+                    }
+                    medicationToArchive = nil
+                },
+                secondaryButton: .cancel {
+                    medicationToArchive = nil
+                }
+            )
+        }
     }
     
     // Calculate proper insets based on screen size
@@ -221,6 +301,7 @@ struct MedicationRow: View {
     let medication: Medication
     let onLogTap: () -> Void
     let onEditTap: () -> Void
+    let onArchiveTap: (() -> Void)? // Optional for archived meds
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var store: MedicationStore
@@ -311,8 +392,6 @@ struct MedicationRow: View {
                     Text(timeStatus)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(timeStatusColor)
-                    
-                    // Removed chevron/divider VStack here
                     
                     Button(action: {
                         if !wasTakenToday {
@@ -425,6 +504,41 @@ struct MedicationRow: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
+                    // Action buttons in expanded section
+                    HStack(spacing: 12) {
+                        if let onEditTap = Optional(onEditTap) {
+                            Button(action: onEditTap) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "pencil")
+                                        .font(.system(size: 14))
+                                    Text("Edit")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 16)
+                                .background(Color(hex: "#404C42").opacity(0.7))
+                                .cornerRadius(8)
+                            }
+                        }
+                        if let onArchiveTap = onArchiveTap {
+                            Button(action: onArchiveTap) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "archivebox")
+                                        .font(.system(size: 14))
+                                    Text("Archive")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 16)
+                                .background(Color(hex: "#404C42").opacity(0.7))
+                                .cornerRadius(8)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
                 }
             }
         }
