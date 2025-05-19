@@ -72,8 +72,8 @@ struct MedicationLogView: View {
                     VStack(spacing: 0) {
                         // Title header with calendar icon - now in a fixed position
                         HStack {
-                            Text("Taken")
-                                .font(.system(size: 36, weight: .semibold))
+                            Text("Have Taken")
+                                .font(.system(size: 40, weight: .semibold))
                                 .foregroundColor(Color(hex: "#C7C7BD"))
                             
                             Button(action: {
