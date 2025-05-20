@@ -19,6 +19,11 @@ struct MedicationsListView: View {
     @State private var showingArchivedSheet = false
     @State private var medicationToArchive: Medication? = nil
     @State private var showArchiveAlert = false
+    @State private var showingInteractionSheet = false
+    @State private var interactionCheckError: String? = nil
+    @State private var foundInteractions: [DrugInteraction]? = nil
+    @State private var isCheckingInteractions = false
+    @State private var showingInteractionResultSheet = false
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -30,7 +35,10 @@ struct MedicationsListView: View {
                 selectedMedicationToEdit: $selectedMedicationToEdit,
                 medicationToArchive: $medicationToArchive,
                 showArchiveAlert: $showArchiveAlert,
-                showingArchivedSheet: $showingArchivedSheet
+                showingArchivedSheet: $showingArchivedSheet,
+                showingInteractionSheet: $showingInteractionSheet,
+                isCheckingInteractions: $isCheckingInteractions,
+                onCheckAllInteractions: checkAllMedicationInteractions
             )
             AddMedicationFloatingButton(showingAddSheet: $showingAddSheet)
         }
@@ -57,6 +65,16 @@ struct MedicationsListView: View {
                 showingArchivedSheet: $showingArchivedSheet
             )
         }
+        .sheet(isPresented: $showingInteractionSheet) {
+            InteractionSearchView()
+        }
+        .sheet(isPresented: $showingInteractionResultSheet) {
+            InteractionResultsSheetView(
+                isPresented: $showingInteractionResultSheet,
+                interactions: foundInteractions ?? [],
+                error: interactionCheckError
+            )
+        }
         .alert(isPresented: $showArchiveAlert) {
             Alert(
                 title: Text("Archive Medication"),
@@ -72,6 +90,28 @@ struct MedicationsListView: View {
                 }
             )
         }
+    }
+    
+    private func checkAllMedicationInteractions() async {
+        guard !store.activeMedications.isEmpty else {
+            self.interactionCheckError = "You don't have any active medications to check."
+            self.showingInteractionResultSheet = true
+            return
+        }
+        
+        isCheckingInteractions = true
+        self.interactionCheckError = nil
+        self.foundInteractions = nil
+        
+        do {
+            let interactions = try await OpenAIService.shared.checkInteractionsForAllMedications(medications: store.activeMedications)
+            self.foundInteractions = interactions
+        } catch {
+            self.interactionCheckError = "Failed to check interactions: \(error.localizedDescription)"
+        }
+        
+        isCheckingInteractions = false
+        showingInteractionResultSheet = true
     }
 }
 
@@ -123,7 +163,10 @@ fileprivate func MedicationsListContent(
     selectedMedicationToEdit: Binding<Medication?>,
     medicationToArchive: Binding<Medication?>,
     showArchiveAlert: Binding<Bool>,
-    showingArchivedSheet: Binding<Bool>
+    showingArchivedSheet: Binding<Bool>,
+    showingInteractionSheet: Binding<Bool>,
+    isCheckingInteractions: Binding<Bool>,
+    onCheckAllInteractions: @escaping () async -> Void
 ) -> some View {
     ScrollView {
         VStack(spacing: 24) {
@@ -132,6 +175,21 @@ fileprivate func MedicationsListContent(
                     .font(.system(size: 40, weight: .semibold))
                     .foregroundColor(Color(hex: "#C7C7BD"))
                 Spacer()
+                Button {
+                    Task {
+                        await onCheckAllInteractions()
+                    }
+                } label: {
+                    if isCheckingInteractions.wrappedValue {
+                        ProgressView()
+                            .tint(Color(hex: "#C7C7BD"))
+                    } else {
+                        Image(systemName: "arrow.left.arrow.right.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                    }
+                }
+                .disabled(isCheckingInteractions.wrappedValue)
             }
             .padding(.horizontal, 4)
             .padding(.bottom, 12)
@@ -296,6 +354,9 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var medicationToArchive: Medication?
     @Binding var showArchiveAlert: Bool
     @Binding var showingArchivedSheet: Bool
+    @Binding var showingInteractionSheet: Bool
+    @Binding var isCheckingInteractions: Bool
+    let onCheckAllInteractions: () async -> Void
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -322,7 +383,10 @@ fileprivate struct MedicationsListMainContent: View {
                         selectedMedicationToEdit: $selectedMedicationToEdit,
                         medicationToArchive: $medicationToArchive,
                         showArchiveAlert: $showArchiveAlert,
-                        showingArchivedSheet: $showingArchivedSheet
+                        showingArchivedSheet: $showingArchivedSheet,
+                        showingInteractionSheet: $showingInteractionSheet,
+                        isCheckingInteractions: $isCheckingInteractions,
+                        onCheckAllInteractions: onCheckAllInteractions
                     )
                 }
             }
@@ -362,6 +426,9 @@ fileprivate struct MedicationRowHeaderView: View {
 
     // Moved statusDisplay computed property
     private var statusDisplay: (text: String, color: Color, show: Bool) {
+        if medication.frequency == "As needed" {
+            return ("", .clear, false) // No status text for "As needed" meds
+        }
         switch cycleStatus {
         case .taken:
             return ("", .clear, false) // No status text when taken, button shows "Taken"
@@ -371,6 +438,8 @@ fileprivate struct MedicationRowHeaderView: View {
             return ("Overdue by \(formatTimeText(minutes: minutesPast))", Color(hex: "#C62828"), true)
         case .due(let minutesRemaining):
             return ("Due in \(formatTimeText(minutes: minutesRemaining))", .green, true)
+        case .asNeeded: // Add .asNeeded case
+            return ("", .clear, false)
         }
     }
     
@@ -400,6 +469,8 @@ fileprivate struct MedicationRowHeaderView: View {
             return (iconName: "xmark.circle.fill", text: "Skipped", fgColor: Color(hex: "#C62828"), bgColor: Color(hex: "#FFCDD2"))
         case .overdue(_), .due(_):
             return (iconName: "circle", text: "Take Now", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
+        case .asNeeded: // Add .asNeeded case
+            return (iconName: "circle", text: "Log Dose", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
         }
     }
 
@@ -508,6 +579,8 @@ fileprivate struct MedicationRowHeaderView: View {
             HapticManager.shared.successNotification()
         case .taken, .skipped:
             HapticManager.shared.lightImpact()
+        case .asNeeded: // Add .asNeeded case
+            HapticManager.shared.lightImpact()
         }
         onLogTap()
     }
@@ -585,10 +658,12 @@ struct MedicationRow: View {
     }
     
     private var cycleStatus: MedicationCycleStatus {
-        if wasTakenToday {
+        if wasTakenToday { // Check if taken first
             return .taken
         } else if wasSkippedToday {
             return .skipped
+        } else if medication.frequency == "As needed" { // Then check if it's "As needed" and not yet taken/skipped
+            return .asNeeded
         } else {
             let minutes = minutesToEffectiveDueTime
             let calendar = Calendar.current
@@ -641,6 +716,8 @@ struct MedicationRow: View {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     showDetails.toggle()
                 }
+            case .asNeeded: // Add .asNeeded case
+                onLogTap()
             }
         }
         .accessibilityAction(named: accessibilityActionName()) {
@@ -661,6 +738,8 @@ struct MedicationRow: View {
             borderColor = Color.red.opacity(0.5)
         case .due(_), .overdue(_):
             borderColor = Color(hex: "#606A63").opacity(0.5)
+        case .asNeeded: // Add .asNeeded case
+            borderColor = Color(hex: "#606A63").opacity(0.5) // Or a different color if desired
         }
         
         return RoundedRectangle(cornerRadius: 12)
@@ -676,6 +755,8 @@ struct MedicationRow: View {
             return "Skipped. Tap to log or tap status/chevron to expand details."
         case .due(_), .overdue(_):
             return "Tap 'Take Now' to log, or tap status/chevron to expand details."
+        case .asNeeded: // Add .asNeeded case
+            return "Tap 'Log Dose' to log, or tap status/chevron to expand details."
         }
     }
 
@@ -686,6 +767,8 @@ struct MedicationRow: View {
             return "View Details"
         case .due(_), .overdue(_):
             return "View Details Without Logging"
+        case .asNeeded: // Add .asNeeded case
+            return "View Details"
         }
     }
 }
@@ -696,6 +779,7 @@ fileprivate enum MedicationCycleStatus {
     case overdue(minutesPast: Int)
     case taken
     case skipped
+    case asNeeded // New case
 }
 
 // MARK: - MedicationCycleStatus Equatable implementation
@@ -703,6 +787,8 @@ extension MedicationCycleStatus: Equatable {
     static func == (lhs: MedicationCycleStatus, rhs: MedicationCycleStatus) -> Bool {
         switch (lhs, rhs) {
         case (.taken, .taken), (.skipped, .skipped):
+            return true
+        case (.asNeeded, .asNeeded): // Add .asNeeded to Equatable
             return true
         case (.due(let lhsMinutes), .due(let rhsMinutes)):
             return lhsMinutes == rhsMinutes

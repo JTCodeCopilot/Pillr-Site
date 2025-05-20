@@ -161,7 +161,7 @@ struct ContentView: View {
                             .padding(.vertical, 5)
                             .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 0 : 5)
                     }
-                    .frame(height: 40 + (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 10 : 0))
+                    .frame(height: 70 + (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 10 : 0))
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [

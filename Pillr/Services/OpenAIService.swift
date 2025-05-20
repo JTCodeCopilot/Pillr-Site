@@ -123,6 +123,42 @@ class OpenAIService: ObservableObject {
             throw NSError(domain: "OpenAIService", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to parse interaction data: \(error.localizedDescription)"])
         }
     }
+
+    func checkInteractionsForAllMedications(medications: [Medication]) async throws -> [DrugInteraction] {
+        var foundInteractions: [DrugInteraction] = []
+        guard medications.count >= 2 else {
+            // Not enough medications to check for interactions
+            return foundInteractions
+        }
+
+        // Create a list of drug names
+        let drugNames = medications.map { $0.name }
+
+        // Iterate through all unique pairs of medications
+        for i in 0..<drugNames.count {
+            for j in (i + 1)..<drugNames.count {
+                let drugA = drugNames[i]
+                let drugB = drugNames[j]
+                
+                // Avoid checking a drug against itself if somehow names are duplicated (though medications list should be unique by ID)
+                if drugA.lowercased() == drugB.lowercased() {
+                    continue
+                }
+
+                do {
+                    let interaction = try await checkDrugInteractions(drugA: drugA, drugB: drugB)
+                    // Filter out 'Unknown' or 'Minor' interactions if desired, or handle all
+                    // For now, let's include all found interactions
+                    foundInteractions.append(interaction)
+                } catch {
+                    // Log or handle individual check errors, e.g., API errors for a specific pair
+                    print("Error checking interaction between \(drugA) and \(drugB): \(error.localizedDescription)")
+                    // Optionally, you could rethrow the error or collect these errors to inform the user
+                }
+            }
+        }
+        return foundInteractions
+    }
 }
 
 // Helper struct for JSON decoding
