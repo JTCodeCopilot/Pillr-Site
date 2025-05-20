@@ -14,6 +14,7 @@ class MedicationStore: ObservableObject {
     @Published var medications: [Medication] = []
     @Published var logs: [MedicationLog] = []
     private let notificationManager = NotificationManager.shared
+    private let hapticManager = HapticManager.shared
     
     // Shared instance for access from notification handlers
     static let shared = MedicationStore()
@@ -145,6 +146,14 @@ class MedicationStore: ObservableObject {
     func logMedicationTaken(medication: Medication, actualTime: Date, notes: String?, skipped: Bool = false, reminderIndex: Int? = nil) {
         let pillsConsumed = skipped ? 0 : medication.pillsPerDose
         
+        // Remove any existing logs for this specific medication, day, and reminder index
+        let calendar = Calendar.current
+        logs.removeAll { log in
+            log.medicationID == medication.id &&
+            calendar.isDate(log.takenAt, inSameDayAs: actualTime) &&
+            log.reminderIndex == reminderIndex // This handles nil == nil correctly for single-dose meds
+        }
+        
         let newLog = MedicationLog(
             medicationID: medication.id, 
             medicationName: medication.name, 
@@ -157,6 +166,13 @@ class MedicationStore: ObservableObject {
         
         logs.insert(newLog, at: 0) // Add to the top
         saveLogs()
+        
+        // Play haptic feedback
+        if !skipped { // Only play success haptic if medication is taken, not skipped
+            hapticManager.successNotification()
+        } else {
+            hapticManager.warningNotification() // Optional: different haptic for skipping
+        }
         
         // If medication has a pill count, update it
         if let index = medications.firstIndex(where: { $0.id == medication.id }), 

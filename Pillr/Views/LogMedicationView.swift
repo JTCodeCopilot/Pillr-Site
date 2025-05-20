@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import UIKit
 
 struct LogMedicationView: View {
     @EnvironmentObject var store: MedicationStore
@@ -26,6 +27,11 @@ struct LogMedicationView: View {
     // Whether this medication has multiple doses
     private var hasMultipleDoses: Bool {
         return !medicationToLog.reminderTimes.isEmpty
+    }
+    
+    // Computed property for the haptic style of log/skip buttons
+    private var logSkipHapticStyle: HapticStyle {
+        isSkipped ? .warning : .success
     }
 
     var body: some View {
@@ -74,88 +80,13 @@ struct LogMedicationView: View {
                     
                     // Quick log section
                     if showQuickLogOption {
-                        VStack(spacing: 16) {
-                            HStack(spacing: 40) {
-                                Spacer()
-                                
-                                Button {
-                                    // Quick log as taken
-                                    store.logMedicationTaken(
-                                        medication: medicationToLog,
-                                        actualTime: Date(),
-                                        notes: nil,
-                                        skipped: false,
-                                        reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
-                                    )
-                                    dismiss()
-                                } label: {
-                                    VStack(spacing: 8) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color(hex: "#C7C7BD").opacity(0.15))
-                                                .frame(width: 60, height: 60)
-                                            
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 26, weight: .medium))
-                                                .foregroundColor(Color(hex: "#C7C7BD"))
-                                        }
-                                        
-                                        Text("Taken")
-                                            .font(.system(size: 15, weight: .medium))
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                    }
-                                }
-                                
-                                Button {
-                                    // Quick skip
-                                    store.skipMedication(
-                                        medication: medicationToLog,
-                                        actualTime: Date(),
-                                        notes: nil,
-                                        reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
-                                    )
-                                    dismiss()
-                                } label: {
-                                    VStack(spacing: 8) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.red.opacity(0.15))
-                                                .frame(width: 60, height: 60)
-                                            
-                                            Image(systemName: "xmark")
-                                                .font(.system(size: 26, weight: .medium))
-                                                .foregroundColor(.red)
-                                        }
-                                        
-                                        Text("Skip")
-                                            .font(.system(size: 15, weight: .medium))
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                    }
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(.vertical, 30)
-                            
-                            Button {
-                                withAnimation {
-                                    showQuickLogOption = false
-                                }
-                            } label: {
-                                HStack {
-                                    Image(systemName: "square.and.pencil")
-                                    Text("Add Details")
-                                }
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.black.opacity(0.2))
-                                .cornerRadius(10)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 12)
-                        }
+                        QuickLogSectionView(
+                            store: store,
+                            medicationToLog: medicationToLog,
+                            hasMultipleDoses: hasMultipleDoses,
+                            selectedDoseIndex: selectedDoseIndex,
+                            showQuickLogOption: $showQuickLogOption
+                        )
                     } else {
                         ScrollView {
                             VStack(spacing: 20) {
@@ -307,6 +238,7 @@ struct LogMedicationView: View {
                                         .background(isSkipped ? Color.red : Color(hex: "#C7C7BD"))
                                         .cornerRadius(10)
                                 }
+                                .hapticFeedback(logSkipHapticStyle)
                                 .padding(.top, 5)
                                 .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : 10)
                             }
@@ -341,6 +273,7 @@ struct LogMedicationView: View {
                         }
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(Color(hex: "#C7C7BD"))
+                        .hapticFeedback(logSkipHapticStyle)
                     }
                 }
                 
@@ -349,6 +282,7 @@ struct LogMedicationView: View {
                         dismiss()
                     }
                     .foregroundColor(Color(hex: "#C7C7BD"))
+                    .hapticFeedback(.light)
                 }
             }
             .onAppear {
@@ -397,6 +331,115 @@ struct LogMedicationView: View {
             return 120
         } else {
             return size.height < 700 ? 80 : 100
+        }
+    }
+}
+
+extension View {
+    func hapticFeedback(_ style: HapticStyle) -> some View {
+        self.onTapGesture {
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(
+                style == .success ? .success : .warning
+            )
+        }
+    }
+}
+
+// Private subview for the Quick Log Section
+private struct QuickLogSectionView: View {
+    @ObservedObject var store: MedicationStore
+    @Environment(\.dismiss) var dismiss // Make sure to get dismiss here if needed by actions
+    let medicationToLog: Medication
+    let hasMultipleDoses: Bool
+    let selectedDoseIndex: Int
+    @Binding var showQuickLogOption: Bool
+
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack(spacing: 40) {
+                Spacer()
+                
+                Button {
+                    // Quick log as taken
+                    store.logMedicationTaken(
+                        medication: medicationToLog,
+                        actualTime: Date(),
+                        notes: nil,
+                        skipped: false,
+                        reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
+                    )
+                    dismiss()
+                } label: {
+                    VStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(hex: "#C7C7BD").opacity(0.15))
+                                .frame(width: 60, height: 60)
+                            
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 26, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                        }
+                        
+                        Text("Taken")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                    }
+                }
+                .hapticFeedback(.medium)
+                
+                Button {
+                    // Quick skip
+                    store.skipMedication(
+                        medication: medicationToLog,
+                        actualTime: Date(),
+                        notes: nil,
+                        reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
+                    )
+                    dismiss()
+                } label: {
+                    VStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.red.opacity(0.15))
+                                .frame(width: 60, height: 60)
+                            
+                            Image(systemName: "xmark")
+                                .font(.system(size: 26, weight: .medium))
+                                .foregroundColor(.red)
+                        }
+                        
+                        Text("Skip")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                    }
+                }
+                .hapticFeedback(.medium)
+                
+                Spacer()
+            }
+            .padding(.vertical, 30)
+            
+            Button {
+                withAnimation {
+                    showQuickLogOption = false
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "square.and.pencil")
+                    Text("Add Details")
+                }
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Color(hex: "#C7C7BD"))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.black.opacity(0.2))
+                .cornerRadius(10)
+            }
+            .hapticFeedback(.light) // Added haptic for add details button
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
         }
     }
 }

@@ -19,7 +19,10 @@ struct MedicationLogView: View {
         let calendar = Calendar.current
         var result = [Date: [MedicationLog]]()
         
-        for log in store.logs {
+        // Filter out skipped logs before grouping
+        let actualTakenLogs = store.logs.filter { !$0.skipped }
+
+        for log in actualTakenLogs { // Iterate over non-skipped logs
             let dateComponents = calendar.dateComponents([.year, .month, .day], from: log.takenAt)
             if let date = calendar.date(from: dateComponents) {
                 if result[date] == nil {

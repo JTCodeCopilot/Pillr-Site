@@ -5,77 +5,87 @@
 //  Created by Justin Tilley on 14/5/2025.
 //
 
-import UIKit
+import Foundation
 import SwiftUI
+import UIKit
 
 // Haptic feedback manager to provide consistent and soothing haptic 
 // feedback throughout the application
 class HapticManager {
     static let shared = HapticManager()
     
-    private init() {}
+    private let lightImpactFeedbackGenerator = UIImpactFeedbackGenerator(style: .light)
+    private let mediumImpactFeedbackGenerator = UIImpactFeedbackGenerator(style: .medium)
+    private let heavyImpactFeedbackGenerator = UIImpactFeedbackGenerator(style: .heavy)
+    private let softImpactFeedbackGenerator = UIImpactFeedbackGenerator(style: .soft)
+    private let rigidImpactFeedbackGenerator = UIImpactFeedbackGenerator(style: .rigid)
+    private let selectionFeedbackGenerator = UISelectionFeedbackGenerator()
+    private let notificationFeedbackGenerator = UINotificationFeedbackGenerator()
     
-    // Light feedback for routine actions like button taps
+    private init() {
+        // Prepare all generators in advance
+        prepareGenerators()
+    }
+    
+    func prepareGenerators() {
+        lightImpactFeedbackGenerator.prepare()
+        mediumImpactFeedbackGenerator.prepare()
+        heavyImpactFeedbackGenerator.prepare()
+        softImpactFeedbackGenerator.prepare()
+        rigidImpactFeedbackGenerator.prepare()
+        selectionFeedbackGenerator.prepare()
+        notificationFeedbackGenerator.prepare()
+    }
+    
+    // MARK: - Impact Feedback
+    
     func lightImpact() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        generator.impactOccurred()
+        lightImpactFeedbackGenerator.impactOccurred()
+        lightImpactFeedbackGenerator.prepare()
     }
     
-    // Medium feedback for more significant actions
     func mediumImpact() {
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.prepare()
-        generator.impactOccurred()
+        mediumImpactFeedbackGenerator.impactOccurred()
+        mediumImpactFeedbackGenerator.prepare()
     }
     
-    // Heavy feedback for important actions
     func heavyImpact() {
-        let generator = UIImpactFeedbackGenerator(style: .heavy)
-        generator.prepare()
-        generator.impactOccurred()
+        heavyImpactFeedbackGenerator.impactOccurred()
+        heavyImpactFeedbackGenerator.prepare()
     }
     
-    // Soft feedback for subtle interactions
     func softImpact() {
-        let generator = UIImpactFeedbackGenerator(style: .soft)
-        generator.prepare()
-        generator.impactOccurred()
+        softImpactFeedbackGenerator.impactOccurred()
+        softImpactFeedbackGenerator.prepare()
     }
     
-    // Rigid feedback for actions that require attention
     func rigidImpact() {
-        let generator = UIImpactFeedbackGenerator(style: .rigid)
-        generator.prepare()
-        generator.impactOccurred()
+        rigidImpactFeedbackGenerator.impactOccurred()
+        rigidImpactFeedbackGenerator.prepare()
     }
     
-    // Success notification feedback
+    // MARK: - Notification Feedback
+    
     func successNotification() {
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare()
-        generator.notificationOccurred(.success)
+        notificationFeedbackGenerator.notificationOccurred(.success)
+        notificationFeedbackGenerator.prepare()
     }
     
-    // Warning notification feedback
     func warningNotification() {
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare() 
-        generator.notificationOccurred(.warning)
+        notificationFeedbackGenerator.notificationOccurred(.warning)
+        notificationFeedbackGenerator.prepare()
     }
     
-    // Error notification feedback
     func errorNotification() {
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare()
-        generator.notificationOccurred(.error)
+        notificationFeedbackGenerator.notificationOccurred(.error)
+        notificationFeedbackGenerator.prepare()
     }
     
-    // Selection feedback
+    // MARK: - Selection Feedback
+    
     func selectionChanged() {
-        let generator = UISelectionFeedbackGenerator()
-        generator.prepare()
-        generator.selectionChanged()
+        selectionFeedbackGenerator.selectionChanged()
+        selectionFeedbackGenerator.prepare()
     }
 }
 
