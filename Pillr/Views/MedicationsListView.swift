@@ -435,9 +435,9 @@ fileprivate struct MedicationRowHeaderView: View {
         case .skipped:
             return ("Skipped", Color(hex: "#C62828"), true)
         case .overdue(let minutesPast):
-            return ("Overdue by \(formatTimeText(minutes: minutesPast))", Color(hex: "#C62828"), true)
+            return ("Overdue by \(formatTimeText(minutes: minutesPast))", Color(hex: "#FFA726"), true)
         case .due(let minutesRemaining):
-            return ("Due in \(formatTimeText(minutes: minutesRemaining))", .green, true)
+            return ("Due in \(formatTimeText(minutes: minutesRemaining))", Color(hex: "#81C784"), true)
         case .asNeeded: // Add .asNeeded case
             return ("", .clear, false)
         }
@@ -470,7 +470,7 @@ fileprivate struct MedicationRowHeaderView: View {
         case .overdue(_), .due(_):
             return (iconName: "circle", text: "Take Now", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
         case .asNeeded: // Add .asNeeded case
-            return (iconName: "circle", text: "Log Dose", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
+            return (iconName: "circle", text: "Take Now", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
         }
     }
 
@@ -496,7 +496,7 @@ fileprivate struct MedicationRowHeaderView: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(Color(hex: "#E0E0E0"))
             
-            Text("\(medication.dosage) - \(medication.frequency)")
+            Text(dosageString())
                 .font(.system(size: 14))
                 .foregroundColor(Color(hex: "#B0B0B0"))
             
@@ -509,6 +509,14 @@ fileprivate struct MedicationRowHeaderView: View {
                     .padding(.top, 2)
             }
         }
+    }
+    
+    private func dosageString() -> String {
+        var baseString = "\(medication.dosage)"
+        if medication.dosageUnit == "mg" || medication.dosageUnit == "ml" {
+            baseString += " \(medication.dosageUnit)"
+        }
+        return "\(baseString) - \(medication.frequency)"
     }
     
     // Status and action button section (right side)
@@ -733,7 +741,7 @@ struct MedicationRow: View {
         
         switch cycleStatus {
         case .taken:
-            borderColor = Color.green.opacity(0.5)
+            borderColor = Color(hex: "#81C784").opacity(0.5)
         case .skipped:
             borderColor = Color.red.opacity(0.5)
         case .due(_), .overdue(_):
@@ -756,7 +764,7 @@ struct MedicationRow: View {
         case .due(_), .overdue(_):
             return "Tap 'Take Now' to log, or tap status/chevron to expand details."
         case .asNeeded: // Add .asNeeded case
-            return "Tap 'Log Dose' to log, or tap status/chevron to expand details."
+            return "Tap 'Take Now' to log, or tap status/chevron to expand details."
         }
     }
 
@@ -826,7 +834,7 @@ fileprivate struct MedicationRowDetailsView: View {
 
             detailRow(icon: "clock.arrow.circlepath", label: "Frequency", value: medication.frequency)
             detailRow(icon: "alarm", label: "Reminders", value: reminderTimesString)
-            detailRow(icon: notificationsEnabled ? "bell.fill" : "bell.slash.fill", label: "Notifications", value: notificationsEnabled ? "On" : "Off", valueColor: notificationsEnabled ? .green : .red)
+            detailRow(icon: notificationsEnabled ? "bell.fill" : "bell.slash.fill", label: "Notifications", value: notificationsEnabled ? "On" : "Off", valueColor: notificationsEnabled ? Color(hex: "#81C784") : .red)
             
             if let notes = medication.notes, !notes.isEmpty {
                 detailRow(icon: "note.text", label: "Notes", value: notes, lineLimit: nil)

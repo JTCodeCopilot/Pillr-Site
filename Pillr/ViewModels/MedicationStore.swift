@@ -60,6 +60,8 @@ class MedicationStore: ObservableObject {
     func addMedication(
         name: String,
         dosage: String,
+        dosageUnit: String,
+        iconName: String,
         frequency: String,
         timeToTake: Date,
         reminderTimes: [Date] = [],
@@ -73,6 +75,8 @@ class MedicationStore: ObservableObject {
         var newMed = Medication(
             name: name, 
             dosage: dosage, 
+            dosageUnit: dosageUnit,
+            iconName: iconName,
             frequency: frequency, 
             timeToTake: timeToTake,
             reminderTimes: reminderTimes,
@@ -334,6 +338,8 @@ class MedicationStore: ObservableObject {
         let sampleMed1 = Medication(
             name: "Vitamin D", 
             dosage: "1000 IU", 
+            dosageUnit: "IU",
+            iconName: "vitamin-d",
             frequency: "Twice daily", 
             timeToTake: morningTime,
             reminderTimes: [morningTime, eveningTime],
@@ -345,6 +351,8 @@ class MedicationStore: ObservableObject {
         let sampleMed2 = Medication(
             name: "Pain Relief", 
             dosage: "1 tablet", 
+            dosageUnit: "tablet",
+            iconName: "pain-relief",
             frequency: "As needed", 
             timeToTake: Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!, 
             notes: "Max 4 per day",

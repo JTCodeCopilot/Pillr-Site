@@ -21,6 +21,8 @@ struct EditMedicationView: View {
     // State for editing
     @State private var name: String
     @State private var dosage: String
+    @State private var dosageUnit: String
+    @State private var iconName: String
     @State private var frequency: String
     @State private var timeToTake: Date
     @State private var notes: String
@@ -34,7 +36,8 @@ struct EditMedicationView: View {
         case name, dosage, frequency, notes
     }
 
-    let frequencies = ["Once daily", "Twice daily", "As needed", "Every 4 hours", "Every 6 hours"]
+    let frequencies = ["Once daily", "Twice daily", "As needed"]
+    let dosageUnits = ["mg", "ml"]
     
     // Initialize with the medication's existing values
     init(medication: Medication, onUpdate: @escaping () -> Void) {
@@ -44,6 +47,8 @@ struct EditMedicationView: View {
         // Initialize state variables with existing medication values
         _name = State(initialValue: medication.name)
         _dosage = State(initialValue: medication.dosage)
+        _dosageUnit = State(initialValue: medication.dosageUnit)
+        _iconName = State(initialValue: medication.iconName)
         _frequency = State(initialValue: medication.frequency)
         _timeToTake = State(initialValue: medication.timeToTake)
         _notes = State(initialValue: medication.notes ?? "")
@@ -91,6 +96,31 @@ struct EditMedicationView: View {
                                 iconName: "measure"
                             )
                             .id(Field.dosage)
+
+                            Divider()
+                                .background(Color(hex: "#C7C7BD").opacity(0.2))
+
+                            // Dosage Unit Picker
+                            HStack {
+                                Image(systemName: "scalemass")
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .frame(width: 25, alignment: .center)
+                                Text("Unit")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                Spacer()
+                                Picker("Unit", selection: $dosageUnit) {
+                                    ForEach(dosageUnits, id: \.self) { unit in
+                                        Text(unit)
+                                    }
+                                }
+                                .pickerStyle(SegmentedPickerStyle())
+                                .frame(width: 100)
+                            }
+                            .padding(.vertical, 8)
+
+                            // Divider was here, removing it as the icon picker is removed
+                            // Icon Name Picker and its surrounding HStack and Divider are removed.
                         }
                         .padding()
                         .background(Color.black.opacity(0.2))
@@ -419,6 +449,8 @@ struct EditMedicationView: View {
         var updatedMedication = medication
         updatedMedication.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         updatedMedication.dosage = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
+        updatedMedication.dosageUnit = dosageUnit
+        updatedMedication.iconName = iconName
         updatedMedication.frequency = frequency
         updatedMedication.timeToTake = timeToTake
         updatedMedication.notes = notes.isEmpty ? nil : notes.trimmingCharacters(in: .whitespacesAndNewlines)

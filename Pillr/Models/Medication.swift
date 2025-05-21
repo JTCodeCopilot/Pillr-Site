@@ -12,6 +12,8 @@ struct Medication: Identifiable, Codable, Hashable {
     var id = UUID()
     var name: String
     var dosage: String // e.g., "50mg", "1 tablet"
+    var dosageUnit: String = "mg" // "mg" or "ml"
+    var iconName: String = "pill.fill" // Default icon
     var frequency: String // e.g., "Once daily", "Twice daily"
     var timeToTake: Date // Primary time to take - legacy support
     var reminderTimes: [Date] = [] // Multiple reminder times for medications

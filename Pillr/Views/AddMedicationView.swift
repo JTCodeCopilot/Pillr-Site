@@ -17,6 +17,8 @@ struct AddMedicationView: View {
 
     @State private var name: String = ""
     @State private var dosage: String = ""
+    @State private var dosageUnit: String = "mg" // Default unit
+    @State private var iconName: String = "pill.fill" // Default icon
     @State private var frequency: String = ""
     @State private var timeToTake: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var reminderTimes: [Date] = []
@@ -27,6 +29,7 @@ struct AddMedicationView: View {
     @State private var refillThresholdString: String = ""
     @State private var trackPillCount: Bool = false
     @State private var showMedicationSearch: Bool = false
+    @State private var showPremiumUpsellSheet: Bool = false
     @State private var isOneTimeWithFollowUp: Bool = false
     
     // For dynamically adjusting scroll position when keyboard appears
@@ -37,7 +40,10 @@ struct AddMedicationView: View {
         case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold
     }
 
-    let frequencies = ["Once daily", "Twice daily", "Three times daily", "Four times daily", "As needed", "Every 4 hours", "Every 6 hours"]
+    let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
+    let dosageUnits = ["mg", "ml"]
+
+    @State private var showFrequencyPicker = false
 
     var body: some View {
         NavigationView {
@@ -71,24 +77,35 @@ struct AddMedicationView: View {
                                     )
                                     
                                     Button(action: {
-                                        showMedicationSearch.toggle()
+                                        if OpenAIService.shared.isPremiumMode {
+                                            showMedicationSearch.toggle()
+                                        } else {
+                                            showPremiumUpsellSheet.toggle()
+                                        }
                                     }) {
-                                        HStack(spacing: 4) {
+                                        if OpenAIService.shared.isPremiumMode {
                                             Image(systemName: "magnifyingglass")
-                                                .font(.system(size: 14))
-                                            Text("Search")
-                                                .font(.system(size: 14, weight: .medium))
-                                            if !OpenAIService.shared.isPremiumMode {
+                                                .font(.system(size: 18))
+                                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                                .padding(6)
+                                                .background(Color.black.opacity(0.2))
+                                                .cornerRadius(8)
+                                        } else {
+                                            HStack(spacing: 4) {
+                                                Image(systemName: "magnifyingglass")
+                                                    .font(.system(size: 14))
+                                                Text("Search")
+                                                    .font(.system(size: 14, weight: .medium))
                                                 Image(systemName: "star.fill")
                                                     .font(.system(size: 8))
                                                     .foregroundColor(.yellow)
                                             }
+                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 6)
+                                            .background(Color.black.opacity(0.2))
+                                            .cornerRadius(8)
                                         }
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 6)
-                                        .background(Color.black.opacity(0.2))
-                                        .cornerRadius(8)
                                     }
                                     .sheet(isPresented: $showMedicationSearch) {
                                         MedicationSearchView(selectedMedication: $name)
@@ -104,12 +121,35 @@ struct AddMedicationView: View {
                                 
                                 systemInputField(
                                     title: "Dosage", 
-                                    placeholder: "e.g., 50mg", 
+                                    placeholder: dosageUnit == "ml" ? "e.g., 10ml" : "e.g., 50mg", 
                                     text: $dosage, 
                                     field: .dosage,
                                     iconName: "measure"
                                 )
                                 .id(Field.dosage)
+
+                                Divider()
+                                    .background(Color(hex: "#C7C7BD").opacity(0.2))
+
+                                // Dosage Unit Picker
+                                HStack {
+                                    Image(systemName: "scalemass")
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                        .frame(width: 25, alignment: .center)
+                                    Text("Unit")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                    Spacer()
+                                    Picker("Unit", selection: $dosageUnit) {
+                                        ForEach(dosageUnits, id: \.self) { unit in
+                                            Text(unit)
+                                        }
+                                    }
+                                    .pickerStyle(SegmentedPickerStyle())
+                                    .frame(width: 100)
+                                }
+                                .padding(.vertical, 8)
+
                             }
                             .padding()
                             .background(Color.black.opacity(0.2))
@@ -416,6 +456,12 @@ struct AddMedicationView: View {
                 }
             }
         }
+        .sheet(isPresented: $showPremiumUpsellSheet) {
+            PremiumSearchUpsellView(isPresented: $showPremiumUpsellSheet)
+                .preferredColorScheme(.dark)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
         .preferredColorScheme(.dark)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
@@ -452,7 +498,7 @@ struct AddMedicationView: View {
     // Check if we need multiple reminder fields
     private var needsMultipleReminders: Bool {
         switch frequency {
-        case "Twice daily", "Three times daily", "Four times daily":
+        case "Twice daily", "Three times daily":
             return true
         default:
             return false
@@ -532,14 +578,6 @@ struct AddMedicationView: View {
             reminderTimes = [morningTime, middayTime, eveningTime]
             enableNotification = true
             
-        case "Four times daily":
-            let earlyMorningTime = calendar.date(bySettingHour: 6, minute: 0, second: 0, of: Date()) ?? Date()
-            let middayTime = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: Date()) ?? Date()
-            let afternoonTime = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: Date()) ?? Date()
-            let bedtimeTime = calendar.date(bySettingHour: 22, minute: 0, second: 0, of: Date()) ?? Date()
-            reminderTimes = [earlyMorningTime, middayTime, afternoonTime, bedtimeTime]
-            enableNotification = true
-            
         case "As needed":
             reminderTimes = []
             enableNotification = false
@@ -616,6 +654,8 @@ struct AddMedicationView: View {
         store.addMedication(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             dosage: dosage.trimmingCharacters(in: .whitespacesAndNewlines),
+            dosageUnit: dosageUnit,
+            iconName: iconName,
             frequency: frequency,
             timeToTake: timeToTake,
             reminderTimes: (needsMultipleReminders && !isOneTimeWithFollowUp) ? reminderTimes : [],

@@ -14,7 +14,6 @@ struct PillrApp: App {
     @StateObject private var interactionStore = InteractionStore.shared
     @StateObject private var openAIService = OpenAIService.shared
     @StateObject private var userSettings = UserSettings.shared
-    @State private var showNamePrompt = false
     
     init() {
         // Set preview environment detection
@@ -59,24 +58,12 @@ struct PillrApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                ContentView()
-                    .environmentObject(store)
-                    .environmentObject(interactionStore)
-                    .environmentObject(openAIService)
-                    .environmentObject(userSettings)
-                    .preferredColorScheme(.dark)
-                    .onAppear {
-                        // Check if we need to show the name prompt
-                        showNamePrompt = userSettings.isFirstLaunch
-                    }
-                
-                if showNamePrompt {
-                    UserNameInputView(isShowing: $showNamePrompt)
-                        .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut, value: showNamePrompt)
+            ContentView()
+                .environmentObject(store)
+                .environmentObject(interactionStore)
+                .environmentObject(openAIService)
+                .environmentObject(userSettings)
+                .preferredColorScheme(.dark)
         }
     }
 }

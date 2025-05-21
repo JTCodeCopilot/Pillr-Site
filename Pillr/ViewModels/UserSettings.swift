@@ -17,16 +17,9 @@ class UserSettings: ObservableObject {
         }
     }
     
-    @Published var isFirstLaunch: Bool {
-        didSet {
-            if !isPreviewMode {
-                UserDefaults.standard.set(!isFirstLaunch, forKey: hasLaunchedBeforeKey)
-            }
-        }
-    }
+    @Published var isFirstLaunch: Bool = false
     
     private let userNameKey = "userName"
-    private let hasLaunchedBeforeKey = "hasLaunchedBefore"
     private let isPreviewMode: Bool
     
     static let shared = UserSettings()
@@ -42,13 +35,9 @@ class UserSettings: ObservableObject {
         if isPreview {
             // Use default values for preview
             self.userName = "Preview User"
-            self.isFirstLaunch = false
         } else {
             // Load user name if available, otherwise use default
             self.userName = UserDefaults.standard.string(forKey: userNameKey) ?? "User"
-            
-            // Check if this is first launch
-            self.isFirstLaunch = !UserDefaults.standard.bool(forKey: hasLaunchedBeforeKey)
         }
     }
     
