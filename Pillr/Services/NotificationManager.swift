@@ -13,16 +13,7 @@ class NotificationManager: ObservableObject {
     static let shared = NotificationManager()
     
     private init() {
-        requestAuthorization()
         setupNotificationActions()
-    }
-    
-    func requestAuthorization() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, error in
-            if let error = error {
-                print("Error requesting notification permission: \(error.localizedDescription)")
-            }
-        }
     }
     
     private func setupNotificationActions() {

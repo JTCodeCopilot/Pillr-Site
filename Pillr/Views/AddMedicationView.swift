@@ -19,7 +19,7 @@ struct AddMedicationView: View {
     @State private var dosage: String = ""
     @State private var dosageUnit: String = "mg" // Default unit
     @State private var iconName: String = "pill.fill" // Default icon
-    @State private var frequency: String = ""
+    @State private var frequency: String = "As needed"
     @State private var timeToTake: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var reminderTimes: [Date] = []
     @State private var notes: String = ""
@@ -178,6 +178,9 @@ struct AddMedicationView: View {
                                             Button(freq) {
                                                 self.frequency = freq
                                                 setupReminderTimesForFrequency(freq)
+                                                if self.enableNotification { // If frequency enables notifications
+                                                    requestNotificationPermissionIfNeeded()
+                                                }
                                                 // Don't automatically jump to notes
                                             }
                                         }
@@ -320,41 +323,41 @@ struct AddMedicationView: View {
                             .background(Color.black.opacity(0.2))
                             .cornerRadius(10)
                             
-                            // Notification Toggle
-                            VStack(alignment: .leading) {
-                                Text("REMINDERS")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                                    .padding(.bottom, 8)
-                                
-                                Toggle(isOn: $enableNotification) {
-                                    HStack {
-                                        Image(systemName: "bell.badge")
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                            .frame(width: 25, alignment: .center)
-                                        
-                                        Text("Enable Reminder")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            // Notification Toggle Section
+                            if frequency != "As needed" { // Only show this section if frequency is not "As needed"
+                                VStack(alignment: .leading) {
+                                    Text("NOTIFICATIONS")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                        .padding(.bottom, 8)
+
+                                    // The "Enable Reminders" Toggle has been removed.
+                                    // enableNotification state is now implicitly managed by frequency selection.
+                                    
+                                    // One-time with follow-up toggle
+                                    if needsMultipleReminders || frequency == "Once daily" { // Show for Once daily, Twice daily, Three times daily
+                                        Toggle(isOn: $isOneTimeWithFollowUp) {
+                                            HStack {
+                                                Image(systemName: "arrow.clockwise.circle.fill")
+                                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                                    .frame(width: 25, alignment: .center)
+                                                VStack(alignment: .leading) {
+                                                    Text("One-time with Follow-up")
+                                                        .font(.system(size: 16))
+                                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                                    Text("Sends a single reminder and a 30-min follow-up.")
+                                                        .font(.caption)
+                                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                                }
+                                            }
+                                        }
+                                        .padding(.vertical, 8)
                                     }
                                 }
-                                .toggleStyle(SwitchToggleStyle(tint: Color.accentColor))
-                                Toggle(isOn: $isOneTimeWithFollowUp) {
-                                    HStack {
-                                        Image(systemName: "1.circle")
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                            .frame(width: 25, alignment: .center)
-                                        Text("Remind me once with follow up")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                    }
-                                }
-                                .toggleStyle(SwitchToggleStyle(tint: Color.accentColor))
-                                .disabled(!enableNotification)
+                                .padding()
+                                .background(Color.black.opacity(0.2))
+                                .cornerRadius(10)
                             }
-                            .padding()
-                            .background(Color.black.opacity(0.2))
-                            .cornerRadius(10)
                             
                             // Notes
                             VStack(alignment: .leading) {
@@ -668,5 +671,35 @@ struct AddMedicationView: View {
         )
         
         onAdd()
+    }
+
+    private func requestNotificationPermissionIfNeeded() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            if settings.authorizationStatus == .notDetermined {
+                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+                    if granted {
+                        print("Notification permission granted.")
+                        // User granted permission, ensure toggle remains on
+                        DispatchQueue.main.async {
+                            self.enableNotification = true
+                        }
+                    } else {
+                        print("Notification permission denied.")
+                        // User denied permission, ensure toggle is off
+                        DispatchQueue.main.async {
+                            self.enableNotification = false
+                        }
+                    }
+                }
+            } else if settings.authorizationStatus == .denied {
+                // Permissions were previously denied. Inform the user or guide them to settings.
+                // For now, just ensure the toggle is off.
+                print("Notification permission was previously denied.")
+                DispatchQueue.main.async {
+                    self.enableNotification = false
+                }
+            }
+            // If .authorized, do nothing, toggle is already on.
+        }
     }
 }

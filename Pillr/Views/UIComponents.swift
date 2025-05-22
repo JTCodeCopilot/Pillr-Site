@@ -3,12 +3,13 @@ import SwiftUI
 // MARK: - UI Components
 
 struct InteractionHeaderView: View {
+    let title: String
     let isPremiumMode: Bool
     let onApiKeyTap: () -> Void
     
     var body: some View {
         HStack {
-            Text("Medication Interactions")
+            Text(title)
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(Color(hex: "#C7C7BD"))
             
@@ -84,6 +85,7 @@ struct InteractionSearchInputView: View {
 }
 
 struct APIKeyWarningView: View {
+    let warningText: String
     let onEnablePremium: () -> Void
     
     var body: some View {
@@ -99,7 +101,7 @@ struct APIKeyWarningView: View {
                 Spacer()
             }
             
-            Text("To use the medication interaction checker, please enable Premium Mode.")
+            Text(warningText)
                 .font(.system(size: 13))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
             

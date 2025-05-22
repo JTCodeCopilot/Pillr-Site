@@ -24,78 +24,9 @@ struct SettingsView: View {
                         .padding(.horizontal)
                         .padding(.top, 10)
                         
-                        // App Settings section
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Image(systemName: "gearshape")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                Text("App Settings")
-                                    .font(.headline)
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                Spacer()
-                            }
-                            Divider()
-                                .background(Color(hex: "#C7C7BD").opacity(0.2))
-                            
-                            // Notifications toggle
-                            Toggle(isOn: $notificationsEnabled) {
-                                HStack {
-                                    Image(systemName: "bell.badge")
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                    Text("Enable Notifications")
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                }
-                            }
-                            .toggleStyle(SwitchToggleStyle(tint: Color.accentColor))
-                            .onChange(of: notificationsEnabled) { value in
-                                if value {
-                                    NotificationManager.shared.requestAuthorization()
-                                } else {
-                                    NotificationManager.shared.cancelAllNotifications()
-                                }
-                            }
-                        }
-                        .padding()
-                        .background(Color.black.opacity(0.12))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
-                        )
-                        .padding(.horizontal)
+                        appSettingsSection
                         
-                        // App info section
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Image(systemName: "info.circle")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                
-                                Text("About")
-                                    .font(.headline)
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                
-                                Spacer()
-                            }
-                            
-                            Divider()
-                                .background(Color(hex: "#C7C7BD").opacity(0.2))
-                            
-                            VStack(alignment: .leading, spacing: 12) {
-                                InfoRow(title: "Version", value: "1.0.0")
-                                InfoRow(title: "Developer", value: "Justin Tilley")
-                                InfoRow(title: "Build Date", value: "May 2025")
-                            }
-                        }
-                        .padding()
-                        .background(Color.black.opacity(0.12))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
-                        )
-                        .padding(.horizontal)
+                        appInfoSection
                         
                         Spacer()
                     }
@@ -105,6 +36,106 @@ struct SettingsView: View {
             .navigationBarTitle("", displayMode: .inline)
             .navigationBarHidden(true)
         }
+    }
+    
+    // Computed property for App Settings section
+    private var appSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Text("App Settings")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Spacer()
+            }
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            // Notifications toggle
+            Toggle(isOn: $notificationsEnabled) {
+                HStack {
+                    Image(systemName: "bell.badge")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                    Text("Enable Notifications")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                }
+            }
+            .toggleStyle(SwitchToggleStyle(tint: Color.accentColor))
+            .onChange(of: notificationsEnabled) { value in
+                if value {
+                    UNUserNotificationCenter.current().getNotificationSettings { settings in
+                        if settings.authorizationStatus == .notDetermined {
+                            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+                                if granted {
+                                    print("Notification permission granted from settings.")
+                                    DispatchQueue.main.async {
+                                        self.notificationsEnabled = true
+                                    }
+                                } else {
+                                    print("Notification permission denied from settings.")
+                                    DispatchQueue.main.async {
+                                        self.notificationsEnabled = false
+                                    }
+                                }
+                            }
+                        } else if settings.authorizationStatus == .denied {
+                            print("Notification permission was previously denied. Please enable in system settings.")
+                            // Optionally, guide user to settings app
+                            DispatchQueue.main.async {
+                                self.notificationsEnabled = false
+                            }
+                        }
+                        // If .authorized, do nothing, toggle is already on.
+                    }
+                } else {
+                    NotificationManager.shared.cancelAllNotifications()
+                }
+            }
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
+    }
+    
+    // Computed property for App Info section
+    private var appInfoSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                
+                Text("About")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                
+                Spacer()
+            }
+            
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            VStack(alignment: .leading, spacing: 12) {
+                InfoRow(title: "Version", value: "1.0.0")
+                InfoRow(title: "Developer", value: "Justin Tilley")
+                InfoRow(title: "Build Date", value: "May 2025")
+            }
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
     }
 }
 

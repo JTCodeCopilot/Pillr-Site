@@ -36,16 +36,19 @@ struct PillrApp: App {
         // Request notification permission on app launch - skip in preview mode
         #if DEBUG
         if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
-            requestNotificationPermission()
+            // requestNotificationPermission() // Removed to request contextually
         }
         #else
-        requestNotificationPermission()
+        // requestNotificationPermission() // Removed to request contextually
         #endif
         
         // Set notification delegate to handle user responses
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
     }
     
+    // private func requestNotificationPermission() { ... } // This function can be removed or kept if used elsewhere,
+    // For now, I will comment it out as it is not called from anywhere else.
+    /*
     private func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             if granted {
@@ -55,6 +58,7 @@ struct PillrApp: App {
             }
         }
     }
+    */
     
     var body: some Scene {
         WindowGroup {

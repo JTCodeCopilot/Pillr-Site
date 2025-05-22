@@ -13,6 +13,7 @@ struct InteractionSearchView: View {
     @State private var errorMessage = ""
     @State private var showingError = false
     @State private var showingAPIKeySheet = false
+    @State private var showingFeatureSheet = false
     
     var body: some View {
         NavigationView {
@@ -25,6 +26,7 @@ struct InteractionSearchView: View {
                     VStack(spacing: 20) {
                         // Title and API key button section
                         InteractionHeaderView(
+                            title: "AI-Powered Drug Interaction Checker",
                             isPremiumMode: openAIService.isPremiumMode,
                             onApiKeyTap: { showingAPIKeySheet = true }
                         )
@@ -40,13 +42,17 @@ struct InteractionSearchView: View {
                         // API key warning (Only show if not in premium mode and no key set)
                         if !openAIService.hasAPIKey() {
                             APIKeyWarningView(
-                                onEnablePremium: { openAIService.enablePremiumMode() }
+                                warningText: "Enable Premium for AI-powered interaction checks.",
+                                onEnablePremium: {
+                                    openAIService.enablePremiumMode()
+                                    showingFeatureSheet = true
+                                }
                             )
                         }
                         
                         // Loading indicator
                         if isLoading {
-                            LoadingView(message: "Checking interaction...")
+                            LoadingView(message: "AI is analyzing potential interactions...")
                         }
                         
                         // Results display
@@ -71,21 +77,19 @@ struct InteractionSearchView: View {
                 APIKeyView()
                     .preferredColorScheme(.dark)
             }
+            .sheet(isPresented: $showingFeatureSheet) {
+                FeatureSheetView(isPresented: $showingFeatureSheet)
+            }
         }
         .preferredColorScheme(.dark)
     }
     
     private var isButtonDisabled: Bool {
-        return drugA.isEmpty || drugB.isEmpty || isLoading || !openAIService.hasAPIKey()
+        return drugA.isEmpty || drugB.isEmpty || isLoading
     }
     
     private func searchInteraction() {
         guard !drugA.isEmpty && !drugB.isEmpty else { return }
-        guard openAIService.hasAPIKey() else {
-            errorMessage = "Premium access required to use this feature"
-            showingError = true
-            return
-        }
         
         isLoading = true
         errorMessage = ""
