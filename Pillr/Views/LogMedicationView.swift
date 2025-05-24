@@ -22,254 +22,588 @@ struct LogMedicationView: View {
     @State private var remainingPills: Int?
     @State private var selectedDoseIndex: Int = 0
     @State private var showQuickLogOption: Bool = false
+    @State private var selectedQuickTime: QuickTimeOption = .now
+    @State private var showingCustomTime: Bool = false
+    @State private var sideEffectTags: Set<String> = []
+    @State private var customSideEffect: String = ""
+    @State private var showingAddCustomSideEffect: Bool = false
+    
+    // Quick time options for easier logging
+    enum QuickTimeOption: String, CaseIterable {
+        case now = "Now"
+        case fiveMinAgo = "5 min ago"
+        case fifteenMinAgo = "15 min ago"
+        case thirtyMinAgo = "30 min ago"
+        case oneHourAgo = "1 hour ago"
+        case custom = "Custom time"
+        
+        var timeOffset: TimeInterval {
+            switch self {
+            case .now: return 0
+            case .fiveMinAgo: return -300
+            case .fifteenMinAgo: return -900
+            case .thirtyMinAgo: return -1800
+            case .oneHourAgo: return -3600
+            case .custom: return 0
+            }
+        }
+    }
+    
+    // Common side effects for quick selection
+    private let commonSideEffects = [
+        "Nausea", "Drowsiness", "Headache", "Dizziness", "Stomach upset",
+        "Dry mouth", "Fatigue", "Insomnia", "Appetite loss", "Mood changes"
+    ]
     
     // Whether this medication has multiple doses
     private var hasMultipleDoses: Bool {
         return !medicationToLog.reminderTimes.isEmpty
     }
     
+    // Computed property for dose selection label to avoid complex expression
+    private var doseSelectionLabel: some View {
+        HStack {
+            Text("Dose #\(selectedDoseIndex + 1) (\(formatTime(medicationToLog.reminderTimes[selectedDoseIndex])))")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+            Spacer()
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.2))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#404C42")
-                    .ignoresSafeArea()
+                // Enhanced background with subtle gradient
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "#404C42"),
+                        Color(hex: "#3A443D")
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
                 
-                VStack(alignment: .leading, spacing: 0) {
-                    // Header
-                    HStack {
-                        Text(medicationToLog.name)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                        Spacer()
-                        if let pillCount = remainingPills {
-                            Text("\(pillCount) left")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(Color.black.opacity(0.2))
-                                .cornerRadius(8)
-                        }
-                    }
-                    .padding(.top, 20)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12) // Added bottom padding for separation
-                    
-                    // Removed Quick log section
-                    // Always show detailed view
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            // Multiple doses selector
-                            if hasMultipleDoses {
-                                VStack(alignment: .leading) {
-                                    Text("DOSE")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                                        .padding(.bottom, 4)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 24) {
+                        // Enhanced Header with progress indicator
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Log Medication")
+                                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
                                     
-                                    Picker("Dose", selection: $selectedDoseIndex) {
-                                        ForEach(0..<medicationToLog.reminderTimes.count, id: \.self) { index in
-                                            Text("Dose #\(index + 1) (\(formatTime(medicationToLog.reminderTimes[index])))")
-                                                .tag(index)
-                                                .foregroundColor(Color(hex: "#C7C7BD"))
-                                        }
-                                    }
-                                    .pickerStyle(.menu)
-                                    .accentColor(Color(hex: "#C7C7BD"))
-                                    .padding(.horizontal, -8)
-                                }
-                                .padding()
-                                .background(Color.black.opacity(0.2))
-                                .cornerRadius(10)
-                            }
-                            
-                            // Log Details
-                            VStack(alignment: .leading, spacing: 12) {
-                                // Time selection - combined date and time
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack {
-                                        Image(systemName: "calendar.badge.clock")
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                            .frame(width: 25, alignment: .center)
-                                        
-                                        Text("Time Taken") // Label is always "Time Taken"
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                        
-                                        Spacer()
-                                    }
-                                    
-                                    DatePicker("", selection: $actualTimeTaken, displayedComponents: [.date, .hourAndMinute]) // Combined date and time
-                                        .datePickerStyle(.graphical) // Restored graphical style
-                                        .labelsHidden()
-                                        .colorScheme(.dark) // Assuming dark theme
-                                        .accentColor(Color(hex: "#81C784")) // Restored softer green
-                                        .padding(.top, 5)
-                                }
-                            }
-                            .padding()
-                            .background(Color.black.opacity(0.25))
-                            .cornerRadius(12)
-                            
-                            // Notes
-                            VStack(alignment: .leading, spacing: 8) {
-                                // Notes Title
-                                HStack {
-                                    Image(systemName: "square.and.pencil") // Restored icon
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                        .frame(width: 25, alignment: .leading)
-                                    
-                                    Text("Notes (Optional)") // Restored title case
+                                    Text("Record your dose")
                                         .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                    Spacer()
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                 }
-                                .padding(.bottom, 4)
-
-                                ZStack(alignment: .topLeading) {
-                                    TextEditor(text: $logNotes)
-                                        .frame(minHeight: 100, maxHeight: 200)
-                                        .foregroundColor(Color(hex: "#E0E0E0"))
-                                        .scrollContentBackground(.hidden)
-                                        .background(Color.clear)
-                                        .padding(.horizontal, 4)
-                                        .padding(.vertical, 6)
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
-                                        )
-
-                                    if logNotes.isEmpty {
-                                        Text("Add any notes about this dose (e.g., side effects, reminders)...")
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
-                                            .padding(.leading, 9)
-                                            .padding(.top, 14)
-                                            .allowsHitTesting(false)
+                                
+                                Spacer()
+                                
+                                // Enhanced pill count indicator
+                                if let pillCount = remainingPills {
+                                    VStack(spacing: 4) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "pills.circle.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(Color(hex: "#404C42"))
+                                            Text("\(pillCount)")
+                                                .font(.system(size: 18, weight: .bold))
+                                                .foregroundColor(Color(hex: "#404C42"))
+                                        }
+                                        Text("remaining")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(Color(hex: "#404C42").opacity(0.8))
                                     }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color(hex: "#C7C7BD"))
+                                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                    )
                                 }
                             }
-                            .padding()
-                            .background(Color.black.opacity(0.25))
-                            .cornerRadius(12)
                             
-                            // Submit buttons area
-                            HStack(spacing: 12) {
-                                if medicationToLog.frequency != "As needed" {
-                                    Button {
-                                        processDoseAction(skipped: true)
+                            // Medication preview card
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(hex: "#81C784").opacity(0.2))
+                                        .frame(width: 60, height: 60)
+                                    
+                                    Image(systemName: "pill.circle.fill")
+                                        .font(.system(size: 32))
+                                        .foregroundColor(Color(hex: "#81C784"))
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(medicationToLog.name)
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                        .lineLimit(2)
+                                    
+                                    Text("\(medicationToLog.dosage) \(medicationToLog.dosageUnit)")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#81C784"))
+                                    
+                                    Text(medicationToLog.frequency)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(20)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color.black.opacity(0.2))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(Color(hex: "#81C784").opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        .padding(.top, 20)
+                        
+                        // Multiple doses selector (if applicable)
+                        if hasMultipleDoses {
+                            FormSection(title: "DOSE SELECTION", icon: "list.number.circle.fill") {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    HStack {
+                                        Image(systemName: "clock.badge.checkmark")
+                                            .foregroundColor(Color(hex: "#FFB74D"))
+                                            .font(.system(size: 20))
+                                        Text("Which dose are you logging?")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                    }
+                                    
+                                    Menu {
+                                        ForEach(0..<medicationToLog.reminderTimes.count, id: \.self) { index in
+                                            Button("Dose #\(index + 1) (\(formatTime(medicationToLog.reminderTimes[index])))") {
+                                                selectedDoseIndex = index
+                                            }
+                                        }
                                     } label: {
-                                        Text("Skip")
-                                            .font(.system(size: 18, weight: .semibold))
-                                            .foregroundColor(.white)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 16)
-                                            .background(Color.orange.opacity(0.9))
-                                            .cornerRadius(12)
+                                        doseSelectionLabel
+                                    }
+                                    .buttonStyle(ScaleButtonStyle())
+                                }
+                            }
+                        }
+                        
+                        // Enhanced Time Section with quick options
+                        FormSection(title: "TIME TAKEN", icon: "clock.fill") {
+                            VStack(alignment: .leading, spacing: 20) {
+                                HStack {
+                                    Image(systemName: "calendar.badge.clock")
+                                        .foregroundColor(Color(hex: "#FFB74D"))
+                                        .font(.system(size: 20))
+                                    Text("When did you take it?")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                }
+                                
+                                // Quick time selection buttons
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                                    ForEach(QuickTimeOption.allCases, id: \.self) { option in
+                                        Button(action: {
+                                            HapticManager.shared.lightImpact()
+                                            selectedQuickTime = option
+                                            if option == .custom {
+                                                showingCustomTime = true
+                                            } else {
+                                                actualTimeTaken = Date().addingTimeInterval(option.timeOffset)
+                                                showingCustomTime = false
+                                            }
+                                        }) {
+                                            Text(option.rawValue)
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(selectedQuickTime == option ? Color(hex: "#404C42") : Color(hex: "#E8E8E0"))
+                                                .padding(.vertical, 12)
+                                                .padding(.horizontal, 8)
+                                                .frame(maxWidth: .infinity)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .fill(selectedQuickTime == option ? Color(hex: "#81C784") : Color.black.opacity(0.2))
+                                                        .overlay(
+                                                            RoundedRectangle(cornerRadius: 12)
+                                                                .stroke(selectedQuickTime == option ? Color(hex: "#81C784") : Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                        )
+                                                )
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
                                     }
                                 }
                                 
-                                Button {
-                                    processDoseAction(skipped: false)
-                                } label: {
-                                    Text("Log") // Changed from "Log Dose Taken"
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#3A443D"))
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 16)
-                                        .background(Color(hex: "#81C784").opacity(0.8))
-                                        .cornerRadius(12)
+                                // Custom time picker (shown when custom is selected)
+                                if showingCustomTime {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        HStack {
+                                            Image(systemName: "clock.arrow.circlepath")
+                                                .foregroundColor(Color(hex: "#64B5F6"))
+                                                .font(.system(size: 16))
+                                            Text("Select custom time")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                        }
+                                        
+                                        DatePicker("", selection: $actualTimeTaken, displayedComponents: [.date, .hourAndMinute])
+                                            .datePickerStyle(.compact)
+                                            .labelsHidden()
+                                            .colorScheme(.dark)
+                                            .accentColor(Color(hex: "#81C784"))
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .fill(Color.black.opacity(0.1))
+                                            )
+                                    }
+                                    .padding(16)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.black.opacity(0.1))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(Color(hex: "#64B5F6").opacity(0.3), lineWidth: 1)
+                                            )
+                                    )
+                                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
                                 }
                             }
-                            .padding(.top, 10)
-                            .padding(.bottom, keyboardHeight > 0 ? keyboardHeight + 10 : 20)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16) // Reduced top padding for ScrollView content
+                        
+                        // Enhanced Notes & Side Effects Section
+                        FormSection(title: "NOTES & SIDE EFFECTS", icon: "note.text.fill") {
+                            VStack(alignment: .leading, spacing: 20) {
+                                // Side effects quick selection
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundColor(Color(hex: "#FFB74D"))
+                                            .font(.system(size: 18))
+                                        Text("Any side effects? (optional)")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                    }
+                                    
+                                    if !sideEffectTags.isEmpty {
+                                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                                            ForEach(Array(sideEffectTags), id: \.self) { effect in
+                                                HStack {
+                                                    Text(effect)
+                                                        .font(.system(size: 14, weight: .medium))
+                                                        .foregroundColor(Color(hex: "#404C42"))
+                                                    
+                                                    Button(action: {
+                                                        HapticManager.shared.lightImpact()
+                                                        sideEffectTags.remove(effect)
+                                                    }) {
+                                                        Image(systemName: "xmark.circle.fill")
+                                                            .font(.system(size: 16))
+                                                            .foregroundColor(Color(hex: "#404C42").opacity(0.7))
+                                                    }
+                                                }
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 20)
+                                                        .fill(Color(hex: "#FFB74D"))
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 8) {
+                                            ForEach(commonSideEffects.filter { !sideEffectTags.contains($0) }, id: \.self) { effect in
+                                                Button(action: {
+                                                    HapticManager.shared.lightImpact()
+                                                    sideEffectTags.insert(effect)
+                                                }) {
+                                                    Text(effect)
+                                                        .font(.system(size: 14, weight: .medium))
+                                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                                        .padding(.horizontal, 12)
+                                                        .padding(.vertical, 8)
+                                                        .background(
+                                                            RoundedRectangle(cornerRadius: 20)
+                                                                .fill(Color.black.opacity(0.2))
+                                                                .overlay(
+                                                                    RoundedRectangle(cornerRadius: 20)
+                                                                        .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                                )
+                                                        )
+                                                }
+                                                .buttonStyle(ScaleButtonStyle())
+                                            }
+                                            
+                                            // Add custom side effect button
+                                            Button(action: {
+                                                showingAddCustomSideEffect = true
+                                            }) {
+                                                HStack(spacing: 6) {
+                                                    Image(systemName: "plus.circle")
+                                                        .font(.system(size: 14))
+                                                    Text("Add custom")
+                                                        .font(.system(size: 14, weight: .medium))
+                                                }
+                                                .foregroundColor(Color(hex: "#64B5F6"))
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 8)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 20)
+                                                        .fill(Color.black.opacity(0.2))
+                                                        .overlay(
+                                                            RoundedRectangle(cornerRadius: 20)
+                                                                .stroke(Color(hex: "#64B5F6").opacity(0.3), lineWidth: 1)
+                                                        )
+                                                )
+                                            }
+                                            .buttonStyle(ScaleButtonStyle())
+                                        }
+                                        .padding(.horizontal, 1)
+                                    }
+                                }
+                                
+                                // General notes
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Image(systemName: "square.and.pencil")
+                                            .foregroundColor(Color(hex: "#64B5F6"))
+                                            .font(.system(size: 18))
+                                        Text("Additional notes (optional)")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                    }
+                                    
+                                    ZStack(alignment: .topLeading) {
+                                        TextEditor(text: $logNotes)
+                                            .frame(minHeight: 80, maxHeight: 150)
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                            .scrollContentBackground(.hidden)
+                                            .background(Color.clear)
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 12)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .fill(Color.black.opacity(0.2))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 12)
+                                                            .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                    )
+                                            )
+
+                                        if logNotes.isEmpty {
+                                            Text("How did you feel? Any observations?")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                                                .padding(.leading, 20)
+                                                .padding(.top, 20)
+                                                .allowsHitTesting(false)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Enhanced Action Buttons
+                        VStack(spacing: 16) {
+                            if medicationToLog.frequency != "As needed" {
+                                Button {
+                                    HapticManager.shared.warningNotification()
+                                    processDoseAction(skipped: true)
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 20, weight: .semibold))
+                                        Text("Mark as Skipped")
+                                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    }
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 18)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color(hex: "#FF8A65"),
+                                                Color(hex: "#FF7043")
+                                            ]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                    .cornerRadius(20)
+                                    .shadow(color: Color(hex: "#FF7043").opacity(0.4), radius: 12, x: 0, y: 6)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                            }
+                            
+                            Button {
+                                HapticManager.shared.successNotification()
+                                processDoseAction(skipped: false)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 20, weight: .semibold))
+                                    Text("Log Medication")
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                }
+                                .foregroundColor(Color(hex: "#2E5339"))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 18)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color(hex: "#A5D6A7"),
+                                            Color(hex: "#81C784")
+                                        ]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                .cornerRadius(20)
+                                .shadow(color: Color(hex: "#81C784").opacity(0.4), radius: 12, x: 0, y: 6)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                        }
+                        .padding(.vertical, 20)
+                        .padding(.bottom, keyboardHeight > 0 ? keyboardHeight + 20 : 40)
                     }
+                    .padding(.horizontal, 20)
                 }
             }
-            .navigationBarTitleDisplayMode(.inline) // Keep inline
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Log Details")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                }
-                
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Cancel") {
+                        HapticManager.shared.lightImpact()
                         dismiss()
                     }
-                    .font(.system(size: 17)) // Standard weight
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8)) // Slightly dimmer
-                    .hapticFeedback(.light)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
                 }
             }
             .onAppear {
-                // Fetch remaining pills when the view appears
-                remainingPills = store.getRemainingPillCount(for: medicationToLog.id)
-                // Set default time for the dose if applicable
-                if hasMultipleDoses, selectedDoseIndex < medicationToLog.reminderTimes.count {
-                    actualTimeTaken = medicationToLog.reminderTimes[selectedDoseIndex]
-                } else if !hasMultipleDoses {
-                    actualTimeTaken = medicationToLog.timeToTake // Fallback to single timeToTake
-                }
-                
-                // Add keyboard observers
-                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
-                    guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-                    keyboardHeight = keyboardFrame.height
-                }
-                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
-                    keyboardHeight = 0
+                setupKeyboardObservers()
+                // Initialize remaining pills if pill count is available
+                if let pillCount = medicationToLog.pillCount {
+                    remainingPills = pillCount
                 }
             }
-            .onDisappear {
-                // Remove observers
-                NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
-                NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
-            }
-        }
-        .preferredColorScheme(.dark)
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    // Just dismiss the keyboard when pressed
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), 
-                                                   to: nil, 
-                                                   from: nil, 
-                                                   for: nil)
+            .alert("Add Custom Side Effect", isPresented: $showingAddCustomSideEffect) {
+                TextField("Side effect", text: $customSideEffect)
+                Button("Add") {
+                    if !customSideEffect.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        sideEffectTags.insert(customSideEffect.trimmingCharacters(in: .whitespacesAndNewlines))
+                        customSideEffect = ""
+                    }
                 }
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                Button("Cancel", role: .cancel) {
+                    customSideEffect = ""
+                }
+            } message: {
+                Text("Enter a custom side effect to track with this dose.")
             }
         }
     }
     
-    // Renamed and refactored from confirmLogOrSkip
+    // MARK: - Helper Views
+    
+    @ViewBuilder
+    private func FormSection<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .font(.system(size: 16, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    .tracking(0.5)
+            }
+            
+            VStack(alignment: .leading, spacing: 16) {
+                content()
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                    )
+            )
+        }
+    }
+    
+    private func setupKeyboardObservers() {
+        // Add keyboard observers
+        NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
+            guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            keyboardHeight = keyboardFrame.height
+        }
+        NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
+            keyboardHeight = 0
+        }
+    }
+    
     private func processDoseAction(skipped: Bool) {
-        actualTimeTaken = Date() // Set to current time on action
+        // Use the selected time instead of current time
+        let timeToUse = selectedQuickTime == .custom ? actualTimeTaken : Date().addingTimeInterval(selectedQuickTime.timeOffset)
+        
+        // Combine notes with side effects
+        var combinedNotes = logNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if !sideEffectTags.isEmpty {
+            let sideEffectsText = "Side effects: " + Array(sideEffectTags).joined(separator: ", ")
+            if combinedNotes.isEmpty {
+                combinedNotes = sideEffectsText
+            } else {
+                combinedNotes += "\n\n" + sideEffectsText
+            }
+        }
+        
+        let finalNotes = combinedNotes.isEmpty ? nil : combinedNotes
         
         if skipped {
              store.skipMedication(
                  medication: medicationToLog,
-                 actualTime: actualTimeTaken,
-                 notes: logNotes.isEmpty ? nil : logNotes,
+                 actualTime: timeToUse,
+                 notes: finalNotes,
                  reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
              )
-            HapticManager.shared.warningNotification() // Trigger warning haptic for skip
         } else {
             store.logMedicationTaken(
                 medication: medicationToLog,
-                actualTime: actualTimeTaken,
-                notes: logNotes.isEmpty ? nil : logNotes,
+                actualTime: timeToUse,
+                notes: finalNotes,
                 skipped: false, 
                 reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
             )
-            HapticManager.shared.successNotification() // Trigger success haptic for log
         }
         dismiss()
     }
@@ -289,13 +623,4 @@ struct LogMedicationView: View {
     }
 }
 
-extension View {
-    func hapticFeedback(_ style: HapticStyle) -> some View {
-        self.onTapGesture {
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(
-                style == .success ? .success : .warning
-            )
-        }
-    }
-}
+

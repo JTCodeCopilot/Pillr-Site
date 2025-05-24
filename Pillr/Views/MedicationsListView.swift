@@ -40,7 +40,13 @@ struct MedicationsListView: View {
                 isCheckingInteractions: $isCheckingInteractions,
                 onCheckAllInteractions: checkAllMedicationInteractions
             )
-            AddMedicationFloatingButton(showingAddSheet: $showingAddSheet)
+            FloatingActionButton(
+                showingAddSheet: $showingAddSheet,
+                showingArchivedSheet: $showingArchivedSheet,
+                hasArchivedMedications: !store.archivedMedications.isEmpty,
+                isCheckingInteractions: $isCheckingInteractions,
+                onCheckAllInteractions: checkAllMedicationInteractions
+            )
         }
         .sheet(item: $showingLogSheetFor) { med in
             LogMedicationView(medicationToLog: med)
@@ -99,12 +105,24 @@ struct MedicationsListView: View {
             return
         }
         
+        guard store.activeMedications.count >= 2 else {
+            self.interactionCheckError = "You need at least 2 active medications to check for interactions."
+            self.showingInteractionResultSheet = true
+            return
+        }
+        
         isCheckingInteractions = true
         self.interactionCheckError = nil
         self.foundInteractions = nil
         
         do {
             let interactions = try await OpenAIService.shared.checkInteractionsForAllMedications(medications: store.activeMedications)
+            
+            // Save interactions to history
+            for interaction in interactions {
+                InteractionStore.shared.saveInteraction(interaction)
+            }
+            
             self.foundInteractions = interactions
         } catch {
             self.interactionCheckError = "Failed to check interactions: \(error.localizedDescription)"
@@ -119,39 +137,124 @@ struct MedicationsListView: View {
 
 @ViewBuilder
 fileprivate func EmptyMedicationsView(showingAddSheet: Binding<Bool>) -> some View {
-    VStack(spacing: 20) {
+    VStack(spacing: 24) {
         Image(systemName: "pills")
-            .font(.system(size: 50))
-            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-            .padding(.bottom, 10)
-        Text("Your medication list is empty")
-            .font(.system(size: 18, weight: .medium))
-            .foregroundColor(Color(hex: "#C7C7BD"))
-        Text("Add your medications to get reminders and track when you take them")
-            .font(.system(size: 14))
-            .multilineTextAlignment(.center)
-            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-            .padding(.horizontal)
+            .font(.system(size: 60))
+            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+            .padding(.bottom, 8)
+        
+        VStack(spacing: 12) {
+            Text("Your medication list is empty")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+            
+            Text("Add your medications to get reminders and track when you take them")
+                .font(.system(size: 16))
+                .multilineTextAlignment(.center)
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .padding(.horizontal, 20)
+        }
+        
         Button {
             showingAddSheet.wrappedValue = true
         } label: {
-            Text("Add Medication")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD"))
-                .padding(.vertical, 10)
-                .padding(.horizontal, 20)
-                .background(Color.black.opacity(0.3))
-                .cornerRadius(6)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+            HStack(spacing: 8) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 16))
+                Text("Add Your First Medication")
+                    .font(.system(size: 16, weight: .medium))
+            }
+            .foregroundColor(Color(hex: "#404C42"))
+            .padding(.vertical, 14)
+            .padding(.horizontal, 24)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "#E8E8E0"),
+                        Color(hex: "#D0D0C8")
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
+            )
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
         }
+        .buttonStyle(ScaleButtonStyle())
     }
-    .padding(30)
+    .padding(40)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .accessibilityElement(children: .combine)
     .accessibilityLabel("Your medication list is empty. Add your first medication.")
+}
+
+// Helper function to sort medications by priority (overdue first, then by due time)
+fileprivate func sortedMedications(_ medications: [Medication]) -> [Medication] {
+    let calendar = Calendar.current
+    let now = Date()
+    let today = calendar.startOfDay(for: now)
+    
+    return medications.sorted { med1, med2 in
+        // Helper function to get medication status
+        func getMedicationStatus(_ medication: Medication) -> (isOverdue: Bool, isAsNeeded: Bool, effectiveDueTime: Date) {
+            // Check if taken or skipped today (simplified version of the logic from MedicationRow)
+            // We'll use a simplified approach for sorting that doesn't check logs
+            
+            if medication.frequency == "As needed" {
+                return (false, true, medication.timeToTake)
+            }
+            
+            // Calculate effective due time (simplified version)
+            var effectiveDueTime = medication.timeToTake
+            let medicationDayStart = calendar.startOfDay(for: medication.timeToTake)
+            let dayDifferenceComponents = calendar.dateComponents([.day], from: medicationDayStart, to: today)
+            let dayDifference = dayDifferenceComponents.day ?? 0
+            
+            if dayDifference >= 2 {
+                let timeComponents = calendar.dateComponents([.hour, .minute], from: medication.timeToTake)
+                if var newDueTime = calendar.date(bySettingHour: timeComponents.hour ?? 0,
+                                                 minute: timeComponents.minute ?? 0,
+                                                 second: 0,
+                                                 of: now) {
+                    if newDueTime < now {
+                        newDueTime = calendar.date(byAdding: .day, value: 1, to: newDueTime) ?? newDueTime
+                    }
+                    effectiveDueTime = newDueTime
+                }
+            }
+            
+            let isOverdue = effectiveDueTime < now && effectiveDueTime >= today
+            return (isOverdue, false, effectiveDueTime)
+        }
+        
+        let status1 = getMedicationStatus(med1)
+        let status2 = getMedicationStatus(med2)
+        
+        // Priority order:
+        // 1. Overdue medications first
+        if status1.isOverdue && !status2.isOverdue {
+            return true
+        }
+        if !status1.isOverdue && status2.isOverdue {
+            return false
+        }
+        
+        // 2. If both are overdue or both are not overdue, sort by due time
+        if status1.isOverdue == status2.isOverdue {
+            // 3. "As needed" medications go to the end
+            if status1.isAsNeeded && !status2.isAsNeeded {
+                return false
+            }
+            if !status1.isAsNeeded && status2.isAsNeeded {
+                return true
+            }
+            
+            // 4. Sort by effective due time
+            return status1.effectiveDueTime < status2.effectiveDueTime
+        }
+        
+        return false
+    }
 }
 
 @ViewBuilder
@@ -169,32 +272,27 @@ fileprivate func MedicationsListContent(
     onCheckAllInteractions: @escaping () async -> Void
 ) -> some View {
     ScrollView {
-        VStack(spacing: 24) {
-            HStack {
-                Text("Currently Taking")
-                    .font(.system(size: 40, weight: .semibold))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                Spacer()
-                Button {
-                    Task {
-                        await onCheckAllInteractions()
-                    }
-                } label: {
-                    if isCheckingInteractions.wrappedValue {
-                        ProgressView()
-                            .tint(Color(hex: "#C7C7BD"))
-                    } else {
-                        Image(systemName: "arrow.left.arrow.right.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                    }
+        VStack(spacing: 28) {
+            // Enhanced header section
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Currently Taking")
+                        .font(.system(size: 36, weight: .bold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                    
+                    Text("\(store.activeMedications.count) medication\(store.activeMedications.count == 1 ? "" : "s")")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                 }
-                .disabled(isCheckingInteractions.wrappedValue)
+                
+                Spacer()
             }
             .padding(.horizontal, 4)
-            .padding(.bottom, 12)
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(store.activeMedications.sorted(by: { $0.timeToTake < $1.timeToTake })) { med in
+            .padding(.bottom, 8)
+            
+            // Enhanced medication cards section
+            VStack(alignment: .leading, spacing: 16) {
+                ForEach(sortedMedications(store.activeMedications)) { med in
                     MedicationRow(
                         medication: med,
                         onLogTap: { 
@@ -211,33 +309,19 @@ fileprivate func MedicationsListContent(
                             showArchiveAlert.wrappedValue = true
                         }
                     )
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
+                        removal: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.95))
+                    ))
                 }
             }
-            if !store.archivedMedications.isEmpty {
-                Button(action: { 
-                    HapticManager.shared.lightImpact()
-                    showingArchivedSheet.wrappedValue = true 
-                }) {
-                    HStack {
-                        Image(systemName: "archivebox")
-                        Text("View Archived Medications (")
-                        Text("\(store.archivedMedications.count)")
-                        Text(")")
-                    }
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 16)
-                    .background(Color.black.opacity(0.2))
-                    .cornerRadius(8)
-                }
-                .padding(.top, 8)
-            }
-            Spacer(minLength: 40)
+            
+
+            
+            Spacer(minLength: 60)
         }
         .padding(.horizontal, horizontalInsets)
-        .padding(.top, 10)
+        .padding(.top, 16)
         .background(
             GeometryReader { geo in
                 Color.clear.preference(
@@ -252,24 +336,99 @@ fileprivate func MedicationsListContent(
     }
 }
 
-fileprivate struct AddMedicationFloatingButton: View {
+fileprivate struct FloatingActionButton: View {
     @Binding var showingAddSheet: Bool
+    @Binding var showingArchivedSheet: Bool
+    let hasArchivedMedications: Bool
+    @Binding var isCheckingInteractions: Bool
+    let onCheckAllInteractions: () async -> Void
+    @State private var isExpanded = false
+    @State private var showBackdrop = false
+    
     var body: some View {
+        ZStack {
+            // Enhanced backdrop with blur effect
+            if showBackdrop {
+                Color.black.opacity(0.2)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        collapseMenu()
+                    }
+                    .transition(.opacity)
+            }
+            
+            VStack {
+                Spacer()
+                
+                HStack {
+                    Spacer()
+                    
+                    VStack(spacing: 0) {
+                        // Expanded action buttons
+                        if isExpanded {
+                            VStack(spacing: 12) {
+                                // Archive button (always show)
+                                expandedActionButton(
+                                    icon: "archivebox.fill",
+                                    text: "Archive",
+                                    delay: 0.1
+                                ) {
+                                    HapticManager.shared.lightImpact()
+                                    showingArchivedSheet = true
+                                    collapseMenu()
+                                }
+                                
+                                // Add medication button
+                                expandedActionButton(
+                                    icon: "plus.circle.fill",
+                                    text: "Add Medication",
+                                    delay: 0.05
+                                ) {
+                                    HapticManager.shared.lightImpact()
+                                    showingAddSheet = true
+                                    collapseMenu()
+                                }
+                            }
+                            .padding(.bottom, 16)
+                        }
+                        
+                        HStack(spacing: 16) {
+                            // Check interactions button (always visible)
+                            interactionsButton
+                            
+                            // Main floating button
+                            mainFloatingButton
+                        }
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 50)
+                }
+            }
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showBackdrop)
+    }
+    
+    // MARK: - Subviews
+    
+    private var interactionsButton: some View {
         Button(action: {
-            showingAddSheet = true
+            HapticManager.shared.lightImpact()
+            Task {
+                await onCheckAllInteractions()
+            }
         }) {
             ZStack {
-                // Updated 3D Gradient background
+                // Enhanced gradient background
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(hex: "#DFDFD9"), // Lighter top highlight
-                        Color(hex: "#C7C7BD"), // Main middle color
-                        Color(hex: "#B8B8AE")  // Softer bottom shadow
+                        Color(hex: "#DFDFD9"),
+                        Color(hex: "#C7C7BD"),
+                        Color(hex: "#B8B8AE")
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(width: 64, height: 64) // Slightly smaller
+                .frame(width: 56, height: 56)
                 .clipShape(Circle())
 
                 // Subtle inner highlight for depth
@@ -282,21 +441,152 @@ fileprivate struct AddMedicationFloatingButton: View {
                         ),
                         lineWidth: 1.5
                     )
-                    .frame(width: 63, height: 63) // Slightly inset
+                    .frame(width: 55, height: 55)
 
-                // Plus icon
-                Image(systemName: "plus")
-                    .font(.system(size: 26, weight: .semibold)) // Slightly adjusted size and weight
-                    .foregroundColor(Color(hex: "#3A443D")) // Darker, less saturated green
+                // Icon with enhanced loading state
+                if isCheckingInteractions {
+                    ProgressView()
+                        .scaleEffect(0.9)
+                        .tint(Color(hex: "#3A443D"))
+                } else {
+                    Image(systemName: "arrow.left.arrow.right.circle.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(Color(hex: "#3A443D"))
+                }
             }
-            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 6) // Softer main shadow
-            .shadow(color: Color(hex: "#2F352F").opacity(0.1), radius: 1, x: 0, y: 1) // Subtle secondary shadow
+            .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 4)
+            .shadow(color: Color(hex: "#2F352F").opacity(0.1), radius: 1, x: 0, y: 1)
+            .scaleEffect(isExpanded ? 0.9 : 1.0)
+            .opacity(isExpanded ? 0.7 : 1.0)
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isExpanded)
         }
-        .hapticFeedback(.medium)
-        .padding(.trailing, 20)
-        .padding(.bottom, 50)
-        .buttonStyle(ScaleButtonStyle())
-        .accessibilityLabel("Add new medication")
+        .buttonStyle(EnhancedScaleButtonStyle())
+        .disabled(isCheckingInteractions)
+        .accessibilityLabel("Check medication interactions")
+    }
+    
+    private var mainFloatingButton: some View {
+        Button(action: {
+            HapticManager.shared.mediumImpact()
+            toggleMenu()
+        }) {
+            ZStack {
+                // Enhanced 3D gradient background
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "#DFDFD9"),
+                        Color(hex: "#C7C7BD"),
+                        Color(hex: "#B8B8AE")
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(width: 64, height: 64)
+                .clipShape(Circle())
+
+                // Enhanced inner highlight
+                Circle()
+                    .strokeBorder(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.white.opacity(isExpanded ? 0.4 : 0.3),
+                                Color.clear
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
+                    .frame(width: 63, height: 63)
+
+                // Dynamic icon with enhanced animation
+                Image(systemName: isExpanded ? "xmark" : "plus")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(Color(hex: "#3A443D"))
+                    .rotationEffect(.degrees(isExpanded ? 135 : 0))
+                    .scaleEffect(isExpanded ? 0.9 : 1.0)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isExpanded)
+            }
+            .shadow(color: Color.black.opacity(isExpanded ? 0.25 : 0.15), radius: isExpanded ? 12 : 8, x: 0, y: isExpanded ? 8 : 6)
+            .shadow(color: Color(hex: "#2F352F").opacity(0.1), radius: 1, x: 0, y: 1)
+            .scaleEffect(isExpanded ? 1.05 : 1.0)
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isExpanded)
+        }
+        .buttonStyle(EnhancedScaleButtonStyle())
+        .accessibilityLabel("Show actions menu")
+    }
+    
+    private func expandedActionButton(
+        icon: String,
+        text: String,
+        delay: Double,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: "#3A443D"))
+                    .frame(width: 20)
+                
+                Text(text)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color(hex: "#3A443D"))
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "#DFDFD9"),
+                        Color(hex: "#C7C7BD"),
+                        Color(hex: "#B8B8AE")
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .cornerRadius(28)
+            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+            .shadow(color: Color.white.opacity(0.3), radius: 1, x: 0, y: -1)
+        }
+        .buttonStyle(EnhancedScaleButtonStyle())
+        .transition(.asymmetric(
+            insertion: .opacity
+                .combined(with: .move(edge: .bottom))
+                .combined(with: .scale(scale: 0.3))
+                .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay)),
+            removal: .opacity
+                .combined(with: .move(edge: .bottom))
+                .combined(with: .scale(scale: 0.3))
+                .animation(.spring(response: 0.4, dampingFraction: 0.9))
+        ))
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func toggleMenu() {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            isExpanded.toggle()
+            showBackdrop = isExpanded
+        }
+    }
+    
+    private func collapseMenu() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            isExpanded = false
+            showBackdrop = false
+        }
+    }
+}
+
+// Enhanced button style with better feedback
+struct EnhancedScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .opacity(configuration.isPressed ? 0.8 : 1)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 
@@ -307,42 +597,144 @@ fileprivate func ArchivedMedicationsSheet(
 ) -> some View {
     NavigationView {
         ZStack {
-            Color(hex: "#404C42").ignoresSafeArea()
-            List {
-                ForEach(store.archivedMedications) { med in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(med.name)
-                                .font(.headline)
-                                .foregroundColor(Color(hex: "#C7C7BD"))
-                            Text(med.dosage)
-                                .font(.subheadline)
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+            // Enhanced background with subtle gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "#404C42"),
+                    Color(hex: "#3A443D")
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 24) {
+                    // Enhanced Header
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Archived Medications")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
+                        
+                        Text("Medications you've archived can be restored anytime")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    }
+                    .padding(.top, 20)
+                    
+                    if store.archivedMedications.isEmpty {
+                        // Empty state
+                        VStack(spacing: 20) {
+                            Image(systemName: "archivebox")
+                                .font(.system(size: 50))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                            
+                            Text("No archived medications")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+                            
+                            Text("Medications you archive will appear here")
+                                .font(.system(size: 16))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                .multilineTextAlignment(.center)
                         }
-                        Spacer()
-                        Button(action: { store.unarchiveMedication(med) }) {
-                            Text("Unarchive")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(Color(hex: "#404C42"))
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 16)
-                                .background(Color(hex: "#C7C7BD"))
-                                .cornerRadius(8)
+                        .padding(.vertical, 40)
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        // Archived medications list
+                        VStack(alignment: .leading, spacing: 16) {
+                            ForEach(store.archivedMedications) { med in
+                                ArchivedMedicationCard(
+                                    medication: med,
+                                    onUnarchive: {
+                                        HapticManager.shared.lightImpact()
+                                        store.unarchiveMedication(med)
+                                    }
+                                )
+                            }
                         }
                     }
-                    .listRowBackground(Color(hex: "#404C42"))
+                    
+                    Spacer(minLength: 40)
                 }
+                .padding(.horizontal, 20)
             }
-            .scrollContentBackground(.hidden)
         }
-        .navigationTitle("Archived Medications")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Done") { showingArchivedSheet.wrappedValue = false }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Button("Done") { 
+                    HapticManager.shared.lightImpact()
+                    showingArchivedSheet.wrappedValue = false 
+                }
+                .foregroundColor(Color(hex: "#C7C7BD"))
             }
         }
     }
+}
+
+@ViewBuilder
+fileprivate func ArchivedMedicationCard(
+    medication: Medication,
+    onUnarchive: @escaping () -> Void
+) -> some View {
+    HStack(spacing: 16) {
+        // Medication icon
+        Image(systemName: "pill.circle.fill")
+            .font(.system(size: 32))
+            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+        
+        // Medication info
+        VStack(alignment: .leading, spacing: 4) {
+            Text(medication.name)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+                .lineLimit(1)
+            
+            Text("\(medication.dosage) \(medication.dosageUnit) - \(medication.frequency)")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Color(hex: "#C7C7BD"))
+                .lineLimit(1)
+            
+            if let notes = medication.notes, !notes.isEmpty {
+                Text(notes)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#A8A8A0"))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+        }
+        
+        Spacer()
+        
+        // Unarchive button
+        Button(action: onUnarchive) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up.bin")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("Restore")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundColor(Color(hex: "#404C42"))
+            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(hex: "#C7C7BD"))
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+            )
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+    .padding(20)
+    .background(
+        RoundedRectangle(cornerRadius: 16)
+            .fill(Color.black.opacity(0.15))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+            )
+    )
 }
 
 fileprivate struct MedicationsListMainContent: View {
@@ -475,35 +867,38 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 16) {
             medicationInfoSection
             Spacer()
             statusAndButtonSection
         }
-        .padding(16)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 18)
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                 showDetails.toggle()
             }
         }
     }
     
-    // Medication information section (left side)
+    // Enhanced medication information section (left side)
     private var medicationInfoSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(medication.name)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(hex: "#E0E0E0"))
+                .font(.system(size: 19, weight: .bold))
+                .foregroundColor(Color(hex: "#F5F5F0"))
+                .lineLimit(2)
+                .minimumScaleFactor(0.9)
             
             Text(dosageString())
-                .font(.system(size: 14))
-                .foregroundColor(Color(hex: "#B0B0B0"))
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Color(hex: "#C7C7BD"))
             
             if let notes = medication.notes, !notes.isEmpty {
                 Text(notes)
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(hex: "#A0A0A0"))
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#A8A8A0"))
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .padding(.top, 2)
@@ -556,7 +951,7 @@ fileprivate struct MedicationRowHeaderView: View {
             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
     }
     
-    // Action button
+    // Enhanced action button
     private var actionButton: some View {
         let properties = buttonProperties()
         
@@ -565,19 +960,22 @@ fileprivate struct MedicationRowHeaderView: View {
         }) {
             HStack(spacing: 8) {
                 Image(systemName: properties.iconName)
-                    .font(.system(size: 22))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(properties.fgColor)
                 
                 Text(properties.text)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(properties.fgColor)
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 16)
-            .background(properties.bgColor)
-            .cornerRadius(20)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 18)
+            .background(
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(properties.bgColor)
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+            )
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(ScaleButtonStyle())
     }
     
     // Handle button tap with appropriate haptic feedback
@@ -706,12 +1104,27 @@ struct MedicationRow: View {
                     onEditTap: onEditTap,
                     onArchiveTap: onArchiveTap
                 )
-                .padding(.top, 8)
+                .padding(.top, 12)
             }
         }
-        .background(Color(hex: "#4A554D"))
-        .cornerRadius(12)
-        .overlay(borderOverlay)
+        .background(
+            // Enhanced gradient background
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "#525E55"),
+                    Color(hex: "#4A554D"),
+                    Color(hex: "#424D45")
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .cornerRadius(16)
+        .overlay(enhancedBorderOverlay)
+        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(commonFormatTime(medication.timeToTake))")
         .accessibilityHint(accessibilityHintText())
@@ -733,25 +1146,86 @@ struct MedicationRow: View {
                 showDetails.toggle()
             }
         }
+        .onTapGesture {
+            isPressed = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isPressed = false
+            }
+        }
+        .contextMenu {
+            // Quick Log option
+            Button {
+                HapticManager.shared.successNotification()
+                quickLogMedication(taken: true)
+            } label: {
+                Label("Log as Taken", systemImage: "checkmark.circle.fill")
+            }
+            
+            // Quick Skip option
+            Button {
+                HapticManager.shared.warningNotification()
+                quickLogMedication(taken: false)
+            } label: {
+                Label("Mark as Skipped", systemImage: "xmark.circle.fill")
+            }
+            
+            Divider()
+            
+            // Edit option
+            Button {
+                HapticManager.shared.lightImpact()
+                onEditTap()
+            } label: {
+                Label("Edit Medication", systemImage: "pencil.circle")
+            }
+            
+            // Archive option (if available)
+            if let archiveTap = onArchiveTap {
+                Button(role: .destructive) {
+                    HapticManager.shared.warningNotification()
+                    archiveTap()
+                } label: {
+                    Label("Archive", systemImage: "archivebox.fill")
+                }
+            }
+        }
     }
     
-    // Border overlay based on medication cycle status
-    private var borderOverlay: some View {
-        let borderColor: Color
+    // Enhanced border overlay with better visual feedback
+    private var enhancedBorderOverlay: some View {
+        let (borderColor, borderWidth): (Color, CGFloat)
         
         switch cycleStatus {
         case .taken:
-            borderColor = Color(hex: "#81C784").opacity(0.5)
+            borderColor = Color(hex: "#81C784")
+            borderWidth = 2.0
         case .skipped:
-            borderColor = Color.red.opacity(0.5)
-        case .due(_), .overdue(_):
-            borderColor = Color(hex: "#606A63").opacity(0.5)
-        case .asNeeded: // Add .asNeeded case
-            borderColor = Color(hex: "#606A63").opacity(0.5) // Or a different color if desired
+            borderColor = Color(hex: "#FF6B6B")
+            borderWidth = 2.0
+        case .overdue(_):
+            borderColor = Color(hex: "#FFB74D")
+            borderWidth = 2.0
+        case .due(_):
+            // No colored border for due medications
+            borderColor = Color.clear
+            borderWidth = 0.0
+        case .asNeeded:
+            borderColor = Color.clear
+            borderWidth = 0.0
         }
         
-        return RoundedRectangle(cornerRadius: 12)
-            .stroke(borderColor, lineWidth: 1)
+        return RoundedRectangle(cornerRadius: 16)
+            .stroke(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        borderColor.opacity(0.8),
+                        borderColor.opacity(0.4)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: borderWidth
+            )
     }
 
     // Helper for accessibility hint text
@@ -778,6 +1252,18 @@ struct MedicationRow: View {
         case .asNeeded: // Add .asNeeded case
             return "View Details"
         }
+    }
+    
+    // Quick log medication function for context menu
+    private func quickLogMedication(taken: Bool) {
+        let now = Date()
+        let notes = taken ? "Quick logged" : "Quick skipped"
+        store.logMedicationTaken(
+            medication: medication,
+            actualTime: now,
+            notes: notes,
+            skipped: !taken
+        )
     }
 }
 
@@ -826,76 +1312,190 @@ fileprivate struct MedicationRowDetailsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Medication Name and Dosage (already in header, but good for context if needed here)
-            // Text("\\(medication.name) - \\(medication.dosage)")
-            //     .font(.system(size: 16, weight: .semibold))
-            //     .foregroundColor(Color(hex: "#E0E0E0"))
-
-            detailRow(icon: "clock.arrow.circlepath", label: "Frequency", value: medication.frequency)
-            detailRow(icon: "alarm", label: "Reminders", value: reminderTimesString)
-            detailRow(icon: notificationsEnabled ? "bell.fill" : "bell.slash.fill", label: "Notifications", value: notificationsEnabled ? "On" : "Off", valueColor: notificationsEnabled ? Color(hex: "#81C784") : .red)
-            
-            if let notes = medication.notes, !notes.isEmpty {
-                detailRow(icon: "note.text", label: "Notes", value: notes, lineLimit: nil)
+        VStack(alignment: .leading, spacing: 20) {
+            // Enhanced detail cards with better visual hierarchy
+            VStack(alignment: .leading, spacing: 16) {
+                detailCard(
+                    icon: "repeat.circle.fill", 
+                    label: "Frequency", 
+                    value: medication.frequency, 
+                    iconColor: Color(hex: "#81C784")
+                )
+                
+                detailCard(
+                    icon: "alarm.fill", 
+                    label: "Reminder Time", 
+                    value: reminderTimesString, 
+                    iconColor: Color(hex: "#FFB74D")
+                )
+                
+                detailCard(
+                    icon: notificationsEnabled ? "bell.fill" : "bell.slash.fill", 
+                    label: "Notifications", 
+                    value: notificationsEnabled ? "Enabled" : "Disabled", 
+                    valueColor: notificationsEnabled ? Color(hex: "#81C784") : Color(hex: "#FF6B6B"), 
+                    iconColor: notificationsEnabled ? Color(hex: "#81C784") : Color(hex: "#FF6B6B")
+                )
+                
+                if let notes = medication.notes, !notes.isEmpty {
+                    detailCard(
+                        icon: "note.text.fill", 
+                        label: "Notes", 
+                        value: notes, 
+                        lineLimit: nil, 
+                        iconColor: Color(hex: "#64B5F6")
+                    )
+                }
             }
 
-            // Action buttons
-            HStack(alignment: .center, spacing: 20) {
+            // Enhanced action buttons with improved styling
+            HStack(spacing: 12) {
                 Button(action: onEditTap) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 13))
+                    HStack(spacing: 10) {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
                         Text("Edit")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
                     }
-                    .padding(.vertical, 7)
-                    .padding(.horizontal, 14)
-                    .background(Color.black.opacity(0.2))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                    .cornerRadius(8)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 20)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.black.opacity(0.4),
+                                Color.black.opacity(0.3)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(hex: "#606A63").opacity(0.4),
+                                        Color(hex: "#606A63").opacity(0.2)
+                                    ]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                 }
+                .buttonStyle(ScaleButtonStyle())
 
                 if let archiveTap = onArchiveTap {
                     Button(action: archiveTap) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "archivebox")
-                                .font(.system(size: 13))
+                        HStack(spacing: 10) {
+                            Image(systemName: "archivebox.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(Color(hex: "#FFB74D"))
                             Text("Archive")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(Color(hex: "#FFB74D"))
                         }
-                        .padding(.vertical, 7)
-                        .padding(.horizontal, 14)
-                        .background(Color.black.opacity(0.2))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                        .cornerRadius(8)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 20)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.black.opacity(0.4),
+                                    Color.black.opacity(0.3)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .cornerRadius(16)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color(hex: "#FFB74D").opacity(0.4),
+                                            Color(hex: "#FFB74D").opacity(0.2)
+                                        ]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                        .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                     }
+                    .buttonStyle(ScaleButtonStyle())
                 }
-                Spacer() // Pushes buttons to the left if there's space
             }
-            .padding(.top, 4) // Add a little space above buttons
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16) // Ensure bottom padding
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.black.opacity(0.15),
+                    Color.black.opacity(0.08)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     @ViewBuilder
-    private func detailRow(icon: String, label: String, value: String, valueColor: Color = Color(hex: "#C7C7BD").opacity(0.9), lineLimit: Int? = 1) -> some View {
-        HStack(alignment: .top) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(Color(hex: "#A0A0A0"))
-                .frame(width: 20, alignment: .center)
-            Text(label)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: "#A0A0A0"))
+    private func detailCard(
+        icon: String, 
+        label: String, 
+        value: String, 
+        valueColor: Color = Color(hex: "#E8E8E0"), 
+        lineLimit: Int? = 1,
+        iconColor: Color = Color(hex: "#C7C7BD")
+    ) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            // Enhanced icon with background
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(iconColor)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text(label)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                
+                Text(value)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(valueColor)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(lineLimit)
+            }
+            
             Spacer()
-            Text(value)
-                .font(.system(size: 14))
-                .foregroundColor(valueColor)
-                .multilineTextAlignment(.trailing)
-                .lineLimit(lineLimit)
         }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(hex: "#606A63").opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 }
 

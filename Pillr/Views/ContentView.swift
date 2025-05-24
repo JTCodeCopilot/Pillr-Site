@@ -96,7 +96,6 @@ struct ContentView: View {
     enum Tab {
         case medications
         case log
-        case interactions
         case settings
     }
 
@@ -135,12 +134,6 @@ struct ContentView: View {
 
                         MedicationLogView()
                             .tag(Tab.log)
-                            .toolbarBackground(.hidden, for: .tabBar)
-                            .transition(.smoothTab)
-                            .padding(.top, geometry.safeAreaInsets.top)
-                            
-                        InteractionSearchView()
-                            .tag(Tab.interactions)
                             .toolbarBackground(.hidden, for: .tabBar)
                             .transition(.smoothTab)
                             .padding(.top, geometry.safeAreaInsets.top)

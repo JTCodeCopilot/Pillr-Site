@@ -38,20 +38,6 @@ struct CustomTabBar: View {
             Spacer()
             
             TabBarButton(
-                imageName: "arrow.left.arrow.right",
-                title: "Interactions",
-                isSelected: selectedTab == .interactions,
-                namespace: animation
-            ) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    selectedTab = .interactions
-                }
-            }
-            .scaleEffect(1.5)
-            
-            Spacer()
-            
-            TabBarButton(
                 imageName: "gearshape",
                 title: "Settings",
                 isSelected: selectedTab == .settings,
