@@ -9,7 +9,7 @@ struct FeatureSheetView: View {
                 Color(hex: "#404C42").ignoresSafeArea() // Background color consistent with the app
 
                 VStack(spacing: 20) {
-                    Text("Pillr Intelligence")
+                    Text("Pillr Features")
                         .font(.largeTitle)
                         .fontWeight(.regular)
                         .foregroundColor(Color(hex: "#C7C7BD"))

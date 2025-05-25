@@ -27,8 +27,7 @@ struct AddMedicationView: View {
     @State private var pillsPerDoseString: String = "1"
     @State private var refillThresholdString: String = ""
     @State private var trackPillCount: Bool = false
-    @State private var showMedicationSearch: Bool = false
-    @State private var showPremiumUpsellSheet: Bool = false
+
     @State private var isOneTimeWithFollowUp: Bool = false
     
     // For dynamically adjusting scroll position when keyboard appears
@@ -97,20 +96,11 @@ struct AddMedicationView: View {
                                                 Spacer()
                                                 Button(action: {
                                                     HapticManager.shared.lightImpact()
-                                                    if OpenAIService.shared.isPremiumMode {
-                                                        showMedicationSearch.toggle()
-                                                    } else {
-                                                        showPremiumUpsellSheet.toggle()
-                                                    }
+                                                    // Search functionality removed
                                                 }) {
                                                     HStack(spacing: 6) {
                                                         Image(systemName: "magnifyingglass")
                                                             .font(.system(size: 16, weight: .medium))
-                                                        if !OpenAIService.shared.isPremiumMode {
-                                                            Image(systemName: "star.fill")
-                                                                .font(.system(size: 10))
-                                                                .foregroundColor(.yellow)
-                                                        }
                                                     }
                                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                                     .padding(.horizontal, 12)
@@ -465,18 +455,8 @@ struct AddMedicationView: View {
                     }
                 }
             }
-        .sheet(isPresented: $showMedicationSearch) {
-            MedicationSearchView(selectedMedication: $name)
-                .preferredColorScheme(.dark)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $showPremiumUpsellSheet) {
-            PremiumSearchUpsellView(isPresented: $showPremiumUpsellSheet)
-                .preferredColorScheme(.dark)
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-        }
+
+
         .preferredColorScheme(.dark)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)

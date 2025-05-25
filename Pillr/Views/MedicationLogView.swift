@@ -73,21 +73,11 @@ struct MedicationLogView: View {
                         .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
                     
                     VStack(spacing: 0) {
-                        // Title header with calendar icon - now in a fixed position
+                        // Title header - removed calendar icon
                         HStack {
-                            Text("Have Taken")
+                            Text("History")
                                 .font(.system(size: 40, weight: .semibold))
                                 .foregroundColor(Color(hex: "#C7C7BD"))
-                            
-                            Button(action: {
-                                showingCalendar = true
-                            }) {
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                    .padding(.leading, 8)
-                            }
-                            .accessibilityLabel("Select date")
                             
                             Spacer()
                             
@@ -199,6 +189,41 @@ struct MedicationLogView: View {
                     }
                     // Adjust side padding based on device size
                     .padding(.horizontal, horizontalInsets(for: geometry))
+                    
+                    // Floating Calendar Button
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                showingCalendar = true
+                            }) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#404C42"))
+                                    .frame(width: 56, height: 56)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color(hex: "#E8E8E0"),
+                                                Color(hex: "#D0D0C8"),
+                                                Color(hex: "#C7C7BD")
+                                            ]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                    .clipShape(Circle())
+                                    .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
+                                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            }
+                            .accessibilityLabel("Select date")
+                            .buttonStyle(ScaleButtonStyle())
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 50)
+                    }
+                    .zIndex(2) // Ensure floating button appears above content
                     
                     // Date Picker Popover
                     if showingCalendar {

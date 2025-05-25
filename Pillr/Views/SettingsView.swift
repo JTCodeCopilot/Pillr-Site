@@ -2,8 +2,9 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
-    @EnvironmentObject var openAIService: OpenAIService
+
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = true
+    @State private var showingPremiumUpgrade = false
     
     var body: some View {
         NavigationView {
@@ -26,6 +27,8 @@ struct SettingsView: View {
                         
                         appSettingsSection
                         
+                        aiSettingsSection
+                        
                         appInfoSection
                         
                         Spacer()
@@ -35,6 +38,9 @@ struct SettingsView: View {
             }
             .navigationBarTitle("", displayMode: .inline)
             .navigationBarHidden(true)
+        }
+        .sheet(isPresented: $showingPremiumUpgrade) {
+            PremiumUpgradeView()
         }
     }
     
@@ -104,6 +110,77 @@ struct SettingsView: View {
         .padding(.horizontal)
     }
     
+    // Computed property for AI Settings section
+    private var aiSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Text("AI Features")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Spacer()
+            }
+            
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            // Premium Subscription
+            Button(action: {
+                showingPremiumUpgrade = true
+            }) {
+                HStack {
+                    Image(systemName: OpenAIService.shared.isPremiumUser() ? "crown.fill" : "brain.head.profile")
+                        .foregroundColor(OpenAIService.shared.isPremiumUser() ? Color(hex: "#FFD700") : Color(hex: "#64B5F6"))
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(OpenAIService.shared.isPremiumUser() ? "Premium Active" : "Upgrade to Premium")
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        Text(OpenAIService.shared.isPremiumUser() ? "AI-powered interaction checking enabled" : "Unlock AI-powered medication analysis")
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .font(.system(size: 14))
+                    }
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 8) {
+                        if OpenAIService.shared.isPremiumUser() {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                                .font(.system(size: 16))
+                        } else {
+                            Text("$4.99/mo")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(Color(hex: "#64B5F6"))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color(hex: "#64B5F6").opacity(0.2))
+                                .cornerRadius(8)
+                        }
+                        
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                            .font(.system(size: 14))
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
+    }
+    
     // Computed property for App Info section
     private var appInfoSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -162,7 +239,7 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView()
             .environmentObject(UserSettings.shared)
-            .environmentObject(OpenAIService.shared)
+
             .preferredColorScheme(.dark)
     }
 } 

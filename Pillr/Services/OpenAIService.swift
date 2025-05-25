@@ -1,417 +1,218 @@
 import Foundation
-import SwiftUI
 
-class OpenAIService: ObservableObject {
-    private let premiumApiKey = "sk-proj-425FWRxs12VqXO4OxWXKyHMgBSMHtuyp-pOnPDihiPzBe8gyYCd3oI2W2xgEAmDIwkVbSTnF7VT3BlbkFJ_5buu1YAJyob_Lk8OSo2tEnjIKeLFdH3EZhLeyBYkkeEfIQDKnxXyB_t7ejr1c0LCkKQ11WHmoA"
-    @Published var isLoading = false
-    @Published var error: String?
-    @Published var isPremiumMode = false
-    
-    // Cache for interaction results to avoid redundant API calls
-    private var interactionCache: [String: DrugInteraction] = [:]
-    private let cacheExpirationTime: TimeInterval = 24 * 60 * 60 // 24 hours
-    private var cacheTimestamps: [String: Date] = [:]
-    
-    // Singleton instance
+struct OpenAIService {
     static let shared = OpenAIService()
     
-    private init() {
-        // Load premium mode setting
-        self.isPremiumMode = UserDefaults.standard.bool(forKey: "isPremiumMode")
-        loadCache()
+    private let baseURL = "https://api.openai.com/v1/chat/completions"
+    
+    private init() {}
+    
+    private var apiKey: String {
+        // Your OpenAI API key - replace with your actual key
+        return "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"
     }
     
-    func hasAPIKey() -> Bool {
-        return isPremiumMode
+    func isPremiumUser() -> Bool {
+        return UserDefaults.standard.bool(forKey: "is_premium_user")
     }
     
-    func getActiveAPIKey() -> String? {
-        return isPremiumMode ? premiumApiKey : nil
+    func setPremiumStatus(_ isPremium: Bool) {
+        UserDefaults.standard.set(isPremium, forKey: "is_premium_user")
     }
     
-    func enablePremiumMode() {
-        self.isPremiumMode = true
-        UserDefaults.standard.set(true, forKey: "isPremiumMode")
+    func hasValidAPIKey() -> Bool {
+        return !apiKey.isEmpty && apiKey.hasPrefix("sk-") && apiKey != "YOUR_OPENAI_API_KEY_HERE"
     }
     
-    func disablePremiumMode() {
-        self.isPremiumMode = false
-        UserDefaults.standard.set(false, forKey: "isPremiumMode")
-    }
-    
-    // MARK: - Cache Management
-    
-    private func getCacheKey(drugA: String, drugB: String) -> String {
-        let sortedDrugs = [drugA.lowercased().trimmingCharacters(in: .whitespacesAndNewlines),
-                          drugB.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)].sorted()
-        return sortedDrugs.joined(separator: "_")
-    }
-    
-    private func isCacheValid(for key: String) -> Bool {
-        guard let timestamp = cacheTimestamps[key] else { return false }
-        return Date().timeIntervalSince(timestamp) < cacheExpirationTime
-    }
-    
-    private func saveCache() {
-        do {
-            let encoder = JSONEncoder()
-            let cacheData = try encoder.encode(interactionCache)
-            let timestampData = try encoder.encode(cacheTimestamps)
-            
-            UserDefaults.standard.set(cacheData, forKey: "interactionCache")
-            UserDefaults.standard.set(timestampData, forKey: "cacheTimestamps")
-        } catch {
-            print("Failed to save interaction cache: \(error)")
-        }
-    }
-    
-    private func loadCache() {
-        do {
-            if let cacheData = UserDefaults.standard.data(forKey: "interactionCache") {
-                let decoder = JSONDecoder()
-                interactionCache = try decoder.decode([String: DrugInteraction].self, from: cacheData)
-            }
-            
-            if let timestampData = UserDefaults.standard.data(forKey: "cacheTimestamps") {
-                let decoder = JSONDecoder()
-                cacheTimestamps = try decoder.decode([String: Date].self, from: timestampData)
-            }
-        } catch {
-            print("Failed to load interaction cache: \(error)")
-            interactionCache = [:]
-            cacheTimestamps = [:]
-        }
-    }
-    
-    func clearCache() {
-        interactionCache.removeAll()
-        cacheTimestamps.removeAll()
-        UserDefaults.standard.removeObject(forKey: "interactionCache")
-        UserDefaults.standard.removeObject(forKey: "cacheTimestamps")
-    }
-    
-    // MARK: - Drug Interaction Checking
-    
-    func checkDrugInteractions(drugA: String, drugB: String) async throws -> DrugInteraction {
-        let activeKey = getActiveAPIKey()
-        guard let apiKey = activeKey, !apiKey.isEmpty else {
-            throw InteractionError.apiKeyNotSet
+    func checkMedicationInteractions(medications: [String]) async throws -> [DrugInteraction] {
+        guard isPremiumUser() else {
+            throw OpenAIError.premiumRequired
         }
         
-        // Check cache first
-        let cacheKey = getCacheKey(drugA: drugA, drugB: drugB)
-        if let cachedInteraction = interactionCache[cacheKey], isCacheValid(for: cacheKey) {
-            return cachedInteraction
+        guard hasValidAPIKey() else {
+            throw OpenAIError.invalidAPIKey
         }
         
-        // Validate input
-        let cleanDrugA = drugA.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cleanDrugB = drugB.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        guard !cleanDrugA.isEmpty && !cleanDrugB.isEmpty else {
-            throw InteractionError.invalidInput
+        guard medications.count >= 2 else {
+            throw OpenAIError.insufficientMedications
         }
         
-        let systemPrompt = """
-        You are a medical expert assistant that provides accurate information about drug interactions. 
-        Analyze the interaction between the two medications provided and respond with JSON only in this exact format:
-        {
-            "drugA": "name of first drug",
-            "drugB": "name of second drug",
-            "severity": "Minor, Moderate, Major, Contraindicated, or Unknown",
-            "description": "A clear, concise 1-2 sentence description of the interaction mechanism and effects",
-            "recommendedAction": "Specific actionable advice (monitor symptoms, consult doctor, avoid combination, etc.)"
-        }
+        let medicationsJSON = try JSONSerialization.data(withJSONObject: medications, options: [])
+        let medicationsString = String(data: medicationsJSON, encoding: .utf8) ?? "[]"
         
-        Guidelines:
-        - Use "Unknown" severity only when insufficient data exists
-        - Be specific about monitoring requirements or timing considerations
-        - Include relevant clinical significance
-        - Keep descriptions medically accurate but accessible
-        - Do not include disclaimers or text outside the JSON object
-        """
+        let prompt = """
+        You are a medical AI assistant specialized in drug interactions. Analyze the following medications for potential interactions:
         
-        let userPrompt = "Analyze the drug interaction between \(cleanDrugA) and \(cleanDrugB). Consider dosage-dependent effects, timing, and clinical significance."
+        Medications: \(medicationsString)
         
-        // Attempt API call with retry logic
-        let interaction = try await performAPICallWithRetry(
-            apiKey: apiKey,
-            systemPrompt: systemPrompt,
-            userPrompt: userPrompt,
-            drugA: cleanDrugA,
-            drugB: cleanDrugB
-        )
+        Please provide a comprehensive analysis of all potential drug interactions between these medications. For each interaction found, provide:
         
-        // Cache the result
-        interactionCache[cacheKey] = interaction
-        cacheTimestamps[cacheKey] = Date()
-        saveCache()
+        1. The two specific drugs involved
+        2. Severity level (Minor, Moderate, Major, or Contraindicated)
+        3. A clear description of the interaction
+        4. Recommended action or precaution
         
-        return interaction
-    }
-    
-    private func performAPICallWithRetry(
-        apiKey: String,
-        systemPrompt: String,
-        userPrompt: String,
-        drugA: String,
-        drugB: String,
-        maxRetries: Int = 3
-    ) async throws -> DrugInteraction {
-        var lastError: Error?
-        
-        for attempt in 1...maxRetries {
-            do {
-                return try await performAPICall(
-                    apiKey: apiKey,
-                    systemPrompt: systemPrompt,
-                    userPrompt: userPrompt,
-                    drugA: drugA,
-                    drugB: drugB
-                )
-            } catch let error as InteractionError {
-                lastError = error
-                
-                // Don't retry for certain errors
-                switch error {
-                case .apiKeyNotSet, .invalidInput, .invalidResponse:
-                    throw error
-                case .networkError, .apiError, .parseError:
-                    if attempt == maxRetries {
-                        throw error
-                    }
-                    // Wait before retry with exponential backoff
-                    try await Task.sleep(nanoseconds: UInt64(pow(2.0, Double(attempt)) * 1_000_000_000))
-                }
-            } catch {
-                lastError = error
-                if attempt == maxRetries {
-                    throw InteractionError.networkError(error.localizedDescription)
-                }
-                try await Task.sleep(nanoseconds: UInt64(pow(2.0, Double(attempt)) * 1_000_000_000))
-            }
-        }
-        
-        throw lastError ?? InteractionError.networkError("Unknown error occurred")
-    }
-    
-    private func performAPICall(
-        apiKey: String,
-        systemPrompt: String,
-        userPrompt: String,
-        drugA: String,
-        drugB: String
-    ) async throws -> DrugInteraction {
-        let url = URL(string: "https://api.openai.com/v1/chat/completions")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 30.0
-        
-        let requestBody: [String: Any] = [
-            "model": "gpt-4o",
-            "messages": [
-                ["role": "system", "content": systemPrompt],
-                ["role": "user", "content": userPrompt]
-            ],
-            "temperature": 0.2,
-            "max_tokens": 600,
-            "top_p": 0.9
+        Return your response as a JSON array with this exact structure:
+        [
+          {
+            "drugA": "medication name",
+            "drugB": "medication name", 
+            "severity": "Minor|Moderate|Major|Contraindicated",
+            "description": "detailed description of the interaction",
+            "recommendedAction": "specific recommendation for the patient"
+          }
         ]
         
-        let jsonData = try JSONSerialization.data(withJSONObject: requestBody)
-        request.httpBody = jsonData
+        If no significant interactions are found, return an empty array: []
+        
+        Important: Only include clinically significant interactions. Be thorough but avoid false positives.
+        """
+        
+        let requestBody = OpenAIRequest(
+            model: "gpt-4",
+            messages: [
+                OpenAIMessage(role: "system", content: "You are a medical AI assistant specialized in drug interactions. Always respond with valid JSON only."),
+                OpenAIMessage(role: "user", content: prompt)
+            ],
+            temperature: 0.1,
+            maxTokens: 2000
+        )
+        
+        guard let url = URL(string: baseURL) else {
+            throw OpenAIError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONEncoder().encode(requestBody)
+        } catch {
+            throw OpenAIError.encodingError
+        }
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw InteractionError.invalidResponse
+            throw OpenAIError.invalidResponse
         }
         
         guard httpResponse.statusCode == 200 else {
-            let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown API error"
-            throw InteractionError.apiError(httpResponse.statusCode, errorMessage)
-        }
-        
-        return try parseInteractionResponse(data: data, drugA: drugA, drugB: drugB)
-    }
-    
-    private func parseInteractionResponse(data: Data, drugA: String, drugB: String) throws -> DrugInteraction {
-        guard let responseJSON = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let choices = responseJSON["choices"] as? [[String: Any]],
-              let firstChoice = choices.first,
-              let message = firstChoice["message"] as? [String: Any],
-              let content = message["content"] as? String else {
-            throw InteractionError.parseError("Invalid API response structure")
-        }
-        
-        // Clean the content and extract JSON
-        let cleanedContent = content
-            .replacingOccurrences(of: "```json", with: "")
-            .replacingOccurrences(of: "```", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        guard let interactionData = cleanedContent.data(using: .utf8) else {
-            throw InteractionError.parseError("Failed to convert response to data")
+            if httpResponse.statusCode == 401 {
+                throw OpenAIError.invalidAPIKey
+            } else if httpResponse.statusCode == 429 {
+                throw OpenAIError.rateLimitExceeded
+            } else {
+                throw OpenAIError.serverError(httpResponse.statusCode)
+            }
         }
         
         do {
-            let decoder = JSONDecoder()
-            let interactionInfo = try decoder.decode(InteractionInfo.self, from: interactionData)
-            let severityEnum = DrugInteraction.InteractionSeverity(rawValue: interactionInfo.severity) ?? .unknown
+            let openAIResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+            guard let content = openAIResponse.choices.first?.message.content else {
+                throw OpenAIError.noContent
+            }
             
-            return DrugInteraction(
-                id: UUID(),
-                drugA: interactionInfo.drugA,
-                drugB: interactionInfo.drugB,
-                severity: severityEnum,
-                description: interactionInfo.description,
-                recommendedAction: interactionInfo.recommendedAction
-            )
+            // Parse the JSON response from OpenAI
+            guard let jsonData = content.data(using: .utf8) else {
+                throw OpenAIError.invalidJSONResponse
+            }
+            
+            let interactions = try JSONDecoder().decode([OpenAIInteraction].self, from: jsonData)
+            
+            // Convert to DrugInteraction objects
+            return interactions.map { interaction in
+                DrugInteraction(
+                    drugA: interaction.drugA,
+                    drugB: interaction.drugB,
+                    severity: DrugInteraction.InteractionSeverity(rawValue: interaction.severity) ?? .unknown,
+                    description: interaction.description,
+                    recommendedAction: interaction.recommendedAction
+                )
+            }
+            
         } catch {
-            throw InteractionError.parseError("Failed to decode interaction data: \(error.localizedDescription)")
-        }
-    }
-
-    func checkInteractionsForAllMedications(medications: [Medication]) async throws -> [DrugInteraction] {
-        guard medications.count >= 2 else {
-            return []
-        }
-
-        let drugNames = medications.map { $0.name }
-        var foundInteractions: [DrugInteraction] = []
-        var errors: [String] = []
-
-        // Process interactions concurrently but with rate limiting
-        let semaphore = AsyncSemaphore(value: 3) // Limit to 3 concurrent requests
-        
-        await withTaskGroup(of: (DrugInteraction?, String?).self) { group in
-            for i in 0..<drugNames.count {
-                for j in (i + 1)..<drugNames.count {
-                    let drugA = drugNames[i]
-                    let drugB = drugNames[j]
-                    
-                    // Skip if same drug (case-insensitive)
-                    if drugA.lowercased() == drugB.lowercased() {
-                        continue
-                    }
-
-                    group.addTask {
-                        await semaphore.wait()
-                        defer { 
-                            Task { await semaphore.signal() }
-                        }
-                        
-                        do {
-                            let interaction = try await self.checkDrugInteractions(drugA: drugA, drugB: drugB)
-                            return (interaction, nil)
-                        } catch {
-                            let errorMsg = "Error checking \(drugA) + \(drugB): \(error.localizedDescription)"
-                            print(errorMsg)
-                            return (nil, errorMsg)
-                        }
-                    }
-                }
-            }
-            
-            for await result in group {
-                if let interaction = result.0 {
-                    foundInteractions.append(interaction)
-                }
-                if let error = result.1 {
-                    errors.append(error)
-                }
-            }
-        }
-        
-        // Sort interactions by severity (most severe first)
-        foundInteractions.sort { interaction1, interaction2 in
-            let severityOrder: [DrugInteraction.InteractionSeverity] = [
-                .contraindicated, .major, .moderate, .minor, .unknown
-            ]
-            
-            guard let index1 = severityOrder.firstIndex(of: interaction1.severity),
-                  let index2 = severityOrder.firstIndex(of: interaction2.severity) else {
-                return false
-            }
-            
-            return index1 < index2
-        }
-        
-        // If there were errors but some interactions were found, log but don't throw
-        if !errors.isEmpty && foundInteractions.isEmpty {
-            throw InteractionError.networkError("Failed to check interactions: \(errors.joined(separator: "; "))")
-        }
-        
-        return foundInteractions
-    }
-}
-
-// MARK: - Error Handling
-
-enum InteractionError: LocalizedError {
-    case apiKeyNotSet
-    case invalidInput
-    case networkError(String)
-    case apiError(Int, String)
-    case parseError(String)
-    case invalidResponse
-    
-    var errorDescription: String? {
-        switch self {
-        case .apiKeyNotSet:
-            return "API key not configured. Please enable premium mode."
-        case .invalidInput:
-            return "Please enter valid medication names."
-        case .networkError(let message):
-            return "Network error: \(message)"
-        case .apiError(let code, let message):
-            return "API error (\(code)): \(message)"
-        case .parseError(let message):
-            return "Failed to parse response: \(message)"
-        case .invalidResponse:
-            return "Invalid response from server."
+            throw OpenAIError.decodingError
         }
     }
 }
 
-// MARK: - Async Semaphore for Rate Limiting
+// MARK: - Data Models
 
-actor AsyncSemaphore {
-    private var value: Int
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+struct OpenAIRequest: Codable {
+    let model: String
+    let messages: [OpenAIMessage]
+    let temperature: Double
+    let maxTokens: Int
     
-    init(value: Int) {
-        self.value = value
-    }
-    
-    func wait() async {
-        if value > 0 {
-            value -= 1
-            return
-        }
-        
-        await withCheckedContinuation { continuation in
-            waiters.append(continuation)
-        }
-    }
-    
-    func signal() {
-        if waiters.isEmpty {
-            value += 1
-        } else {
-            let waiter = waiters.removeFirst()
-            waiter.resume()
-        }
+    enum CodingKeys: String, CodingKey {
+        case model, messages, temperature
+        case maxTokens = "max_tokens"
     }
 }
 
-// Helper struct for JSON decoding
-private struct InteractionInfo: Decodable {
+struct OpenAIMessage: Codable {
+    let role: String
+    let content: String
+}
+
+struct OpenAIResponse: Codable {
+    let choices: [OpenAIChoice]
+}
+
+struct OpenAIChoice: Codable {
+    let message: OpenAIMessage
+}
+
+struct OpenAIInteraction: Codable {
     let drugA: String
     let drugB: String
     let severity: String
     let description: String
     let recommendedAction: String
+}
+
+// MARK: - Error Types
+
+enum OpenAIError: LocalizedError {
+    case premiumRequired
+    case invalidAPIKey
+    case insufficientMedications
+    case invalidURL
+    case encodingError
+    case invalidResponse
+    case rateLimitExceeded
+    case serverError(Int)
+    case noContent
+    case invalidJSONResponse
+    case decodingError
+    
+    var errorDescription: String? {
+        switch self {
+        case .premiumRequired:
+            return "Premium subscription required to access AI-powered interaction checking."
+        case .invalidAPIKey:
+            return "Service temporarily unavailable. Please try again later."
+        case .insufficientMedications:
+            return "At least 2 medications are required to check for interactions."
+        case .invalidURL:
+            return "Invalid API URL."
+        case .encodingError:
+            return "Failed to encode request data."
+        case .invalidResponse:
+            return "Invalid response from server."
+        case .rateLimitExceeded:
+            return "Rate limit exceeded. Please try again later."
+        case .serverError(let code):
+            return "Server error: \(code). Please try again later."
+        case .noContent:
+            return "No content received from AI service."
+        case .invalidJSONResponse:
+            return "Invalid JSON response from AI service."
+        case .decodingError:
+            return "Failed to decode response data."
+        }
+    }
 } 

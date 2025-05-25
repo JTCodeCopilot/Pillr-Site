@@ -20,6 +20,7 @@ struct MedicationsListView: View {
     @State private var medicationToArchive: Medication? = nil
     @State private var showArchiveAlert = false
     @State private var showingInteractionSheet = false
+    @State private var showingMedicationSelectionSheet = false
     @State private var interactionCheckError: String? = nil
     @State private var foundInteractions: [DrugInteraction]? = nil
     @State private var isCheckingInteractions = false
@@ -38,14 +39,14 @@ struct MedicationsListView: View {
                 showingArchivedSheet: $showingArchivedSheet,
                 showingInteractionSheet: $showingInteractionSheet,
                 isCheckingInteractions: $isCheckingInteractions,
-                onCheckAllInteractions: checkAllMedicationInteractions
+                onCheckAllInteractions: showMedicationSelectionSheet
             )
             FloatingActionButton(
                 showingAddSheet: $showingAddSheet,
                 showingArchivedSheet: $showingArchivedSheet,
                 hasArchivedMedications: !store.archivedMedications.isEmpty,
                 isCheckingInteractions: $isCheckingInteractions,
-                onCheckAllInteractions: checkAllMedicationInteractions
+                onCheckAllInteractions: showMedicationSelectionSheet
             )
         }
         .sheet(item: $showingLogSheetFor) { med in
@@ -71,8 +72,10 @@ struct MedicationsListView: View {
                 showingArchivedSheet: $showingArchivedSheet
             )
         }
-        .sheet(isPresented: $showingInteractionSheet) {
-            InteractionSearchView()
+
+        .sheet(isPresented: $showingMedicationSelectionSheet) {
+            MedicationInteractionSelectionSheet()
+                .environmentObject(store)
         }
         .sheet(isPresented: $showingInteractionResultSheet) {
             InteractionResultsSheetView(
@@ -98,6 +101,10 @@ struct MedicationsListView: View {
         }
     }
     
+    private func showMedicationSelectionSheet() async {
+        showingMedicationSelectionSheet = true
+    }
+    
     private func checkAllMedicationInteractions() async {
         guard !store.activeMedications.isEmpty else {
             self.interactionCheckError = "You don't have any active medications to check."
@@ -115,18 +122,8 @@ struct MedicationsListView: View {
         self.interactionCheckError = nil
         self.foundInteractions = nil
         
-        do {
-            let interactions = try await OpenAIService.shared.checkInteractionsForAllMedications(medications: store.activeMedications)
-            
-            // Save interactions to history
-            for interaction in interactions {
-                InteractionStore.shared.saveInteraction(interaction)
-            }
-            
-            self.foundInteractions = interactions
-        } catch {
-            self.interactionCheckError = "Failed to check interactions: \(error.localizedDescription)"
-        }
+        // AI interaction checking functionality removed
+        self.interactionCheckError = "Interaction checking feature has been removed"
         
         isCheckingInteractions = false
         showingInteractionResultSheet = true
@@ -276,7 +273,7 @@ fileprivate func MedicationsListContent(
             // Enhanced header section
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Currently Taking")
+                    Text("My Meds")
                         .font(.system(size: 36, weight: .bold))
                         .foregroundColor(Color(hex: "#E8E8E0"))
                     
@@ -286,6 +283,62 @@ fileprivate func MedicationsListContent(
                 }
                 
                 Spacer()
+                
+                // Check interactions button
+                Button(action: {
+                    HapticManager.shared.lightImpact()
+                    Task {
+                        await onCheckAllInteractions()
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(stops: [
+                                        .init(color: Color(hex: "#F0F0E8"), location: 0.0),
+                                        .init(color: Color(hex: "#E8E8E0"), location: 0.3),
+                                        .init(color: Color(hex: "#DFDFD9"), location: 0.6),
+                                        .init(color: Color(hex: "#C7C7BD"), location: 0.85),
+                                        .init(color: Color(hex: "#B8B8AE"), location: 1.0)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 50, height: 50)
+                            .scaleEffect(isCheckingInteractions.wrappedValue ? 1.08 : 1.0)
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color.white.opacity(0.6),
+                                                Color.white.opacity(0.2),
+                                                Color.clear,
+                                                Color.black.opacity(0.1)
+                                            ]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                        
+                        if isCheckingInteractions.wrappedValue {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#404C42")))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "checkmark.shield.fill")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(Color(hex: "#404C42"))
+                        }
+                    }
+                    .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                }
+                .disabled(isCheckingInteractions.wrappedValue)
+                .buttonStyle(ScaleButtonStyle())
             }
             .padding(.horizontal, 4)
             .padding(.bottom, 8)
@@ -344,13 +397,15 @@ fileprivate struct FloatingActionButton: View {
     let onCheckAllInteractions: () async -> Void
     @State private var isExpanded = false
     @State private var showBackdrop = false
+    @State private var pulseAnimation = false
     
     var body: some View {
         ZStack {
             // Enhanced backdrop with blur effect
             if showBackdrop {
-                Color.black.opacity(0.2)
+                Color.black.opacity(0.3)
                     .ignoresSafeArea()
+                    .background(.ultraThinMaterial)
                     .onTapGesture {
                         collapseMenu()
                     }
@@ -392,13 +447,8 @@ fileprivate struct FloatingActionButton: View {
                             .padding(.bottom, 16)
                         }
                         
-                        HStack(spacing: 16) {
-                            // Check interactions button (always visible)
-                            interactionsButton
-                            
-                            // Main floating button
-                            mainFloatingButton
-                        }
+                        // Main floating button
+                        mainFloatingButton
                     }
                     .padding(.trailing, 20)
                     .padding(.bottom, 50)
@@ -406,64 +456,15 @@ fileprivate struct FloatingActionButton: View {
             }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showBackdrop)
+        .onAppear {
+            // Removed tooltip auto-show logic
+        }
     }
     
     // MARK: - Subviews
     
-    private var interactionsButton: some View {
-        Button(action: {
-            HapticManager.shared.lightImpact()
-            Task {
-                await onCheckAllInteractions()
-            }
-        }) {
-            ZStack {
-                // Enhanced gradient background
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(hex: "#DFDFD9"),
-                        Color(hex: "#C7C7BD"),
-                        Color(hex: "#B8B8AE")
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(width: 56, height: 56)
-                .clipShape(Circle())
 
-                // Subtle inner highlight for depth
-                Circle()
-                    .strokeBorder(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.white.opacity(0.3), Color.clear]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-                    .frame(width: 55, height: 55)
 
-                // Icon with enhanced loading state
-                if isCheckingInteractions {
-                    ProgressView()
-                        .scaleEffect(0.9)
-                        .tint(Color(hex: "#3A443D"))
-                } else {
-                    Image(systemName: "arrow.left.arrow.right.circle.fill")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(Color(hex: "#3A443D"))
-                }
-            }
-            .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 4)
-            .shadow(color: Color(hex: "#2F352F").opacity(0.1), radius: 1, x: 0, y: 1)
-            .scaleEffect(isExpanded ? 0.9 : 1.0)
-            .opacity(isExpanded ? 0.7 : 1.0)
-            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isExpanded)
-        }
-        .buttonStyle(EnhancedScaleButtonStyle())
-        .disabled(isCheckingInteractions)
-        .accessibilityLabel("Check medication interactions")
-    }
     
     private var mainFloatingButton: some View {
         Button(action: {
@@ -471,49 +472,102 @@ fileprivate struct FloatingActionButton: View {
             toggleMenu()
         }) {
             ZStack {
-                // Enhanced 3D gradient background
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(hex: "#DFDFD9"),
-                        Color(hex: "#C7C7BD"),
-                        Color(hex: "#B8B8AE")
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(width: 64, height: 64)
-                .clipShape(Circle())
-
-                // Enhanced inner highlight
+                // Perfect circle with enhanced 3D gradient
                 Circle()
-                    .strokeBorder(
+                    .fill(
                         LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.white.opacity(isExpanded ? 0.4 : 0.3),
-                                Color.clear
+                            gradient: Gradient(stops: [
+                                .init(color: Color(hex: "#F0F0E8"), location: 0.0),
+                                .init(color: Color(hex: "#E8E8E0"), location: 0.25),
+                                .init(color: Color(hex: "#DFDFD9"), location: 0.5),
+                                .init(color: Color(hex: "#C7C7BD"), location: 0.75),
+                                .init(color: Color(hex: "#B8B8AE"), location: 1.0)
                             ]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
+                        )
                     )
-                    .frame(width: 63, height: 63)
+                    .frame(width: 68, height: 68)
+                    .overlay(
+                        // Enhanced inner highlight with multiple layers
+                        Circle()
+                            .stroke(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.white.opacity(isExpanded ? 0.7 : 0.5),
+                                        Color.white.opacity(0.3),
+                                        Color.clear,
+                                        Color.black.opacity(0.1)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 2
+                            )
+                    )
+                    .overlay(
+                        // Subtle inner shadow for depth
+                        Circle()
+                            .stroke(
+                                Color.black.opacity(0.1),
+                                lineWidth: 0.8
+                            )
+                            .blur(radius: 0.8)
+                            .offset(x: 1, y: 1)
+                    )
 
-                // Dynamic icon with enhanced animation
-                Image(systemName: isExpanded ? "xmark" : "plus")
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundColor(Color(hex: "#3A443D"))
-                    .rotationEffect(.degrees(isExpanded ? 135 : 0))
-                    .scaleEffect(isExpanded ? 0.9 : 1.0)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isExpanded)
+                // More rectangular plus icon with enhanced animation
+                ZStack {
+                    if isExpanded {
+                        // X mark for close
+                        Image(systemName: "xmark")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(Color(hex: "#3A443D"))
+                    } else {
+                        // Custom rectangular plus
+                        ZStack {
+                            // Horizontal bar (more rectangular)
+                            RoundedRectangle(cornerRadius: 2.5)
+                                .fill(Color(hex: "#3A443D"))
+                                .frame(width: 24, height: 4)
+                            
+                            // Vertical bar (more rectangular)
+                            RoundedRectangle(cornerRadius: 2.5)
+                                .fill(Color(hex: "#3A443D"))
+                                .frame(width: 4, height: 24)
+                        }
+                    }
+                }
+                .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                .scaleEffect(isExpanded ? 0.85 : 1.0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isExpanded)
             }
-            .shadow(color: Color.black.opacity(isExpanded ? 0.25 : 0.15), radius: isExpanded ? 12 : 8, x: 0, y: isExpanded ? 8 : 6)
-            .shadow(color: Color(hex: "#2F352F").opacity(0.1), radius: 1, x: 0, y: 1)
-            .scaleEffect(isExpanded ? 1.05 : 1.0)
-            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isExpanded)
+            .shadow(color: Color.black.opacity(isExpanded ? 0.35 : 0.25), radius: isExpanded ? 15 : 12, x: 0, y: isExpanded ? 10 : 8)
+            .shadow(color: Color(hex: "#2F352F").opacity(0.2), radius: 4, x: 0, y: 3)
+            .shadow(color: Color.white.opacity(0.5), radius: 1, x: 0, y: -1)
+            .scaleEffect(isExpanded ? 1.08 : 1.0)
+            .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isExpanded)
         }
         .buttonStyle(EnhancedScaleButtonStyle())
-        .accessibilityLabel("Show actions menu")
+        .accessibilityLabel(isExpanded ? "Close actions menu" : "Show actions menu")
+        .accessibilityHint("Double tap to \(isExpanded ? "close" : "open") the actions menu")
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func toggleMenu() {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            isExpanded.toggle()
+            showBackdrop = isExpanded
+        }
+
+    }
+    
+    private func collapseMenu() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            isExpanded = false
+            showBackdrop = false
+        }
     }
     
     private func expandedActionButton(
@@ -538,12 +592,13 @@ fileprivate struct FloatingActionButton: View {
             .background(
                 LinearGradient(
                     gradient: Gradient(colors: [
+                        Color(hex: "#E8E8E0"),
                         Color(hex: "#DFDFD9"),
                         Color(hex: "#C7C7BD"),
                         Color(hex: "#B8B8AE")
                     ]),
-                    startPoint: .top,
-                    endPoint: .bottom
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
             )
             .cornerRadius(28)
@@ -561,22 +616,6 @@ fileprivate struct FloatingActionButton: View {
                 .combined(with: .scale(scale: 0.3))
                 .animation(.spring(response: 0.4, dampingFraction: 0.9))
         ))
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func toggleMenu() {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-            isExpanded.toggle()
-            showBackdrop = isExpanded
-        }
-    }
-    
-    private func collapseMenu() {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            isExpanded = false
-            showBackdrop = false
-        }
     }
 }
 

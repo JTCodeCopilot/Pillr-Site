@@ -12,7 +12,7 @@ import UserNotifications
 struct PillrApp: App {
     @StateObject private var store = MedicationStore.shared
     @StateObject private var interactionStore = InteractionStore.shared
-    @StateObject private var openAIService = OpenAIService.shared
+
     @StateObject private var userSettings = UserSettings.shared
     
     init() {
@@ -65,7 +65,7 @@ struct PillrApp: App {
             ContentView()
                 .environmentObject(store)
                 .environmentObject(interactionStore)
-                .environmentObject(openAIService)
+
                 .environmentObject(userSettings)
                 .preferredColorScheme(.dark)
         }

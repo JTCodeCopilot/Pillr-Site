@@ -9,10 +9,7 @@
 	</dict>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>We need to send you notifications for your medication reminders</string>
-	<key>OpenAIAPIKeyStorageInfo</key>
-	<string>Your OpenAI API key is stored securely on device only and is used only for medication interaction checks</string>
-	<key>PremiumModeInfo</key>
-	<string>Premium mode uses our built-in API key for medication interaction checks</string>
+
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
