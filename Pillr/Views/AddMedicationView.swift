@@ -770,7 +770,10 @@ struct AddMedicationView: View {
             frequency: frequency,
             timeToTake: timeToTake,
             reminderTimes: (needsMultipleReminders && !isOneTimeWithFollowUp) ? reminderTimes : [],
-            notes: notes.isEmpty ? nil : notes.trimmingCharacters(in: .whitespacesAndNewlines),
+            notes: {
+                let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                return trimmedNotes.isEmpty ? nil : trimmedNotes
+            }(),
             enableNotification: enableNotification,
             pillCount: pillCount,
             pillsPerDose: pillsPerDose,

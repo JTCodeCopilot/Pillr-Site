@@ -224,6 +224,7 @@ struct PremiumUpgradeView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             // For demo purposes, automatically grant premium
             OpenAIService.shared.setPremiumStatus(true)
+            OpenAIService.shared.setSubscriptionType(plan)
             HapticManager.shared.successNotification()
             
             alertMessage = "Premium upgrade successful! You now have access to AI-powered interaction checking."

@@ -725,7 +725,8 @@ struct EditMedicationView: View {
         updatedMedication.frequency = frequency
         updatedMedication.timeToTake = timeToTake
         updatedMedication.reminderTimes = needsMultipleReminders ? reminderTimes : []
-        updatedMedication.notes = notes.isEmpty ? nil : notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        updatedMedication.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
         updatedMedication.isOneTimeWithFollowUp = isOneTimeWithFollowUp
         
         // Handle pill tracking

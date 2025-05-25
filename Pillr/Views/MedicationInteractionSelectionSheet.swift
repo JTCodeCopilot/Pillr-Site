@@ -325,6 +325,80 @@ struct MedicationInteractionSelectionSheet: View {
                     }
                     .padding(.top, additionalMedications.isEmpty ? 0 : 16)
                 }
+                
+                // Selected medications summary and check button
+                VStack(spacing: 16) {
+                    // Selected medications summary
+                    if !selectedMedicationIDs.isEmpty || !additionalMedications.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Selected Medications:")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+                            
+                            FlowLayout(spacing: 8) {
+                                // Active medications
+                                ForEach(selectedMedications, id: \.id) { medication in
+                                    Text(medication.name)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(Color(hex: "#404C42"))
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color(hex: "#C7C7BD"))
+                                        .cornerRadius(6)
+                                }
+                                
+                                // Additional medications
+                                ForEach(additionalMedications, id: \.self) { medicationName in
+                                    Text(medicationName)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(Color(hex: "#2F3A4A"))
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color(hex: "#64B5F6"))
+                                        .cornerRadius(6)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Check interactions button
+                    Button {
+                        HapticManager.shared.mediumImpact()
+                        Task {
+                            await checkSelectedMedicationInteractions()
+                        }
+                    } label: {
+                        VStack(spacing: 8) {
+                            HStack {
+                                Image(systemName: "arrow.left.arrow.right.circle.fill")
+                                    .font(.system(size: 18, weight: .semibold))
+                                Text(OpenAIService.shared.isPremiumUser() ? "Check Interactions" : "Check Interactions")
+                                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                            }
+                            
+                            if OpenAIService.shared.isPremiumUser() {
+                                Text("AI-Powered Analysis")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .opacity(0.8)
+                            } else {
+                                Text("Upgrade for AI analysis")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .opacity(0.8)
+                            }
+                        }
+                        .foregroundColor(canCheckInteractions ? Color(hex: "#404C42") : Color.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(canCheckInteractions ? Color(hex: "#C7C7BD") : Color.gray.opacity(0.6))
+                                .shadow(color: canCheckInteractions ? Color(hex: "#C7C7BD").opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
+                        )
+                    }
+                    .disabled(!canCheckInteractions)
+                    .buttonStyle(ScaleButtonStyle())
+                }
+                .padding(.top, 24)
             }
             .padding()
         }
@@ -530,81 +604,6 @@ struct MedicationInteractionSelectionSheet: View {
                 .background(Color.black.opacity(0.2))
                 .cornerRadius(12)
                 .padding(.horizontal)
-            } else if !hasCompletedCheck {
-                // Selected medications summary and check button
-                VStack(spacing: 16) {
-                    // Selected medications summary
-                    if !selectedMedicationIDs.isEmpty || !additionalMedications.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Selected Medications:")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
-                            
-                            FlowLayout(spacing: 8) {
-                                // Active medications
-                                ForEach(selectedMedications, id: \.id) { medication in
-                                    Text(medication.name)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(Color(hex: "#404C42"))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color(hex: "#C7C7BD"))
-                                        .cornerRadius(6)
-                                }
-                                
-                                // Additional medications
-                                ForEach(additionalMedications, id: \.self) { medicationName in
-                                    Text(medicationName)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(Color(hex: "#2F3A4A"))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color(hex: "#64B5F6"))
-                                        .cornerRadius(6)
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                    
-                    // Check interactions button
-                    Button {
-                        HapticManager.shared.mediumImpact()
-                        Task {
-                            await checkSelectedMedicationInteractions()
-                        }
-                    } label: {
-                        VStack(spacing: 8) {
-                            HStack {
-                                Image(systemName: "arrow.left.arrow.right.circle.fill")
-                                    .font(.system(size: 18, weight: .semibold))
-                                Text(OpenAIService.shared.isPremiumUser() ? "Check Interactions" : "Check Interactions")
-                                    .font(.system(size: 18, weight: .regular, design: .rounded))
-                            }
-                            
-                            if OpenAIService.shared.isPremiumUser() {
-                                Text("AI-Powered Analysis")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .opacity(0.8)
-                            } else {
-                                Text("Upgrade for AI analysis")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .opacity(0.8)
-                            }
-                        }
-                        .foregroundColor(canCheckInteractions ? Color(hex: "#404C42") : Color.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(canCheckInteractions ? Color(hex: "#C7C7BD") : Color.gray.opacity(0.6))
-                                .shadow(color: canCheckInteractions ? Color(hex: "#C7C7BD").opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
-                        )
-                    }
-                    .disabled(!canCheckInteractions)
-                    .buttonStyle(ScaleButtonStyle())
-                    .padding(.horizontal)
-                }
             }
             
             // Bottom padding

@@ -26,8 +26,8 @@ class MedicationStore: ObservableObject {
         return store
     }
 
-    // Simple persistence using UserDefaults for demonstration
-    // For a real app, use SwiftData or Core Data
+    // Local device storage using UserDefaults - all data stays on device
+    // No cloud storage or external servers involved
     private let medicationsKey = "medicationsData"
     private let logsKey = "medicationLogsData"
     private let isPreviewMode: Bool
@@ -45,10 +45,6 @@ class MedicationStore: ObservableObject {
         if !isPreview {
             loadMedications()
             loadLogs()
-            // Add some sample data if empty
-            if medications.isEmpty {
-                addSampleData()
-            }
         }
     }
     
@@ -139,6 +135,12 @@ class MedicationStore: ObservableObject {
             } else {
                 updatedMedication.notificationID = nil
                 updatedMedication.notificationIDs = []
+            }
+            
+            // Update medication name in existing logs if it changed
+            let oldMedication = medications[index]
+            if oldMedication.name != updatedMedication.name {
+                updateMedicationNameInLogs(medicationID: updatedMedication.id, newName: updatedMedication.name)
             }
             
             // Update in the array
@@ -267,8 +269,20 @@ class MedicationStore: ObservableObject {
         logs.remove(atOffsets: offsets)
         saveLogs()
     }
+    
+    // Helper function to update medication names in existing logs
+    private func updateMedicationNameInLogs(medicationID: UUID, newName: String) {
+        for index in logs.indices {
+            if logs[index].medicationID == medicationID {
+                logs[index].medicationName = newName
+            }
+        }
+        saveLogs()
+    }
 
-    // --- Persistence ---
+    // --- Local Device Persistence ---
+    // All data is stored locally on the user's device using iOS UserDefaults
+    // No data is transmitted to external servers or cloud services
     private func saveMedications() {
         if let encoded = try? JSONEncoder().encode(medications) {
             UserDefaults.standard.set(encoded, forKey: medicationsKey)
@@ -314,6 +328,7 @@ class MedicationStore: ObservableObject {
     }
 
     private func saveLogs() {
+        // Save medication logs locally on device only
         if let encoded = try? JSONEncoder().encode(logs) {
             UserDefaults.standard.set(encoded, forKey: logsKey)
         }

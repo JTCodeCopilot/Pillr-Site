@@ -587,20 +587,21 @@ struct LogMedicationView: View {
             }
         }
         
-        let finalNotes = combinedNotes.isEmpty ? nil : combinedNotes
+        let finalNotes = combinedNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        let notesToSave = finalNotes.isEmpty ? nil : finalNotes
         
         if skipped {
              store.skipMedication(
                  medication: medicationToLog,
                  actualTime: timeToUse,
-                 notes: finalNotes,
+                 notes: notesToSave,
                  reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
              )
         } else {
             store.logMedicationTaken(
                 medication: medicationToLog,
                 actualTime: timeToUse,
-                notes: finalNotes,
+                notes: notesToSave,
                 skipped: false, 
                 reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
             )

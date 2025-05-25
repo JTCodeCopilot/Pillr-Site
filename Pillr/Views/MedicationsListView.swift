@@ -1296,11 +1296,18 @@ struct MedicationRow: View {
     // Quick log medication function for context menu
     private func quickLogMedication(taken: Bool) {
         let now = Date()
-        let notes = taken ? "Quick logged" : "Quick skipped"
+        let quickLogNote = taken ? "Quick logged" : "Quick skipped"
+        
+        // Preserve existing medication notes by combining them with the quick log note
+        var combinedNotes = quickLogNote
+        if let existingNotes = medication.notes, !existingNotes.isEmpty {
+            combinedNotes = "\(existingNotes)\n\n\(quickLogNote)"
+        }
+        
         store.logMedicationTaken(
             medication: medication,
             actualTime: now,
-            notes: notes,
+            notes: combinedNotes,
             skipped: !taken
         )
     }

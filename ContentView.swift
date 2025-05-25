@@ -26,6 +26,7 @@ struct ContentView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
     @State private var selectedTab: Tab = .medications
+    @State private var showingPrivacyNotice = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     
@@ -128,6 +129,24 @@ struct ContentView: View {
         }
         .preferredColorScheme(.dark)
         .accessibilityValue("Pillr Medication Tracker App")
+        .onAppear {
+            // Check if we should show privacy notice for first-time users
+            if !userSettings.hasShownPrivacyNotice && !isPreview {
+                showingPrivacyNotice = true
+            }
+        }
+        .overlay {
+            // Show privacy notice overlay for first-time users
+            if showingPrivacyNotice && !isPreview {
+                PrivacyNoticeOverlayView {
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        showingPrivacyNotice = false
+                    }
+                }
+                .environmentObject(userSettings)
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
+        }
     }
 }
 

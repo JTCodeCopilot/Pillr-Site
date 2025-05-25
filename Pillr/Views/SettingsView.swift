@@ -3,8 +3,9 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
 
-    @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = true
     @State private var showingPremiumUpgrade = false
+    @State private var showingInteractionHistory = false
+    @State private var showingPrivacyInfo = false
     
     var body: some View {
         NavigationView {
@@ -27,6 +28,8 @@ struct SettingsView: View {
                         
                         appSettingsSection
                         
+                        privacySection
+                        
                         aiSettingsSection
                         
                         appInfoSection
@@ -41,6 +44,15 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
+        }
+        .sheet(isPresented: $showingInteractionHistory) {
+            InteractionHistoryView()
+        }
+        .sheet(isPresented: $showingPrivacyInfo) {
+            PrivacyNoticeView {
+                showingPrivacyInfo = false
+            }
+            .environmentObject(userSettings)
         }
     }
     
@@ -59,46 +71,114 @@ struct SettingsView: View {
             Divider()
                 .background(Color(hex: "#C7C7BD").opacity(0.2))
             
-            // Notifications toggle
-            Toggle(isOn: $notificationsEnabled) {
+            // Interaction History
+            Button(action: {
+                showingInteractionHistory = true
+            }) {
                 HStack {
-                    Image(systemName: "bell.badge")
+                    Image(systemName: "clock.arrow.circlepath")
                         .foregroundColor(Color(hex: "#C7C7BD"))
-                    Text("Enable Notifications")
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                }
-            }
-            .toggleStyle(SwitchToggleStyle(tint: Color.accentColor))
-            .onChange(of: notificationsEnabled) { value in
-                if value {
-                    UNUserNotificationCenter.current().getNotificationSettings { settings in
-                        if settings.authorizationStatus == .notDetermined {
-                            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-                                if granted {
-                                    print("Notification permission granted from settings.")
-                                    DispatchQueue.main.async {
-                                        self.notificationsEnabled = true
-                                    }
-                                } else {
-                                    print("Notification permission denied from settings.")
-                                    DispatchQueue.main.async {
-                                        self.notificationsEnabled = false
-                                    }
-                                }
-                            }
-                        } else if settings.authorizationStatus == .denied {
-                            print("Notification permission was previously denied. Please enable in system settings.")
-                            // Optionally, guide user to settings app
-                            DispatchQueue.main.async {
-                                self.notificationsEnabled = false
-                            }
-                        }
-                        // If .authorized, do nothing, toggle is already on.
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Interaction History")
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        Text("View and manage your interaction checks")
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .font(.system(size: 14))
                     }
-                } else {
-                    NotificationManager.shared.cancelAllNotifications()
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
                 }
+                .padding(.vertical, 4)
             }
+            .buttonStyle(PlainButtonStyle())
+            
+
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
+    }
+    
+    // Computed property for Privacy section
+    private var privacySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Text("Privacy & Data")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Spacer()
+            }
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            // Privacy Information
+            Button(action: {
+                showingPrivacyInfo = true
+            }) {
+                HStack {
+                    Image(systemName: "internaldrive.fill")
+                        .foregroundColor(Color(hex: "#81C784"))
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Data Storage & Privacy")
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        Text("All data stored locally on your device")
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .font(.system(size: 14))
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Data Location Info
+            HStack {
+                Image(systemName: "checkmark.shield.fill")
+                    .foregroundColor(Color(hex: "#81C784"))
+                    .frame(width: 20)
+                
+                                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Local Storage Priority")
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        Text("Core medication data stays on device only")
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .font(.system(size: 14))
+                    }
+                
+                Spacer()
+                
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(Color(hex: "#81C784"))
+                    .font(.system(size: 16))
+            }
+            .padding(.vertical, 4)
         }
         .padding()
         .background(Color.black.opacity(0.12))
@@ -127,32 +207,59 @@ struct SettingsView: View {
                 .background(Color(hex: "#C7C7BD").opacity(0.2))
             
             // Premium Subscription
-            Button(action: {
-                showingPremiumUpgrade = true
-            }) {
+            if OpenAIService.shared.isPremiumUser() {
+                // Non-tappable premium status display
                 HStack {
-                    Image(systemName: OpenAIService.shared.isPremiumUser() ? "crown.fill" : "brain.head.profile")
-                        .foregroundColor(OpenAIService.shared.isPremiumUser() ? Color(hex: "#FFD700") : Color(hex: "#64B5F6"))
+                    Image(systemName: "crown.fill")
+                        .foregroundColor(Color(hex: "#FFD700"))
                         .frame(width: 20)
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(OpenAIService.shared.isPremiumUser() ? "Premium Active" : "Upgrade to Premium")
+                        Text("Premium Active")
                             .foregroundColor(Color(hex: "#C7C7BD"))
                             .font(.system(size: 16, weight: .medium))
                         
-                        Text(OpenAIService.shared.isPremiumUser() ? "AI-powered interaction checking enabled" : "Unlock AI-powered medication analysis")
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                            .font(.system(size: 14))
+                        if let subscriptionType = OpenAIService.shared.getSubscriptionType() {
+                            Text("\(subscriptionType.capitalized) subscription")
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .font(.system(size: 14))
+                        } else {
+                            Text("AI-powered interaction checking enabled")
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .font(.system(size: 14))
+                        }
                     }
                     
                     Spacer()
                     
-                    HStack(spacing: 8) {
-                        if OpenAIService.shared.isPremiumUser() {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                                .font(.system(size: 16))
-                        } else {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.system(size: 16))
+                }
+                .padding(.vertical, 4)
+            } else {
+                // Tappable upgrade button
+                Button(action: {
+                    showingPremiumUpgrade = true
+                }) {
+                    HStack {
+                        Image(systemName: "brain.head.profile")
+                            .foregroundColor(Color(hex: "#64B5F6"))
+                            .frame(width: 20)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Upgrade to Premium")
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .font(.system(size: 16, weight: .medium))
+                            
+                            Text("Unlock AI-powered medication analysis")
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .font(.system(size: 14))
+                        }
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 8) {
                             Text("$4.99/mo")
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(Color(hex: "#64B5F6"))
@@ -160,16 +267,16 @@ struct SettingsView: View {
                                 .padding(.vertical, 4)
                                 .background(Color(hex: "#64B5F6").opacity(0.2))
                                 .cornerRadius(8)
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                                .font(.system(size: 14))
                         }
-                        
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
-                            .font(.system(size: 14))
                     }
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
         .padding()
         .background(Color.black.opacity(0.12))

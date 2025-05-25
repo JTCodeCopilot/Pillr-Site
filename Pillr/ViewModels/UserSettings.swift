@@ -17,9 +17,18 @@ class UserSettings: ObservableObject {
         }
     }
     
+    @Published var hasShownPrivacyNotice: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(hasShownPrivacyNotice, forKey: privacyNoticeKey)
+            }
+        }
+    }
+    
     @Published var isFirstLaunch: Bool = false
     
     private let userNameKey = "userName"
+    private let privacyNoticeKey = "hasShownPrivacyNotice"
     private let isPreviewMode: Bool
     
     static let shared = UserSettings()
@@ -35,13 +44,20 @@ class UserSettings: ObservableObject {
         if isPreview {
             // Use default values for preview
             self.userName = "Preview User"
+            self.hasShownPrivacyNotice = true
         } else {
             // Load user name if available, otherwise use default
             self.userName = UserDefaults.standard.string(forKey: userNameKey) ?? "User"
+            // Check if privacy notice has been shown
+            self.hasShownPrivacyNotice = UserDefaults.standard.bool(forKey: privacyNoticeKey)
         }
     }
     
     func saveUserName(_ name: String) {
         userName = name
+    }
+    
+    func markPrivacyNoticeAsShown() {
+        hasShownPrivacyNotice = true
     }
 } 
