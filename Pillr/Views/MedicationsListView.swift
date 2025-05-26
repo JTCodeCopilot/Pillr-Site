@@ -27,28 +27,19 @@ struct MedicationsListView: View {
     @State private var showingInteractionResultSheet = false
     
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            MedicationsListMainContent(
-                store: store,
-                showingAddSheet: $showingAddSheet,
-                scrolledOffset: $scrolledOffset,
-                showingLogSheetFor: $showingLogSheetFor,
-                selectedMedicationToEdit: $selectedMedicationToEdit,
-                medicationToArchive: $medicationToArchive,
-                showArchiveAlert: $showArchiveAlert,
-                showingArchivedSheet: $showingArchivedSheet,
-                showingInteractionSheet: $showingInteractionSheet,
-                isCheckingInteractions: $isCheckingInteractions,
-                onCheckAllInteractions: showMedicationSelectionSheet
-            )
-            FloatingActionButton(
-                showingAddSheet: $showingAddSheet,
-                showingArchivedSheet: $showingArchivedSheet,
-                hasArchivedMedications: !store.archivedMedications.isEmpty,
-                isCheckingInteractions: $isCheckingInteractions,
-                onCheckAllInteractions: showMedicationSelectionSheet
-            )
-        }
+        MedicationsListMainContent(
+            store: store,
+            showingAddSheet: $showingAddSheet,
+            scrolledOffset: $scrolledOffset,
+            showingLogSheetFor: $showingLogSheetFor,
+            selectedMedicationToEdit: $selectedMedicationToEdit,
+            medicationToArchive: $medicationToArchive,
+            showArchiveAlert: $showArchiveAlert,
+            showingArchivedSheet: $showingArchivedSheet,
+            showingInteractionSheet: $showingInteractionSheet,
+            isCheckingInteractions: $isCheckingInteractions,
+            onCheckAllInteractions: showMedicationSelectionSheet
+        )
         .sheet(item: $showingLogSheetFor) { med in
             LogMedicationView(medicationToLog: med)
                 .environmentObject(store)
@@ -257,6 +248,7 @@ fileprivate func sortedMedications(_ medications: [Medication]) -> [Medication] 
 @ViewBuilder
 fileprivate func MedicationsListContent(
     store: MedicationStore,
+    showingAddSheet: Binding<Bool>,
     scrolledOffset: Binding<CGFloat>,
     horizontalInsets: CGFloat,
     showingLogSheetFor: Binding<Medication?>,
@@ -284,61 +276,118 @@ fileprivate func MedicationsListContent(
                 
                 Spacer()
                 
-                // Check interactions button
-                Button(action: {
-                    HapticManager.shared.lightImpact()
-                    Task {
-                        await onCheckAllInteractions()
-                    }
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(stops: [
-                                        .init(color: Color(hex: "#F0F0E8"), location: 0.0),
-                                        .init(color: Color(hex: "#E8E8E0"), location: 0.3),
-                                        .init(color: Color(hex: "#DFDFD9"), location: 0.6),
-                                        .init(color: Color(hex: "#C7C7BD"), location: 0.85),
-                                        .init(color: Color(hex: "#B8B8AE"), location: 1.0)
-                                    ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 50, height: 50)
-                            .scaleEffect(isCheckingInteractions.wrappedValue ? 1.08 : 1.0)
-                            .overlay(
-                                Circle()
-                                    .stroke(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.white.opacity(0.6),
-                                                Color.white.opacity(0.2),
-                                                Color.clear,
-                                                Color.black.opacity(0.1)
-                                            ]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1.5
-                                    )
-                            )
-                        
-                        if isCheckingInteractions.wrappedValue {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#404C42")))
-                                .scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "checkmark.shield.fill")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(Color(hex: "#404C42"))
+                HStack(spacing: 12) {
+                    // Check interactions button
+                    Button(action: {
+                        HapticManager.shared.lightImpact()
+                        Task {
+                            await onCheckAllInteractions()
                         }
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(stops: [
+                                            .init(color: Color(hex: "#F0F0E8"), location: 0.0),
+                                            .init(color: Color(hex: "#E8E8E0"), location: 0.3),
+                                            .init(color: Color(hex: "#DFDFD9"), location: 0.6),
+                                            .init(color: Color(hex: "#C7C7BD"), location: 0.85),
+                                            .init(color: Color(hex: "#B8B8AE"), location: 1.0)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 50, height: 50)
+                                .scaleEffect(isCheckingInteractions.wrappedValue ? 1.08 : 1.0)
+                                .overlay(
+                                    Circle()
+                                        .stroke(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [
+                                                    Color.white.opacity(0.6),
+                                                    Color.white.opacity(0.2),
+                                                    Color.clear,
+                                                    Color.black.opacity(0.1)
+                                                ]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1.5
+                                        )
+                                )
+                            
+                            if isCheckingInteractions.wrappedValue {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#404C42")))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "checkmark.shield.fill")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#404C42"))
+                            }
+                        }
+                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
                     }
-                    .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                    .disabled(isCheckingInteractions.wrappedValue)
+                    .buttonStyle(ScaleButtonStyle())
+                    
+                    // Add medication button (moved from floating position)
+                    Button(action: {
+                        HapticManager.shared.lightImpact()
+                        showingAddSheet.wrappedValue = true
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(stops: [
+                                            .init(color: Color(hex: "#F0F0E8"), location: 0.0),
+                                            .init(color: Color(hex: "#E8E8E0"), location: 0.25),
+                                            .init(color: Color(hex: "#DFDFD9"), location: 0.5),
+                                            .init(color: Color(hex: "#C7C7BD"), location: 0.75),
+                                            .init(color: Color(hex: "#B8B8AE"), location: 1.0)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 50, height: 50)
+                                .overlay(
+                                    Circle()
+                                        .stroke(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [
+                                                    Color.white.opacity(0.5),
+                                                    Color.white.opacity(0.3),
+                                                    Color.clear,
+                                                    Color.black.opacity(0.1)
+                                                ]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1.5
+                                        )
+                                )
+                            
+                            // Plus icon
+                            ZStack {
+                                // Horizontal bar
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color(hex: "#3A443D"))
+                                    .frame(width: 20, height: 3)
+                                
+                                // Vertical bar
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color(hex: "#3A443D"))
+                                    .frame(width: 3, height: 20)
+                            }
+                        }
+                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                    }
+                    .buttonStyle(ScaleButtonStyle())
                 }
-                .disabled(isCheckingInteractions.wrappedValue)
-                .buttonStyle(ScaleButtonStyle())
             }
             .padding(.horizontal, 4)
             .padding(.bottom, 8)
@@ -450,8 +499,8 @@ fileprivate struct FloatingActionButton: View {
                         // Main floating button
                         mainFloatingButton
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 50)
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 120)
                 }
             }
         }
@@ -661,7 +710,7 @@ struct ShakeAnimationModifier: ViewModifier {
 }
 
 @ViewBuilder
-fileprivate func ArchivedMedicationsSheet(
+func ArchivedMedicationsSheet(
     store: MedicationStore,
     showingArchivedSheet: Binding<Bool>
 ) -> some View {
@@ -744,7 +793,7 @@ fileprivate func ArchivedMedicationsSheet(
 }
 
 @ViewBuilder
-fileprivate func ArchivedMedicationCard(
+func ArchivedMedicationCard(
     medication: Medication,
     onUnarchive: @escaping () -> Void
 ) -> some View {
@@ -839,6 +888,7 @@ fileprivate struct MedicationsListMainContent: View {
                 } else {
                     MedicationsListContent(
                         store: store,
+                        showingAddSheet: $showingAddSheet,
                         scrolledOffset: $scrolledOffset,
                         horizontalInsets: horizontalInsets(for: UIScreen.main.bounds.width),
                         showingLogSheetFor: $showingLogSheetFor,
@@ -1399,20 +1449,23 @@ fileprivate struct MedicationRowDetailsView: View {
                     iconColor: Color(hex: "#D7CCC8")
                 )
                 
-                detailCard(
-                    icon: "alarm.fill", 
-                    label: "Reminder Time", 
-                    value: reminderTimesString, 
-                    iconColor: Color(hex: "#FFB74D")
-                )
-                
-                detailCard(
-                    icon: notificationsEnabled ? "bell.fill" : "bell.slash.fill", 
-                    label: "Notifications", 
-                    value: notificationsEnabled ? "Enabled" : "Disabled", 
-                    valueColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B"), 
-                    iconColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B")
-                )
+                // Only show reminder time and notifications for non-"As needed" medications
+                if medication.frequency != "As needed" {
+                    detailCard(
+                        icon: "alarm.fill", 
+                        label: "Reminder Time", 
+                        value: reminderTimesString, 
+                        iconColor: Color(hex: "#FFB74D")
+                    )
+                    
+                    detailCard(
+                        icon: notificationsEnabled ? "bell.fill" : "bell.slash.fill", 
+                        label: "Notifications", 
+                        value: notificationsEnabled ? "Enabled" : "Disabled", 
+                        valueColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B"), 
+                        iconColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B")
+                    )
+                }
                 
                 if let notes = medication.notes, !notes.isEmpty {
                     detailCard(

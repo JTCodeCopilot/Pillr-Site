@@ -89,15 +89,12 @@ extension AnyTransition {
 struct ContentView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
-    @State private var selectedTab: Tab = .medications
+    @State private var showingPopoutMenu = false
+    @State private var showingLogView = false
+    @State private var showingSettingsView = false
+    @State private var showingArchivedView = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
-
-    enum Tab {
-        case medications
-        case log
-        case settings
-    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -120,39 +117,22 @@ struct ContentView: View {
                         .ignoresSafeArea(edges: .top)
                 }
 
-                // 2. Main Content Area
+                // 2. Main Content Area - Always show MedicationsListView
                 VStack(spacing: 0) {
-                    // Header removed
-                    
-                    TabView(selection: $selectedTab) {
-                        MedicationsListView()
-                            .scrollContentBackground(.hidden)
-                            .tag(Tab.medications)
-                            .toolbarBackground(.hidden, for: .tabBar)
-                            .transition(.smoothTab)
-                            .padding(.top, geometry.safeAreaInsets.top)
+                    MedicationsListView()
+                        .scrollContentBackground(.hidden)
+                        .padding(.top, geometry.safeAreaInsets.top)
+                        .frame(maxHeight: .infinity)
 
-                        MedicationLogView()
-                            .tag(Tab.log)
-                            .toolbarBackground(.hidden, for: .tabBar)
-                            .transition(.smoothTab)
-                            .padding(.top, geometry.safeAreaInsets.top)
-                            
-                        SettingsView()
-                            .tag(Tab.settings)
-                            .toolbarBackground(.hidden, for: .tabBar)
-                            .transition(.smoothTab)
-                            .padding(.top, geometry.safeAreaInsets.top)
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-                    .animation(.easeInOut(duration: 0.3), value: selectedTab)
-                    .frame(maxHeight: .infinity)
-
-                    // Minimal Tab Bar
+                    // Single Menu Icon Bar
                     HStack {
-                        CustomTabBar(selectedTab: $selectedTab)
+                        Spacer()
+                        
+                        MenuButton(showingPopoutMenu: $showingPopoutMenu)
                             .padding(.vertical, 5)
                             .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 0 : 5)
+                        
+                        Spacer()
                     }
                     .frame(height: 70 + (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 10 : 0))
                     .background(
@@ -169,23 +149,891 @@ struct ContentView: View {
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
                 .edgesIgnoringSafeArea(.bottom)
+                
+                // Popout Menu Overlay
+                if showingPopoutMenu {
+                    PopoutMenuOverlay(
+                        showingPopoutMenu: $showingPopoutMenu,
+                        showingLogView: $showingLogView,
+                        showingSettingsView: $showingSettingsView,
+                        showingArchivedView: $showingArchivedView,
+                        geometry: geometry
+                    )
+                }
             }
         }
         .preferredColorScheme(.dark)
         .accessibilityValue("Pillr Medication Tracker App")
+        .sheet(isPresented: $showingLogView) {
+            MedicationLogViewSheet(store: store, userSettings: userSettings, isPresented: $showingLogView)
+        }
+        .sheet(isPresented: $showingSettingsView) {
+            SettingsViewSheet(userSettings: userSettings, isPresented: $showingSettingsView)
+        }
+        .sheet(isPresented: $showingArchivedView) {
+            NavigationView {
+                ArchivedMedicationsView(store: store)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button {
+                                showingArchivedView = false
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                            }
+                        }
+                    }
+            }
+        }
+    }
+}
+
+// MARK: - Menu Button Component
+struct MenuButton: View {
+    @Binding var showingPopoutMenu: Bool
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: {
+            HapticManager.shared.lightImpact()
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                showingPopoutMenu.toggle()
+            }
+        }) {
+            ZStack {
+                Circle()
+                    .fill(Color(hex: "#D9B382"))
+                    .frame(width: 50, height: 50)
+                    .scaleEffect(isPressed ? 0.95 : 1.0)
+                
+                Image(systemName: showingPopoutMenu ? "xmark" : "line.3.horizontal")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(Color(hex: "#404C42"))
+                    .rotationEffect(.degrees(showingPopoutMenu ? 180 : 0))
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .scaleEffect(isPressed ? 0.95 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showingPopoutMenu)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+}
+
+// MARK: - Popout Menu Overlay
+struct PopoutMenuOverlay: View {
+    @Binding var showingPopoutMenu: Bool
+    @Binding var showingLogView: Bool
+    @Binding var showingSettingsView: Bool
+    @Binding var showingArchivedView: Bool
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        ZStack {
+            // Background overlay
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showingPopoutMenu = false
+                    }
+                }
+            
+            // Menu items
+            VStack(spacing: 16) {
+                Spacer()
+                
+                VStack(spacing: 12) {
+                    // Log button
+                    MenuItemButton(
+                        icon: "checklist.checked",
+                        title: "Medication Log",
+                        action: {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                showingPopoutMenu = false
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                showingLogView = true
+                            }
+                        }
+                    )
+                    
+                    // Archived medications button
+                    MenuItemButton(
+                        icon: "archivebox.fill",
+                        title: "Archived Medications",
+                        action: {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                showingPopoutMenu = false
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                showingArchivedView = true
+                            }
+                        }
+                    )
+                    
+                    // Settings button
+                    MenuItemButton(
+                        icon: "gearshape",
+                        title: "Settings",
+                        action: {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                showingPopoutMenu = false
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                showingSettingsView = true
+                            }
+                        }
+                    )
+                }
+                .padding(.bottom, 90 + (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 0))
+            }
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+    }
+}
+
+// MARK: - Menu Item Button
+struct MenuItemButton: View {
+    let icon: String
+    let title: String
+    let action: () -> Void
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: {
+            HapticManager.shared.lightImpact()
+            action()
+        }) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(Color(hex: "#404C42"))
+                    .frame(width: 24)
+                
+                Text(title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "#404C42"))
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(hex: "#D9B382"))
+                    .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+            )
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal, 40)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+}
+
+// MARK: - Sheet Wrapper Views
+struct MedicationLogViewSheet: View {
+    @ObservedObject var store: MedicationStore
+    @ObservedObject var userSettings: UserSettings
+    @Binding var isPresented: Bool
+    
+    var body: some View {
+        NavigationView {
+            MedicationLogContentView()
+                .environmentObject(store)
+                .environmentObject(userSettings)
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("Medication History")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            isPresented = false
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                        }
+                    }
+                }
+        }
+    }
+}
+
+struct SettingsViewSheet: View {
+    @ObservedObject var userSettings: UserSettings
+    @Binding var isPresented: Bool
+    
+    var body: some View {
+        NavigationView {
+            SettingsContentView()
+                .environmentObject(userSettings)
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("Settings")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            isPresented = false
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                        }
+                    }
+                }
+        }
+    }
+}
+
+// MARK: - Content Views (without NavigationView)
+struct MedicationLogContentView: View {
+    @EnvironmentObject var store: MedicationStore
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var showingCalendar = false
+    @State private var selectedDate: Date = Date()
+    @State private var showingFilterOptions = false
+    @State private var selectedMedicationFilter: String = "All"
+    
+    // Group logs by date
+    private var groupedLogs: [Date: [MedicationLog]] {
+        let calendar = Calendar.current
+        var result = [Date: [MedicationLog]]()
+        
+        // Filter logs based on selected medication and exclude skipped logs
+        let filteredLogs = store.logs.filter { log in
+            let medicationMatch = selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter
+            return !log.skipped && medicationMatch
+        }
+
+        for log in filteredLogs {
+            let dateComponents = calendar.dateComponents([.year, .month, .day], from: log.takenAt)
+            if let date = calendar.date(from: dateComponents) {
+                if result[date] == nil {
+                    result[date] = [log]
+                } else {
+                    result[date]?.append(log)
+                }
+            }
+        }
+        
+        // Sort logs within each day by time (most recent first)
+        for (date, logs) in result {
+            result[date] = logs.sorted { $0.takenAt > $1.takenAt }
+        }
+        
+        return result
     }
     
-    // Simplified - no longer need adaptive font size
-    private func adaptiveFontSize(for geometry: GeometryProxy) -> CGFloat {
-        let baseFontSize: CGFloat = 28
-        let minFontSize: CGFloat = 24
-        let maxFontSize: CGFloat = 34
+    // Sort dates in descending order (most recent first)
+    private var sortedDates: [Date] {
+        return groupedLogs.keys.sorted(by: >)
+    }
+    
+    // Filter logs for the selected date
+    private var logsForSelectedDate: [MedicationLog] {
+        let calendar = Calendar.current
+        let dateComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
+        guard let startOfDay = calendar.date(from: dateComponents) else { return [] }
         
-        if horizontalSizeClass == .compact {
-            return min(max(baseFontSize * (geometry.size.width / 390), minFontSize), maxFontSize)
-        } else {
-            return maxFontSize
+        return groupedLogs[startOfDay] ?? []
+    }
+    
+    // Get unique medication names for filter
+    private var uniqueMedicationNames: [String] {
+        let names = Set(store.logs.filter { !$0.skipped }.map { $0.medicationName })
+        return ["All"] + Array(names).sorted()
+    }
+    
+    // Date formatter for section headers
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        formatter.timeStyle = .none
+        return formatter
+    }
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Background color
+                Color(hex: "#404C42")
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Enhanced header with filter options
+                    VStack(spacing: 12) {
+                        HStack {
+                            Text("Medication History")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                            
+                            Spacer()
+                            
+                            // Filter button
+                            Button(action: {
+                                showingFilterOptions.toggle()
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "line.3.horizontal.decrease.circle")
+                                        .font(.system(size: 16))
+                                    Text(selectedMedicationFilter == "All" ? "All" : selectedMedicationFilter)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .lineLimit(1)
+                                }
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color.black.opacity(0.2))
+                                .cornerRadius(20)
+                            }
+                        }
+                        
+                                                 // Stats row
+                         HStack(spacing: 16) {
+                             StatCard(title: "Total Doses", value: "\(store.logs.filter { !$0.skipped }.count)", icon: "pills.fill")
+                             StatCard(title: "This Week", value: "\(logsThisWeek)", icon: "calendar")
+                             StatCard(title: "Streak", value: "\(currentStreak) days", icon: "flame.fill")
+                         }
+                        
+                        // Selected date indicator (if not today)
+                        if !Calendar.current.isDateInToday(selectedDate) {
+                            HStack {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                
+                                Text(dateFormatter.string(from: selectedDate))
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.black.opacity(0.15))
+                            .cornerRadius(8)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 16)
+                    .background(Color(hex: "#404C42"))
+                    .zIndex(1)
+                    
+                    // Content area
+                    ZStack {
+                        if store.logs.filter({ !$0.skipped }).isEmpty {
+                            EmptyHistoryView()
+                        } else if logsForSelectedDate.isEmpty && !Calendar.current.isDateInToday(selectedDate) {
+                            NoLogsForDateView(date: selectedDate, dateFormatter: dateFormatter)
+                        } else {
+                            LogsContentView(
+                                selectedDate: selectedDate,
+                                sortedDates: sortedDates,
+                                groupedLogs: groupedLogs,
+                                logsForSelectedDate: logsForSelectedDate,
+                                store: store
+                            )
+                        }
+                    }
+                }
+                .padding(.horizontal, horizontalInsets(for: geometry))
+                
+                // Floating buttons
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        
+                        VStack(spacing: 12) {
+                            // Calendar button
+                            FloatingButton(
+                                icon: "calendar",
+                                action: { showingCalendar = true }
+                            )
+                            
+                            // Today button (only show if not on today)
+                            if !Calendar.current.isDateInToday(selectedDate) {
+                                FloatingButton(
+                                    icon: "house.fill",
+                                    action: { selectedDate = Date() }
+                                )
+                            }
+                        }
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 50)
+                }
+                .zIndex(2)
+                
+                // Filter options overlay
+                if showingFilterOptions {
+                    FilterOptionsOverlay(
+                        uniqueMedicationNames: uniqueMedicationNames,
+                        selectedMedicationFilter: $selectedMedicationFilter,
+                        showingFilterOptions: $showingFilterOptions,
+                        geometry: geometry
+                    )
+                    .zIndex(3)
+                }
+                
+                // Date Picker Popover
+                if showingCalendar {
+                    DatePickerOverlay(
+                        selectedDate: $selectedDate,
+                        showingCalendar: $showingCalendar,
+                        geometry: geometry
+                    )
+                    .zIndex(4)
+                }
+            }
         }
+    }
+    
+    // Calculate logs this week
+    private var logsThisWeek: Int {
+        let calendar = Calendar.current
+        let now = Date()
+        let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
+        
+        return store.logs.filter { log in
+            !log.skipped && log.takenAt >= weekAgo && log.takenAt <= now
+        }.count
+    }
+    
+    // Calculate current streak
+    private var currentStreak: Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var streak = 0
+        var currentDate = today
+        
+        while true {
+            let hasLogForDate = store.logs.contains { log in
+                !log.skipped && calendar.isDate(log.takenAt, inSameDayAs: currentDate)
+            }
+            
+            if hasLogForDate {
+                streak += 1
+                currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
+            } else {
+                break
+            }
+        }
+        
+        return streak
+    }
+    
+    // Calculate proper insets based on screen size
+    private func horizontalInsets(for geometry: GeometryProxy) -> CGFloat {
+        if horizontalSizeClass == .regular && geometry.size.width > 768 {
+            return max((geometry.size.width - 650) / 2, 16)
+        }
+        return 16
+    }
+}
+
+struct SettingsContentView: View {
+    @EnvironmentObject var userSettings: UserSettings
+    @State private var showingPremiumUpgrade = false
+    @State private var showingInteractionHistory = false
+    @State private var showingPrivacyInfo = false
+    
+    var body: some View {
+        ZStack {
+            // Background
+            Color(hex: "#404C42")
+                .ignoresSafeArea()
+            
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Title
+                    HStack {
+                        Text("Settings")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 10)
+                    
+                    appSettingsSection
+                    
+                    privacySection
+                    
+                    aiSettingsSection
+                    
+                    appInfoSection
+                    
+                    Spacer()
+                }
+                .padding(.bottom, 50)
+            }
+        }
+        .sheet(isPresented: $showingPremiumUpgrade) {
+            PremiumUpgradeView()
+        }
+        .sheet(isPresented: $showingInteractionHistory) {
+            InteractionHistoryView()
+        }
+        .sheet(isPresented: $showingPrivacyInfo) {
+            PrivacyNoticeView {
+                showingPrivacyInfo = false
+            }
+            .environmentObject(userSettings)
+        }
+    }
+    
+    // Computed property for App Settings section
+    private var appSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Text("App Settings")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Spacer()
+            }
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            // Interaction History
+            Button(action: {
+                showingInteractionHistory = true
+            }) {
+                HStack {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Interaction History")
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        Text("View and manage your interaction checks")
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .font(.system(size: 14))
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
+    }
+    
+    // Computed property for Privacy section
+    private var privacySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Text("Privacy & Data")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Spacer()
+            }
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            // Privacy Information
+            Button(action: {
+                showingPrivacyInfo = true
+            }) {
+                HStack {
+                    Image(systemName: "internaldrive.fill")
+                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Data Storage & Privacy")
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        Text("All data stored locally on your device")
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .font(.system(size: 14))
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Data Location Info
+            HStack {
+                Image(systemName: "checkmark.shield.fill")
+                    .foregroundColor(Color(hex: "#D7CCC8"))
+                    .frame(width: 20)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Local Storage Priority")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .font(.system(size: 16, weight: .medium))
+                    
+                    Text("Core medication data stays on device only")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                        .font(.system(size: 14))
+                }
+                
+                Spacer()
+                
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(Color(hex: "#D7CCC8"))
+                    .font(.system(size: 16))
+            }
+            .padding(.vertical, 4)
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
+    }
+    
+    // Computed property for AI Settings section
+    private var aiSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Text("AI Features")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Spacer()
+            }
+            
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            // Premium Subscription
+            if OpenAIService.shared.isPremiumUser() {
+                // Non-tappable premium status display
+                HStack {
+                    Image(systemName: "crown.fill")
+                        .foregroundColor(Color(hex: "#FFD700"))
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Premium Active")
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        if let subscriptionType = OpenAIService.shared.getSubscriptionType() {
+                            Text("\(subscriptionType.capitalized) subscription")
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .font(.system(size: 14))
+                        } else {
+                            Text("AI-powered interaction checking enabled")
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .font(.system(size: 14))
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .font(.system(size: 16))
+                }
+                .padding(.vertical, 4)
+            } else {
+                // Tappable upgrade button
+                Button(action: {
+                    showingPremiumUpgrade = true
+                }) {
+                    HStack {
+                        Image(systemName: "brain.head.profile")
+                            .foregroundColor(Color(hex: "#D7CCC8"))
+                            .frame(width: 20)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Upgrade to Premium")
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .font(.system(size: 16, weight: .medium))
+                            
+                            Text("Unlock AI-powered medication analysis")
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .font(.system(size: 14))
+                        }
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 8) {
+                            Text("$4.99/mo")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(Color(hex: "#D7CCC8"))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color(hex: "#D7CCC8").opacity(0.2))
+                                .cornerRadius(8)
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                                .font(.system(size: 14))
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
+    }
+    
+    // Computed property for App Info section
+    private var appInfoSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                
+                Text("About")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                
+                Spacer()
+            }
+            
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            VStack(alignment: .leading, spacing: 12) {
+                InfoRow(title: "Version", value: "1.0.0")
+                InfoRow(title: "Developer", value: "Justin Tilley")
+                InfoRow(title: "Build Date", value: "May 2025")
+            }
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
+    }
+}
+
+
+
+
+
+// MARK: - Archived Medications View
+struct ArchivedMedicationsView: View {
+    @ObservedObject var store: MedicationStore
+    
+    var body: some View {
+        ZStack {
+            // Enhanced background with subtle gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "#404C42"),
+                    Color(hex: "#3A443D")
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 24) {
+                    // Enhanced Header
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Archived Medications")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
+                        
+                        Text("Medications you've archived can be restored anytime")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    }
+                    .padding(.top, 20)
+                    
+                    if store.archivedMedications.isEmpty {
+                        // Empty state
+                        VStack(spacing: 20) {
+                            Image(systemName: "archivebox")
+                                .font(.system(size: 50))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                            
+                            Text("No archived medications")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+                            
+                            Text("Medications you archive will appear here")
+                                .font(.system(size: 16))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.vertical, 40)
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        // Archived medications list
+                        VStack(alignment: .leading, spacing: 16) {
+                            ForEach(store.archivedMedications) { med in
+                                ArchivedMedicationCard(
+                                    medication: med,
+                                    onUnarchive: {
+                                        HapticManager.shared.lightImpact()
+                                        store.unarchiveMedication(med)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    
+                    Spacer(minLength: 40)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+        .navigationTitle("Archived")
     }
 }
 

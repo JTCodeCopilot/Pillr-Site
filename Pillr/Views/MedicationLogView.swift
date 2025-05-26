@@ -145,9 +145,7 @@ struct MedicationLogView: View {
                                         .font(.system(size: 14))
                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                     
-                                    Text(isDateRecent(selectedDate) ? 
-                                         relativeDateFormatter.localizedString(for: selectedDate, relativeTo: Date()) :
-                                         dateFormatter.string(from: selectedDate))
+                                    Text(dateFormatter.string(from: selectedDate))
                                         .font(.system(size: 16, weight: .medium))
                                         .foregroundColor(Color(hex: "#C7C7BD"))
                                     
@@ -439,9 +437,7 @@ struct DateSectionHeader: View {
     
     var body: some View {
         HStack {
-            Text(isDateRecent(date) ? 
-                 relativeDateFormatter.localizedString(for: date, relativeTo: Date()) :
-                 dateFormatter.string(from: date))
+            Text(dateFormatter.string(from: date))
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(Color(hex: "#C7C7BD"))
             

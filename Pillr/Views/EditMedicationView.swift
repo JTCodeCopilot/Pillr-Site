@@ -504,6 +504,7 @@ struct EditMedicationView: View {
                     Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
                 ]
             }
+            enableNotification = true
         case "Three times daily":
             if reminderTimes.count != 3 {
                 reminderTimes = [
@@ -512,8 +513,13 @@ struct EditMedicationView: View {
                     Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
                 ]
             }
+            enableNotification = true
+        case "As needed":
+            reminderTimes = []
+            enableNotification = false
         default:
             reminderTimes = []
+            enableNotification = true
         }
     }
     
