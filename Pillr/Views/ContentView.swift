@@ -34,11 +34,11 @@ extension View {
 // MARK: - Color Extension for Theme Colors
 extension Color {
     static var pillrAccent: Color {
-        return Color(hex: "#C7C7BD") // New accent color
+        return Color(hex: "#D9B382") // Tan accent color
     }
     
     static var pillrSecondary: Color {
-        return Color(hex: "#C7C7BD") // New secondary color
+        return Color(hex: "#D9B382") // Tan secondary color
     }
 }
 

@@ -143,12 +143,12 @@ struct LogMedicationView: View {
                             HStack(spacing: 16) {
                                 ZStack {
                                     Circle()
-                                        .fill(Color(hex: "#81C784").opacity(0.2))
+                                        .fill(Color(hex: "#D9B382").opacity(0.2))
                                         .frame(width: 60, height: 60)
                                     
                                     Image(systemName: "pill.circle.fill")
                                         .font(.system(size: 32))
-                                        .foregroundColor(Color(hex: "#81C784"))
+                                        .foregroundColor(Color(hex: "#D9B382"))
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 6) {
@@ -159,7 +159,7 @@ struct LogMedicationView: View {
                                     
                                     Text("\(medicationToLog.dosage) \(medicationToLog.dosageUnit)")
                                         .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#81C784"))
+                                        .foregroundColor(Color(hex: "#D9B382"))
                                     
                                     Text(medicationToLog.frequency)
                                         .font(.system(size: 14, weight: .medium))
@@ -174,7 +174,7 @@ struct LogMedicationView: View {
                                     .fill(Color.black.opacity(0.2))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 20)
-                                            .stroke(Color(hex: "#81C784").opacity(0.3), lineWidth: 1)
+                                            .stroke(Color(hex: "#D9B382").opacity(0.3), lineWidth: 1)
                                     )
                             )
                         }
@@ -240,10 +240,10 @@ struct LogMedicationView: View {
                                                 .frame(maxWidth: .infinity)
                                                 .background(
                                                     RoundedRectangle(cornerRadius: 12)
-                                                        .fill(selectedQuickTime == option ? Color(hex: "#81C784") : Color.black.opacity(0.2))
-                                                        .overlay(
-                                                            RoundedRectangle(cornerRadius: 12)
-                                                                .stroke(selectedQuickTime == option ? Color(hex: "#81C784") : Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                                                                        .fill(selectedQuickTime == option ? Color(hex: "#D9B382") : Color.black.opacity(0.2))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .stroke(selectedQuickTime == option ? Color(hex: "#D9B382") : Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
                                                         )
                                                 )
                                         }
@@ -256,7 +256,7 @@ struct LogMedicationView: View {
                                     VStack(alignment: .leading, spacing: 12) {
                                         HStack {
                                             Image(systemName: "clock.arrow.circlepath")
-                                                .foregroundColor(Color(hex: "#64B5F6"))
+                                                .foregroundColor(Color(hex: "#D9B382"))
                                                 .font(.system(size: 16))
                                             Text("Select custom time")
                                                 .font(.system(size: 14, weight: .semibold))
@@ -267,7 +267,7 @@ struct LogMedicationView: View {
                                             .datePickerStyle(.compact)
                                             .labelsHidden()
                                             .colorScheme(.dark)
-                                            .accentColor(Color(hex: "#81C784"))
+                                            .accentColor(Color(hex: "#D9B382"))
                                             .background(
                                                 RoundedRectangle(cornerRadius: 12)
                                                     .fill(Color.black.opacity(0.1))
@@ -279,7 +279,7 @@ struct LogMedicationView: View {
                                             .fill(Color.black.opacity(0.1))
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color(hex: "#64B5F6").opacity(0.3), lineWidth: 1)
+                                                    .stroke(Color(hex: "#D9B382").opacity(0.3), lineWidth: 1)
                                             )
                                     )
                                     .transition(.opacity.combined(with: .scale(scale: 0.95)))
@@ -362,7 +362,7 @@ struct LogMedicationView: View {
                                                     Text("Add custom")
                                                         .font(.system(size: 14, weight: .medium))
                                                 }
-                                                .foregroundColor(Color(hex: "#64B5F6"))
+                                                .foregroundColor(Color(hex: "#D9B382"))
                                                 .padding(.horizontal, 12)
                                                 .padding(.vertical, 8)
                                                 .background(
@@ -370,7 +370,7 @@ struct LogMedicationView: View {
                                                         .fill(Color.black.opacity(0.2))
                                                         .overlay(
                                                             RoundedRectangle(cornerRadius: 20)
-                                                                .stroke(Color(hex: "#64B5F6").opacity(0.3), lineWidth: 1)
+                                                                .stroke(Color(hex: "#D9B382").opacity(0.3), lineWidth: 1)
                                                         )
                                                 )
                                             }
@@ -384,7 +384,7 @@ struct LogMedicationView: View {
                                 VStack(alignment: .leading, spacing: 12) {
                                     HStack {
                                         Image(systemName: "square.and.pencil")
-                                            .foregroundColor(Color(hex: "#64B5F6"))
+                                            .foregroundColor(Color(hex: "#D9B382"))
                                             .font(.system(size: 18))
                                         Text("Additional notes (optional)")
                                             .font(.system(size: 16, weight: .semibold))
@@ -473,16 +473,16 @@ struct LogMedicationView: View {
                                 .padding(.vertical, 18)
                                 .background(
                                     LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color(hex: "#A5D6A7"),
-                                            Color(hex: "#81C784")
-                                        ]),
+                                                                                    gradient: Gradient(colors: [
+                                                Color(hex: "#E8D4B8"),
+                                                Color(hex: "#D9B382")
+                                            ]),
                                         startPoint: .top,
                                         endPoint: .bottom
                                     )
                                 )
                                 .cornerRadius(20)
-                                .shadow(color: Color(hex: "#81C784").opacity(0.4), radius: 12, x: 0, y: 6)
+                                .shadow(color: Color(hex: "#D9B382").opacity(0.4), radius: 12, x: 0, y: 6)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 20)
                                         .stroke(Color.white.opacity(0.2), lineWidth: 1)

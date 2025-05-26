@@ -300,7 +300,7 @@ struct StatCard: View {
         VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(Color(hex: "#81C784"))
+                .foregroundColor(Color(hex: "#D7CCC8"))
             
             Text(value)
                 .font(.system(size: 16, weight: .bold))
@@ -487,12 +487,12 @@ struct EnhancedLogEntryRow: View {
                 // Medication icon
                 ZStack {
                     Circle()
-                        .fill(Color(hex: "#81C784").opacity(0.2))
+                        .fill(Color(hex: "#D7CCC8").opacity(0.2))
                         .frame(width: 44, height: 44)
                     
                     Image(systemName: medication?.iconName ?? "pill.fill")
                         .font(.system(size: 20))
-                        .foregroundColor(Color(hex: "#81C784"))
+                        .foregroundColor(Color(hex: "#D7CCC8"))
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
@@ -515,7 +515,7 @@ struct EnhancedLogEntryRow: View {
                         HStack(spacing: 8) {
                             Text("\(med.dosage) \(med.dosageUnit)")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#81C784"))
+                                .foregroundColor(Color(hex: "#D7CCC8"))
                             
                             if let pillsConsumed = logEntry.pillsConsumed, pillsConsumed > 1 {
                                 Text("• \(pillsConsumed) pills")
@@ -672,7 +672,7 @@ struct FilterOptionsOverlay: View {
                                     if selectedMedicationFilter == medicationName {
                                         Image(systemName: "checkmark")
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#81C784"))
+                                            .foregroundColor(Color(hex: "#D7CCC8"))
                                     }
                                 }
                                 .padding(.horizontal, 20)

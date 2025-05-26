@@ -21,15 +21,15 @@ struct PremiumUpgradeView: View {
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(hex: "#64B5F6"),
-                                                Color(hex: "#42A5F5")
+                                                Color(hex: "#D9B382"),
+                                                Color(hex: "#C7A76B")
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                     )
                                     .frame(width: 90, height: 90)
-                                    .shadow(color: Color(hex: "#64B5F6").opacity(0.3), radius: 10, x: 0, y: 5)
+                                    .shadow(color: Color(hex: "#D9B382").opacity(0.3), radius: 10, x: 0, y: 5)
                                 
                                 Image(systemName: "brain.head.profile")
                                     .font(.system(size: 40, weight: .bold))
@@ -43,7 +43,7 @@ struct PremiumUpgradeView: View {
                                 
                                 Text("Medication Analysis")
                                     .font(.system(size: 28, weight: .bold))
-                                    .foregroundColor(Color(hex: "#64B5F6"))
+                                    .foregroundColor(Color(hex: "#D9B382"))
                                 
                                 Text("Get intelligent insights about drug interactions with advanced AI technology")
                                     .font(.system(size: 16, weight: .medium))
@@ -60,14 +60,14 @@ struct PremiumUpgradeView: View {
                                 icon: "brain.head.profile",
                                 title: "AI Interaction Analysis",
                                 description: "Advanced AI analyzes your medications for potential interactions using the latest medical knowledge",
-                                iconColor: Color(hex: "#64B5F6")
+                                iconColor: Color(hex: "#D9B382")
                             )
                             
                             PremiumFeature(
                                 icon: "shield.checkered",
                                 title: "Comprehensive Safety Check",
                                 description: "Get detailed severity levels, descriptions, and personalized recommendations for each interaction",
-                                iconColor: Color(hex: "#4CAF50")
+                                iconColor: Color(hex: "#D9B382")
                             )
                             
                             PremiumFeature(
@@ -138,15 +138,15 @@ struct PremiumUpgradeView: View {
                                 .background(
                                     LinearGradient(
                                         gradient: Gradient(colors: [
-                                            Color(hex: "#64B5F6"),
-                                            Color(hex: "#42A5F5")
+                                            Color(hex: "#D9B382"),
+                                            Color(hex: "#C7A76B")
                                         ]),
                                         startPoint: .top,
                                         endPoint: .bottom
                                     )
                                 )
                                 .cornerRadius(16)
-                                .shadow(color: Color(hex: "#64B5F6").opacity(0.4), radius: 8, x: 0, y: 4)
+                                .shadow(color: Color(hex: "#D9B382").opacity(0.4), radius: 8, x: 0, y: 4)
                             }
                             .disabled(isPurchasing)
                             .scaleEffect(isPurchasing ? 0.98 : 1.0)
@@ -300,11 +300,11 @@ struct PricingOption: View {
                 // Selection indicator
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color(hex: "#64B5F6") : Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 2)
+                        .stroke(isSelected ? Color(hex: "#D9B382") : Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 2)
                         .frame(width: 24, height: 24)
                         .background(
                             Circle()
-                                .fill(isSelected ? Color(hex: "#64B5F6") : Color.clear)
+                                .fill(isSelected ? Color(hex: "#D9B382") : Color.clear)
                         )
                     
                     if isSelected {
@@ -336,7 +336,7 @@ struct PricingOption: View {
                     HStack {
                         Text(price)
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(Color(hex: "#64B5F6"))
+                            .foregroundColor(Color(hex: "#D9B382"))
                         
                         Text(period)
                             .font(.system(size: 14))
@@ -348,7 +348,7 @@ struct PricingOption: View {
                     if let savings = savings {
                         Text(savings)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#4CAF50"))
+                            .foregroundColor(Color(hex: "#D9B382"))
                     }
                 }
             }
@@ -360,7 +360,7 @@ struct PricingOption: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(
-                                isSelected ? Color(hex: "#64B5F6") : Color(hex: "#C7C7BD").opacity(0.2),
+                                isSelected ? Color(hex: "#D9B382") : Color(hex: "#C7C7BD").opacity(0.2),
                                 lineWidth: isSelected ? 2 : 1
                             )
                     )
@@ -378,7 +378,7 @@ struct TrustIndicator: View {
         VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#4CAF50"))
+                .foregroundColor(Color(hex: "#D9B382"))
             
             Text(text)
                 .font(.system(size: 12, weight: .medium))

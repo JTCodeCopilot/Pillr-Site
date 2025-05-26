@@ -95,7 +95,7 @@ struct InteractionResultsSheetView: View {
         VStack(spacing: 20) {
             Image(systemName: "checkmark.shield.fill")
                 .font(.system(size: 50))
-                .foregroundColor(Color.green)
+                .foregroundColor(Color(hex: "#D9B382"))
             
             Text("No Interactions Found")
                 .font(.title2).bold()

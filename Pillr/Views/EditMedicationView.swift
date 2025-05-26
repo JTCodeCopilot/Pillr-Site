@@ -49,6 +49,22 @@ struct EditMedicationView: View {
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
     let dosageUnits = ["mg", "ml", "tablets", "capsules"]
     
+    // Helper function to get icon for each unit
+    private func iconForUnit(_ unit: String) -> String {
+        switch unit {
+        case "mg":
+            return "scalemass.fill"
+        case "ml":
+            return "drop.fill"
+        case "tablets":
+            return "circle.fill"
+        case "capsules":
+            return "pills.fill"
+        default:
+            return "pill.fill"
+        }
+    }
+    
     // Computed properties
     private var needsMultipleReminders: Bool {
         return frequency == "Twice daily" || frequency == "Three times daily"
@@ -169,13 +185,22 @@ struct EditMedicationView: View {
                                         
                                         Menu {
                                             ForEach(dosageUnits, id: \.self) { unit in
-                                                Button(unit) {
+                                                Button {
                                                     dosageUnit = unit
                                                     HapticManager.shared.lightImpact()
+                                                } label: {
+                                                    HStack {
+                                                        Image(systemName: iconForUnit(unit))
+                                                            .font(.system(size: 14, weight: .medium))
+                                                        Text(unit)
+                                                    }
                                                 }
                                             }
                                         } label: {
                                             HStack(spacing: 6) {
+                                                Image(systemName: iconForUnit(dosageUnit))
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                                 Text(dosageUnit)
                                                     .font(.system(size: 15, weight: .medium))
                                                     .foregroundColor(Color(hex: "#E8E8E0"))

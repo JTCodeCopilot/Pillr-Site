@@ -538,9 +538,9 @@ fileprivate struct FloatingActionButton: View {
                         }
                     }
                 }
-                .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                .rotationEffect(.degrees(isExpanded ? 540 : 0))
                 .scaleEffect(isExpanded ? 0.85 : 1.0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isExpanded)
+                .animation(.spring(response: 0.6, dampingFraction: 0.6), value: isExpanded)
             }
             .shadow(color: Color.black.opacity(isExpanded ? 0.35 : 0.25), radius: isExpanded ? 15 : 12, x: 0, y: isExpanded ? 10 : 8)
             .shadow(color: Color(hex: "#2F352F").opacity(0.2), radius: 4, x: 0, y: 3)
@@ -609,13 +609,14 @@ fileprivate struct FloatingActionButton: View {
         .transition(.asymmetric(
             insertion: .opacity
                 .combined(with: .move(edge: .bottom))
-                .combined(with: .scale(scale: 0.3))
-                .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay)),
+                .combined(with: .scale(scale: 0.1))
+                .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(delay)),
             removal: .opacity
                 .combined(with: .move(edge: .bottom))
                 .combined(with: .scale(scale: 0.3))
                 .animation(.spring(response: 0.4, dampingFraction: 0.9))
         ))
+        .modifier(ShakeAnimationModifier(isExpanded: isExpanded, delay: delay))
     }
 }
 
@@ -626,6 +627,36 @@ struct EnhancedScaleButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.92 : 1)
             .opacity(configuration.isPressed ? 0.8 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
+    }
+}
+
+// Shake animation modifier for floating action buttons
+struct ShakeAnimationModifier: ViewModifier {
+    let isExpanded: Bool
+    let delay: Double
+    @State private var shakeOffset: CGFloat = 0
+    
+    func body(content: Content) -> some View {
+        content
+            .offset(x: shakeOffset)
+            .onChange(of: isExpanded) { _, newValue in
+                if newValue {
+                    // Start shake animation after the spring delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay + 0.3) {
+                        // First intense shake
+                        withAnimation(.easeInOut(duration: 0.06).repeatCount(7, autoreverses: true)) {
+                            shakeOffset = 15
+                        }
+                        
+                        // Reset shake offset after animation
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            shakeOffset = 0
+                        }
+                    }
+                } else {
+                    shakeOffset = 0
+                }
+            }
     }
 }
 
@@ -864,11 +895,11 @@ fileprivate struct MedicationRowHeaderView: View {
         case .taken:
             return ("", .clear, false) // No status text when taken, button shows "Taken"
         case .skipped:
-            return ("Skipped", Color(hex: "#C62828"), true)
+            return ("", .clear, false) // No status text when skipped, button shows "Skipped"
         case .overdue(let minutesPast):
             return ("Overdue by \(formatTimeText(minutes: minutesPast))", Color(hex: "#FFA726"), true)
         case .due(let minutesRemaining):
-            return ("Due in \(formatTimeText(minutes: minutesRemaining))", Color(hex: "#81C784"), true)
+            return ("Due in \(formatTimeText(minutes: minutesRemaining))", Color(hex: "#D7CCC8"), true)
         case .asNeeded: // Add .asNeeded case
             return ("", .clear, false)
         }
@@ -895,7 +926,7 @@ fileprivate struct MedicationRowHeaderView: View {
     private func buttonProperties() -> (iconName: String, text: String, fgColor: Color, bgColor: Color) {
         switch cycleStatus {
         case .taken:
-            return (iconName: "checkmark.circle.fill", text: "Taken", fgColor: Color(hex: "#2E5339"), bgColor: Color(hex: "#C8E6C9"))
+            return (iconName: "checkmark.circle.fill", text: "Taken", fgColor: Color(hex: "#4A5A4A"), bgColor: Color(hex: "#D7CCC8"))
         case .skipped:
             return (iconName: "xmark.circle.fill", text: "Skipped", fgColor: Color(hex: "#C62828"), bgColor: Color(hex: "#FFCDD2"))
         case .overdue(_), .due(_):
@@ -1236,7 +1267,7 @@ struct MedicationRow: View {
         
         switch cycleStatus {
         case .taken:
-            borderColor = Color(hex: "#81C784")
+            borderColor = Color(hex: "#D7CCC8")
             borderWidth = 2.0
         case .skipped:
             borderColor = Color(hex: "#FF6B6B")
@@ -1365,7 +1396,7 @@ fileprivate struct MedicationRowDetailsView: View {
                     icon: "repeat.circle.fill", 
                     label: "Frequency", 
                     value: medication.frequency, 
-                    iconColor: Color(hex: "#81C784")
+                    iconColor: Color(hex: "#D7CCC8")
                 )
                 
                 detailCard(
@@ -1379,8 +1410,8 @@ fileprivate struct MedicationRowDetailsView: View {
                     icon: notificationsEnabled ? "bell.fill" : "bell.slash.fill", 
                     label: "Notifications", 
                     value: notificationsEnabled ? "Enabled" : "Disabled", 
-                    valueColor: notificationsEnabled ? Color(hex: "#81C784") : Color(hex: "#FF6B6B"), 
-                    iconColor: notificationsEnabled ? Color(hex: "#81C784") : Color(hex: "#FF6B6B")
+                    valueColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B"), 
+                    iconColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B")
                 )
                 
                 if let notes = medication.notes, !notes.isEmpty {
@@ -1389,7 +1420,7 @@ fileprivate struct MedicationRowDetailsView: View {
                         label: "Notes", 
                         value: notes, 
                         lineLimit: nil, 
-                        iconColor: Color(hex: "#64B5F6")
+                        iconColor: Color(hex: "#D7CCC8")
                     )
                 }
             }

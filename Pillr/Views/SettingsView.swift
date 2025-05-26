@@ -132,8 +132,8 @@ struct SettingsView: View {
                 showingPrivacyInfo = true
             }) {
                 HStack {
-                    Image(systemName: "internaldrive.fill")
-                        .foregroundColor(Color(hex: "#81C784"))
+                                    Image(systemName: "internaldrive.fill")
+                    .foregroundColor(Color(hex: "#D7CCC8"))
                         .frame(width: 20)
                     
                     VStack(alignment: .leading, spacing: 2) {
@@ -159,7 +159,7 @@ struct SettingsView: View {
             // Data Location Info
             HStack {
                 Image(systemName: "checkmark.shield.fill")
-                    .foregroundColor(Color(hex: "#81C784"))
+                    .foregroundColor(Color(hex: "#D7CCC8"))
                     .frame(width: 20)
                 
                                     VStack(alignment: .leading, spacing: 2) {
@@ -175,7 +175,7 @@ struct SettingsView: View {
                 Spacer()
                 
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(Color(hex: "#81C784"))
+                    .foregroundColor(Color(hex: "#D7CCC8"))
                     .font(.system(size: 16))
             }
             .padding(.vertical, 4)
@@ -233,7 +233,7 @@ struct SettingsView: View {
                     Spacer()
                     
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(Color(hex: "#D7CCC8"))
                         .font(.system(size: 16))
                 }
                 .padding(.vertical, 4)
@@ -244,7 +244,7 @@ struct SettingsView: View {
                 }) {
                     HStack {
                         Image(systemName: "brain.head.profile")
-                            .foregroundColor(Color(hex: "#64B5F6"))
+                            .foregroundColor(Color(hex: "#D7CCC8"))
                             .frame(width: 20)
                         
                         VStack(alignment: .leading, spacing: 2) {
@@ -262,10 +262,10 @@ struct SettingsView: View {
                         HStack(spacing: 8) {
                             Text("$4.99/mo")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Color(hex: "#64B5F6"))
+                                .foregroundColor(Color(hex: "#D7CCC8"))
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Color(hex: "#64B5F6").opacity(0.2))
+                                .background(Color(hex: "#D7CCC8").opacity(0.2))
                                 .cornerRadius(8)
                             
                             Image(systemName: "chevron.right")
