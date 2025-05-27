@@ -68,65 +68,25 @@ struct InteractionResultsSheetView: View {
     // MARK: - Subviews
     
     private func errorView(error: String) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 50))
-                .foregroundColor(Color.orange)
-            
-            Text("Error Checking Interactions")
-                .font(.title2).bold()
-                .foregroundColor(Color(hex: "#C7C7BD"))
-            
-            Text(error)
-                .font(.body)
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            Button("Try Again") {
+        ErrorStateView(
+            title: "Error Checking Interactions",
+            message: error,
+            actionTitle: "Try Again",
+            action: {
                 isPresented = false
-            }
-            .buttonStyle(PrimaryButtonStyle())
-        }
-        .padding()
+            },
+            icon: "exclamationmark.triangle.fill"
+        )
     }
     
     private var noInteractionsView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "checkmark.shield.fill")
-                .font(.system(size: 50))
-                .foregroundColor(Color(hex: "#D9B382"))
-            
-            Text("No Interactions Found")
-                .font(.title2).bold()
-                .foregroundColor(Color(hex: "#C7C7BD"))
-            
-            Text("No significant interactions were found among your current medications.")
-                .font(.body)
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundColor(Color.blue)
-                    Text("This doesn't mean interactions are impossible")
-                        .font(.footnote)
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                }
-                
-                Text("Always consult your healthcare provider about potential interactions, especially when starting new medications.")
-                    .font(.caption)
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                    .multilineTextAlignment(.center)
-            }
-            .padding()
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(12)
-            .padding(.horizontal)
-        }
-        .padding()
+        EmptyStateView(
+            title: "No Interactions Found",
+            message: "Great news! No significant interactions were detected between your selected medications. Always consult your healthcare provider for personalized advice.",
+            actionTitle: nil,
+            action: nil,
+            icon: "checkmark.shield.fill"
+        )
     }
     
     private var interactionsView: some View {

@@ -25,6 +25,7 @@ struct MedicationsListView: View {
     @State private var foundInteractions: [DrugInteraction]? = nil
     @State private var isCheckingInteractions = false
     @State private var showingInteractionResultSheet = false
+    @State private var showingPremiumUpgrade = false
     
     var body: some View {
         MedicationsListMainContent(
@@ -38,7 +39,8 @@ struct MedicationsListView: View {
             showingArchivedSheet: $showingArchivedSheet,
             showingInteractionSheet: $showingInteractionSheet,
             isCheckingInteractions: $isCheckingInteractions,
-            onCheckAllInteractions: showMedicationSelectionSheet
+            onCheckAllInteractions: showMedicationSelectionSheet,
+            onAddMedication: handleAddMedication
         )
         .sheet(item: $showingLogSheetFor) { med in
             LogMedicationView(medicationToLog: med)
@@ -55,6 +57,7 @@ struct MedicationsListView: View {
             NavigationView {
                 AddMedicationView(onAdd: { showingAddSheet = false })
                     .environmentObject(store)
+                    .environmentObject(userSettings)
             }
         }
         .sheet(isPresented: $showingArchivedSheet) {
@@ -90,10 +93,22 @@ struct MedicationsListView: View {
                 }
             )
         }
+        .sheet(isPresented: $showingPremiumUpgrade) {
+            PremiumUpgradeView()
+        }
     }
     
     private func showMedicationSelectionSheet() async {
         showingMedicationSelectionSheet = true
+    }
+    
+    private func handleAddMedication() {
+        let currentActiveMedications = store.activeMedications.count
+        if userSettings.canAddMedication(currentCount: currentActiveMedications) {
+            showingAddSheet = true
+        } else {
+            showingPremiumUpgrade = true
+        }
     }
     
     private func checkAllMedicationInteractions() async {
@@ -124,56 +139,20 @@ struct MedicationsListView: View {
 // MARK: - Subviews
 
 @ViewBuilder
-fileprivate func EmptyMedicationsView(showingAddSheet: Binding<Bool>) -> some View {
-    VStack(spacing: 24) {
-        Image(systemName: "pills")
-            .font(.system(size: 60))
-            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-            .padding(.bottom, 8)
-        
-        VStack(spacing: 12) {
-            Text("Your medication list is empty")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
-            
-            Text("Add your medications to get reminders and track when you take them")
-                .font(.system(size: 16))
-                .multilineTextAlignment(.center)
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                .padding(.horizontal, 20)
-        }
-        
-        Button {
-            showingAddSheet.wrappedValue = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 16))
-                Text("Add Your First Medication")
-                    .font(.system(size: 16, weight: .medium))
-            }
-            .foregroundColor(Color(hex: "#404C42"))
-            .padding(.vertical, 14)
-            .padding(.horizontal, 24)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(hex: "#E8E8E0"),
-                        Color(hex: "#D0D0C8")
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
-        }
-        .buttonStyle(ScaleButtonStyle())
-    }
-    .padding(40)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+fileprivate func EmptyMedicationsView(onAddMedication: @escaping () -> Void) -> some View {
+    EmptyStateView(
+        title: "Your medication list is empty",
+        message: "Add your medications to get reminders and track when you take them. Pillr will help you stay on track with your health routine.",
+        actionTitle: "Add Your First Medication",
+        action: {
+            HapticManager.shared.mediumImpact()
+            onAddMedication()
+        },
+        icon: "pills.fill"
+    )
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("Your medication list is empty. Add your first medication.")
+    .accessibilityLabel("Your medication list is empty. Add your first medication to get started.")
+    .accessibilityHint("Double tap to add your first medication")
 }
 
 // Helper function to sort medications by priority (overdue first, then by due time)
@@ -258,7 +237,8 @@ fileprivate func MedicationsListContent(
     showingArchivedSheet: Binding<Bool>,
     showingInteractionSheet: Binding<Bool>,
     isCheckingInteractions: Binding<Bool>,
-    onCheckAllInteractions: @escaping () async -> Void
+    onCheckAllInteractions: @escaping () async -> Void,
+    onAddMedication: @escaping () -> Void
 ) -> some View {
     ScrollView {
         VStack(spacing: 28) {
@@ -336,7 +316,7 @@ fileprivate func MedicationsListContent(
                     // Add medication button (moved from floating position)
                     Button(action: {
                         HapticManager.shared.lightImpact()
-                        showingAddSheet.wrappedValue = true
+                        onAddMedication()
                     }) {
                         ZStack {
                             Circle()
@@ -444,6 +424,7 @@ fileprivate struct FloatingActionButton: View {
     let hasArchivedMedications: Bool
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
+    let onAddMedication: () -> Void
     @State private var isExpanded = false
     @State private var showBackdrop = false
     @State private var pulseAnimation = false
@@ -489,7 +470,7 @@ fileprivate struct FloatingActionButton: View {
                                     delay: 0.05
                                 ) {
                                     HapticManager.shared.lightImpact()
-                                    showingAddSheet = true
+                                    onAddMedication()
                                     collapseMenu()
                                 }
                             }
@@ -599,7 +580,8 @@ fileprivate struct FloatingActionButton: View {
         }
         .buttonStyle(EnhancedScaleButtonStyle())
         .accessibilityLabel(isExpanded ? "Close actions menu" : "Show actions menu")
-        .accessibilityHint("Double tap to \(isExpanded ? "close" : "open") the actions menu")
+        .accessibilityHint("Double tap to \(isExpanded ? "close" : "open") the actions menu with options to add medications and view archive")
+        .accessibilityAddTraits(.isButton)
     }
     
     // MARK: - Helper Methods
@@ -868,6 +850,7 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var showingInteractionSheet: Bool
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
+    let onAddMedication: () -> Void
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -884,7 +867,7 @@ fileprivate struct MedicationsListMainContent: View {
                 .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
             VStack(spacing: 0) {
                 if store.medications.isEmpty {
-                    EmptyMedicationsView(showingAddSheet: $showingAddSheet)
+                    EmptyMedicationsView(onAddMedication: onAddMedication)
                 } else {
                     MedicationsListContent(
                         store: store,
@@ -898,7 +881,8 @@ fileprivate struct MedicationsListMainContent: View {
                         showingArchivedSheet: $showingArchivedSheet,
                         showingInteractionSheet: $showingInteractionSheet,
                         isCheckingInteractions: $isCheckingInteractions,
-                        onCheckAllInteractions: onCheckAllInteractions
+                        onCheckAllInteractions: onCheckAllInteractions,
+                        onAddMedication: onAddMedication
                     )
                 }
             }
@@ -921,13 +905,7 @@ fileprivate func commonFormatTime(_ date: Date) -> String {
 }
 
 // MARK: - Button Style
-struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.95 : 1)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
-    }
-}
+// ScaleButtonStyle is now defined in UIComponents.swift
 
 // New fileprivate struct for the header content of a MedicationRow
 fileprivate struct MedicationRowHeaderView: View {
@@ -1248,6 +1226,7 @@ struct MedicationRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(commonFormatTime(medication.timeToTake))")
         .accessibilityHint(accessibilityHintText())
+        .accessibilityValue(accessibilityValueText())
         .accessibilityAction(.default) {
             // Use pattern matching instead of the != operator
             switch cycleStatus {
@@ -1359,6 +1338,22 @@ struct MedicationRow: View {
             return "Tap 'Take Now' to log, or tap status/chevron to expand details."
         case .asNeeded: // Add .asNeeded case
             return "Tap 'Take Now' to log, or tap status/chevron to expand details."
+        }
+    }
+
+    // Helper for accessibility value text
+    private func accessibilityValueText() -> String {
+        switch cycleStatus {
+        case .taken:
+            return "Taken today"
+        case .skipped:
+            return "Skipped today"
+        case .due(let minutesRemaining):
+            return minutesRemaining > 0 ? "Due in \(minutesRemaining) minutes" : "Due now"
+        case .overdue(let minutesPast):
+            return "Overdue by \(minutesPast) minutes"
+        case .asNeeded:
+            return "Take as needed"
         }
     }
 

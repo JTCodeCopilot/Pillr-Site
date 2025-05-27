@@ -508,65 +508,63 @@ struct MedicationInteractionSelectionSheet: View {
                             }
                         }
                     }
-                } else if let error = interactionCheckError {
-                    // Error state
+                } else if isCheckingInteractions {
+                    // Enhanced loading state
                     VStack(spacing: 20) {
-                        Image(systemName: error.contains("Premium") ? "crown.fill" : "exclamationmark.triangle.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(error.contains("Premium") ? Color(hex: "#FFD700") : .red)
+                        LoadingView(message: currentCheckingPair.isEmpty ? "Analyzing medication interactions..." : currentCheckingPair)
                         
-                        VStack(spacing: 8) {
-                            Text(error.contains("Premium") ? "Premium Required" : "Check Failed")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
-                            
-                            Text(error)
-                                .font(.system(size: 16))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                        }
-                        
-                        HStack(spacing: 16) {
-                            if error.contains("Premium") {
-                                Button("Upgrade to Premium") {
-                                    showingPremiumUpgrade = true
+                        if checkingProgress > 0 {
+                            VStack(spacing: 12) {
+                                HStack {
+                                    Text("Analysis Progress")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(Int(checkingProgress * 100))%")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(Color(hex: "#D9B382"))
                                 }
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(Color(hex: "#D9B382"))
-                                .cornerRadius(12)
+                                
+                                ProgressView(value: checkingProgress)
+                                    .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: "#D9B382")))
+                                    .scaleEffect(y: 3)
+                                    .animation(.easeInOut(duration: 0.3), value: checkingProgress)
+                                    .background(Color(hex: "#C7C7BD").opacity(0.2))
+                                    .cornerRadius(2)
                             }
-                            
-                            Button(error.contains("Premium") ? "Skip for Now" : "Try Again") {
-                                if error.contains("Premium") {
-                                    // Reset to selection view
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        hasCompletedCheck = false
-                                        interactionCheckError = nil
-                                        foundInteractions = nil
-                                    }
-                                } else {
-                                    Task {
-                                        await checkSelectedMedicationInteractions()
-                                    }
-                                }
-                            }
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(error.contains("Premium") ? Color(hex: "#C7C7BD") : .white)
+                            .padding(.vertical, 20)
                             .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(error.contains("Premium") ? Color.clear : Color(hex: "#D9B382"))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(hex: "#C7C7BD"), lineWidth: error.contains("Premium") ? 1 : 0)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.black.opacity(0.15))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color(hex: "#D9B382").opacity(0.3), lineWidth: 1)
+                                    )
                             )
-                            .cornerRadius(12)
+                            .padding(.horizontal)
                         }
                     }
-                    .padding(.vertical, 40)
+                    .padding(.vertical, 32)
+                } else if let error = interactionCheckError {
+                    // Enhanced error state
+                    ErrorStateView(
+                        title: error.contains("Premium") ? "Premium Required" : "Check Failed",
+                        message: error,
+                        actionTitle: error.contains("Premium") ? "Upgrade to Premium" : "Try Again",
+                        action: {
+                            if error.contains("Premium") {
+                                showingPremiumUpgrade = true
+                            } else {
+                                Task {
+                                    await checkSelectedMedicationInteractions()
+                                }
+                            }
+                        },
+                        icon: error.contains("Premium") ? "crown.fill" : "exclamationmark.triangle.fill"
+                    )
                 }
             }
             .padding(.vertical)

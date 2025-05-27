@@ -13,19 +13,24 @@ struct OpenAIService {
     }
     
     func isPremiumUser() -> Bool {
-        return UserDefaults.standard.bool(forKey: "is_premium_user")
+        return UserSettings.shared.isPremiumUser
     }
     
     func setPremiumStatus(_ isPremium: Bool) {
-        UserDefaults.standard.set(isPremium, forKey: "is_premium_user")
+        UserSettings.shared.setPremiumStatus(isPremium)
     }
     
     func getSubscriptionType() -> String? {
-        return UserDefaults.standard.string(forKey: "subscription_type")
+        return UserSettings.shared.subscriptionType
     }
     
     func setSubscriptionType(_ type: String) {
-        UserDefaults.standard.set(type, forKey: "subscription_type")
+        UserSettings.shared.setSubscriptionType(type)
+    }
+    
+    func setPremiumPurchased() {
+        UserSettings.shared.setPremiumStatus(true)
+        UserSettings.shared.setSubscriptionType("one-time-purchase")
     }
     
     func hasValidAPIKey() -> Bool {
@@ -33,7 +38,7 @@ struct OpenAIService {
     }
     
     func checkMedicationInteractions(medications: [String]) async throws -> [DrugInteraction] {
-        guard isPremiumUser() else {
+        guard UserSettings.shared.hasAIAccess() else {
             throw OpenAIError.premiumRequired
         }
         

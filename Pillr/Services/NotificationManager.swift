@@ -84,8 +84,10 @@ class NotificationManager: ObservableObject {
                 print("Error scheduling notification: \(error.localizedDescription)")
             }
         }
-        // Schedule the follow-up notification for 30 minutes later
-        scheduleFollowUpNotification(for: medication, after: 30, originalID: notificationID)
+        // Schedule the follow-up notification for 30 minutes later (premium only)
+        if UserSettings.shared.isPremiumUser {
+            scheduleFollowUpNotification(for: medication, after: 30, originalID: notificationID)
+        }
         return notificationID
     }
     
@@ -153,8 +155,10 @@ class NotificationManager: ObservableObject {
             }
         }
         
-        // Schedule the follow-up notification for 30 minutes later
-        scheduleFollowUpNotification(for: medication, time: time, index: index, after: 30, originalID: notificationID)
+        // Schedule the follow-up notification for 30 minutes later (premium only)
+        if UserSettings.shared.isPremiumUser {
+            scheduleFollowUpNotification(for: medication, time: time, index: index, after: 30, originalID: notificationID)
+        }
         
         return notificationID
     }

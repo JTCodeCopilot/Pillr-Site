@@ -67,7 +67,12 @@ class MedicationStore: ObservableObject {
         pillsPerDose: Int = 1,
         refillThreshold: Int? = nil,
         isOneTimeWithFollowUp: Bool = false
-    ) {
+    ) -> Bool {
+        // Check if user can add more medications
+        let currentActiveMedications = activeMedications.count
+        guard UserSettings.shared.canAddMedication(currentCount: currentActiveMedications) else {
+            return false // Cannot add medication due to free tier limit
+        }
         var newMed = Medication(
             name: name, 
             dosage: dosage, 
@@ -103,6 +108,7 @@ class MedicationStore: ObservableObject {
         
         medications.append(newMed)
         saveMedications()
+        return true // Successfully added medication
     }
     
     func updateMedication(_ medication: Medication, enableNotification: Bool = true) {

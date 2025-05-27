@@ -5,7 +5,7 @@ struct PremiumUpgradeView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var isPurchasing = false
-    @State private var selectedPlan: String = "yearly"
+    @State private var selectedPlan: String = "one-time"
     
     var body: some View {
         NavigationView {
@@ -37,15 +37,15 @@ struct PremiumUpgradeView: View {
                             }
                             
                             VStack(spacing: 12) {
-                                Text("Unlock AI-Powered")
+                                Text("Unlock Premium")
                                     .font(.system(size: 28, weight: .bold))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                 
-                                Text("Medication Analysis")
+                                Text("Medication Management")
                                     .font(.system(size: 28, weight: .bold))
                                     .foregroundColor(Color(hex: "#D9B382"))
                                 
-                                Text("Get intelligent insights about drug interactions with advanced AI technology")
+                                Text("Get unlimited medications, AI-powered analysis, follow-up reminders, and advanced features")
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(Color(hex: "#C7C7BD"))
                                     .multilineTextAlignment(.center)
@@ -57,6 +57,13 @@ struct PremiumUpgradeView: View {
                         // Features
                         VStack(spacing: 20) {
                             PremiumFeature(
+                                icon: "pills.fill",
+                                title: "Unlimited Medications",
+                                description: "Add as many medications as you need without the 5-medication limit of the free tier",
+                                iconColor: Color(hex: "#D9B382")
+                            )
+                            
+                            PremiumFeature(
                                 icon: "brain.head.profile",
                                 title: "AI Interaction Analysis",
                                 description: "Advanced AI analyzes your medications for potential interactions using the latest medical knowledge",
@@ -64,59 +71,49 @@ struct PremiumUpgradeView: View {
                             )
                             
                             PremiumFeature(
-                                icon: "shield.checkered",
-                                title: "Comprehensive Safety Check",
-                                description: "Get detailed severity levels, descriptions, and personalized recommendations for each interaction",
-                                iconColor: Color(hex: "#D9B382")
-                            )
-                            
-                            PremiumFeature(
-                                icon: "clock.arrow.circlepath",
-                                title: "Real-time Updates",
-                                description: "Always up-to-date with the latest drug interaction research and medical guidelines",
+                                icon: "arrow.clockwise.circle.fill",
+                                title: "Follow-up Reminders",
+                                description: "Get a second reminder 30 minutes later if you haven't taken your medication",
                                 iconColor: Color(hex: "#FF9800")
                             )
                             
                             PremiumFeature(
-                                icon: "doc.text.magnifyingglass",
-                                title: "Detailed Reports",
-                                description: "Save and share comprehensive interaction reports with your healthcare providers",
+                                icon: "chart.line.uptrend.xyaxis",
+                                title: "Advanced Analytics",
+                                description: "Track adherence patterns, view detailed reports, and get insights into your medication habits",
                                 iconColor: Color(hex: "#9C27B0")
+                            )
+                            
+                            PremiumFeature(
+                                icon: "icloud.fill",
+                                title: "Cloud Sync",
+                                description: "Sync your medications across all your devices and never lose your data",
+                                iconColor: Color(hex: "#4FC3F7")
                             )
                         }
                         
                         // Pricing
                         VStack(spacing: 20) {
-                            Text("Choose Your Plan")
+                            Text("One-Time Purchase")
                                 .font(.system(size: 22, weight: .bold))
                                 .foregroundColor(Color(hex: "#E8E8E0"))
                             
                             VStack(spacing: 12) {
                                 PricingOption(
-                                    title: "Yearly",
-                                    price: "$39.99",
-                                    period: "per year",
-                                    savings: "Save 33%",
+                                    title: "Premium Upgrade",
+                                    price: "$9.99",
+                                    period: "one-time",
+                                    savings: "No recurring fees",
                                     isPopular: true,
-                                    isSelected: selectedPlan == "yearly"
+                                    isSelected: true
                                 ) {
-                                    selectedPlan = "yearly"
-                                }
-                                
-                                PricingOption(
-                                    title: "Monthly",
-                                    price: "$4.99",
-                                    period: "per month",
-                                    isPopular: false,
-                                    isSelected: selectedPlan == "monthly"
-                                ) {
-                                    selectedPlan = "monthly"
+                                    // Always selected since it's the only option
                                 }
                             }
                             
                             // Purchase button
                             Button(action: {
-                                purchasePremium(plan: selectedPlan)
+                                purchasePremium(plan: "one-time")
                             }) {
                                 HStack {
                                     if isPurchasing {
@@ -128,7 +125,7 @@ struct PremiumUpgradeView: View {
                                     } else {
                                         Image(systemName: "crown.fill")
                                             .font(.system(size: 16, weight: .bold))
-                                        Text("Start Premium")
+                                        Text("Buy Premium - $9.99")
                                             .font(.system(size: 18, weight: .bold))
                                     }
                                 }
@@ -155,8 +152,8 @@ struct PremiumUpgradeView: View {
                             // Trust indicators
                             HStack(spacing: 20) {
                                 TrustIndicator(icon: "lock.shield.fill", text: "Secure")
-                                TrustIndicator(icon: "arrow.clockwise", text: "Cancel Anytime")
-                                TrustIndicator(icon: "checkmark.seal.fill", text: "7-Day Trial")
+                                TrustIndicator(icon: "checkmark.seal.fill", text: "One-Time")
+                                TrustIndicator(icon: "infinity", text: "Lifetime Access")
                             }
                             .padding(.top, 8)
                         }
@@ -223,11 +220,10 @@ struct PremiumUpgradeView: View {
         // Simulate purchase process
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             // For demo purposes, automatically grant premium
-            OpenAIService.shared.setPremiumStatus(true)
-            OpenAIService.shared.setSubscriptionType(plan)
+            OpenAIService.shared.setPremiumPurchased()
             HapticManager.shared.successNotification()
             
-            alertMessage = "Premium upgrade successful! You now have access to AI-powered interaction checking."
+            alertMessage = "Premium purchase successful! You now have lifetime access to unlimited medications, AI-powered features, follow-up reminders, and advanced analytics."
             showingAlert = true
             isPurchasing = false
         }

@@ -118,37 +118,22 @@ struct ContentView: View {
                 }
 
                 // 2. Main Content Area - Always show MedicationsListView
-                VStack(spacing: 0) {
-                    MedicationsListView()
-                        .scrollContentBackground(.hidden)
-                        .padding(.top, geometry.safeAreaInsets.top)
-                        .frame(maxHeight: .infinity)
-
-                    // Single Menu Icon Bar
+                // Main content without bottom bar
+                MedicationsListView()
+                    .scrollContentBackground(.hidden)
+                    .padding(.top, geometry.safeAreaInsets.top)
+                    .frame(maxHeight: .infinity)
+                
+                // Centered Menu Button at Bottom
+                VStack {
+                    Spacer()
                     HStack {
                         Spacer()
-                        
                         MenuButton(showingPopoutMenu: $showingPopoutMenu)
-                            .padding(.vertical, 5)
-                            .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 0 : 5)
-                        
+                            .padding(.bottom, geometry.safeAreaInsets.bottom)
                         Spacer()
                     }
-                    .frame(height: 70 + (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom - 10 : 0))
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(hex: "#404C42"),
-                                Color(hex: "#404C42")
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .ignoresSafeArea(.keyboard)
                 }
-                .ignoresSafeArea(.keyboard, edges: .bottom)
-                .edgesIgnoringSafeArea(.bottom)
                 
                 // Popout Menu Overlay
                 if showingPopoutMenu {
@@ -163,7 +148,12 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .accessibilityValue("Pillr Medication Tracker App")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pillr - Your Personal Medication Tracker")
+        .accessibilityHint("Manage your medications, track doses, and get reminders")
+        .accessibilityAction(.default) {
+            // Default action for main view
+        }
         .sheet(isPresented: $showingLogView) {
             MedicationLogViewSheet(store: store, userSettings: userSettings, isPresented: $showingLogView)
         }
@@ -194,30 +184,84 @@ struct ContentView: View {
 struct MenuButton: View {
     @Binding var showingPopoutMenu: Bool
     @State private var isPressed = false
+    @State private var pulseAnimation = false
     
     var body: some View {
         Button(action: {
-            HapticManager.shared.lightImpact()
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            HapticManager.shared.mediumImpact()
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 showingPopoutMenu.toggle()
             }
         }) {
             ZStack {
-                Circle()
-                    .fill(Color(hex: "#D9B382"))
-                    .frame(width: 50, height: 50)
-                    .scaleEffect(isPressed ? 0.95 : 1.0)
+                // Outer glow ring when menu is open
+                if showingPopoutMenu {
+                    Circle()
+                        .stroke(Color(hex: "#F5F1E8").opacity(0.4), lineWidth: 2)
+                        .frame(width: 76, height: 76)
+                        .scaleEffect(pulseAnimation ? 1.1 : 1.0)
+                        .opacity(pulseAnimation ? 0.3 : 0.6)
+                }
                 
-                Image(systemName: showingPopoutMenu ? "xmark" : "line.3.horizontal")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(Color(hex: "#404C42"))
-                    .rotationEffect(.degrees(showingPopoutMenu ? 180 : 0))
+                // Main floating button with enhanced gradient and shadows
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(hex: "#F9F6F0"),
+                                Color(hex: "#F5F1E8"),
+                                Color(hex: "#F0EBE0")
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 60, height: 60)
+                    .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
+                    .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+                    .shadow(color: Color(hex: "#F5F1E8").opacity(0.5), radius: 2, x: 0, y: 1)
+                    .scaleEffect(isPressed ? 0.92 : 1.0)
+                    .scaleEffect(showingPopoutMenu ? 1.08 : 1.0)
+                
+                // Icon with smooth transition
+                ZStack {
+                    if showingPopoutMenu {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color(hex: "#404C42"))
+                            .transition(.asymmetric(
+                                insertion: .scale.combined(with: .opacity).animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.1)),
+                                removal: .scale.combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.9))
+                            ))
+                    } else {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color(hex: "#404C42"))
+                            .transition(.asymmetric(
+                                insertion: .scale.combined(with: .opacity).animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.1)),
+                                removal: .scale.combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.9))
+                            ))
+                    }
+                }
+                .rotationEffect(.degrees(showingPopoutMenu ? 180 : 0))
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .scaleEffect(isPressed ? 0.95 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showingPopoutMenu)
+        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingPopoutMenu)
+        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseAnimation)
+        .onAppear {
+            if showingPopoutMenu {
+                pulseAnimation = true
+            }
+        }
+        .onChange(of: showingPopoutMenu) { newValue in
+            if newValue {
+                pulseAnimation = true
+            } else {
+                pulseAnimation = false
+            }
+        }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in isPressed = true }
@@ -233,43 +277,53 @@ struct PopoutMenuOverlay: View {
     @Binding var showingSettingsView: Bool
     @Binding var showingArchivedView: Bool
     let geometry: GeometryProxy
+    @State private var animateItems = false
     
     var body: some View {
         ZStack {
-            // Background overlay
-            Color.black.opacity(0.3)
+            // Dark frosted background overlay
+            Color.black.opacity(0.4)
+                .background(.ultraThinMaterial, in: Rectangle())
                 .ignoresSafeArea()
+                .transition(.asymmetric(
+                    insertion: .opacity.animation(.easeInOut(duration: 0.4)),
+                    removal: .opacity.animation(.easeIn(duration: 0.2))
+                ))
                 .onTapGesture {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                         showingPopoutMenu = false
                     }
                 }
             
-            // Menu items
+            // Menu items with staggered animation
             VStack(spacing: 16) {
                 Spacer()
                 
-                VStack(spacing: 12) {
-                    // Log button
+                VStack(spacing: 16) {
+                    // Settings button (appears first)
                     MenuItemButton(
-                        icon: "checklist.checked",
-                        title: "Medication Log",
+                        icon: "gearshape",
+                        title: "Settings",
+                        delay: 0.0,
+                        animateItems: animateItems,
                         action: {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                showingLogView = true
+                                showingSettingsView = true
                             }
                         }
                     )
                     
-                    // Archived medications button
+                    // Archived medications button (appears second)
                     MenuItemButton(
                         icon: "archivebox.fill",
                         title: "Archived Medications",
+                        delay: 0.1,
+                        animateItems: animateItems,
                         action: {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -278,24 +332,43 @@ struct PopoutMenuOverlay: View {
                         }
                     )
                     
-                    // Settings button
+                    // Log button (appears last)
                     MenuItemButton(
-                        icon: "gearshape",
-                        title: "Settings",
+                        icon: "checklist.checked",
+                        title: "Medication History",
+                        delay: 0.2,
+                        animateItems: animateItems,
                         action: {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                showingSettingsView = true
+                                showingLogView = true
                             }
                         }
                     )
                 }
-                .padding(.bottom, 90 + (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 0))
+                .padding(.bottom, 70 + geometry.safeAreaInsets.bottom)
             }
         }
-        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+        .transition(.asymmetric(
+            insertion: .opacity
+                .combined(with: .scale(scale: 0.8))
+                .combined(with: .move(edge: .bottom))
+                .animation(.spring(response: 0.6, dampingFraction: 0.8)),
+            removal: .opacity
+                .combined(with: .scale(scale: 0.9))
+                .animation(.spring(response: 0.4, dampingFraction: 0.9))
+        ))
+        .animation(.easeInOut(duration: 0.3), value: showingPopoutMenu)
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+                animateItems = true
+            }
+        }
+        .onDisappear {
+            animateItems = false
+        }
     }
 }
 
@@ -303,8 +376,11 @@ struct PopoutMenuOverlay: View {
 struct MenuItemButton: View {
     let icon: String
     let title: String
+    let delay: Double
+    let animateItems: Bool
     let action: () -> Void
     @State private var isPressed = false
+    @State private var hasAppeared = false
     
     var body: some View {
         Button(action: {
@@ -326,15 +402,38 @@ struct MenuItemButton: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(hex: "#D9B382"))
-                    .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(hex: "#F9F6F0"),
+                                Color(hex: "#F5F1E8"),
+                                Color(hex: "#F0EBE0")
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 6)
+                    .shadow(color: Color(hex: "#F5F1E8").opacity(0.3), radius: 4, x: 0, y: 2)
             )
-            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .scaleEffect(isPressed ? 0.96 : 1.0)
+            .brightness(isPressed ? -0.05 : 0)
         }
         .buttonStyle(PlainButtonStyle())
         .padding(.horizontal, 40)
+        .scaleEffect(hasAppeared ? 1.0 : 0.3)
+        .opacity(hasAppeared ? 1.0 : 0.0)
+        .offset(y: hasAppeared ? 0 : 30)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+        .animation(.spring(response: 0.7, dampingFraction: 0.8).delay(delay), value: hasAppeared)
+        .onChange(of: animateItems) { newValue in
+            if newValue {
+                hasAppeared = true
+            } else {
+                hasAppeared = false
+            }
+        }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in isPressed = true }
@@ -355,7 +454,6 @@ struct MedicationLogViewSheet: View {
                 .environmentObject(store)
                 .environmentObject(userSettings)
                 .navigationBarTitleDisplayMode(.inline)
-                .navigationTitle("Medication History")
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
@@ -380,7 +478,6 @@ struct SettingsViewSheet: View {
             SettingsContentView()
                 .environmentObject(userSettings)
                 .navigationBarTitleDisplayMode(.inline)
-                .navigationTitle("Settings")
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
@@ -475,7 +572,7 @@ struct MedicationLogContentView: View {
                     VStack(spacing: 12) {
                         HStack {
                             Text("Medication History")
-                                .font(.system(size: 28, weight: .bold))
+                                .font(.system(size: 32, weight: .bold))
                                 .foregroundColor(Color(hex: "#C7C7BD"))
                             
                             Spacer()
@@ -661,7 +758,7 @@ struct SettingsContentView: View {
                     // Title
                     HStack {
                         Text("Settings")
-                            .font(.system(size: 18, weight: .medium))
+                            .font(.system(size: 32, weight: .bold))
                             .foregroundColor(Color(hex: "#C7C7BD"))
                         Spacer()
                     }
@@ -986,8 +1083,8 @@ struct ArchivedMedicationsView: View {
                     // Enhanced Header
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Archived Medications")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
                         
                         Text("Medications you've archived can be restored anytime")
                             .font(.system(size: 16, weight: .medium))
@@ -1033,7 +1130,6 @@ struct ArchivedMedicationsView: View {
                 .padding(.horizontal, 20)
             }
         }
-        .navigationTitle("Archived")
     }
 }
 

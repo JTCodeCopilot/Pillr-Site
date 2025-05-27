@@ -9,6 +9,7 @@ import SwiftUI
 
 struct AddMedicationView: View {
     @EnvironmentObject var store: MedicationStore
+    @EnvironmentObject var userSettings: UserSettings
     @Environment(\.dismiss) var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
@@ -341,13 +342,26 @@ struct AddMedicationView: View {
                                                             Text("One-time with Follow-up")
                                                                 .font(.system(size: 16, weight: .semibold))
                                                                 .foregroundColor(Color(hex: "#E8E8E0"))
+                                                            if !userSettings.isPremiumUser {
+                                                                Text("PREMIUM")
+                                                                    .font(.system(size: 10, weight: .bold))
+                                                                    .foregroundColor(.white)
+                                                                    .padding(.horizontal, 6)
+                                                                    .padding(.vertical, 2)
+                                                                    .background(Color(hex: "#D9B382"))
+                                                                    .cornerRadius(4)
+                                                            }
                                                         }
-                                                        Text("Single reminder + 30-min follow-up if not taken")
+                                                        Text(userSettings.isPremiumUser ? 
+                                                             "Single reminder + 30-min follow-up if not taken" : 
+                                                             "Follow-up reminders require premium subscription")
                                                             .font(.system(size: 13))
                                                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                                     }
                                                 }
                                                 .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                                .disabled(!userSettings.isPremiumUser)
+                                                .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                                             }
                                         }
                                     }
@@ -425,13 +439,21 @@ struct AddMedicationView: View {
                                     )
                                 }
                                 .disabled(!isFormValid)
-                                .buttonStyle(ScaleButtonStyle())
+                                .buttonStyle(ScaleButtonStyle(hapticStyle: .medium))
+                                .accessibilityLabel("Add medication")
+                                .accessibilityHint(isFormValid ? "Double tap to add this medication to your list" : "Complete all required fields to add medication")
                                 
                                 if showValidationErrors && !isFormValid {
-                                    Text("Please fill in all required fields")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.red)
-                                        .transition(.opacity)
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundColor(.red)
+                                            .font(.system(size: 14))
+                                        Text("Please fill in all required fields")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.red)
+                                    }
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                    .animation(.easeInOut(duration: 0.3), value: showValidationErrors)
                                 }
                             }
                             .padding(.vertical, 10)
@@ -787,7 +809,7 @@ struct AddMedicationView: View {
         let pillsPerDose = trackPillCount ? (Int(pillsPerDoseString) ?? 1) : 1
         let refillThreshold = trackPillCount && !refillThresholdString.isEmpty ? Int(refillThresholdString) : nil
         
-        store.addMedication(
+        let success = store.addMedication(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             dosage: dosage.trimmingCharacters(in: .whitespacesAndNewlines),
             dosageUnit: dosageUnit,
@@ -806,7 +828,10 @@ struct AddMedicationView: View {
             isOneTimeWithFollowUp: isOneTimeWithFollowUp
         )
         
-        onAdd()
+        if success {
+            onAdd()
+        }
+        // If not successful, the medication limit was reached - UI should handle this
     }
 
     private func requestNotificationPermissionIfNeeded() {

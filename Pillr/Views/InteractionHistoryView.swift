@@ -514,40 +514,17 @@ struct InteractionHistoryView: View {
     }
     
     private var emptyStateView: some View {
-        VStack(spacing: 24) {
-            Image(systemName: searchText.isEmpty ? "clock.arrow.circlepath" : "magnifyingglass")
-                .font(.system(size: 60, weight: .light))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-            
-            VStack(spacing: 12) {
-                Text(searchText.isEmpty ? "No Interaction History" : "No Results Found")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
-                
-                Text(searchText.isEmpty ? 
-                     "Your interaction checks will appear here for easy reference and tracking." :
-                     "Try adjusting your search terms or check your filters.")
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(nil)
-            }
-            
-            if searchText.isEmpty {
-                Button("Check Interactions") {
-                    dismiss()
-                }
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#404C42"))
-                .padding(.horizontal, 32)
-                .padding(.vertical, 16)
-                .background(Color.pillrAccent)
-                .cornerRadius(12)
-                .shadow(color: Color.pillrAccent.opacity(0.3), radius: 8, x: 0, y: 4)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 32)
+        EmptyStateView(
+            title: searchText.isEmpty ? "No Interaction History" : "No Results Found",
+            message: searchText.isEmpty ? 
+                "Your interaction checks will appear here for easy reference and tracking." :
+                "Try adjusting your search terms or check your filters.",
+            actionTitle: searchText.isEmpty ? "Check Interactions" : nil,
+            action: searchText.isEmpty ? {
+                dismiss()
+            } : nil,
+            icon: searchText.isEmpty ? "clock.arrow.circlepath" : "magnifyingglass"
+        )
     }
 }
 
