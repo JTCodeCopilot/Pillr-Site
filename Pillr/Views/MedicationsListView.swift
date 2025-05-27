@@ -1068,7 +1068,7 @@ fileprivate struct MedicationRowHeaderView: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 18)
             .background(
-                RoundedRectangle(cornerRadius: 22)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(properties.bgColor)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
             )

@@ -160,6 +160,195 @@ struct InteractionHistoryView: View {
         .preferredColorScheme(.dark)
     }
     
+    // MARK: - Subviews
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.system(size: 64))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+            
+            Text("No Interaction History")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(Color(hex: "#E8E8E0"))
+            
+            Text("Your interaction checks will appear here for easy reference and tracking.")
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .foregroundColor(Color(hex: "#C7C7BD"))
+                .padding(.horizontal, 32)
+            
+            Button(action: {
+                dismiss()
+            }) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Check Interactions")
+                }
+                .font(.headline)
+                .foregroundColor(Color(hex: "#404C42"))
+                .padding(.horizontal, 24)
+                .padding(.vertical, 14)
+                .background(Color.pillrAccent)
+                .cornerRadius(12)
+            }
+            .padding(.top, 16)
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            // Filter and sort controls
+            HStack(spacing: 12) {
+                // Severity filter
+                Menu {
+                    Button("All Severities") {
+                        interactionStore.filterBySeverity(nil)
+                    }
+                    
+                    ForEach(DrugInteraction.InteractionSeverity.allCases, id: \.self) { severity in
+                        Button(severity.rawValue) {
+                            interactionStore.filterBySeverity(severity)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(interactionStore.selectedSeverityFilter?.rawValue ?? "All Severities")
+                            .font(.system(size: 14, weight: .medium))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12))
+                    }
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.15))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(hex: "#C7C7BD").opacity(0.1), lineWidth: 1)
+                    )
+                }
+                
+                Spacer()
+                
+                // Sort options
+                Menu {
+                    ForEach(InteractionStore.SortOrder.allCases, id: \.self) { order in
+                        Button {
+                            interactionStore.setSortOrder(order)
+                        } label: {
+                            Label(order.rawValue, systemImage: order.systemImage)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: interactionStore.sortOrder.systemImage)
+                            .font(.system(size: 12))
+                        Text("Sort")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.15))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(hex: "#C7C7BD").opacity(0.1), lineWidth: 1)
+                    )
+                }
+            }
+            .padding(.horizontal)
+        }
+        .padding(.vertical, 8)
+    }
+    
+    private var searchResultsHeader: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("\(filteredInteractions.count) result\(filteredInteractions.count == 1 ? "" : "s") for '\(searchText)'")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                
+                Spacer()
+                
+                Button("Clear") {
+                    searchText = ""
+                }
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color.pillrAccent)
+            }
+            .padding(.horizontal)
+        }
+        .padding(.vertical, 8)
+    }
+    
+    private var statisticsSection: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("\(interactionStore.interactionHistory.count)")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                    
+                    Text("Total Interactions")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                    
+                    if interactionStore.hasHighSeverityInteractions {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.orange)
+                            
+                            Text("High severity found")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.orange)
+                        }
+                        .padding(.top, 4)
+                    }
+                }
+                
+                Spacer()
+                
+                // Severity breakdown
+                VStack(alignment: .trailing, spacing: 8) {
+                    Text("Severity Breakdown")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    
+                    VStack(spacing: 6) {
+                        ForEach(DrugInteraction.InteractionSeverity.allCases, id: \.self) { severity in
+                            if let count = interactionStore.severityCounts[severity], count > 0 {
+                                HStack(spacing: 8) {
+                                    Text(severity.rawValue)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                    
+                                    Circle()
+                                        .fill(Color(hex: severity.color))
+                                        .frame(width: 8, height: 8)
+                                    
+                                    Text("\(count)")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(Color.black.opacity(0.15))
+        }
+    }
+    
     // MARK: - Save Functions
     
     private func saveInteractions(format: SaveFormat) {
@@ -360,171 +549,6 @@ struct InteractionHistoryView: View {
         }
         
         return fileURL
-    }
-    
-    // MARK: - Subviews
-    
-    private var headerSection: some View {
-        VStack(spacing: 16) {
-            // Filter and sort controls
-            HStack(spacing: 12) {
-                // Severity filter
-                Menu {
-                    Button("All Severities") {
-                        interactionStore.filterBySeverity(nil)
-                    }
-                    
-                    ForEach(DrugInteraction.InteractionSeverity.allCases, id: \.self) { severity in
-                        Button(severity.rawValue) {
-                            interactionStore.filterBySeverity(severity)
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Text(interactionStore.selectedSeverityFilter?.rawValue ?? "All Severities")
-                            .font(.system(size: 14, weight: .medium))
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12))
-                    }
-                    .foregroundColor(Color(hex: "#E8E8E0"))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.black.opacity(0.15))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#C7C7BD").opacity(0.1), lineWidth: 1)
-                    )
-                }
-                
-                Spacer()
-                
-                // Sort options
-                Menu {
-                    ForEach(InteractionStore.SortOrder.allCases, id: \.self) { order in
-                        Button {
-                            interactionStore.setSortOrder(order)
-                        } label: {
-                            Label(order.rawValue, systemImage: order.systemImage)
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: interactionStore.sortOrder.systemImage)
-                            .font(.system(size: 12))
-                        Text("Sort")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(Color(hex: "#E8E8E0"))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.black.opacity(0.15))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#C7C7BD").opacity(0.1), lineWidth: 1)
-                    )
-                }
-            }
-            .padding(.horizontal)
-        }
-        .padding(.vertical, 16)
-    }
-    
-    private var searchResultsHeader: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("\(filteredInteractions.count) result\(filteredInteractions.count == 1 ? "" : "s") for '\(searchText)'")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
-                
-                Spacer()
-                
-                Button("Clear") {
-                    searchText = ""
-                }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color.pillrAccent)
-            }
-            .padding(.horizontal)
-        }
-        .padding(.vertical, 12)
-    }
-    
-    private var statisticsSection: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(interactionStore.interactionHistory.count)")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-                    
-                    Text("Total Interactions")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                    
-                    if interactionStore.hasHighSeverityInteractions {
-                        HStack(spacing: 6) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.orange)
-                            
-                            Text("High severity found")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.orange)
-                        }
-                        .padding(.top, 4)
-                    }
-                }
-                
-                Spacer()
-                
-                // Severity breakdown
-                VStack(alignment: .trailing, spacing: 8) {
-                    Text("Severity Breakdown")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                    
-                    VStack(spacing: 6) {
-                        ForEach(DrugInteraction.InteractionSeverity.allCases, id: \.self) { severity in
-                            if let count = interactionStore.severityCounts[severity], count > 0 {
-                                HStack(spacing: 8) {
-                                    Text(severity.rawValue)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                    
-                                    Circle()
-                                        .fill(Color(hex: severity.color))
-                                        .frame(width: 8, height: 8)
-                                    
-                                    Text("\(count)")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
-                                        .frame(minWidth: 20, alignment: .trailing)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        .gyroGlassCardStyle(cornerRadius: 16)
-        .padding(.horizontal)
-        .padding(.bottom, 8)
-    }
-    
-    private var emptyStateView: some View {
-        EmptyStateView(
-            title: searchText.isEmpty ? "No Interaction History" : "No Results Found",
-            message: searchText.isEmpty ? 
-                "Your interaction checks will appear here for easy reference and tracking." :
-                "Try adjusting your search terms or check your filters.",
-            actionTitle: searchText.isEmpty ? "Check Interactions" : nil,
-            action: searchText.isEmpty ? {
-                dismiss()
-            } : nil,
-            icon: searchText.isEmpty ? "clock.arrow.circlepath" : "magnifyingglass"
-        )
     }
 }
 

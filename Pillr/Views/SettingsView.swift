@@ -32,6 +32,8 @@ struct SettingsView: View {
                         
                         aiSettingsSection
                         
+                        supportLinksSection
+                        
                         appInfoSection
                         
                         Spacer()
@@ -277,6 +279,107 @@ struct SettingsView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
+    }
+    
+    // Computed property for Support Links section
+    private var supportLinksSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "link.circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Text("Support & Resources")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Spacer()
+            }
+            
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            // Privacy Policy Link
+            Button(action: {
+                if let url = URL(string: "https://tally.so/r/3yR6M4") {
+                    UIApplication.shared.open(url)
+                }
+            }) {
+                HStack {
+                    Image(systemName: "hand.raised.fill")
+                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .frame(width: 20)
+                    
+                    Text("Privacy Policy")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .font(.system(size: 16, weight: .medium))
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Feedback Link
+            Button(action: {
+                if let url = URL(string: "https://tally.so/r/w2yeXV") {
+                    UIApplication.shared.open(url)
+                }
+            }) {
+                HStack {
+                    Image(systemName: "message.fill")
+                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .frame(width: 20)
+                    
+                    Text("Feedback")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .font(.system(size: 16, weight: .medium))
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Contact Us Link
+            Button(action: {
+                if let url = URL(string: "https://tally.so/r/3qMdL7") {
+                    UIApplication.shared.open(url)
+                }
+            }) {
+                HStack {
+                    Image(systemName: "envelope.fill")
+                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .frame(width: 20)
+                    
+                    Text("Contact Us")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .font(.system(size: 16, weight: .medium))
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
         }
         .padding()
         .background(Color.black.opacity(0.12))

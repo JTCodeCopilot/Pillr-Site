@@ -14,6 +14,7 @@ struct MedicationInteractionSelectionSheet: View {
     @State private var hasCompletedCheck = false
     @State private var showingDetailedResults = false
     @State private var showingPremiumUpgrade = false
+    @State private var showingInteractionHistory = false
     
     var selectedMedications: [Medication] {
         store.activeMedications.filter { selectedMedicationIDs.contains($0.id) }
@@ -127,6 +128,10 @@ struct MedicationInteractionSelectionSheet: View {
                 error: interactionCheckError
             )
         }
+
+        .sheet(isPresented: $showingInteractionHistory) {
+            InteractionHistoryView()
+        }
     }
     
     // MARK: - Subviews
@@ -227,6 +232,27 @@ struct MedicationInteractionSelectionSheet: View {
                     .cornerRadius(8)
                 }
             }
+            
+            // History button
+            Button(action: {
+                showingInteractionHistory = true
+            }) {
+                HStack {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .foregroundColor(Color.pillrAccent)
+                    Text("View Previous Interaction Checks")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color.pillrAccent)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.black.opacity(0.2))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.pillrAccent.opacity(0.3), lineWidth: 1)
+                )
+            }
         }
         .padding()
     }
@@ -234,78 +260,6 @@ struct MedicationInteractionSelectionSheet: View {
     private var selectionSection: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                // Search button for additional medications (disabled - AI functionality removed)
-                Button(action: {
-                    HapticManager.shared.lightImpact()
-                    // Search functionality removed
-                }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "magnifyingglass.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Color(hex: "#D9B382"))
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Search for Additional Medications")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
-                            
-                            Text("Add medications not in your active list")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
-                        }
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color(hex: "#3A4A5C").opacity(0.8),
-                                        Color(hex: "#2F3A4A").opacity(0.8)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(hex: "#D9B382").opacity(0.3), lineWidth: 1)
-                            )
-                    )
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                // Additional medications section
-                if !additionalMedications.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Additional Medications")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#D9B382"))
-                            .padding(.horizontal, 4)
-                        
-                        ForEach(Array(additionalMedications.enumerated()), id: \.offset) { index, medicationName in
-                            AdditionalMedicationRow(
-                                medicationName: medicationName,
-                                onRemove: {
-                                    HapticManager.shared.lightImpact()
-                                    let _ = withAnimation(.easeInOut(duration: 0.3)) {
-                                        additionalMedications.remove(at: index)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                    .padding(.top, 8)
-                }
-                
                 // Active medications section
                 if !store.activeMedications.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {

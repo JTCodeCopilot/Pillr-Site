@@ -486,7 +486,7 @@ struct EnhancedLogEntryRow: View {
                         .fill(Color(hex: "#D7CCC8").opacity(0.2))
                         .frame(width: 44, height: 44)
                     
-                    Image(systemName: medication?.iconName ?? "pill.fill")
+                    Image(systemName: medication?.unitIconName ?? "pill.fill")
                         .font(.system(size: 20))
                         .foregroundColor(Color(hex: "#D7CCC8"))
                 }

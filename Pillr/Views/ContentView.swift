@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import WebKit
 
 // MARK: - Global Background Definition
 extension Color {
@@ -135,7 +136,7 @@ struct ContentView: View {
                     }
                 }
                 
-                // Popout Menu Overlay
+                // Popout Menu Overlay - removed animation for immediate appearance
                 if showingPopoutMenu {
                     PopoutMenuOverlay(
                         showingPopoutMenu: $showingPopoutMenu,
@@ -189,9 +190,8 @@ struct MenuButton: View {
     var body: some View {
         Button(action: {
             HapticManager.shared.mediumImpact()
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                showingPopoutMenu.toggle()
-            }
+            // Removed spring animation for immediate menu appearance
+            showingPopoutMenu.toggle()
         }) {
             ZStack {
                 // Outer glow ring when menu is open
@@ -281,14 +281,11 @@ struct PopoutMenuOverlay: View {
     
     var body: some View {
         ZStack {
-            // Dark frosted background overlay
+            // Dark frosted background overlay - removed animation duration from transition
             Color.black.opacity(0.4)
                 .background(.ultraThinMaterial, in: Rectangle())
                 .ignoresSafeArea()
-                .transition(.asymmetric(
-                    insertion: .opacity.animation(.easeInOut(duration: 0.4)),
-                    removal: .opacity.animation(.easeIn(duration: 0.2))
-                ))
+                .transition(.opacity)
                 .onTapGesture {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                         showingPopoutMenu = false
@@ -351,18 +348,9 @@ struct PopoutMenuOverlay: View {
                 .padding(.bottom, 70 + geometry.safeAreaInsets.bottom)
             }
         }
-        .transition(.asymmetric(
-            insertion: .opacity
-                .combined(with: .scale(scale: 0.8))
-                .combined(with: .move(edge: .bottom))
-                .animation(.spring(response: 0.6, dampingFraction: 0.8)),
-            removal: .opacity
-                .combined(with: .scale(scale: 0.9))
-                .animation(.spring(response: 0.4, dampingFraction: 0.9))
-        ))
-        .animation(.easeInOut(duration: 0.3), value: showingPopoutMenu)
+        .transition(.identity) // Use identity transition for immediate appearance
         .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 animateItems = true
             }
         }
@@ -746,6 +734,11 @@ struct SettingsContentView: View {
     @State private var showingPremiumUpgrade = false
     @State private var showingInteractionHistory = false
     @State private var showingPrivacyInfo = false
+    @State private var showingPrivacyPolicyWebView = false
+    @State private var showingFeedbackWebView = false
+    @State private var showingContactUsWebView = false
+    @State private var currentWebViewURL: URL?
+    @State private var webViewTitle: String = ""
     
     var body: some View {
         ZStack {
@@ -771,6 +764,8 @@ struct SettingsContentView: View {
                     
                     aiSettingsSection
                     
+                    supportLinksSection
+                    
                     appInfoSection
                     
                     Spacer()
@@ -789,6 +784,15 @@ struct SettingsContentView: View {
                 showingPrivacyInfo = false
             }
             .environmentObject(userSettings)
+        }
+        .sheet(isPresented: $showingPrivacyPolicyWebView) {
+            EmbeddedWebView(url: URL(string: "https://tally.so/r/3yR6M4")!, title: "Privacy Policy", isPresented: $showingPrivacyPolicyWebView)
+        }
+        .sheet(isPresented: $showingFeedbackWebView) {
+            EmbeddedWebView(url: URL(string: "https://tally.so/r/w2yeXV")!, title: "Feedback", isPresented: $showingFeedbackWebView)
+        }
+        .sheet(isPresented: $showingContactUsWebView) {
+            EmbeddedWebView(url: URL(string: "https://tally.so/r/3qMdL7")!, title: "Contact Us", isPresented: $showingContactUsWebView)
         }
     }
     
@@ -1022,6 +1026,101 @@ struct SettingsContentView: View {
         .padding(.horizontal)
     }
     
+    // Computed property for Support Links section
+    private var supportLinksSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "link.circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Text("Support & Resources")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                Spacer()
+            }
+            
+            Divider()
+                .background(Color(hex: "#C7C7BD").opacity(0.2))
+            
+            // Privacy Policy Link
+            Button(action: {
+                showingPrivacyPolicyWebView = true
+            }) {
+                HStack {
+                    Image(systemName: "hand.raised.fill")
+                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .frame(width: 20)
+                    
+                    Text("Privacy Policy")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .font(.system(size: 16, weight: .medium))
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Feedback Link
+            Button(action: {
+                showingFeedbackWebView = true
+            }) {
+                HStack {
+                    Image(systemName: "message.fill")
+                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .frame(width: 20)
+                    
+                    Text("Feedback")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .font(.system(size: 16, weight: .medium))
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Contact Us Link
+            Button(action: {
+                showingContactUsWebView = true
+            }) {
+                HStack {
+                    Image(systemName: "envelope.fill")
+                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .frame(width: 20)
+                    
+                    Text("Contact Us")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .font(.system(size: 16, weight: .medium))
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding()
+        .background(Color.black.opacity(0.12))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
+        )
+        .padding(.horizontal)
+    }
+    
     // Computed property for App Info section
     private var appInfoSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1056,10 +1155,6 @@ struct SettingsContentView: View {
         .padding(.horizontal)
     }
 }
-
-
-
-
 
 // MARK: - Archived Medications View
 struct ArchivedMedicationsView: View {
@@ -1129,6 +1224,92 @@ struct ArchivedMedicationsView: View {
                 }
                 .padding(.horizontal, 20)
             }
+        }
+    }
+}
+
+// MARK: - Embedded WebView
+struct EmbeddedWebView: View {
+    let url: URL
+    let title: String
+    @Binding var isPresented: Bool
+    @State private var isLoading = true
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                // Background color
+                Color(hex: "#404C42")
+                    .ignoresSafeArea()
+                
+                VStack {
+                    WebView(url: url, isLoading: $isLoading)
+                        .overlay(
+                            ZStack {
+                                if isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#C7C7BD")))
+                                        .scaleEffect(1.5)
+                                        .frame(width: 50, height: 50)
+                                        .background(Color(hex: "#404C42").opacity(0.7))
+                                        .cornerRadius(10)
+                                }
+                            }
+                        )
+                }
+            }
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        isPresented = false
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// UIKit WebView wrapped for SwiftUI
+struct WebView: UIViewRepresentable {
+    let url: URL
+    @Binding var isLoading: Bool
+    
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.navigationDelegate = context.coordinator
+        webView.load(URLRequest(url: url))
+        return webView
+    }
+    
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, WKNavigationDelegate {
+        var parent: WebView
+        
+        init(_ parent: WebView) {
+            self.parent = parent
+        }
+        
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+            parent.isLoading = true
+        }
+        
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            parent.isLoading = false
+        }
+        
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            parent.isLoading = false
         }
     }
 }

@@ -9,6 +9,7 @@ struct InteractionResultsSheetView: View {
     @State private var selectedSeverityFilter: DrugInteraction.InteractionSeverity? = nil
     @State private var showingShareSheet = false
     @State private var shareText = ""
+    @State private var showingHistoryView = false
 
     var filteredInteractions: [DrugInteraction] {
         guard let filter = selectedSeverityFilter else { return interactions }
@@ -54,6 +55,9 @@ struct InteractionResultsSheetView: View {
             }
             .sheet(isPresented: $showingShareSheet) {
                 ShareSheet(activityItems: [shareText])
+            }
+            .sheet(isPresented: $showingHistoryView) {
+                InteractionHistoryView()
             }
         }
         .preferredColorScheme(.dark)
@@ -105,6 +109,31 @@ struct InteractionResultsSheetView: View {
                     ForEach(filteredInteractions) { interaction in
                         InteractionRowView(interaction: interaction)
                     }
+                    
+                    // View History Button
+                    Button(action: {
+                        showingHistoryView = true
+                    }) {
+                        HStack {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .foregroundColor(Color.pillrAccent)
+                            Text("View Interaction History")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(Color.pillrAccent)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color.pillrAccent.opacity(0.7))
+                        }
+                        .padding(16)
+                        .background(Color.black.opacity(0.15))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.pillrAccent.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                    .padding(.top, 8)
                     
                     // Disclaimer
                     disclaimerView

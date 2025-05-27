@@ -146,7 +146,7 @@ struct LogMedicationView: View {
                                         .fill(Color(hex: "#D9B382").opacity(0.2))
                                         .frame(width: 60, height: 60)
                                     
-                                    Image(systemName: "pill.circle.fill")
+                                    Image(systemName: medicationToLog.unitIconName)
                                         .font(.system(size: 32))
                                         .foregroundColor(Color(hex: "#D9B382"))
                                 }

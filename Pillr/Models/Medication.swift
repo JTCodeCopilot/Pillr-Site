@@ -14,6 +14,23 @@ struct Medication: Identifiable, Codable, Hashable {
     var dosage: String // e.g., "50mg", "1 tablet"
     var dosageUnit: String = "mg" // "mg" or "ml"
     var iconName: String = "pill.fill" // Default icon
+    
+    // Computed property to get the correct icon based on dosageUnit
+    var unitIconName: String {
+        switch dosageUnit {
+        case "mg":
+            return "scalemass.fill"
+        case "ml":
+            return "drop.fill"
+        case "tablets":
+            return "circle.fill"
+        case "capsules":
+            return "pills.fill"
+        default:
+            return "pill.fill"
+        }
+    }
+    
     var frequency: String // e.g., "Once daily", "Twice daily"
     var timeToTake: Date // Primary time to take - legacy support
     var reminderTimes: [Date] = [] // Multiple reminder times for medications
