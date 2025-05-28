@@ -382,7 +382,7 @@ struct EditMedicationView: View {
                         }
                         
                         // Enhanced Notes Section
-                        FormSection(title: "NOTES", icon: "note.text") {
+                        FormSection(title: "NOTES", icon: "note.text.fill") {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Additional Information")
                                     .font(.system(size: 14, weight: .semibold))

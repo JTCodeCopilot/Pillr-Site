@@ -12,7 +12,7 @@ struct TabBarButton: View {
 
     var body: some View {
         Button(action: {
-            HapticManager.shared.lightImpact()
+            HapticManager.shared.pulseButton()
             action()
         }) {
             VStack(spacing: 4) {

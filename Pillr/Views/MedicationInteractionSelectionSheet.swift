@@ -146,7 +146,7 @@ struct MedicationInteractionSelectionSheet: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "checkmark.shield.fill")
                                     .font(.system(size: 24))
-                                    .foregroundColor(Color(hex: "#D9B382"))
+                                    .foregroundColor(Color(hex: "#F5F5F5"))
                                 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("No Interactions Found")
@@ -308,7 +308,7 @@ struct MedicationInteractionSelectionSheet: View {
                                         .foregroundColor(Color(hex: "#2F3A4A"))
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 4)
-                                        .background(Color(hex: "#D9B382"))
+                                        .background(Color(hex: "#F5F5F5"))
                                         .cornerRadius(6)
                                 }
                             }
@@ -367,7 +367,7 @@ struct MedicationInteractionSelectionSheet: View {
                         VStack(spacing: 20) {
                             Image(systemName: "checkmark.shield.fill")
                                 .font(.system(size: 60))
-                                .foregroundColor(Color(hex: "#D9B382"))
+                                .foregroundColor(Color(hex: "#F5F5F5"))
                             
                             VStack(spacing: 8) {
                                 Text("All Clear!")
@@ -413,7 +413,7 @@ struct MedicationInteractionSelectionSheet: View {
                                     title: "Total Pairs",
                                     value: "\(totalInteractionPairs)",
                                     subtitle: "checked",
-                                    color: Color(hex: "#D9B382")
+                                    color: Color(hex: "#F5F5F5")
                                 )
                                 
                                 SummaryCard(
@@ -438,7 +438,7 @@ struct MedicationInteractionSelectionSheet: View {
                                         showingDetailedResults = true
                                     }
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#D9B382"))
+                                    .foregroundColor(Color(hex: "#F5F5F5"))
                                 }
                                 .padding(.horizontal)
                                 
@@ -452,10 +452,10 @@ struct MedicationInteractionSelectionSheet: View {
                                         showingDetailedResults = true
                                     }
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#D9B382"))
+                                    .foregroundColor(Color(hex: "#F5F5F5"))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 12)
-                                    .background(Color(hex: "#D9B382").opacity(0.1))
+                                    .background(Color(hex: "#F5F5F5").opacity(0.1))
                                     .cornerRadius(12)
                                     .padding(.horizontal)
                                 }
@@ -478,11 +478,11 @@ struct MedicationInteractionSelectionSheet: View {
                                     
                                     Text("\(Int(checkingProgress * 100))%")
                                         .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(Color(hex: "#D9B382"))
+                                        .foregroundColor(Color(hex: "#F5F5F5"))
                                 }
                                 
                                 ProgressView(value: checkingProgress)
-                                    .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: "#D9B382")))
+                                    .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: "#F5F5F5")))
                                     .scaleEffect(y: 3)
                                     .animation(.easeInOut(duration: 0.3), value: checkingProgress)
                                     .background(Color(hex: "#C7C7BD").opacity(0.2))
@@ -495,7 +495,7 @@ struct MedicationInteractionSelectionSheet: View {
                                     .fill(Color.black.opacity(0.15))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 16)
-                                            .stroke(Color(hex: "#D9B382").opacity(0.3), lineWidth: 1)
+                                            .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
                                     )
                             )
                             .padding(.horizontal)
@@ -543,7 +543,7 @@ struct MedicationInteractionSelectionSheet: View {
                     }
                     
                     ProgressView(value: checkingProgress)
-                        .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: "#D9B382")))
+                        .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: "#F5F5F5")))
                         .scaleEffect(y: 2)
                     
                     if !currentCheckingPair.isEmpty {
@@ -756,12 +756,12 @@ struct AdditionalMedicationRow: View {
             // Medication icon
                             ZStack {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(hex: "#D9B382").opacity(0.2))
+                        .fill(Color(hex: "#F5F5F5").opacity(0.2))
                         .frame(width: 24, height: 24)
                     
                     Image(systemName: "pills.fill")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: "#D9B382"))
+                        .foregroundColor(Color(hex: "#F5F5F5"))
             }
             
             // Medication info
@@ -773,7 +773,7 @@ struct AdditionalMedicationRow: View {
                 
                                         Text("Additional medication")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(hex: "#D9B382"))
+                            .foregroundColor(Color(hex: "#F5F5F5"))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             
@@ -803,7 +803,7 @@ struct AdditionalMedicationRow: View {
                 )
                 .overlay(
                                                     RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(hex: "#D9B382").opacity(0.3), lineWidth: 1)
+                                    .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
                 )
         )
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)

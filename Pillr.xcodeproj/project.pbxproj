@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4901EA942DE700CB000B3979 /* AIProxy in Frameworks */ = {isa = PBXBuildFile; productRef = 4901EA932DE700CB000B3979 /* AIProxy */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		4964701E2DD3F0E9003964BD /* Pillr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pillr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4901EA942DE700CB000B3979 /* AIProxy in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = Pillr;
 			packageProductDependencies = (
+				4901EA932DE700CB000B3979 /* AIProxy */,
 			);
 			productName = Pillr;
 			productReference = 4964701E2DD3F0E9003964BD /* Pillr.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 496470152DD3F0E9003964BD;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4901EA922DE700CB000B3979 /* XCRemoteSwiftPackageReference "AIProxySwift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4964701F2DD3F0E9003964BD /* Products */;
 			projectDirPath = "";
@@ -340,6 +349,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4901EA922DE700CB000B3979 /* XCRemoteSwiftPackageReference "AIProxySwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/lzell/AIProxySwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.101.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4901EA932DE700CB000B3979 /* AIProxy */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4901EA922DE700CB000B3979 /* XCRemoteSwiftPackageReference "AIProxySwift" */;
+			productName = AIProxy;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 496470162DD3F0E9003964BD /* Project object */;
 }

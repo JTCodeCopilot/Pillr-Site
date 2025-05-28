@@ -18,7 +18,7 @@ struct DrugInteraction: Identifiable, Codable, Hashable {
         
         var color: String {
             switch self {
-            case .minor: return "#D9B382" // Light brown/tan
+            case .minor: return "#F5F5F5" // Light brown/tan
             case .moderate: return "#FFC107" // Yellow/Amber
             case .major: return "#FF9800" // Orange
             case .contraindicated: return "#F44336" // Red

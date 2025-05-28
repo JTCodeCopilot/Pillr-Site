@@ -87,6 +87,52 @@ class HapticManager {
         selectionFeedbackGenerator.selectionChanged()
         selectionFeedbackGenerator.prepare()
     }
+    
+    // MARK: - Pulsed Feedback
+    
+    func pulseLight() {
+        // Create a pulse effect with light impacts
+        lightImpactFeedbackGenerator.impactOccurred()
+        
+        // Queue a second pulse after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.lightImpactFeedbackGenerator.impactOccurred()
+            self?.lightImpactFeedbackGenerator.prepare()
+        }
+    }
+    
+    func pulseMedium() {
+        // Create a pulse effect with medium impacts
+        mediumImpactFeedbackGenerator.impactOccurred()
+        
+        // Queue a second pulse after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.mediumImpactFeedbackGenerator.impactOccurred()
+            self?.mediumImpactFeedbackGenerator.prepare()
+        }
+    }
+    
+    func pulseRigid() {
+        // Create a strong pulse effect with rigid impacts
+        rigidImpactFeedbackGenerator.impactOccurred()
+        
+        // Queue a second pulse after a very short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
+            self?.rigidImpactFeedbackGenerator.impactOccurred()
+            self?.rigidImpactFeedbackGenerator.prepare()
+        }
+    }
+    
+    func pulseButton() {
+        // Optimized pulse feedback for buttons
+        softImpactFeedbackGenerator.impactOccurred()
+        
+        // Queue a second soft impact for a tactile pulse
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) { [weak self] in
+            self?.lightImpactFeedbackGenerator.impactOccurred()
+            self?.lightImpactFeedbackGenerator.prepare()
+        }
+    }
 }
 
 // SwiftUI Button extension to add haptic feedback
@@ -112,6 +158,14 @@ extension Button {
                 HapticManager.shared.errorNotification()
             case .selection:
                 HapticManager.shared.selectionChanged()
+            case .pulseLight:
+                HapticManager.shared.pulseLight()
+            case .pulseMedium:
+                HapticManager.shared.pulseMedium()
+            case .pulseRigid:
+                HapticManager.shared.pulseRigid()
+            case .pulseButton:
+                HapticManager.shared.pulseButton()
             }
         }
     }
@@ -128,6 +182,10 @@ enum HapticStyle {
     case warning
     case error
     case selection
+    case pulseLight
+    case pulseMedium
+    case pulseRigid
+    case pulseButton
 }
 
 // HapticButtonStyle - a SwiftUI ButtonStyle that includes haptic feedback
@@ -164,6 +222,14 @@ struct HapticFeedbackButtonStyle: ButtonStyle {
                         HapticManager.shared.errorNotification()
                     case .selection:
                         HapticManager.shared.selectionChanged()
+                    case .pulseLight:
+                        HapticManager.shared.pulseLight()
+                    case .pulseMedium:
+                        HapticManager.shared.pulseMedium()
+                    case .pulseRigid:
+                        HapticManager.shared.pulseRigid()
+                    case .pulseButton:
+                        HapticManager.shared.pulseButton()
                     }
                 }
             }
@@ -179,7 +245,7 @@ struct MinimalButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { isPressed in
                 if isPressed {
-                    HapticManager.shared.softImpact()
+                    HapticManager.shared.pulseLight()
                 }
             }
     }
@@ -208,6 +274,14 @@ extension View {
                 HapticManager.shared.errorNotification()
             case .selection:
                 HapticManager.shared.selectionChanged()
+            case .pulseLight:
+                HapticManager.shared.pulseLight()
+            case .pulseMedium:
+                HapticManager.shared.pulseMedium()
+            case .pulseRigid:
+                HapticManager.shared.pulseRigid()
+            case .pulseButton:
+                HapticManager.shared.pulseButton()
             }
             action()
         }

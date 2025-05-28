@@ -35,11 +35,11 @@ extension View {
 // MARK: - Color Extension for Theme Colors
 extension Color {
     static var pillrAccent: Color {
-        return Color(hex: "#D9B382") // Tan accent color
+        return Color(hex: "#F5F5F5") // Tan accent color
     }
     
     static var pillrSecondary: Color {
-        return Color(hex: "#D9B382") // Tan secondary color
+        return Color(hex: "#F5F5F5") // Tan secondary color
     }
 }
 
@@ -94,6 +94,8 @@ struct ContentView: View {
     @State private var showingLogView = false
     @State private var showingSettingsView = false
     @State private var showingArchivedView = false
+    @State private var showingInteractionAI = false
+    @State private var showingMedicationSelectionSheet = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
 
@@ -136,13 +138,14 @@ struct ContentView: View {
                     }
                 }
                 
-                // Popout Menu Overlay - removed animation for immediate appearance
+                // Popout Menu Overlay - Direct rendering with no animation wrapper
                 if showingPopoutMenu {
                     PopoutMenuOverlay(
                         showingPopoutMenu: $showingPopoutMenu,
                         showingLogView: $showingLogView,
                         showingSettingsView: $showingSettingsView,
                         showingArchivedView: $showingArchivedView,
+                        showingMedicationSelectionSheet: $showingMedicationSelectionSheet,
                         geometry: geometry
                     )
                 }
@@ -155,6 +158,7 @@ struct ContentView: View {
         .accessibilityAction(.default) {
             // Default action for main view
         }
+        // No animations on sheet presentations for faster response
         .sheet(isPresented: $showingLogView) {
             MedicationLogViewSheet(store: store, userSettings: userSettings, isPresented: $showingLogView)
         }
@@ -178,6 +182,10 @@ struct ContentView: View {
                     }
             }
         }
+        .sheet(isPresented: $showingMedicationSelectionSheet) {
+            MedicationInteractionSelectionSheet()
+                .environmentObject(store)
+        }
     }
 }
 
@@ -190,8 +198,7 @@ struct MenuButton: View {
     var body: some View {
         Button(action: {
             HapticManager.shared.mediumImpact()
-            // Removed spring animation for immediate menu appearance
-            showingPopoutMenu.toggle()
+            showingPopoutMenu.toggle() // No animation on toggle for immediate response
         }) {
             ZStack {
                 // Outer glow ring when menu is open
@@ -223,32 +230,21 @@ struct MenuButton: View {
                     .scaleEffect(isPressed ? 0.92 : 1.0)
                     .scaleEffect(showingPopoutMenu ? 1.08 : 1.0)
                 
-                // Icon with smooth transition
-                ZStack {
-                    if showingPopoutMenu {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "#404C42"))
-                            .transition(.asymmetric(
-                                insertion: .scale.combined(with: .opacity).animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.1)),
-                                removal: .scale.combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.9))
-                            ))
-                    } else {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "#404C42"))
-                            .transition(.asymmetric(
-                                insertion: .scale.combined(with: .opacity).animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.1)),
-                                removal: .scale.combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.9))
-                            ))
-                    }
+                // Icon with no animation
+                if showingPopoutMenu {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: "#404C42"))
+                } else {
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: "#404C42"))
                 }
-                .rotationEffect(.degrees(showingPopoutMenu ? 180 : 0))
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
-        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingPopoutMenu)
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showingPopoutMenu) // Faster animation response
         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulseAnimation)
         .onAppear {
             if showingPopoutMenu {
@@ -276,23 +272,24 @@ struct PopoutMenuOverlay: View {
     @Binding var showingLogView: Bool
     @Binding var showingSettingsView: Bool
     @Binding var showingArchivedView: Bool
+    @Binding var showingMedicationSelectionSheet: Bool
     let geometry: GeometryProxy
     @State private var animateItems = false
     
     var body: some View {
         ZStack {
-            // Dark frosted background overlay - removed animation duration from transition
+            // Dark frosted background overlay with immediate appearance
             Color.black.opacity(0.4)
                 .background(.ultraThinMaterial, in: Rectangle())
                 .ignoresSafeArea()
-                .transition(.opacity)
+                .transition(.opacity.animation(.easeOut(duration: 0.15))) // Faster fade in
                 .onTapGesture {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { // Faster dismissal
                         showingPopoutMenu = false
                     }
                 }
             
-            // Menu items with staggered animation
+            // Menu items with faster staggered animation
             VStack(spacing: 16) {
                 Spacer()
                 
@@ -301,29 +298,45 @@ struct PopoutMenuOverlay: View {
                     MenuItemButton(
                         icon: "gearshape",
                         title: "Settings",
-                        delay: 0.0,
+                        delay: 0.0, // No delay for first item
                         animateItems: animateItems,
                         action: {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Reduced delay
                                 showingSettingsView = true
                             }
                         }
                     )
                     
-                    // Archived medications button (appears second)
+                    // Interaction AI button (now second)
                     MenuItemButton(
-                        icon: "archivebox.fill",
-                        title: "Archived Medications",
-                        delay: 0.1,
+                        icon: "brain.head.profile",
+                        title: "Interaction AI",
+                        delay: 0.05, // Reduced delay (was for Archived Meds)
                         animateItems: animateItems,
                         action: {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Reduced delay
+                                showingMedicationSelectionSheet = true
+                            }
+                        }
+                    )
+                    
+                    // Archived medications button (now third)
+                    MenuItemButton(
+                        icon: "archivebox.fill",
+                        title: "Archived Meds",
+                        delay: 0.1, // Delay that was for Interaction AI
+                        animateItems: animateItems,
+                        action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                showingPopoutMenu = false
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Reduced delay
                                 showingArchivedView = true
                             }
                         }
@@ -333,13 +346,13 @@ struct PopoutMenuOverlay: View {
                     MenuItemButton(
                         icon: "checklist.checked",
                         title: "Medication History",
-                        delay: 0.2,
+                        delay: 0.15, // Increased delay for last item
                         animateItems: animateItems,
                         action: {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Reduced delay
                                 showingLogView = true
                             }
                         }
@@ -348,11 +361,10 @@ struct PopoutMenuOverlay: View {
                 .padding(.bottom, 70 + geometry.safeAreaInsets.bottom)
             }
         }
-        .transition(.identity) // Use identity transition for immediate appearance
+        .transition(.identity) // Keep identity transition for immediate appearance
         .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                animateItems = true
-            }
+            // Trigger menu items animation immediately on appear
+            animateItems = true
         }
         .onDisappear {
             animateItems = false
@@ -410,14 +422,17 @@ struct MenuItemButton: View {
         }
         .buttonStyle(PlainButtonStyle())
         .padding(.horizontal, 40)
-        .scaleEffect(hasAppeared ? 1.0 : 0.3)
+        .scaleEffect(hasAppeared ? 1.0 : 0.7) // Start from a larger scale for faster appearance
         .opacity(hasAppeared ? 1.0 : 0.0)
-        .offset(y: hasAppeared ? 0 : 30)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
-        .animation(.spring(response: 0.7, dampingFraction: 0.8).delay(delay), value: hasAppeared)
+        .offset(y: hasAppeared ? 0 : 15) // Reduced offset distance for faster appearance
+        .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed) // Faster button press
+        .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(delay), value: hasAppeared) // Faster item appearance
         .onChange(of: animateItems) { newValue in
+            // Use dispatchqueue to slightly stagger the appearance
             if newValue {
-                hasAppeared = true
+                DispatchQueue.main.async {
+                    hasAppeared = true
+                }
             } else {
                 hasAppeared = false
             }
@@ -559,7 +574,7 @@ struct MedicationLogContentView: View {
                     // Enhanced header with filter options
                     VStack(spacing: 12) {
                         HStack {
-                            Text("Medication History")
+                            Text("History")
                                 .font(.system(size: 32, weight: .bold))
                                 .foregroundColor(Color(hex: "#C7C7BD"))
                             
@@ -765,8 +780,6 @@ struct SettingsContentView: View {
                     aiSettingsSection
                     
                     supportLinksSection
-                    
-                    appInfoSection
                     
                     Spacer()
                 }
@@ -1110,40 +1123,6 @@ struct SettingsContentView: View {
                 .padding(.vertical, 4)
             }
             .buttonStyle(PlainButtonStyle())
-        }
-        .padding()
-        .background(Color.black.opacity(0.12))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
-        )
-        .padding(.horizontal)
-    }
-    
-    // Computed property for App Info section
-    private var appInfoSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                
-                Text("About")
-                    .font(.headline)
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                
-                Spacer()
-            }
-            
-            Divider()
-                .background(Color(hex: "#C7C7BD").opacity(0.2))
-            
-            VStack(alignment: .leading, spacing: 12) {
-                InfoRow(title: "Version", value: "1.0.0")
-                InfoRow(title: "Developer", value: "Justin Tilley")
-                InfoRow(title: "Build Date", value: "May 2025")
-            }
         }
         .padding()
         .background(Color.black.opacity(0.12))

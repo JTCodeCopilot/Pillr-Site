@@ -658,6 +658,11 @@ struct EnhancedScaleButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.92 : 1)
             .opacity(configuration.isPressed ? 0.8 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { newValue in
+                if newValue {
+                    HapticManager.shared.pulseButton()
+                }
+            }
     }
 }
 
@@ -1463,12 +1468,32 @@ fileprivate struct MedicationRowDetailsView: View {
                 }
                 
                 if let notes = medication.notes, !notes.isEmpty {
-                    detailCard(
-                        icon: "note.text.fill", 
-                        label: "Notes", 
-                        value: notes, 
-                        lineLimit: nil, 
-                        iconColor: Color(hex: "#D7CCC8")
+                    HStack(alignment: .top, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("NOTES")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .textCase(.uppercase)
+                                .tracking(0.5)
+                            
+                            Text(notes)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .multilineTextAlignment(.leading)
+                                .lineLimit(nil)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.black.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(hex: "#606A63").opacity(0.2), lineWidth: 1)
+                            )
                     )
                 }
             }

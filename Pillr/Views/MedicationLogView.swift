@@ -550,7 +550,7 @@ struct EnhancedLogEntryRow: View {
                                 }
                             } else {
                                 HStack(alignment: .top, spacing: 6) {
-                                    Image(systemName: "note.text")
+                                    Image(systemName: "note.text.fill")
                                         .font(.system(size: 12))
                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
                                     
@@ -614,7 +614,7 @@ struct FloatingButton: View {
                 .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 3)
                 .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(ScaleButtonStyle(hapticStyle: .pulseButton))
     }
 }
 

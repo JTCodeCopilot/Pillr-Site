@@ -348,7 +348,7 @@ struct AddMedicationView: View {
                                                                     .foregroundColor(.white)
                                                                     .padding(.horizontal, 6)
                                                                     .padding(.vertical, 2)
-                                                                    .background(Color(hex: "#D9B382"))
+                                                                    .background(Color(hex: "#F5F5F5"))
                                                                     .cornerRadius(4)
                                                             }
                                                         }
@@ -369,7 +369,7 @@ struct AddMedicationView: View {
                             }
                             
                             // Enhanced Notes Section
-                            FormSection(title: "NOTES", icon: "note.text") {
+                            FormSection(title: "NOTES", icon: "note.text.fill") {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Additional Information")
                                         .font(.system(size: 14, weight: .semibold))

@@ -51,7 +51,7 @@ struct MedicationRow: View {
         } else if minutes < 0 {
             return .red
         } else if minutes < 30 {
-            return Color(hex: "#D9B382")
+            return Color(hex: "#F5F5F5")
         } else {
             return .blue
         }
@@ -143,7 +143,7 @@ struct MedicationRow: View {
                         Text(wasTakenToday ? "Taken" : "Take")
                             .font(.system(size: 14, weight: .medium))
                     }
-                    .foregroundColor(wasTakenToday ? Color(hex: "#D9B382") : Color(hex: "#C7C7BD"))
+                    .foregroundColor(wasTakenToday ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD"))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                 }
@@ -154,7 +154,7 @@ struct MedicationRow: View {
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(
-                    wasTakenToday ? Color(hex: "#D9B382").opacity(0.3) : Color(hex: "#C7C7BD").opacity(0.1),
+                    wasTakenToday ? Color(hex: "#F5F5F5").opacity(0.3) : Color(hex: "#C7C7BD").opacity(0.1),
                     lineWidth: 1
                 )
         )

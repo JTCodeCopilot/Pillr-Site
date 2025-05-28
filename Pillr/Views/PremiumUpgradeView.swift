@@ -21,7 +21,7 @@ struct PremiumUpgradeView: View {
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(hex: "#D9B382"),
+                                                Color(hex: "#F5F5F5"),
                                                 Color(hex: "#C7A76B")
                                             ]),
                                             startPoint: .topLeading,
@@ -29,7 +29,7 @@ struct PremiumUpgradeView: View {
                                         )
                                     )
                                     .frame(width: 90, height: 90)
-                                    .shadow(color: Color(hex: "#D9B382").opacity(0.3), radius: 10, x: 0, y: 5)
+                                    .shadow(color: Color(hex: "#F5F5F5").opacity(0.3), radius: 10, x: 0, y: 5)
                                 
                                 Image(systemName: "brain.head.profile")
                                     .font(.system(size: 40, weight: .bold))
@@ -43,7 +43,7 @@ struct PremiumUpgradeView: View {
                                 
                                 Text("Medication Management")
                                     .font(.system(size: 28, weight: .bold))
-                                    .foregroundColor(Color(hex: "#D9B382"))
+                                    .foregroundColor(Color(hex: "#F5F5F5"))
                                 
                                 Text("Get unlimited medications, AI-powered analysis, follow-up reminders, and advanced features")
                                     .font(.system(size: 16, weight: .medium))
@@ -60,14 +60,14 @@ struct PremiumUpgradeView: View {
                                 icon: "pills.fill",
                                 title: "Unlimited Medications",
                                 description: "Add as many medications as you need without the 5-medication limit of the free tier",
-                                iconColor: Color(hex: "#D9B382")
+                                iconColor: Color(hex: "#F5F5F5")
                             )
                             
                             PremiumFeature(
                                 icon: "brain.head.profile",
                                 title: "AI Interaction Analysis",
                                 description: "Advanced AI analyzes your medications for potential interactions using the latest medical knowledge",
-                                iconColor: Color(hex: "#D9B382")
+                                iconColor: Color(hex: "#F5F5F5")
                             )
                             
                             PremiumFeature(
@@ -135,7 +135,7 @@ struct PremiumUpgradeView: View {
                                 .background(
                                     LinearGradient(
                                         gradient: Gradient(colors: [
-                                            Color(hex: "#D9B382"),
+                                            Color(hex: "#F5F5F5"),
                                             Color(hex: "#C7A76B")
                                         ]),
                                         startPoint: .top,
@@ -143,7 +143,7 @@ struct PremiumUpgradeView: View {
                                     )
                                 )
                                 .cornerRadius(16)
-                                .shadow(color: Color(hex: "#D9B382").opacity(0.4), radius: 8, x: 0, y: 4)
+                                .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 8, x: 0, y: 4)
                             }
                             .disabled(isPurchasing)
                             .scaleEffect(isPurchasing ? 0.98 : 1.0)
@@ -296,11 +296,11 @@ struct PricingOption: View {
                 // Selection indicator
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color(hex: "#D9B382") : Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 2)
+                        .stroke(isSelected ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 2)
                         .frame(width: 24, height: 24)
                         .background(
                             Circle()
-                                .fill(isSelected ? Color(hex: "#D9B382") : Color.clear)
+                                .fill(isSelected ? Color(hex: "#F5F5F5") : Color.clear)
                         )
                     
                     if isSelected {
@@ -332,7 +332,7 @@ struct PricingOption: View {
                     HStack {
                         Text(price)
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(Color(hex: "#D9B382"))
+                            .foregroundColor(Color(hex: "#F5F5F5"))
                         
                         Text(period)
                             .font(.system(size: 14))
@@ -344,7 +344,7 @@ struct PricingOption: View {
                     if let savings = savings {
                         Text(savings)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#D9B382"))
+                            .foregroundColor(Color(hex: "#F5F5F5"))
                     }
                 }
             }
@@ -356,7 +356,7 @@ struct PricingOption: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(
-                                isSelected ? Color(hex: "#D9B382") : Color(hex: "#C7C7BD").opacity(0.2),
+                                isSelected ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD").opacity(0.2),
                                 lineWidth: isSelected ? 2 : 1
                             )
                     )
@@ -374,7 +374,7 @@ struct TrustIndicator: View {
         VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#D9B382"))
+                .foregroundColor(Color(hex: "#F5F5F5"))
             
             Text(text)
                 .font(.system(size: 12, weight: .medium))

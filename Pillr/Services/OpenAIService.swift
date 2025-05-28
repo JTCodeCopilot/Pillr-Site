@@ -1,16 +1,16 @@
 import Foundation
+import AIProxy
+
+// Create the OpenAI service using AIProxy
+let openAIService = AIProxy.openAIService(
+    partialKey: "v2|5941cfd5|F403tQOAddoT5WC8",
+    serviceURL: "https://api.aiproxy.com/f534d18c/94f329fe"
+)
 
 struct OpenAIService {
     static let shared = OpenAIService()
     
-    private let baseURL = "https://api.openai.com/v1/chat/completions"
-    
     private init() {}
-    
-    private var apiKey: String {
-        // Your OpenAI API key - replace with your actual key
-        return "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"
-    }
     
     func isPremiumUser() -> Bool {
         return UserSettings.shared.isPremiumUser
@@ -33,17 +33,9 @@ struct OpenAIService {
         UserSettings.shared.setSubscriptionType("one-time-purchase")
     }
     
-    func hasValidAPIKey() -> Bool {
-        return !apiKey.isEmpty && apiKey.hasPrefix("sk-") && apiKey != "YOUR_OPENAI_API_KEY_HERE"
-    }
-    
     func checkMedicationInteractions(medications: [String]) async throws -> [DrugInteraction] {
         guard UserSettings.shared.hasAIAccess() else {
             throw OpenAIError.premiumRequired
-        }
-        
-        guard hasValidAPIKey() else {
-            throw OpenAIError.invalidAPIKey
         }
         
         guard medications.count >= 2 else {
@@ -81,60 +73,20 @@ struct OpenAIService {
     private func performRequestWithRetry(medications: [String], prompt: String, attempt: Int = 1) async throws -> [DrugInteraction] {
         let maxAttempts = 3
         
-        let requestBody = OpenAIRequest(
-            model: "gpt-4",
-            messages: [
-                OpenAIMessage(role: "system", content: "You are a medical AI. Respond with valid JSON only. No text before or after the JSON array."),
-                OpenAIMessage(role: "user", content: prompt)
-            ],
-            temperature: 0.1,
-            maxTokens: 1500
-        )
-        
-        guard let url = URL(string: baseURL) else {
-            // If we can't even form the URL, use fallback
-            return createFallbackInteraction(for: medications)
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 30
-        
         do {
-            request.httpBody = try JSONEncoder().encode(requestBody)
-        } catch {
-            // If encoding fails, use fallback
-            return createFallbackInteraction(for: medications)
-        }
-        
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            // Using the AIProxy Swift library's structured request format
+            let response = try await openAIService.chatCompletionRequest(body: .init(
+                model: "gpt-4o-mini",
+                messages: [
+                    .system(content: .text("You are a medical AI. Respond with valid JSON only. No text before or after the JSON array.")),
+                    .user(content: .text(prompt))
+                ],
+                temperature: 0.1
+            ))
             
-            guard let httpResponse = response as? HTTPURLResponse else {
-                // Retry if possible
+            guard let content = response.choices.first?.message.content else {
                 if attempt < maxAttempts {
                     try await Task.sleep(nanoseconds: UInt64(attempt * 1_000_000_000)) // Wait 1-3 seconds
-                    return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
-                }
-                return createFallbackInteraction(for: medications)
-            }
-            
-            guard httpResponse.statusCode == 200 else {
-                if httpResponse.statusCode == 429 && attempt < maxAttempts {
-                    // Rate limited, wait and retry
-                    try await Task.sleep(nanoseconds: UInt64(attempt * 2_000_000_000)) // Wait 2-6 seconds
-                    return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
-                }
-                // For other errors, use fallback
-                return createFallbackInteraction(for: medications)
-            }
-            
-            let openAIResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
-            guard let content = openAIResponse.choices.first?.message.content else {
-                // Retry if possible
-                if attempt < maxAttempts {
                     return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
                 }
                 return createFallbackInteraction(for: medications)
@@ -144,7 +96,6 @@ struct OpenAIService {
             let cleanedContent = extractJSON(from: content)
             
             guard let jsonData = cleanedContent.data(using: .utf8) else {
-                // Retry if possible
                 if attempt < maxAttempts {
                     return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
                 }
@@ -179,6 +130,17 @@ struct OpenAIService {
                 return createFallbackInteraction(for: medications)
             }
             
+        } catch AIProxyError.unsuccessfulRequest(let statusCode, let responseBody) {
+            print("AIProxy error: Received \(statusCode) status code with response body: \(responseBody)")
+            
+            // Retry for rate limit issues
+            if statusCode == 429 && attempt < maxAttempts {
+                try await Task.sleep(nanoseconds: UInt64(attempt * 2_000_000_000)) // Wait 2-6 seconds
+                return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
+            }
+            
+            // For other errors, use fallback
+            return createFallbackInteraction(for: medications)
         } catch {
             print("Network error on attempt \(attempt): \(error)")
             

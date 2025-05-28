@@ -139,7 +139,7 @@ struct LoadingView: View {
             ZStack {
                 // Background circle
                 Circle()
-                    .stroke(Color(hex: "#D9B382").opacity(0.2), lineWidth: 4)
+                    .stroke(Color(hex: "#F5F5F5").opacity(0.2), lineWidth: 4)
                     .frame(width: 60, height: 60)
                 
                 // Animated progress circle
@@ -148,8 +148,8 @@ struct LoadingView: View {
                     .stroke(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color(hex: "#D9B382"),
-                                Color(hex: "#D9B382").opacity(0.3)
+                                Color(hex: "#F5F5F5"),
+                                Color(hex: "#F5F5F5").opacity(0.3)
                             ]),
                             startPoint: .leading,
                             endPoint: .trailing
@@ -168,7 +168,7 @@ struct LoadingView: View {
                 
                 // Center dot
                 Circle()
-                    .fill(Color(hex: "#D9B382"))
+                    .fill(Color(hex: "#F5F5F5"))
                     .frame(width: 8, height: 8)
                     .scaleEffect(animationOffset > 180 ? 1.2 : 0.8)
                     .animation(
@@ -196,7 +196,7 @@ struct LoadingView: View {
                 .fill(Color.black.opacity(0.15))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color(hex: "#D9B382").opacity(0.2), lineWidth: 1)
+                        .stroke(Color(hex: "#F5F5F5").opacity(0.2), lineWidth: 1)
                 )
         )
         .padding(.horizontal)
@@ -263,7 +263,7 @@ struct ErrorStateView: View {
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color(hex: "#D9B382"),
+                                Color(hex: "#F5F5F5"),
                                 Color(hex: "#C7A76B")
                             ]),
                             startPoint: .top,
@@ -271,7 +271,7 @@ struct ErrorStateView: View {
                         )
                     )
                     .cornerRadius(14)
-                    .shadow(color: Color(hex: "#D9B382").opacity(0.4), radius: 12, x: 0, y: 6)
+                    .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 12, x: 0, y: 6)
                 }
                 .buttonStyle(HapticButtonStyle(style: .medium))
             }
@@ -462,15 +462,15 @@ struct HapticButtonStyle: ButtonStyle {
                 if newValue {
                     switch style {
                     case .light:
-                        HapticManager.shared.lightImpact()
+                        HapticManager.shared.pulseLight()
                     case .medium:
-                        HapticManager.shared.mediumImpact()
+                        HapticManager.shared.pulseMedium()
                     case .heavy:
                         HapticManager.shared.heavyImpact()
                     case .soft:
-                        HapticManager.shared.softImpact()
+                        HapticManager.shared.pulseButton()
                     case .rigid:
-                        HapticManager.shared.rigidImpact()
+                        HapticManager.shared.pulseRigid()
                     case .success:
                         HapticManager.shared.successNotification()
                     case .warning:
@@ -479,6 +479,14 @@ struct HapticButtonStyle: ButtonStyle {
                         HapticManager.shared.errorNotification()
                     case .selection:
                         HapticManager.shared.selectionChanged()
+                    case .pulseLight:
+                        HapticManager.shared.pulseLight()
+                    case .pulseMedium:
+                        HapticManager.shared.pulseMedium()
+                    case .pulseRigid:
+                        HapticManager.shared.pulseRigid()
+                    case .pulseButton:
+                        HapticManager.shared.pulseButton()
                     }
                 }
             }
@@ -491,7 +499,7 @@ struct ScaleButtonStyle: ButtonStyle {
     let scaleAmount: CGFloat
     let hapticStyle: HapticStyle
     
-    init(scaleAmount: CGFloat = 0.94, hapticStyle: HapticStyle = .light) {
+    init(scaleAmount: CGFloat = 0.94, hapticStyle: HapticStyle = .pulseButton) {
         self.scaleAmount = scaleAmount
         self.hapticStyle = hapticStyle
     }
@@ -506,15 +514,15 @@ struct ScaleButtonStyle: ButtonStyle {
                 if newValue {
                     switch hapticStyle {
                     case .light:
-                        HapticManager.shared.lightImpact()
+                        HapticManager.shared.pulseLight()
                     case .medium:
-                        HapticManager.shared.mediumImpact()
+                        HapticManager.shared.pulseMedium()
                     case .heavy:
                         HapticManager.shared.heavyImpact()
                     case .soft:
-                        HapticManager.shared.softImpact()
+                        HapticManager.shared.pulseButton()
                     case .rigid:
-                        HapticManager.shared.rigidImpact()
+                        HapticManager.shared.pulseRigid()
                     case .success:
                         HapticManager.shared.successNotification()
                     case .warning:
@@ -523,6 +531,14 @@ struct ScaleButtonStyle: ButtonStyle {
                         HapticManager.shared.errorNotification()
                     case .selection:
                         HapticManager.shared.selectionChanged()
+                    case .pulseLight:
+                        HapticManager.shared.pulseLight()
+                    case .pulseMedium:
+                        HapticManager.shared.pulseMedium()
+                    case .pulseRigid:
+                        HapticManager.shared.pulseRigid()
+                    case .pulseButton:
+                        HapticManager.shared.pulseButton()
                     }
                 }
             }

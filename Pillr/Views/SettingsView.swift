@@ -34,8 +34,6 @@ struct SettingsView: View {
                         
                         supportLinksSection
                         
-                        appInfoSection
-                        
                         Spacer()
                     }
                     .padding(.bottom, 50)
@@ -380,40 +378,6 @@ struct SettingsView: View {
                 .padding(.vertical, 4)
             }
             .buttonStyle(PlainButtonStyle())
-        }
-        .padding()
-        .background(Color.black.opacity(0.12))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
-        )
-        .padding(.horizontal)
-    }
-    
-    // Computed property for App Info section
-    private var appInfoSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                
-                Text("About")
-                    .font(.headline)
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                
-                Spacer()
-            }
-            
-            Divider()
-                .background(Color(hex: "#C7C7BD").opacity(0.2))
-            
-            VStack(alignment: .leading, spacing: 12) {
-                InfoRow(title: "Version", value: "1.0.0")
-                InfoRow(title: "Developer", value: "Justin Tilley")
-                InfoRow(title: "Build Date", value: "May 2025")
-            }
         }
         .padding()
         .background(Color.black.opacity(0.12))
