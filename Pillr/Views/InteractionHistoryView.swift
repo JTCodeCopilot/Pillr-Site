@@ -15,25 +15,19 @@ struct InteractionHistoryView: View {
     
     enum SaveFormat: String, CaseIterable {
         case text = "Text File"
-        case json = "JSON File"
         case csv = "CSV File"
-        case pdf = "PDF Document"
         
         var fileExtension: String {
             switch self {
             case .text: return "txt"
-            case .json: return "json"
             case .csv: return "csv"
-            case .pdf: return "pdf"
             }
         }
         
         var systemImage: String {
             switch self {
             case .text: return "doc.text"
-            case .json: return "doc.badge.gearshape"
             case .csv: return "tablecells"
-            case .pdf: return "doc.richtext"
             }
         }
     }
@@ -359,18 +353,9 @@ struct InteractionHistoryView: View {
             let content = interactionStore.exportInteractionsAsText()
             shareItems = [createTextFile(content: content, fileName: "\(fileName).txt")]
             
-        case .json:
-            let content = exportAsJSON()
-            shareItems = [createTextFile(content: content, fileName: "\(fileName).json")]
-            
         case .csv:
             let content = exportAsCSV()
             shareItems = [createTextFile(content: content, fileName: "\(fileName).csv")]
-            
-        case .pdf:
-            if let pdfData = createPDF() {
-                shareItems = [pdfData]
-            }
         }
         
         showingShareSheet = true
@@ -390,34 +375,6 @@ struct InteractionHistoryView: View {
         
         // You could add a toast notification here if you have one implemented
         print("Interactions saved to device successfully")
-    }
-    
-    private func exportAsJSON() -> String {
-        let exportData = InteractionExportData(
-            exportDate: Date(),
-            totalInteractions: filteredInteractions.count,
-            interactions: filteredInteractions.map { interaction in
-                InteractionExportItem(
-                    id: interaction.id.uuidString,
-                    drugA: interaction.drugA,
-                    drugB: interaction.drugB,
-                    severity: interaction.severity.rawValue,
-                    description: interaction.description,
-                    recommendedAction: interaction.recommendedAction,
-                    timestamp: interaction.timestamp
-                )
-            }
-        )
-        
-        do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.outputFormatting = .prettyPrinted
-            let data = try encoder.encode(exportData)
-            return String(data: data, encoding: .utf8) ?? ""
-        } catch {
-            return "Error creating JSON: \(error.localizedDescription)"
-        }
     }
     
     private func exportAsCSV() -> String {
@@ -443,99 +400,6 @@ struct InteractionHistoryView: View {
     private func escapeCSVField(_ field: String) -> String {
         let escaped = field.replacingOccurrences(of: "\"", with: "\"\"")
         return "\"\(escaped)\""
-    }
-    
-    private func createPDF() -> Data? {
-        let pdfMetaData = [
-            kCGPDFContextCreator: "Pillr App",
-            kCGPDFContextAuthor: "Pillr Medication Tracker",
-            kCGPDFContextTitle: "Drug Interaction History"
-        ]
-        
-        let format = UIGraphicsPDFRendererFormat()
-        format.documentInfo = pdfMetaData as [String: Any]
-        
-        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792) // US Letter size
-        let renderer = UIGraphicsPDFRenderer(bounds: pageRect, format: format)
-        
-        return renderer.pdfData { context in
-            context.beginPage()
-            
-            let titleFont = UIFont.systemFont(ofSize: 24, weight: .bold)
-            let headerFont = UIFont.systemFont(ofSize: 16, weight: .semibold)
-            let bodyFont = UIFont.systemFont(ofSize: 12, weight: .regular)
-            
-            var yPosition: CGFloat = 50
-            
-            // Title
-            let title = "Drug Interaction History"
-            let titleRect = CGRect(x: 50, y: yPosition, width: pageRect.width - 100, height: 30)
-            title.draw(in: titleRect, withAttributes: [
-                .font: titleFont,
-                .foregroundColor: UIColor.black
-            ])
-            yPosition += 50
-            
-            // Date
-            let dateString = "Generated on \(DateFormatter.pdfFormatter.string(from: Date()))"
-            let dateRect = CGRect(x: 50, y: yPosition, width: pageRect.width - 100, height: 20)
-            dateString.draw(in: dateRect, withAttributes: [
-                .font: bodyFont,
-                .foregroundColor: UIColor.gray
-            ])
-            yPosition += 40
-            
-            // Interactions
-            for interaction in filteredInteractions {
-                // Check if we need a new page
-                if yPosition > pageRect.height - 150 {
-                    context.beginPage()
-                    yPosition = 50
-                }
-                
-                // Drug names
-                let drugNames = "\(interaction.drugA) + \(interaction.drugB)"
-                let drugRect = CGRect(x: 50, y: yPosition, width: pageRect.width - 100, height: 20)
-                drugNames.draw(in: drugRect, withAttributes: [
-                    .font: headerFont,
-                    .foregroundColor: UIColor.black
-                ])
-                yPosition += 25
-                
-                // Severity
-                let severity = "Severity: \(interaction.severity.rawValue)"
-                let severityRect = CGRect(x: 50, y: yPosition, width: pageRect.width - 100, height: 15)
-                severity.draw(in: severityRect, withAttributes: [
-                    .font: bodyFont,
-                    .foregroundColor: UIColor.red
-                ])
-                yPosition += 20
-                
-                // Description
-                let description = "Description: \(interaction.description)"
-                let descRect = CGRect(x: 50, y: yPosition, width: pageRect.width - 100, height: 40)
-                description.draw(in: descRect, withAttributes: [
-                    .font: bodyFont,
-                    .foregroundColor: UIColor.black
-                ])
-                yPosition += 45
-                
-                // Recommendation
-                let recommendation = "Recommendation: \(interaction.recommendedAction)"
-                let recRect = CGRect(x: 50, y: yPosition, width: pageRect.width - 100, height: 40)
-                recommendation.draw(in: recRect, withAttributes: [
-                    .font: bodyFont,
-                    .foregroundColor: UIColor.black
-                ])
-                yPosition += 50
-                
-                // Separator line
-                let lineRect = CGRect(x: 50, y: yPosition, width: pageRect.width - 100, height: 1)
-                UIColor.lightGray.setFill()
-                UIRectFill(lineRect)
-                yPosition += 20
-            }
-        }
     }
     
     private func createTextFile(content: String, fileName: String) -> URL {
@@ -703,22 +567,6 @@ struct InteractionHistoryView_Previews: PreviewProvider {
 
 // MARK: - Export Data Structures
 
-struct InteractionExportData: Codable {
-    let exportDate: Date
-    let totalInteractions: Int
-    let interactions: [InteractionExportItem]
-}
-
-struct InteractionExportItem: Codable {
-    let id: String
-    let drugA: String
-    let drugB: String
-    let severity: String
-    let description: String
-    let recommendedAction: String
-    let timestamp: Date
-}
-
 // MARK: - Date Formatters
 
 extension DateFormatter {
@@ -731,13 +579,6 @@ extension DateFormatter {
     static let csvFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter
-    }()
-    
-    static let pdfFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .full
         formatter.timeStyle = .short
         return formatter
     }()

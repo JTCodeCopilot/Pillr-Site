@@ -5,7 +5,6 @@ struct SettingsView: View {
 
     @State private var showingPremiumUpgrade = false
     @State private var showingInteractionHistory = false
-    @State private var showingPrivacyInfo = false
     
     var body: some View {
         NavigationView {
@@ -28,8 +27,6 @@ struct SettingsView: View {
                         
                         appSettingsSection
                         
-                        privacySection
-                        
                         aiSettingsSection
                         
                         supportLinksSection
@@ -47,12 +44,6 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingInteractionHistory) {
             InteractionHistoryView()
-        }
-        .sheet(isPresented: $showingPrivacyInfo) {
-            PrivacyNoticeView {
-                showingPrivacyInfo = false
-            }
-            .environmentObject(userSettings)
         }
     }
     
@@ -101,84 +92,6 @@ struct SettingsView: View {
             .buttonStyle(PlainButtonStyle())
             
 
-        }
-        .padding()
-        .background(Color.black.opacity(0.12))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
-        )
-        .padding(.horizontal)
-    }
-    
-    // Computed property for Privacy section
-    private var privacySection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "lock.shield")
-                    .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                Text("Privacy & Data")
-                    .font(.headline)
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                Spacer()
-            }
-            Divider()
-                .background(Color(hex: "#C7C7BD").opacity(0.2))
-            
-            // Privacy Information
-            Button(action: {
-                showingPrivacyInfo = true
-            }) {
-                HStack {
-                                    Image(systemName: "internaldrive.fill")
-                    .foregroundColor(Color(hex: "#D7CCC8"))
-                        .frame(width: 20)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Data Storage & Privacy")
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                            .font(.system(size: 16, weight: .medium))
-                        
-                        Text("All data stored locally on your device")
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                            .font(.system(size: 14))
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
-                        .font(.system(size: 14))
-                }
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            // Data Location Info
-            HStack {
-                Image(systemName: "checkmark.shield.fill")
-                    .foregroundColor(Color(hex: "#D7CCC8"))
-                    .frame(width: 20)
-                
-                                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Local Storage Priority")
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                            .font(.system(size: 16, weight: .medium))
-                        
-                        Text("Core medication data stays on device only")
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                            .font(.system(size: 14))
-                    }
-                
-                Spacer()
-                
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(Color(hex: "#D7CCC8"))
-                    .font(.system(size: 16))
-            }
-            .padding(.vertical, 4)
         }
         .padding()
         .background(Color.black.opacity(0.12))

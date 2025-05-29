@@ -312,16 +312,23 @@ class MedicationStore: ObservableObject {
                     
                     var updatedMedication = medication
                     
-                    // Reschedule based on whether it uses single or multiple notifications
-                    if !medication.reminderTimes.isEmpty {
-                        // Use multiple reminders
-                        let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
-                        updatedMedication.notificationIDs = notificationIDs
+                    // Only schedule notifications for active (non-archived) medications
+                    if !medication.isArchived {
+                        // Reschedule based on whether it uses single or multiple notifications
+                        if !medication.reminderTimes.isEmpty {
+                            // Use multiple reminders
+                            let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
+                            updatedMedication.notificationIDs = notificationIDs
+                            updatedMedication.notificationID = nil
+                        } else if medication.notificationID != nil {
+                            // Legacy - use single reminder
+                            let notificationID = notificationManager.scheduleNotification(for: medication)
+                            updatedMedication.notificationID = notificationID
+                        }
+                    } else {
+                        // Clear notification IDs for archived medications
                         updatedMedication.notificationID = nil
-                    } else if medication.notificationID != nil {
-                        // Legacy - use single reminder
-                        let notificationID = notificationManager.scheduleNotification(for: medication)
-                        updatedMedication.notificationID = notificationID
+                        updatedMedication.notificationIDs = []
                     }
                     
                     medications[index] = updatedMedication
@@ -409,6 +416,18 @@ class MedicationStore: ObservableObject {
     func archiveMedication(_ medication: Medication) {
         if let index = medications.firstIndex(where: { $0.id == medication.id }) {
             var updatedMedication = medications[index]
+            
+            // Cancel notifications for archived medication
+            if let notificationID = updatedMedication.notificationID {
+                notificationManager.cancelNotification(with: notificationID)
+                updatedMedication.notificationID = nil
+            }
+            
+            if !updatedMedication.notificationIDs.isEmpty {
+                notificationManager.cancelMultipleNotifications(ids: updatedMedication.notificationIDs)
+                updatedMedication.notificationIDs = []
+            }
+            
             updatedMedication.isArchived = true
             medications[index] = updatedMedication
             saveMedications()
@@ -420,6 +439,18 @@ class MedicationStore: ObservableObject {
         if let index = medications.firstIndex(where: { $0.id == medication.id }) {
             var updatedMedication = medications[index]
             updatedMedication.isArchived = false
+            
+            // Reschedule notifications for unarchived medication
+            if updatedMedication.reminderTimes.isEmpty {
+                // Legacy single notification
+                let notificationID = notificationManager.scheduleNotification(for: updatedMedication)
+                updatedMedication.notificationID = notificationID
+            } else {
+                // Multiple notifications
+                let notificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
+                updatedMedication.notificationIDs = notificationIDs
+            }
+            
             medications[index] = updatedMedication
             saveMedications()
         }

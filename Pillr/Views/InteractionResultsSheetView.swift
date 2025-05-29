@@ -10,6 +10,7 @@ struct InteractionResultsSheetView: View {
     @State private var showingShareSheet = false
     @State private var shareText = ""
     @State private var showingHistoryView = false
+    @State private var shareItems: [Any] = []
 
     var filteredInteractions: [DrugInteraction] {
         guard let filter = selectedSeverityFilter else { return interactions }
@@ -54,7 +55,7 @@ struct InteractionResultsSheetView: View {
                 }
             }
             .sheet(isPresented: $showingShareSheet) {
-                ShareSheet(activityItems: [shareText])
+                ShareSheet(activityItems: shareItems)
             }
             .sheet(isPresented: $showingHistoryView) {
                 InteractionHistoryView()
@@ -239,10 +240,11 @@ struct InteractionResultsSheetView: View {
     }
     
     private var shareButton: some View {
-        Button(action: {
+        Button {
             shareText = generateShareText()
+            shareItems = [shareText]
             showingShareSheet = true
-        }) {
+        } label: {
             Image(systemName: "square.and.arrow.up")
                 .foregroundColor(Color.pillrAccent)
         }

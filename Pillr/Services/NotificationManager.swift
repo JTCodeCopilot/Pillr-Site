@@ -44,12 +44,19 @@ class NotificationManager: ObservableObject {
     
     // Legacy support for single notification
     func scheduleNotification(for medication: Medication) -> UUID {
+        // Don't schedule notifications for archived medications
+        if medication.isArchived {
+            return UUID() // Return dummy ID that won't be used
+        }
+        
         let content = UNMutableNotificationContent()
         content.title = "Time to take your medication"
         content.body = "It's time to take \(medication.name) (\(medication.dosage))"
         content.sound = UNNotificationSound.default
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.threadIdentifier = "medication-reminders"
+        content.badge = 1
         
         let notificationID = UUID()
         let calendar = Calendar.current
@@ -93,6 +100,11 @@ class NotificationManager: ObservableObject {
     
     // New method for scheduling multiple notifications
     func scheduleMultipleNotifications(for medication: Medication) -> [UUID] {
+        // Don't schedule notifications for archived medications
+        if medication.isArchived {
+            return [] // Return empty array
+        }
+        
         var notificationIDs: [UUID] = []
         
         // Use reminderTimes if available, otherwise fall back to legacy timeToTake
@@ -130,6 +142,10 @@ class NotificationManager: ObservableObject {
             "reminderIndex": index
         ]
         content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.threadIdentifier = "medication-reminders"
+        
+        // Set the notification icon badge
+        content.badge = 1
         
         // Extract hour and minute
         let calendar = Calendar.current
@@ -194,6 +210,8 @@ class NotificationManager: ObservableObject {
             "reminderIndex": index
         ]
         content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.threadIdentifier = "medication-reminders"
+        content.badge = 1
         
         // Create a time-based trigger for the follow-up (30 minutes after scheduled time)
         let calendar = Calendar.current
@@ -227,6 +245,8 @@ class NotificationManager: ObservableObject {
         content.sound = UNNotificationSound.default
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.threadIdentifier = "medication-reminders"
+        content.badge = 1
         
         // Create a time-based trigger for one-time reminder
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(afterMinutes * 60), repeats: false)
@@ -272,6 +292,8 @@ class NotificationManager: ObservableObject {
             "reminderIndex": 0
         ]
         content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.threadIdentifier = "medication-reminders"
+        content.badge = 1
         let followUpInterval = baseInterval + Double(minutes * 60)
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: followUpInterval, repeats: false)
         let followUpID = "\(originalID.uuidString)_followup"
