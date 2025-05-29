@@ -74,21 +74,7 @@ struct PremiumUpgradeView: View {
                                 icon: "arrow.clockwise.circle.fill",
                                 title: "Follow-up Reminders",
                                 description: "Get a second reminder 30 minutes later if you haven't taken your medication",
-                                iconColor: Color(hex: "#FF9800")
-                            )
-                            
-                            PremiumFeature(
-                                icon: "chart.line.uptrend.xyaxis",
-                                title: "Advanced Analytics",
-                                description: "Track adherence patterns, view detailed reports, and get insights into your medication habits",
-                                iconColor: Color(hex: "#9C27B0")
-                            )
-                            
-                            PremiumFeature(
-                                icon: "icloud.fill",
-                                title: "Cloud Sync",
-                                description: "Sync your medications across all your devices and never lose your data",
-                                iconColor: Color(hex: "#4FC3F7")
+                                iconColor: Color(hex: "#F5F5F5")
                             )
                         }
                         
@@ -135,8 +121,8 @@ struct PremiumUpgradeView: View {
                                 .background(
                                     LinearGradient(
                                         gradient: Gradient(colors: [
-                                            Color(hex: "#F5F5F5"),
-                                            Color(hex: "#C7A76B")
+                                            Color(hex: "#B57EDC"),
+                                            Color(hex: "#B57EDC")
                                         ]),
                                         startPoint: .top,
                                         endPoint: .bottom
@@ -223,7 +209,7 @@ struct PremiumUpgradeView: View {
             OpenAIService.shared.setPremiumPurchased()
             HapticManager.shared.successNotification()
             
-            alertMessage = "Premium purchase successful! You now have lifetime access to unlimited medications, AI-powered features, follow-up reminders, and advanced analytics."
+            alertMessage = "Premium purchase successful! You now have lifetime access to unlimited medications, AI-powered features, and follow-up reminders."
             showingAlert = true
             isPurchasing = false
         }
@@ -296,11 +282,11 @@ struct PricingOption: View {
                 // Selection indicator
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 2)
+                        .stroke(isSelected ? Color(hex: "#B57EDC") : Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 2)
                         .frame(width: 24, height: 24)
                         .background(
                             Circle()
-                                .fill(isSelected ? Color(hex: "#F5F5F5") : Color.clear)
+                                .fill(isSelected ? Color(hex: "#B57EDC") : Color.clear)
                         )
                     
                     if isSelected {
@@ -322,7 +308,7 @@ struct PricingOption: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
-                                .background(Color(hex: "#FF6B35"))
+                                .background(Color(hex: "#B57EDC"))
                                 .cornerRadius(6)
                         }
                         

@@ -31,6 +31,9 @@ struct AddMedicationView: View {
 
     @State private var isOneTimeWithFollowUp: Bool = false
     
+    // New state variable for AI search
+    @State private var showingAISearch: Bool = false
+    
     // For dynamically adjusting scroll position when keyboard appears
     @State private var keyboardHeight: CGFloat = 0
     @FocusState private var focusedField: Field?
@@ -113,11 +116,17 @@ struct AddMedicationView: View {
                                                 Spacer()
                                                 Button(action: {
                                                     HapticManager.shared.lightImpact()
-                                                    // Search functionality removed
+                                                    showingAISearch = true
                                                 }) {
                                                     HStack(spacing: 6) {
                                                         Image(systemName: "magnifyingglass")
                                                             .font(.system(size: 16, weight: .medium))
+                                                        
+                                                        if !userSettings.isPremiumUser {
+                                                            Image(systemName: "crown.fill")
+                                                                .font(.system(size: 10, weight: .bold))
+                                                                .foregroundColor(Color(hex: "#FFD700"))
+                                                        }
                                                     }
                                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                                     .padding(.horizontal, 12)
@@ -533,6 +542,32 @@ struct AddMedicationView: View {
                     }
                     .foregroundColor(Color(hex: "#C7C7BD"))
                 }
+            }
+        }
+        .sheet(isPresented: $showingAISearch) {
+            NavigationView {
+                AISearchMedicationView(onSelectMedication: { result in
+                    // Handle medication selection
+                    name = result.name
+                    if let dosageStr = result.commonDosage, let firstPart = dosageStr.components(separatedBy: " ").first {
+                        dosage = firstPart
+                        // Try to determine dosage unit from the common dosage string
+                        if dosageStr.contains("mg") {
+                            dosageUnit = "mg"
+                        } else if dosageStr.contains("ml") {
+                            dosageUnit = "ml"
+                        } else if dosageStr.contains("tablet") {
+                            dosageUnit = "tablets"
+                        } else if dosageStr.contains("capsule") {
+                            dosageUnit = "capsules"
+                        }
+                    }
+                    
+                    // Add description to notes if available
+                    if !result.description.isEmpty {
+                        notes = result.description
+                    }
+                })
             }
         }
     }
