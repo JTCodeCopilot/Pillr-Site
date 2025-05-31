@@ -142,7 +142,7 @@ struct MedicationsListView: View {
 fileprivate func EmptyMedicationsView(onAddMedication: @escaping () -> Void) -> some View {
     EmptyStateView(
         title: "Your medication list is empty",
-        message: "Add your medications to get reminders and track when you take them. Pillr will help you stay on track with your health routine.",
+        message: "",
         actionTitle: "Add Your First Medication",
         action: {
             HapticManager.shared.mediumImpact()

@@ -65,6 +65,7 @@ struct MedicationRow: View {
                     Text(medication.name)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(Color(hex: "#C7C7BD"))
+                        .accessibilityAddTraits(.isHeader)
                     
                     Text("\(medication.dosage) - \(medication.frequency)")
                         .font(.system(size: 14))
@@ -86,6 +87,7 @@ struct MedicationRow: View {
                         Image(systemName: "bell.fill")
                             .font(.system(size: 12))
                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .accessibilityLabel("Reminder set")
                     }
                     
                     Text("\(medication.timeToTake, style: .time)")
@@ -108,12 +110,14 @@ struct MedicationRow: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 12)
+                .accessibilityLabel("Notes: \(notes)")
             }
             
             // Divider
             Rectangle()
                 .fill(Color(hex: "#C7C7BD").opacity(0.1))
                 .frame(height: 1)
+                .accessibilityHidden(true)
             
             // Action buttons
             HStack(spacing: 0) {
@@ -129,11 +133,13 @@ struct MedicationRow: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                 }
+                .accessibilityLabel("Edit \(medication.name)")
                 
                 // Vertical divider
                 Rectangle()
                     .fill(Color(hex: "#C7C7BD").opacity(0.1))
                     .frame(width: 1, height: 32)
+                    .accessibilityHidden(true)
                 
                 // Take/Taken button
                 Button(action: onLogTap) {
@@ -147,6 +153,8 @@ struct MedicationRow: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                 }
+                .accessibilityLabel(wasTakenToday ? "\(medication.name) already taken today" : "Mark \(medication.name) as taken")
+                .accessibilityHint(wasTakenToday ? "Double tap to view log details" : "Double tap to record medication as taken")
             }
         }
         .background(Color.black.opacity(0.35))
@@ -159,9 +167,9 @@ struct MedicationRow: View {
                 )
         )
         .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(formatTimeAccessible(medication.timeToTake))")
-        .accessibilityHint(wasTakenToday ? "Already taken today" : "Double tap to log as taken")
+        .accessibilityValue(wasTakenToday ? "Already taken today" : timeStatus)
     }
     
     // Format time for accessibility

@@ -123,4 +123,9 @@ class UserSettings: ObservableObject {
     func hasCloudSync() -> Bool {
         return isPremiumUser
     }
+    
+    // Check if user can use pill tracking feature
+    func canUsePillTracking() -> Bool {
+        return isPremiumUser
+    }
 } 

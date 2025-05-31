@@ -73,6 +73,12 @@ class MedicationStore: ObservableObject {
         guard UserSettings.shared.canAddMedication(currentCount: currentActiveMedications) else {
             return false // Cannot add medication due to free tier limit
         }
+        
+        // Only allow pill tracking for premium users
+        let finalPillCount = UserSettings.shared.isPremiumUser ? pillCount : nil
+        let finalPillsPerDose = UserSettings.shared.isPremiumUser ? pillsPerDose : 1
+        let finalRefillThreshold = UserSettings.shared.isPremiumUser ? refillThreshold : nil
+        
         var newMed = Medication(
             name: name, 
             dosage: dosage, 
@@ -82,9 +88,9 @@ class MedicationStore: ObservableObject {
             timeToTake: timeToTake,
             reminderTimes: reminderTimes,
             notes: notes,
-            pillCount: pillCount,
-            pillsPerDose: pillsPerDose,
-            refillThreshold: refillThreshold,
+            pillCount: finalPillCount,
+            pillsPerDose: finalPillsPerDose,
+            refillThreshold: finalRefillThreshold,
             isOneTimeWithFollowUp: isOneTimeWithFollowUp,
             isArchived: false // Always add as not archived
         )
@@ -124,6 +130,13 @@ class MedicationStore: ObservableObject {
             
             // Create a mutable copy
             var updatedMedication = medication
+            
+            // Only allow pill tracking for premium users
+            if !UserSettings.shared.isPremiumUser {
+                updatedMedication.pillCount = nil
+                updatedMedication.pillsPerDose = 1
+                updatedMedication.refillThreshold = nil
+            }
             
             // Schedule new notifications if enabled
             if enableNotification {
@@ -226,6 +239,49 @@ class MedicationStore: ObservableObject {
             // Legacy support - cancel the single notification
             notificationManager.cancelNotification(with: notificationID)
         }
+        
+        // Reset application badge if no more pending medications for today
+        resetBadgeIfNeeded()
+    }
+    
+    // Helper method to check if badge should be reset
+    public func resetBadgeIfNeeded() {
+        // Check if there are any remaining medications to be taken today
+        let today = Calendar.current.startOfDay(for: Date())
+        let hasPendingMedications = medications.contains { medication in
+            // Only check active medications
+            if medication.isArchived { return false }
+            
+            // Get today's logs for this medication
+            let medicationLogs = logs.filter { log in
+                log.medicationID == medication.id &&
+                Calendar.current.isDate(log.takenAt, inSameDayAs: today)
+            }
+            
+            // For "As needed" medications, we don't count them as pending
+            if medication.frequency == "As needed" {
+                return false
+            }
+            
+            // For medications with multiple reminders
+            if !medication.reminderTimes.isEmpty {
+                // Check if all reminders have been taken or skipped
+                return medicationLogs.count < medication.reminderTimes.count
+            } else {
+                // For single reminder medications
+                return medicationLogs.isEmpty
+            }
+        }
+        
+        // If no pending medications, reset badge
+        if !hasPendingMedications {
+            notificationManager.resetApplicationBadge()
+        }
+    }
+    
+    // Public method that can be called from app delegate/scene
+    func checkAndResetBadge() {
+        resetBadgeIfNeeded()
     }
     
     func skipMedication(medication: Medication, actualTime: Date, notes: String?, reminderIndex: Int? = nil) {
@@ -289,13 +345,13 @@ class MedicationStore: ObservableObject {
     // --- Local Device Persistence ---
     // All data is stored locally on the user's device using iOS UserDefaults
     // No data is transmitted to external servers or cloud services
-    private func saveMedications() {
+    public func saveMedications() {
         if let encoded = try? JSONEncoder().encode(medications) {
             UserDefaults.standard.set(encoded, forKey: medicationsKey)
         }
     }
 
-    private func loadMedications() {
+    public func loadMedications() {
         if let savedMedications = UserDefaults.standard.data(forKey: medicationsKey) {
             if let decodedMedications = try? JSONDecoder().decode([Medication].self, from: savedMedications) {
                 self.medications = decodedMedications
@@ -334,20 +390,17 @@ class MedicationStore: ObservableObject {
                     medications[index] = updatedMedication
                 }
                 saveMedications()
+                
+                // Reset badge on app launch if needed
+                resetBadgeIfNeeded()
+                
                 return
             }
         }
         self.medications = []
     }
 
-    private func saveLogs() {
-        // Save medication logs locally on device only
-        if let encoded = try? JSONEncoder().encode(logs) {
-            UserDefaults.standard.set(encoded, forKey: logsKey)
-        }
-    }
-
-    private func loadLogs() {
+    public func loadLogs() {
         if let savedLogs = UserDefaults.standard.data(forKey: logsKey) {
             if let decodedLogs = try? JSONDecoder().decode([MedicationLog].self, from: savedLogs) {
                 self.logs = decodedLogs
@@ -355,6 +408,13 @@ class MedicationStore: ObservableObject {
             }
         }
         self.logs = []
+    }
+
+    private func saveLogs() {
+        // Save medication logs locally on device only
+        if let encoded = try? JSONEncoder().encode(logs) {
+            UserDefaults.standard.set(encoded, forKey: logsKey)
+        }
     }
     
     // Made public to support previews

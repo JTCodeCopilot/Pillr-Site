@@ -124,7 +124,7 @@ struct SettingsView: View {
                 // Non-tappable premium status display
                 HStack {
                     Image(systemName: "crown.fill")
-                        .foregroundColor(Color(hex: "#FFD700"))
+                        .foregroundColor(Color(hex: "#D4A017"))
                         .frame(width: 20)
                     
                     VStack(alignment: .leading, spacing: 2) {

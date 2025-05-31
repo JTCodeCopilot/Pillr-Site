@@ -8,11 +8,35 @@
 import SwiftUI
 import UserNotifications
 
+// App Delegate to handle application lifecycle events
+class PillrAppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        // Set notification delegate to handle user responses
+        UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+        
+        // Reset badge on launch
+        UIApplication.shared.applicationIconBadgeNumber = 0
+        
+        return true
+    }
+    
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        // Reset badge when app becomes active
+        MedicationStore.shared.checkAndResetBadge()
+    }
+    
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        // Refresh data when returning to foreground
+        MedicationStore.shared.loadMedications()
+    }
+}
+
 @main
 struct PillrApp: App {
+    @UIApplicationDelegateAdaptor private var appDelegate: PillrAppDelegate
+    
     @StateObject private var store = MedicationStore.shared
     @StateObject private var interactionStore = InteractionStore.shared
-
     @StateObject private var userSettings = UserSettings.shared
     
     init() {
@@ -33,41 +57,44 @@ struct PillrApp: App {
         }
         #endif
         
-        // Request notification permission on app launch - skip in preview mode
-        #if DEBUG
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
-            // requestNotificationPermission() // Removed to request contextually
-        }
-        #else
-        // requestNotificationPermission() // Removed to request contextually
-        #endif
-        
-        // Set notification delegate to handle user responses
-        UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+        // Application appearance settings
+        configureAppAppearance()
     }
     
-    // private func requestNotificationPermission() { ... } // This function can be removed or kept if used elsewhere,
-    // For now, I will comment it out as it is not called from anywhere else.
-    /*
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            if granted {
-                print("Notification permission granted")
-            } else if let error = error {
-                print("Notification permission error: \(error.localizedDescription)")
-            }
+    private func configureAppAppearance() {
+        // Configure navigation bar appearance
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = UIColor(Color(hex: "#404C42"))
+        appearance.titleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
+        
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        
+        // Configure tab bar appearance
+        let tabBarAppearance = UITabBarAppearance()
+        tabBarAppearance.configureWithTransparentBackground()
+        tabBarAppearance.backgroundColor = UIColor(Color(hex: "#404C42"))
+        
+        UITabBar.appearance().standardAppearance = tabBarAppearance
+        if #available(iOS 15.0, *) {
+            UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
         }
     }
-    */
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(store)
                 .environmentObject(interactionStore)
-
                 .environmentObject(userSettings)
                 .preferredColorScheme(.dark)
+                .onAppear {
+                    // Reset badge when ContentView appears
+                    store.checkAndResetBadge()
+                }
         }
     }
 }

@@ -45,7 +45,7 @@ struct PremiumBadgeView: View {
         .cornerRadius(4)
         .overlay(
             RoundedRectangle(cornerRadius: 4)
-                .stroke(Color.yellow.opacity(0.12), lineWidth: 0.8)
+                .stroke(Color(hex: "#D4A017").opacity(0.12), lineWidth: 0.8)
         )
     }
 }
@@ -123,7 +123,7 @@ struct APIKeyWarningView: View {
             .buttonStyle(HapticButtonStyle(style: .soft))
         }
         .padding()
-        .gyroGlassCardStyle(cornerRadius: 16, borderColor: Color.yellow.opacity(0.5))
+        .gyroGlassCardStyle(cornerRadius: 16, borderColor: Color(hex: "#D4A017").opacity(0.5))
         .padding(.horizontal)
     }
 }

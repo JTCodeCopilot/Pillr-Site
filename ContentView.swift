@@ -28,6 +28,7 @@ struct ContentView: View {
     @State private var selectedTab: Tab = .medications
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
     
     // Check if running in preview
     private var isPreview: Bool {
@@ -85,18 +86,21 @@ struct ContentView: View {
                                 .toolbarBackground(.hidden, for: .tabBar)
                                 .transition(.smoothTab)
                                 .padding(.top, geometry.safeAreaInsets.top)
+                                .accessibilityLabel("Medications Tab")
 
                             MedicationLogView()
                                 .tag(Tab.log)
                                 .toolbarBackground(.hidden, for: .tabBar)
                                 .transition(.smoothTab)
                                 .padding(.top, geometry.safeAreaInsets.top)
+                                .accessibilityLabel("Medication Log Tab")
                                 
                             SettingsView()
                                 .tag(Tab.settings)
                                 .toolbarBackground(.hidden, for: .tabBar)
                                 .transition(.smoothTab)
                                 .padding(.top, geometry.safeAreaInsets.top)
+                                .accessibilityLabel("Settings Tab")
                         }
                         .tabViewStyle(.page(indexDisplayMode: .never))
                         .animation(.easeInOut(duration: 0.3), value: selectedTab)
@@ -124,6 +128,13 @@ struct ContentView: View {
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
                 .edgesIgnoringSafeArea(.bottom)
+            }
+            .onChange(of: scenePhase) { newPhase in
+                if newPhase == .active {
+                    // Refresh data when returning to the app
+                    store.loadMedications()
+                    store.checkAndResetBadge()
+                }
             }
         }
         .preferredColorScheme(.dark)

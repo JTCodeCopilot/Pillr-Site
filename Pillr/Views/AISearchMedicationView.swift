@@ -38,7 +38,7 @@ struct AISearchMedicationView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color(hex: "#B57EDC"))
+                        .background(Color(hex: "#D4A017"))
                         .cornerRadius(6)
                 }
                 .padding(.horizontal)
@@ -196,7 +196,7 @@ struct AISearchMedicationView: View {
     private var premiumRequiredView: some View {
         VStack(spacing: 24) {
             Image(systemName: "crown.fill")
-                .foregroundColor(Color(hex: "#B57EDC"))
+                .foregroundColor(Color(hex: "#D4A017"))
                 .font(.system(size: 40))
             
             Text("Premium Feature")
@@ -224,8 +224,8 @@ struct AISearchMedicationView: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(hex: "#B57EDC"))
-                        .shadow(color: Color(hex: "#B57EDC").opacity(0.3), radius: 8, x: 0, y: 4)
+                        .fill(Color(hex: "#D4A017"))
+                        .shadow(color: Color(hex: "#D4A017").opacity(0.3), radius: 8, x: 0, y: 4)
                 )
             }
             .buttonStyle(ScaleButtonStyle(hapticStyle: .medium))

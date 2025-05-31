@@ -34,6 +34,9 @@ struct AddMedicationView: View {
     // New state variable for AI search
     @State private var showingAISearch: Bool = false
     
+    // State for showing premium upgrade sheet
+    @State private var showingPremiumUpgrade: Bool = false
+    
     // For dynamically adjusting scroll position when keyboard appears
     @State private var keyboardHeight: CGFloat = 0
     @FocusState private var focusedField: Field?
@@ -125,7 +128,7 @@ struct AddMedicationView: View {
                                                         if !userSettings.isPremiumUser {
                                                             Image(systemName: "crown.fill")
                                                                 .font(.system(size: 10, weight: .bold))
-                                                                .foregroundColor(Color(hex: "#FFD700"))
+                                                                .foregroundColor(Color(hex: "#D4A017"))
                                                         }
                                                     }
                                                     .foregroundColor(Color(hex: "#E8E8E0"))
@@ -288,13 +291,43 @@ struct AddMedicationView: View {
                                                     Text("Track Pill Count")
                                                         .font(.system(size: 16, weight: .semibold))
                                                         .foregroundColor(Color(hex: "#E8E8E0"))
+                                                    if !userSettings.isPremiumUser {
+                                                        Text("PREMIUM")
+                                                            .font(.system(size: 10, weight: .bold))
+                                                            .foregroundColor(.white)
+                                                            .padding(.horizontal, 6)
+                                                            .padding(.vertical, 2)
+                                                            .background(Color(hex: "#D4A017"))
+                                                            .cornerRadius(4)
+                                                    }
                                                 }
-                                                Text("Get refill reminders and track usage")
+                                                Text(userSettings.isPremiumUser ? 
+                                                     "Get refill reminders and track usage" : 
+                                                     "Inventory tracking requires premium subscription")
                                                     .font(.system(size: 13))
                                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                             }
                                         }
                                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                        .disabled(!userSettings.isPremiumUser)
+                                        .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
+                                        
+                                        if !userSettings.isPremiumUser && trackPillCount {
+                                            Button(action: {
+                                                showingPremiumUpgrade = true
+                                            }) {
+                                                HStack {
+                                                    Image(systemName: "crown.fill")
+                                                        .font(.system(size: 12, weight: .semibold))
+                                                        .foregroundColor(Color(hex: "#D4A017"))
+                                                    Text("Upgrade to Premium")
+                                                        .font(.system(size: 14, weight: .medium))
+                                                        .foregroundColor(Color(hex: "#D4A017"))
+                                                }
+                                                .padding(.top, 4)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
                                     }
                                     
                                     if trackPillCount {
@@ -357,7 +390,7 @@ struct AddMedicationView: View {
                                                                     .foregroundColor(.white)
                                                                     .padding(.horizontal, 6)
                                                                     .padding(.vertical, 2)
-                                                                    .background(Color(hex: "#F5F5F5"))
+                                                                    .background(Color(hex: "#D4A017"))
                                                                     .cornerRadius(4)
                                                             }
                                                         }
@@ -569,6 +602,9 @@ struct AddMedicationView: View {
                     }
                 })
             }
+        }
+        .sheet(isPresented: $showingPremiumUpgrade) {
+            PremiumUpgradeView()
         }
     }
     
@@ -828,7 +864,7 @@ struct AddMedicationView: View {
             return false
         }
         
-        if trackPillCount {
+        if trackPillCount && userSettings.isPremiumUser {
             // If pill count tracking is enabled, ensure these fields have valid values
             let pillCountValid = !pillCountString.isEmpty && Int(pillCountString) != nil
             let pillsPerDoseValid = !pillsPerDoseString.isEmpty && Int(pillsPerDoseString) != nil && Int(pillsPerDoseString)! > 0

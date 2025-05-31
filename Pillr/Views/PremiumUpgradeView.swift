@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct PremiumUpgradeView: View {
     @Environment(\.dismiss) var dismiss
@@ -6,6 +7,7 @@ struct PremiumUpgradeView: View {
     @State private var alertMessage = ""
     @State private var isPurchasing = false
     @State private var selectedPlan: String = "one-time"
+    @State private var hasTriedFeatures = false
     
     var body: some View {
         NavigationView {
@@ -35,17 +37,18 @@ struct PremiumUpgradeView: View {
                                     .font(.system(size: 40, weight: .bold))
                                     .foregroundColor(.white)
                             }
+                            .accessibilityHidden(true)
                             
                             VStack(spacing: 12) {
-                                Text("Unlock Premium")
+                                Text("Pillr Premium")
                                     .font(.system(size: 28, weight: .bold))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                 
-                                Text("Medication Management")
-                                    .font(.system(size: 28, weight: .bold))
+                                Text("Advanced Medication Management")
+                                    .font(.system(size: 22, weight: .bold))
                                     .foregroundColor(Color(hex: "#F5F5F5"))
                                 
-                                Text("Get unlimited medications, AI-powered analysis, follow-up reminders, and advanced features")
+                                Text("Enhance your medication tracking with unlimited medications, AI analysis, and advanced features")
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(Color(hex: "#C7C7BD"))
                                     .multilineTextAlignment(.center)
@@ -55,25 +58,38 @@ struct PremiumUpgradeView: View {
                         .padding(.top, 10)
                         
                         // Features
-                        VStack(spacing: 20) {
+                        VStack(alignment: .leading, spacing: 20) {
+                            Text("Premium Features")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 16)
+                            
                             PremiumFeature(
                                 icon: "pills.fill",
                                 title: "Unlimited Medications",
-                                description: "Add as many medications as you need without the 5-medication limit of the free tier",
+                                description: "Track all of your medications without limits",
                                 iconColor: Color(hex: "#F5F5F5")
                             )
                             
                             PremiumFeature(
                                 icon: "brain.head.profile",
                                 title: "AI Interaction Analysis",
-                                description: "Advanced AI analyzes your medications for potential interactions using the latest medical knowledge",
+                                description: "Check for potential medication interactions",
+                                iconColor: Color(hex: "#F5F5F5")
+                            )
+                            
+                            PremiumFeature(
+                                icon: "number.circle.fill",
+                                title: "Pill Count Tracking",
+                                description: "Monitor inventory and get refill reminders",
                                 iconColor: Color(hex: "#F5F5F5")
                             )
                             
                             PremiumFeature(
                                 icon: "arrow.clockwise.circle.fill",
-                                title: "Follow-up Reminders",
-                                description: "Get a second reminder 30 minutes later if you haven't taken your medication",
+                                title: "Smart Reminders",
+                                description: "Follow-up alerts if you miss a dose",
                                 iconColor: Color(hex: "#F5F5F5")
                             )
                         }
@@ -86,10 +102,10 @@ struct PremiumUpgradeView: View {
                             
                             VStack(spacing: 12) {
                                 PricingOption(
-                                    title: "Premium Upgrade",
+                                    title: "Lifetime Premium",
                                     price: "$9.99",
-                                    period: "one-time",
-                                    savings: "No recurring fees",
+                                    period: "one-time payment",
+                                    savings: "No subscription required",
                                     isPopular: true,
                                     isSelected: true
                                 ) {
@@ -111,7 +127,7 @@ struct PremiumUpgradeView: View {
                                     } else {
                                         Image(systemName: "crown.fill")
                                             .font(.system(size: 16, weight: .bold))
-                                        Text("Buy Premium - $9.99")
+                                        Text("Purchase - $9.99")
                                             .font(.system(size: 18, weight: .bold))
                                     }
                                 }
@@ -121,8 +137,8 @@ struct PremiumUpgradeView: View {
                                 .background(
                                     LinearGradient(
                                         gradient: Gradient(colors: [
-                                            Color(hex: "#B57EDC"),
-                                            Color(hex: "#B57EDC")
+                                            Color(hex: "#D4A017"),
+                                            Color(hex: "#D4A017")
                                         ]),
                                         startPoint: .top,
                                         endPoint: .bottom
@@ -134,12 +150,42 @@ struct PremiumUpgradeView: View {
                             .disabled(isPurchasing)
                             .scaleEffect(isPurchasing ? 0.98 : 1.0)
                             .animation(.easeInOut(duration: 0.1), value: isPurchasing)
+                            .accessibilityLabel("Purchase Pillr Premium for $9.99")
                             
-                            // Trust indicators
-                            HStack(spacing: 20) {
-                                TrustIndicator(icon: "lock.shield.fill", text: "Secure")
-                                TrustIndicator(icon: "checkmark.seal.fill", text: "One-Time")
-                                TrustIndicator(icon: "infinity", text: "Lifetime Access")
+                            // Continue with free version
+                            Button(action: {
+                                dismiss()
+                            }) {
+                                Text("Continue with Free Version")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .padding(.vertical, 12)
+                            }
+                            .accessibilityLabel("Continue with free version of Pillr")
+                            
+                            // Terms and restore
+                            HStack {
+                                Button(action: {
+                                    // Show terms
+                                }) {
+                                    Text("Terms of Use")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .underline()
+                                }
+                                
+                                Text("•")
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                                
+                                Button(action: {
+                                    // Restore purchases
+                                    restorePurchases()
+                                }) {
+                                    Text("Restore Purchases")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .underline()
+                                }
                             }
                             .padding(.top, 8)
                         }
@@ -151,14 +197,14 @@ struct PremiumUpgradeView: View {
                                     .foregroundColor(.orange)
                                     .font(.system(size: 16))
                                 
-                                Text("Important Medical Disclaimer")
+                                Text("Medical Disclaimer")
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                 
                                 Spacer()
                             }
                             
-                            Text("This AI analysis is for informational purposes only and should not replace professional medical advice. Always consult your healthcare provider before making any changes to your medication regimen.")
+                            Text("This app is for tracking purposes only and should not replace professional medical advice. Always consult your healthcare provider regarding your medications.")
                                 .font(.system(size: 14))
                                 .foregroundColor(Color(hex: "#C7C7BD"))
                                 .multilineTextAlignment(.leading)
@@ -180,7 +226,7 @@ struct PremiumUpgradeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button("Close") {
                         dismiss()
                     }
                     .foregroundColor(Color(hex: "#C7C7BD"))
@@ -197,21 +243,31 @@ struct PremiumUpgradeView: View {
         } message: {
             Text(alertMessage)
         }
+        .onAppear {
+            // Check if user has tried core features before seeing upgrade screen
+            hasTriedFeatures = UserDefaults.standard.bool(forKey: "has_used_core_features")
+        }
     }
     
     private func purchasePremium(plan: String) {
         isPurchasing = true
-        HapticManager.shared.lightImpact()
         
-        // Simulate purchase process
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            // For demo purposes, automatically grant premium
-            OpenAIService.shared.setPremiumPurchased()
-            HapticManager.shared.successNotification()
-            
-            alertMessage = "Premium purchase successful! You now have lifetime access to unlimited medications, AI-powered features, and follow-up reminders."
-            showingAlert = true
+        // Simulate purchase for development
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             isPurchasing = false
+            alertMessage = "Purchase successful! All premium features are now unlocked."
+            showingAlert = true
+        }
+    }
+    
+    private func restorePurchases() {
+        isPurchasing = true
+        
+        // Simulate restore for development
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            isPurchasing = false
+            alertMessage = "Purchases restored successfully."
+            showingAlert = true
         }
     }
 }
@@ -282,11 +338,11 @@ struct PricingOption: View {
                 // Selection indicator
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color(hex: "#B57EDC") : Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 2)
+                        .stroke(isSelected ? Color(hex: "#D4A017") : Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 2)
                         .frame(width: 24, height: 24)
                         .background(
                             Circle()
-                                .fill(isSelected ? Color(hex: "#B57EDC") : Color.clear)
+                                .fill(isSelected ? Color(hex: "#D4A017") : Color.clear)
                         )
                     
                     if isSelected {
@@ -308,7 +364,7 @@ struct PricingOption: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
-                                .background(Color(hex: "#B57EDC"))
+                                .background(Color(hex: "#D4A017"))
                                 .cornerRadius(6)
                         }
                         

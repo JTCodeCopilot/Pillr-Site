@@ -9,7 +9,10 @@
 	</dict>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>Pillr helps you stay on track with your medication schedule by sending gentle reminders when it's time to take your pills. You can customize or disable these notifications anytime in Settings.</string>
-
+	<key>NSHealthShareUsageDescription</key>
+	<string>Pillr requests access to your health data to provide better insights about your medications and overall health patterns. This data is only stored locally on your device and never shared without your consent.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Pillr can update your health data to log medication intake. This helps you track both your medications and related health outcomes in one place.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
@@ -24,8 +27,13 @@
 	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchScreenBackground</string>
+		<key>UIImageName</key>
+		<string>LaunchScreenImage</string>
+	</dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

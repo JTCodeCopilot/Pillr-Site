@@ -277,6 +277,16 @@ class NotificationManager: ObservableObject {
     
     func cancelAllNotifications() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        resetApplicationBadge()
+    }
+    
+    // Function to reset the application badge to zero
+    func resetApplicationBadge() {
+        UNUserNotificationCenter.current().setBadgeCount(0) { error in
+            if let error = error {
+                print("Error resetting badge count: \(error.localizedDescription)")
+            }
+        }
     }
     
     // Add a new function for one-time follow up
@@ -390,6 +400,9 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                     
                     // Provide success haptic feedback
                     HapticManager.shared.successNotification()
+                    
+                    // Reset badge count after action
+                    NotificationManager.shared.resetApplicationBadge()
                 }
             }
             
@@ -409,8 +422,16 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             }
             
         default:
-            // User tapped the notification itself - no specific action
-            break
+            // User tapped the notification itself - reset badge
+            if let medicationIDString = userInfo["medicationID"] as? String,
+               let medicationID = UUID(uuidString: medicationIDString) {
+                
+                // Find the medication and ensure it's properly reset
+                if MedicationStore.shared.findMedication(with: medicationID) != nil {
+                    // Reset badge count 
+                    NotificationManager.shared.resetApplicationBadge()
+                }
+            }
         }
         
         completionHandler()
