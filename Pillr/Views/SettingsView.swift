@@ -1,8 +1,9 @@
 import SwiftUI
+import StoreKit
 
 struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
-
+    @ObservedObject private var storeManager = StoreManager.shared
     @State private var showingPremiumUpgrade = false
     @State private var showingInteractionHistory = false
     
@@ -44,6 +45,10 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingInteractionHistory) {
             InteractionHistoryView()
+        }
+        .task {
+            // Update purchased products when the view appears
+            await storeManager.updatePurchasedProducts()
         }
     }
     
@@ -120,7 +125,7 @@ struct SettingsView: View {
                 .background(Color(hex: "#C7C7BD").opacity(0.2))
             
             // Premium Subscription
-            if OpenAIService.shared.isPremiumUser() {
+            if storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser() {
                 // Non-tappable premium status display
                 HStack {
                     Image(systemName: "crown.fill")
@@ -172,18 +177,34 @@ struct SettingsView: View {
                         
                         Spacer()
                         
-                        HStack(spacing: 8) {
-                            Text("$4.99/mo")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Color(hex: "#D7CCC8"))
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color(hex: "#D7CCC8").opacity(0.2))
-                                .cornerRadius(8)
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
-                                .font(.system(size: 14))
+                        if let product = storeManager.getPremiumProduct() {
+                            HStack(spacing: 8) {
+                                Text(product.displayPrice)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#D7CCC8"))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(hex: "#D7CCC8").opacity(0.2))
+                                    .cornerRadius(8)
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                                    .font(.system(size: 14))
+                            }
+                        } else {
+                            HStack(spacing: 8) {
+                                Text("$9.99")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#D7CCC8"))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(hex: "#D7CCC8").opacity(0.2))
+                                    .cornerRadius(8)
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                                    .font(.system(size: 14))
+                            }
                         }
                     }
                     .padding(.vertical, 4)

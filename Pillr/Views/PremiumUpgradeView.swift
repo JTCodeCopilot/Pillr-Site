@@ -3,10 +3,9 @@ import StoreKit
 
 struct PremiumUpgradeView: View {
     @Environment(\.dismiss) var dismiss
+    @ObservedObject private var storeManager = StoreManager.shared
     @State private var showingAlert = false
     @State private var alertMessage = ""
-    @State private var isPurchasing = false
-    @State private var selectedPlan: String = "one-time"
     @State private var hasTriedFeatures = false
     
     var body: some View {
@@ -101,56 +100,104 @@ struct PremiumUpgradeView: View {
                                 .foregroundColor(Color(hex: "#E8E8E0"))
                             
                             VStack(spacing: 12) {
-                                PricingOption(
-                                    title: "Lifetime Premium",
-                                    price: "$9.99",
-                                    period: "one-time payment",
-                                    savings: "No subscription required",
-                                    isPopular: true,
-                                    isSelected: true
-                                ) {
-                                    // Always selected since it's the only option
+                                if let product = storeManager.getPremiumProduct() {
+                                    PricingOption(
+                                        title: "Lifetime Premium",
+                                        price: product.displayPrice,
+                                        period: "one-time payment",
+                                        savings: "No subscription required",
+                                        isPopular: true,
+                                        isSelected: true
+                                    ) {}
+                                } else {
+                                    PricingOption(
+                                        title: "Lifetime Premium",
+                                        price: "$9.99",
+                                        period: "one-time payment",
+                                        savings: "No subscription required",
+                                        isPopular: true,
+                                        isSelected: true
+                                    ) {}
                                 }
                             }
                             
                             // Purchase button
-                            Button(action: {
-                                purchasePremium(plan: "one-time")
-                            }) {
-                                HStack {
-                                    if isPurchasing {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                            .scaleEffect(0.8)
-                                        Text("Processing...")
-                                            .font(.system(size: 18, weight: .semibold))
-                                    } else {
-                                        Image(systemName: "crown.fill")
-                                            .font(.system(size: 16, weight: .bold))
-                                        Text("Purchase - $9.99")
-                                            .font(.system(size: 18, weight: .bold))
+                            if let product = storeManager.getPremiumProduct() {
+                                Button(action: {
+                                    purchasePremium(product: product)
+                                }) {
+                                    HStack {
+                                        if storeManager.isLoading {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .scaleEffect(0.8)
+                                            Text("Processing...")
+                                                .font(.system(size: 18, weight: .semibold))
+                                        } else {
+                                            Image(systemName: "crown.fill")
+                                                .font(.system(size: 16, weight: .bold))
+                                            Text("Purchase - \(product.displayPrice)")
+                                                .font(.system(size: 18, weight: .bold))
+                                        }
                                     }
-                                }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color(hex: "#D4A017"),
-                                            Color(hex: "#D4A017")
-                                        ]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color(hex: "#D4A017"),
+                                                Color(hex: "#D4A017")
+                                            ]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
                                     )
-                                )
-                                .cornerRadius(16)
-                                .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 8, x: 0, y: 4)
+                                    .cornerRadius(16)
+                                    .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 8, x: 0, y: 4)
+                                }
+                                .disabled(storeManager.isLoading)
+                                .scaleEffect(storeManager.isLoading ? 0.98 : 1.0)
+                                .animation(.easeInOut(duration: 0.1), value: storeManager.isLoading)
+                                .accessibilityLabel("Purchase Pillr Premium for \(product.displayPrice)")
+                            } else {
+                                Button(action: {
+                                    alertMessage = "Products are currently unavailable. Please try again later."
+                                    showingAlert = true
+                                }) {
+                                    HStack {
+                                        if storeManager.isLoading {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .scaleEffect(0.8)
+                                            Text("Processing...")
+                                                .font(.system(size: 18, weight: .semibold))
+                                        } else {
+                                            Image(systemName: "crown.fill")
+                                                .font(.system(size: 16, weight: .bold))
+                                            Text("Purchase - $9.99")
+                                                .font(.system(size: 18, weight: .bold))
+                                        }
+                                    }
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color(hex: "#D4A017"),
+                                                Color(hex: "#D4A017")
+                                            ]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                    .cornerRadius(16)
+                                    .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 8, x: 0, y: 4)
+                                }
+                                .disabled(storeManager.isLoading)
+                                .accessibilityLabel("Purchase Pillr Premium for $9.99")
                             }
-                            .disabled(isPurchasing)
-                            .scaleEffect(isPurchasing ? 0.98 : 1.0)
-                            .animation(.easeInOut(duration: 0.1), value: isPurchasing)
-                            .accessibilityLabel("Purchase Pillr Premium for $9.99")
                             
                             // Continue with free version
                             Button(action: {
@@ -167,6 +214,9 @@ struct PremiumUpgradeView: View {
                             HStack {
                                 Button(action: {
                                     // Show terms
+                                    if let url = URL(string: "https://pillr.app/terms") {
+                                        UIApplication.shared.open(url)
+                                    }
                                 }) {
                                     Text("Terms of Use")
                                         .font(.system(size: 14))
@@ -243,31 +293,67 @@ struct PremiumUpgradeView: View {
         } message: {
             Text(alertMessage)
         }
-        .onAppear {
+        .task {
+            // Load products when view appears
+            await storeManager.loadProducts()
+            
             // Check if user has tried core features before seeing upgrade screen
             hasTriedFeatures = UserDefaults.standard.bool(forKey: "has_used_core_features")
         }
+        .onAppear {
+            // Check for existing purchases when view appears
+            Task {
+                await storeManager.updatePurchasedProducts()
+                
+                // If user has already purchased premium, dismiss the view
+                if storeManager.isPremiumPurchased() {
+                    alertMessage = "You've already purchased Premium!"
+                    showingAlert = true
+                }
+            }
+        }
     }
     
-    private func purchasePremium(plan: String) {
-        isPurchasing = true
-        
-        // Simulate purchase for development
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            isPurchasing = false
-            alertMessage = "Purchase successful! All premium features are now unlocked."
-            showingAlert = true
+    private func purchasePremium(product: Product) {
+        Task {
+            do {
+                // Attempt to purchase the product
+                if let transaction = try await storeManager.purchase(product) {
+                    // Purchase successful
+                    alertMessage = "Purchase successful! All premium features are now unlocked."
+                    showingAlert = true
+                    
+                    // Update user settings to reflect premium status
+                    OpenAIService.shared.setPremiumPurchased()
+                }
+            } catch {
+                // Purchase failed
+                alertMessage = "Purchase failed: \(error.localizedDescription)"
+                showingAlert = true
+            }
         }
     }
     
     private func restorePurchases() {
-        isPurchasing = true
-        
-        // Simulate restore for development
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            isPurchasing = false
-            alertMessage = "Purchases restored successfully."
-            showingAlert = true
+        Task {
+            do {
+                // Attempt to restore purchases
+                try await storeManager.restorePurchases()
+                
+                if storeManager.isPremiumPurchased() {
+                    alertMessage = "Purchases restored successfully."
+                    showingAlert = true
+                    
+                    // Update user settings to reflect premium status
+                    OpenAIService.shared.setPremiumPurchased()
+                } else {
+                    alertMessage = "No purchases found to restore."
+                    showingAlert = true
+                }
+            } catch {
+                alertMessage = "Failed to restore purchases: \(error.localizedDescription)"
+                showingAlert = true
+            }
         }
     }
 }

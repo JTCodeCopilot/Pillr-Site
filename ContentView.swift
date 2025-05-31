@@ -146,13 +146,19 @@ struct ContentView: View {
 struct PillrApp: App {
     @StateObject private var store = MedicationStore.shared
     @StateObject private var userSettings = UserSettings.shared
+    @StateObject private var storeManager = StoreManager.shared
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(store)
                 .environmentObject(userSettings)
+                .environmentObject(storeManager)
                 .preferredColorScheme(.dark)
+                .task {
+                    // Initialize StoreKit and check for purchases
+                    await storeManager.updatePurchasedProducts()
+                }
         }
     }
 } 

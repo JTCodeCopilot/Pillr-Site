@@ -162,14 +162,21 @@ struct OpenAIService {
         var cleaned = content.replacingOccurrences(of: "```json", with: "")
         cleaned = cleaned.replacingOccurrences(of: "```", with: "")
         
-        // Find the first [ and last ] to extract just the JSON array
+        // For arrays: Find the first [ and last ] to extract just the JSON array
         if let startIndex = cleaned.firstIndex(of: "["),
            let endIndex = cleaned.lastIndex(of: "]") {
             let jsonSubstring = cleaned[startIndex...endIndex]
             return String(jsonSubstring)
         }
         
-        // If no array brackets found, return the cleaned content
+        // For objects: Find the first { and last } to extract just the JSON object
+        if let startIndex = cleaned.firstIndex(of: "{"),
+           let endIndex = cleaned.lastIndex(of: "}") {
+            let jsonSubstring = cleaned[startIndex...endIndex]
+            return String(jsonSubstring)
+        }
+        
+        // If no array or object brackets found, return the cleaned content
         return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
@@ -235,6 +242,75 @@ struct OpenAIService {
         }
         
         return interactions
+    }
+    
+    func getMedicationInfo(medicationName: String) async throws -> MedicationSearchResult {
+        guard UserSettings.shared.hasAIAccess() else {
+            throw OpenAIError.premiumRequired
+        }
+        
+        let prompt = """
+        Provide detailed information about the medication: \(medicationName)
+        
+        Return ONLY a valid JSON object. No explanations, no markdown, just the JSON.
+        
+        Format:
+        {
+          "name": "Proper medication name",
+          "description": "Brief description of the medication, its purpose, and important information",
+          "commonDosage": "Common dosage information (optional)"
+        }
+        
+        If you don't have information about this medication, return a JSON with "unknown" as name.
+        """
+        
+        do {
+            // Using the AIProxy Swift library's structured request format
+            let response = try await openAIService.chatCompletionRequest(body: .init(
+                model: "gpt-4o-mini",
+                messages: [
+                    .system(content: .text("You are a medical AI. Respond with valid JSON only. No text before or after the JSON.")),
+                    .user(content: .text(prompt))
+                ],
+                temperature: 0.1
+            ))
+            
+            guard let content = response.choices.first?.message.content else {
+                throw OpenAIError.noContent
+            }
+            
+            // Clean and extract JSON from the response
+            let cleanedContent = extractJSON(from: content)
+            
+            guard let jsonData = cleanedContent.data(using: .utf8) else {
+                throw OpenAIError.invalidJSONResponse
+            }
+            
+            // Try to decode the medication info
+            struct MedicationInfoResponse: Codable {
+                let name: String
+                let description: String
+                let commonDosage: String?
+            }
+            
+            let medicationInfo = try JSONDecoder().decode(MedicationInfoResponse.self, from: jsonData)
+            
+            if medicationInfo.name.lowercased() == "unknown" {
+                throw OpenAIError.invalidResponse
+            }
+            
+            // Convert to MedicationSearchResult
+            return MedicationSearchResult(
+                id: UUID().uuidString,
+                name: medicationInfo.name,
+                description: medicationInfo.description,
+                commonDosage: medicationInfo.commonDosage
+            )
+            
+        } catch {
+            print("Error getting medication info: \(error)")
+            throw error
+        }
     }
 }
 

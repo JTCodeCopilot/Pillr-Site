@@ -66,10 +66,17 @@ class NotificationManager: ObservableObject {
         dateComponents.hour = hour
         dateComponents.minute = minute
         
+        // Check if the reminder time has already passed for today
+        let now = Date()
+        let currentHour = calendar.component(.hour, from: now)
+        let currentMinute = calendar.component(.minute, from: now)
+        let timeHasPassed = (hour < currentHour || (hour == currentHour && minute <= currentMinute))
+        
         if medication.isOneTimeWithFollowUp {
             // Schedule a one-time notification
             let now = Date()
             var fireDate = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: now) ?? now
+            // Always add a day if the time has already passed for today
             if fireDate < now { fireDate = Calendar.current.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate }
             let interval = fireDate.timeIntervalSince(now)
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
@@ -83,6 +90,15 @@ class NotificationManager: ObservableObject {
             scheduleOneTimeFollowUp(for: medication, after: 30, originalID: notificationID, baseInterval: interval)
             return notificationID
         }
+        
+        // If regular notification and time has passed for today, set it to start tomorrow
+        if timeHasPassed {
+            // Set to start tomorrow
+            dateComponents.day = calendar.component(.day, from: calendar.date(byAdding: .day, value: 1, to: now)!)
+            dateComponents.month = calendar.component(.month, from: calendar.date(byAdding: .day, value: 1, to: now)!)
+            dateComponents.year = calendar.component(.year, from: calendar.date(byAdding: .day, value: 1, to: now)!)
+        }
+        
         // Default: schedule repeating notification
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: notificationID.uuidString, content: content, trigger: trigger)
@@ -157,6 +173,20 @@ class NotificationManager: ObservableObject {
         dateComponents.hour = hour
         dateComponents.minute = minute
         
+        // Check if the reminder time is earlier than the current time on the same day
+        let now = Date()
+        let currentHour = calendar.component(.hour, from: now)
+        let currentMinute = calendar.component(.minute, from: now)
+        
+        // If it's a new medication and the reminder time has already passed for today,
+        // we want to start notifications from tomorrow (by setting the day component)
+        if (hour < currentHour || (hour == currentHour && minute <= currentMinute)) {
+            // Set to start tomorrow
+            dateComponents.day = calendar.component(.day, from: calendar.date(byAdding: .day, value: 1, to: now)!)
+            dateComponents.month = calendar.component(.month, from: calendar.date(byAdding: .day, value: 1, to: now)!)
+            dateComponents.year = calendar.component(.year, from: calendar.date(byAdding: .day, value: 1, to: now)!)
+        }
+        
         // Create the trigger
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         
@@ -222,6 +252,22 @@ class NotificationManager: ObservableObject {
             var dateComponents = DateComponents()
             dateComponents.hour = followUpHour
             dateComponents.minute = followUpMinute
+            
+            // Check if the original reminder time has already passed for today
+            let now = Date()
+            let hour = calendar.component(.hour, from: time)
+            let minute = calendar.component(.minute, from: time)
+            let currentHour = calendar.component(.hour, from: now)
+            let currentMinute = calendar.component(.minute, from: now)
+            
+            // If the original reminder has already passed for today, 
+            // schedule the follow-up to start tomorrow as well
+            if (hour < currentHour || (hour == currentHour && minute <= currentMinute)) {
+                // Set to start tomorrow
+                dateComponents.day = calendar.component(.day, from: calendar.date(byAdding: .day, value: 1, to: now)!)
+                dateComponents.month = calendar.component(.month, from: calendar.date(byAdding: .day, value: 1, to: now)!)
+                dateComponents.year = calendar.component(.year, from: calendar.date(byAdding: .day, value: 1, to: now)!)
+            }
             
             let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
             
@@ -304,6 +350,9 @@ class NotificationManager: ObservableObject {
         content.categoryIdentifier = "MEDICATION_REMINDER"
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
+        
+        // Since baseInterval already accounts for whether the original notification
+        // was scheduled for today or tomorrow, we just add the follow-up delay
         let followUpInterval = baseInterval + Double(minutes * 60)
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: followUpInterval, repeats: false)
         let followUpID = "\(originalID.uuidString)_followup"

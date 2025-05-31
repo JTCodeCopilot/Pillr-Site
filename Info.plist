@@ -81,5 +81,9 @@
 			<true/>
 		</dict>
 	</dict>
+	<key>SKInAppPurchaseHistoryIncludesConsumables</key>
+	<true/>
+	<key>SKPaymentTransactionObserverUseFinishTransaction</key>
+	<true/>
 </dict>
 </plist>

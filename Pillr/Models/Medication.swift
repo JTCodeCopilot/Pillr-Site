@@ -14,6 +14,7 @@ struct Medication: Identifiable, Codable, Hashable {
     var dosage: String // e.g., "50mg", "1 tablet"
     var dosageUnit: String = "mg" // "mg" or "ml"
     var iconName: String = "pill.fill" // Default icon
+    var createdAt: Date? = Date() // When the medication was added
     
     // Computed property to get the correct icon based on dosageUnit
     var unitIconName: String {

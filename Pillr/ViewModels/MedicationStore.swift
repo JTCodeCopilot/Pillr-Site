@@ -84,6 +84,7 @@ class MedicationStore: ObservableObject {
             dosage: dosage, 
             dosageUnit: dosageUnit,
             iconName: iconName,
+            createdAt: Date(), // Set creation date to now
             frequency: frequency, 
             timeToTake: timeToTake,
             reminderTimes: reminderTimes,
@@ -428,6 +429,7 @@ class MedicationStore: ObservableObject {
             dosage: "1000 IU", 
             dosageUnit: "IU",
             iconName: "vitamin-d",
+            createdAt: Date().addingTimeInterval(-86400), // Created yesterday
             frequency: "Twice daily", 
             timeToTake: morningTime,
             reminderTimes: [morningTime, eveningTime],
@@ -441,6 +443,7 @@ class MedicationStore: ObservableObject {
             dosage: "1 tablet", 
             dosageUnit: "tablet",
             iconName: "pain-relief",
+            createdAt: Date().addingTimeInterval(-86400), // Created yesterday
             frequency: "As needed", 
             timeToTake: Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!, 
             notes: "Max 4 per day",

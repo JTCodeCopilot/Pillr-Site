@@ -1157,6 +1157,28 @@ struct MedicationRow: View {
                 calculatedEffectiveTimeToTake = newPotentialDueTime
             }
         }
+        // Check if medication was added today and the scheduled time has already passed
+        else if dayDifference == 0 {
+            // Extract scheduled time components
+            let medicationHour = calendar.component(.hour, from: medication.timeToTake)
+            let medicationMinute = calendar.component(.minute, from: medication.timeToTake)
+            
+            // Extract current time components
+            let currentHour = calendar.component(.hour, from: now)
+            let currentMinute = calendar.component(.minute, from: now)
+            
+            // If the medication time is earlier than the current time
+            if medicationHour < currentHour || (medicationHour == currentHour && medicationMinute <= currentMinute) {
+                // Check if the medication was created today (by comparing creation date to current day)
+                if let creationDate = medication.createdAt, calendar.isDate(creationDate, inSameDayAs: now) {
+                    // If medication was added today and scheduled time has passed,
+                    // set effective due time to tomorrow at the same time
+                    if let tomorrowSameTime = calendar.date(byAdding: .day, value: 1, to: medication.timeToTake) {
+                        calculatedEffectiveTimeToTake = tomorrowSameTime
+                    }
+                }
+            }
+        }
         return calculatedEffectiveTimeToTake
     }
 

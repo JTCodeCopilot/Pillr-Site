@@ -82,7 +82,7 @@ struct PrivacyNoticeView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             bulletPoint("Data is stored using iOS UserDefaults and device keychain")
                             bulletPoint("Notifications are handled locally by iOS")
-                            bulletPoint("No user accounts or cloud sync required")
+                            bulletPoint("No user accounts required")
                             bulletPoint("Data backup only occurs through your device's iCloud backup (if enabled)")
                             bulletPoint("Optional premium AI features use external services but don't store your data")
                         }

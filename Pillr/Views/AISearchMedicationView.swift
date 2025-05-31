@@ -303,121 +303,33 @@ struct AISearchMedicationView: View {
         errorMessage = nil
         searchResults = []
         
-        // Simulating AI search for now
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // Mock search results based on query
-            let query = searchQuery.lowercased()
-            
-            if query.contains("aspirin") {
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Aspirin",
-                    description: "A common pain reliever and anti-inflammatory medication that can also be used to reduce fever and prevent blood clots.",
-                    commonDosage: "81-325 mg"
-                ))
-            }
-            
-            if query.contains("ibuprofen") || query.contains("advil") || query.contains("motrin") {
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Ibuprofen",
-                    description: "A nonsteroidal anti-inflammatory drug (NSAID) used to reduce fever and treat pain or inflammation.",
-                    commonDosage: "200-400 mg every 4-6 hours"
-                ))
-            }
-            
-            if query.contains("acetaminophen") || query.contains("tylenol") {
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Acetaminophen",
-                    description: "A pain reliever and fever reducer that works by inhibiting the production of prostaglandins in the central nervous system.",
-                    commonDosage: "325-650 mg every 4-6 hours"
-                ))
-            }
-            
-            if query.contains("lisinopril") {
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Lisinopril",
-                    description: "An ACE inhibitor used to treat high blood pressure and heart failure, and to improve survival after a heart attack.",
-                    commonDosage: "10-40 mg once daily"
-                ))
-            }
-            
-            if query.contains("metformin") {
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Metformin",
-                    description: "An oral diabetes medicine that helps control blood sugar levels. Used primarily for the treatment of type 2 diabetes.",
-                    commonDosage: "500-1000 mg twice daily"
-                ))
-            }
-            
-            if query.contains("amoxicillin") {
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Amoxicillin",
-                    description: "A penicillin antibiotic used to treat a wide variety of bacterial infections, such as pneumonia, bronchitis, and infections of the ear, nose, throat, skin, or urinary tract.",
-                    commonDosage: "250-500 mg three times daily"
-                ))
-            }
-            
-            if query.contains("atorvastatin") || query.contains("lipitor") {
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Atorvastatin",
-                    description: "A statin medication used to prevent cardiovascular disease in those at high risk and treat abnormal lipid levels.",
-                    commonDosage: "10-80 mg once daily"
-                ))
-            }
-            
-            // If no specific matches but general search term
-            if searchResults.isEmpty && (query.contains("blood pressure") || query.contains("hypertension")) {
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Lisinopril",
-                    description: "An ACE inhibitor used to treat high blood pressure and heart failure.",
-                    commonDosage: "10-40 mg once daily"
-                ))
-                
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Amlodipine",
-                    description: "A calcium channel blocker used to treat high blood pressure and coronary artery disease.",
-                    commonDosage: "5-10 mg once daily"
-                ))
-            }
-            
-            if searchResults.isEmpty && (query.contains("pain") || query.contains("headache")) {
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Aspirin",
-                    description: "A common pain reliever and anti-inflammatory medication.",
-                    commonDosage: "325-650 mg every 4-6 hours"
-                ))
-                
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Ibuprofen",
-                    description: "A nonsteroidal anti-inflammatory drug (NSAID) used to treat pain or inflammation.",
-                    commonDosage: "200-400 mg every 4-6 hours"
-                ))
-                
-                searchResults.append(MedicationSearchResult(
-                    id: UUID().uuidString,
-                    name: "Acetaminophen",
-                    description: "A pain reliever and fever reducer with fewer anti-inflammatory properties than NSAIDs.",
-                    commonDosage: "325-650 mg every 4-6 hours"
-                ))
-            }
-            
-            // If no results at all, show an error
-            if searchResults.isEmpty && !query.isEmpty {
-                // This would be where we'd integrate with OpenAI in a real implementation
-                errorMessage = "No medications found matching '\(searchQuery)'. Try a different search term or add your medication manually."
-            }
-            
+        // Make sure we have premium access
+        guard userSettings.isPremiumUser else {
             isSearching = false
+            showingPremiumUpgrade = true
+            return
+        }
+        
+        // Use the OpenAI service to get medication information
+        Task {
+            do {
+                let result = try await OpenAIService.shared.getMedicationInfo(medicationName: searchQuery)
+                
+                await MainActor.run {
+                    searchResults = [result]
+                    isSearching = false
+                }
+            } catch OpenAIError.premiumRequired {
+                await MainActor.run {
+                    isSearching = false
+                    showingPremiumUpgrade = true
+                }
+            } catch {
+                await MainActor.run {
+                    isSearching = false
+                    errorMessage = "No medications found matching '\(searchQuery)'. Try a different search term or add your medication manually."
+                }
+            }
         }
     }
 }

@@ -157,7 +157,7 @@ struct AddMedicationView: View {
                                             placeholder: dosageUnit == "ml" ? "10" : "50", 
                                             text: $dosage, 
                                             field: .dosage,
-                                            iconName: "scalemass.fill",
+                                            iconName: "",
                                             isRequired: true,
                                             errorMessage: dosageError,
                                             keyboardType: .decimalPad
@@ -292,13 +292,17 @@ struct AddMedicationView: View {
                                                         .font(.system(size: 16, weight: .semibold))
                                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                                     if !userSettings.isPremiumUser {
-                                                        Text("PREMIUM")
-                                                            .font(.system(size: 10, weight: .bold))
-                                                            .foregroundColor(.white)
-                                                            .padding(.horizontal, 6)
-                                                            .padding(.vertical, 2)
-                                                            .background(Color(hex: "#D4A017"))
-                                                            .cornerRadius(4)
+                                                        Button(action: {
+                                                            showingPremiumUpgrade = true
+                                                        }) {
+                                                            Text("PREMIUM")
+                                                                .font(.system(size: 10, weight: .bold))
+                                                                .foregroundColor(.white)
+                                                                .padding(.horizontal, 6)
+                                                                .padding(.vertical, 2)
+                                                                .background(Color(hex: "#D4A017"))
+                                                                .cornerRadius(4)
+                                                        }
                                                     }
                                                 }
                                                 Text(userSettings.isPremiumUser ? 
@@ -385,13 +389,17 @@ struct AddMedicationView: View {
                                                                 .font(.system(size: 16, weight: .semibold))
                                                                 .foregroundColor(Color(hex: "#E8E8E0"))
                                                             if !userSettings.isPremiumUser {
-                                                                Text("PREMIUM")
-                                                                    .font(.system(size: 10, weight: .bold))
-                                                                    .foregroundColor(.white)
-                                                                    .padding(.horizontal, 6)
-                                                                    .padding(.vertical, 2)
-                                                                    .background(Color(hex: "#D4A017"))
-                                                                    .cornerRadius(4)
+                                                                Button(action: {
+                                                                    showingPremiumUpgrade = true
+                                                                }) {
+                                                                    Text("PREMIUM")
+                                                                        .font(.system(size: 10, weight: .bold))
+                                                                        .foregroundColor(.white)
+                                                                        .padding(.horizontal, 6)
+                                                                        .padding(.vertical, 2)
+                                                                        .background(Color(hex: "#D4A017"))
+                                                                        .cornerRadius(4)
+                                                                }
                                                             }
                                                         }
                                                         Text(userSettings.isPremiumUser ? 

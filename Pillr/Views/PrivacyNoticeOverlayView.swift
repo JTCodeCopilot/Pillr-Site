@@ -82,7 +82,7 @@ struct PrivacyNoticeOverlayView: View {
                             VStack(alignment: .leading, spacing: 14) {
                                 techDetail("🔒 Data stored using iOS UserDefaults and device keychain")
                                 techDetail("📱 Notifications handled locally by iOS system")
-                                techDetail("🚫 No user accounts or cloud sync required")
+                                techDetail("🚫 No user accounts required")
                                 techDetail("💾 Data backup only through your device's iCloud backup (if enabled)")
                                 techDetail("🤖 Optional premium AI features use external services but don't store your data")
                             }

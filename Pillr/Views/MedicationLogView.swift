@@ -14,6 +14,7 @@ struct MedicationLogView: View {
     @State private var selectedDate: Date = Date()
     @State private var showingFilterOptions = false
     @State private var selectedMedicationFilter: String = "All"
+    @State private var selectedMonth: Date = Date() // Current month for calendar view
     
     // Group logs by date
     private var groupedLogs: [Date: [MedicationLog]] {
@@ -70,6 +71,27 @@ struct MedicationLogView: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .full
         formatter.timeStyle = .none
+        return formatter
+    }
+    
+    // Month formatter
+    private var monthFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter
+    }
+    
+    // Day formatter
+    private var dayFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter
+    }
+    
+    // Weekday formatter
+    private var weekdayFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
         return formatter
     }
     
@@ -137,8 +159,74 @@ struct MedicationLogView: View {
                                     icon: "flame.fill"
                                 )
                             }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 16)
+                        .background(Color(hex: "#404C42"))
+                        .zIndex(1)
+                        
+                        // Month navigation and calendar view
+                        VStack(spacing: 12) {
+                            // Month navigation
+                            HStack {
+                                Button(action: {
+                                    withAnimation {
+                                        selectedMonth = Calendar.current.date(byAdding: .month, value: -1, to: selectedMonth) ?? selectedMonth
+                                    }
+                                }) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                }
+                                
+                                Spacer()
+                                
+                                Text(monthFormatter.string(from: selectedMonth))
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    withAnimation {
+                                        selectedMonth = Calendar.current.date(byAdding: .month, value: 1, to: selectedMonth) ?? selectedMonth
+                                    }
+                                }) {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                }
+                            }
+                            .padding(.horizontal, 16)
                             
-                            // Show selected date if not today
+                            // Calendar header (days of week)
+                            HStack(spacing: 0) {
+                                ForEach(Calendar.current.shortWeekdaySymbols, id: \.self) { day in
+                                    Text(day.prefix(1))
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .frame(maxWidth: .infinity)
+                                }
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.top, 8)
+                            
+                            // Calendar grid
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 7), spacing: 1) {
+                                ForEach(daysInMonth(), id: \.self) { day in
+                                    CalendarDayCell(
+                                        date: day,
+                                        selectedDate: $selectedDate,
+                                        groupedLogs: groupedLogs,
+                                        isCurrentMonth: isSameMonth(day, selectedMonth)
+                                    )
+                                }
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 16)
+                            
+                            // Current selection indicator if not today
                             if !Calendar.current.isDateInToday(selectedDate) {
                                 HStack {
                                     Image(systemName: "calendar")
@@ -155,13 +243,11 @@ struct MedicationLogView: View {
                                 .padding(.vertical, 8)
                                 .background(Color.black.opacity(0.15))
                                 .cornerRadius(8)
+                                .padding(.horizontal, 8)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 16)
+                        .padding(.bottom, 8)
                         .background(Color(hex: "#404C42"))
-                        .zIndex(1)
                         
                         // Content area
                         ZStack {
@@ -190,17 +276,14 @@ struct MedicationLogView: View {
                             Spacer()
                             
                             VStack(spacing: 12) {
-                                // Calendar button
-                                FloatingButton(
-                                    icon: "calendar",
-                                    action: { showingCalendar = true }
-                                )
-                                
                                 // Today button (only show if not on today)
                                 if !Calendar.current.isDateInToday(selectedDate) {
                                     FloatingButton(
                                         icon: "house.fill",
-                                        action: { selectedDate = Date() }
+                                        action: { 
+                                            selectedDate = Date()
+                                            selectedMonth = Date()
+                                        }
                                     )
                                 }
                             }
@@ -219,16 +302,6 @@ struct MedicationLogView: View {
                             geometry: geometry
                         )
                         .zIndex(3)
-                    }
-                    
-                    // Date Picker Popover
-                    if showingCalendar {
-                        DatePickerOverlay(
-                            selectedDate: $selectedDate,
-                            showingCalendar: $showingCalendar,
-                            geometry: geometry
-                        )
-                        .zIndex(4)
                     }
                 }
             }
@@ -284,6 +357,119 @@ struct MedicationLogView: View {
             return max((geometry.size.width - 768) / 3, 0)
         }
         return 0
+    }
+    
+    // Get days in the current month for the calendar
+    private func daysInMonth() -> [Date] {
+        let calendar = Calendar.current
+        
+        // Find the first day of the month
+        let monthComponents = calendar.dateComponents([.year, .month], from: selectedMonth)
+        let startOfMonth = calendar.date(from: monthComponents)!
+        
+        // Find the start of the first week (may be in the previous month)
+        let firstWeekday = calendar.component(.weekday, from: startOfMonth)
+        let daysToSubtract = (firstWeekday - calendar.firstWeekday + 7) % 7
+        let startDate = calendar.date(byAdding: .day, value: -daysToSubtract, to: startOfMonth)!
+        
+        // Generate the days needed for a complete calendar (up to 42 days)
+        var dates: [Date] = []
+        for day in 0..<42 { // 6 weeks (rows) * 7 days
+            if let date = calendar.date(byAdding: .day, value: day, to: startDate) {
+                dates.append(date)
+                
+                // Stop if we've reached the end of the month and completed the row
+                let endOfMonthCheck = calendar.dateComponents([.month], from: date)
+                let nextMonth = calendar.dateComponents([.month], from: selectedMonth).month! + 1
+                if endOfMonthCheck.month == nextMonth && calendar.component(.weekday, from: date) == calendar.firstWeekday {
+                    break
+                }
+            }
+        }
+        
+        return dates
+    }
+    
+    // Check if a date is in the current month being displayed
+    private func isSameMonth(_ date: Date, _ monthDate: Date) -> Bool {
+        let calendar = Calendar.current
+        return calendar.component(.month, from: date) == calendar.component(.month, from: monthDate) &&
+               calendar.component(.year, from: date) == calendar.component(.year, from: monthDate)
+    }
+}
+
+// MARK: - Calendar Day Cell
+struct CalendarDayCell: View {
+    let date: Date
+    @Binding var selectedDate: Date
+    let groupedLogs: [Date: [MedicationLog]]
+    let isCurrentMonth: Bool
+    
+    private var dayFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter
+    }
+    
+    private var hasLogs: Bool {
+        let calendar = Calendar.current
+        let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+        guard let startOfDay = calendar.date(from: dateComponents) else { return false }
+        
+        return groupedLogs[startOfDay] != nil
+    }
+    
+    private var isSelected: Bool {
+        Calendar.current.isDate(date, inSameDayAs: selectedDate)
+    }
+    
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(date)
+    }
+    
+    var body: some View {
+        Button(action: {
+            withAnimation {
+                selectedDate = date
+            }
+        }) {
+            VStack(spacing: 2) {
+                // Day number
+                Text(dayFormatter.string(from: date))
+                    .font(.system(size: 14, weight: isToday || isSelected ? .bold : .regular))
+                    .foregroundColor(
+                        isToday ? Color(hex: "#F5F5F5") :
+                        isSelected ? Color(hex: "#F5F5F5") :
+                        isCurrentMonth ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.4)
+                    )
+                
+                // Indicator dot for days with logs
+                if hasLogs {
+                    Circle()
+                        .fill(
+                            isSelected ? Color(hex: "#F5F5F5") :
+                            isToday ? Color(hex: "#D7CCC8") : Color(hex: "#D7CCC8").opacity(0.8)
+                        )
+                        .frame(width: 6, height: 6)
+                }
+            }
+            .frame(height: 40)
+            .frame(maxWidth: .infinity)
+            .background(
+                ZStack {
+                    if isSelected {
+                        Circle()
+                            .fill(Color(hex: "#525E55"))
+                            .frame(width: 32, height: 32)
+                    } else if isToday {
+                        Circle()
+                            .stroke(Color(hex: "#D7CCC8"), lineWidth: 1.5)
+                            .frame(width: 32, height: 32)
+                    }
+                }
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

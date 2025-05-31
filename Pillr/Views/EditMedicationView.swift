@@ -308,13 +308,17 @@ struct EditMedicationView: View {
                                                     .font(.system(size: 16, weight: .semibold))
                                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                                 if !userSettings.isPremiumUser {
-                                                    Text("PREMIUM")
-                                                        .font(.system(size: 10, weight: .bold))
-                                                        .foregroundColor(.white)
-                                                        .padding(.horizontal, 6)
-                                                        .padding(.vertical, 2)
-                                                        .background(Color(hex: "#D4A017"))
-                                                        .cornerRadius(4)
+                                                    Button(action: {
+                                                        showingPremiumUpgrade = true
+                                                    }) {
+                                                        Text("PREMIUM")
+                                                            .font(.system(size: 10, weight: .bold))
+                                                            .foregroundColor(.white)
+                                                            .padding(.horizontal, 6)
+                                                            .padding(.vertical, 2)
+                                                            .background(Color(hex: "#D4A017"))
+                                                            .cornerRadius(4)
+                                                    }
                                                 }
                                             }
                                             Text(userSettings.isPremiumUser ? 
@@ -400,13 +404,30 @@ struct EditMedicationView: View {
                                                         Text("One-time with Follow-up")
                                                             .font(.system(size: 16, weight: .semibold))
                                                             .foregroundColor(Color(hex: "#E8E8E0"))
+                                                        if !userSettings.isPremiumUser {
+                                                            Button(action: {
+                                                                showingPremiumUpgrade = true
+                                                            }) {
+                                                                Text("PREMIUM")
+                                                                    .font(.system(size: 10, weight: .bold))
+                                                                    .foregroundColor(.white)
+                                                                    .padding(.horizontal, 6)
+                                                                    .padding(.vertical, 2)
+                                                                    .background(Color(hex: "#D4A017"))
+                                                                    .cornerRadius(4)
+                                                            }
+                                                        }
                                                     }
-                                                    Text("Single reminder + 30-min follow-up if not taken")
+                                                    Text(userSettings.isPremiumUser ? 
+                                                         "Single reminder + 30-min follow-up if not taken" : 
+                                                         "Follow-up reminders require premium subscription")
                                                         .font(.system(size: 13))
                                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                                 }
                                             }
                                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                            .disabled(!userSettings.isPremiumUser)
+                                            .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                                         }
                                     }
                                 }
