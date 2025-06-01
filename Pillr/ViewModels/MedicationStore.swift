@@ -28,6 +28,7 @@ class MedicationStore: ObservableObject {
 
     // Local device storage using UserDefaults - all data stays on device
     // No cloud storage or external servers involved
+    // Data is only removed when the app is completely uninstalled from the device
     private let medicationsKey = "medicationsData"
     private let logsKey = "medicationLogsData"
     private let isPreviewMode: Bool
@@ -346,6 +347,7 @@ class MedicationStore: ObservableObject {
     // --- Local Device Persistence ---
     // All data is stored locally on the user's device using iOS UserDefaults
     // No data is transmitted to external servers or cloud services
+    // Data persists between app launches and is ONLY deleted when the app is uninstalled completely
     public func saveMedications() {
         if let encoded = try? JSONEncoder().encode(medications) {
             UserDefaults.standard.set(encoded, forKey: medicationsKey)
@@ -413,6 +415,7 @@ class MedicationStore: ObservableObject {
 
     private func saveLogs() {
         // Save medication logs locally on device only
+        // This data persists until the app is completely uninstalled from the device
         if let encoded = try? JSONEncoder().encode(logs) {
             UserDefaults.standard.set(encoded, forKey: logsKey)
         }

@@ -48,6 +48,7 @@ class UserSettings: ObservableObject {
         }
     }
     
+    // User settings storage keys - data persists until app is completely uninstalled
     private let userNameKey = "userName"
     private let privacyNoticeKey = "hasShownPrivacyNotice"
     private let premiumStatusKey = "is_premium_user"

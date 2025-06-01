@@ -9,6 +9,7 @@ class InteractionStore: ObservableObject {
     @Published var selectedSeverityFilter: DrugInteraction.InteractionSeverity? = nil
     @Published var sortOrder: SortOrder = .dateDescending
     
+    // Local device storage keys - data persists until app is completely uninstalled
     private let historyKey = "interactionHistoryData"
     private let recentSearchesKey = "recentSearchesData"
     private let maxRecentSearches = 10
@@ -145,6 +146,8 @@ class InteractionStore: ObservableObject {
     
     private func saveInteractionHistory() {
         do {
+            // Save interaction history locally on device only
+            // This data persists until the app is completely uninstalled
             let encoder = JSONEncoder()
             let data = try encoder.encode(interactionHistory)
             UserDefaults.standard.set(data, forKey: historyKey)
@@ -197,6 +200,8 @@ class InteractionStore: ObservableObject {
     
     private func saveRecentSearches() {
         do {
+            // Save recent searches locally on device only
+            // This data persists until the app is completely uninstalled
             let encoder = JSONEncoder()
             let data = try encoder.encode(recentSearches)
             UserDefaults.standard.set(data, forKey: recentSearchesKey)

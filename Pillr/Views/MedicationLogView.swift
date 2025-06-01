@@ -747,6 +747,7 @@ struct EnhancedLogEntryRow: View {
     let logEntry: MedicationLog
     let store: MedicationStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var showAdditionalInfo: Bool = false
     
     // Get medication details
     private var medication: Medication? {
@@ -800,42 +801,65 @@ struct EnhancedLogEntryRow: View {
                         }
                     }
                     
-                    // Notes and side effects
+                    // Show toggle button if notes exist
                     if let notes = logEntry.notes, !notes.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            if notes.contains("Side effects:") {
-                                let components = notes.components(separatedBy: "Side effects:")
+                        Button(action: {
+                            withAnimation {
+                                showAdditionalInfo.toggle()
+                            }
+                        }) {
+                            HStack {
+                                Text("Additional Information")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                 
-                                // Regular notes
-                                if components.count > 0 && !components[0].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                    Text(components[0].trimmingCharacters(in: .whitespacesAndNewlines))
-                                        .font(.system(size: 13))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                }
+                                Spacer()
                                 
-                                // Side effects
-                                if components.count > 1 {
+                                Image(systemName: showAdditionalInfo ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                            }
+                            .padding(.top, 6)
+                        }
+                        
+                        // Notes and side effects (collapsible)
+                        if showAdditionalInfo {
+                            VStack(alignment: .leading, spacing: 6) {
+                                if notes.contains("Side effects:") {
+                                    let components = notes.components(separatedBy: "Side effects:")
+                                    
+                                    // Regular notes
+                                    if components.count > 0 && !components[0].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        Text(components[0].trimmingCharacters(in: .whitespacesAndNewlines))
+                                            .font(.system(size: 13))
+                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    }
+                                    
+                                    // Side effects
+                                    if components.count > 1 {
+                                        HStack(alignment: .top, spacing: 6) {
+                                            Image(systemName: "exclamationmark.triangle.fill")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.orange)
+                                            
+                                            Text("Side effects: \(components[1].trimmingCharacters(in: .whitespacesAndNewlines))")
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundColor(.orange)
+                                        }
+                                    }
+                                } else {
                                     HStack(alignment: .top, spacing: 6) {
-                                        Image(systemName: "exclamationmark.triangle.fill")
+                                        Image(systemName: "note.text.fill")
                                             .font(.system(size: 12))
-                                            .foregroundColor(.orange)
+                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
                                         
-                                        Text("Side effects: \(components[1].trimmingCharacters(in: .whitespacesAndNewlines))")
-                                            .font(.system(size: 13, weight: .medium))
-                                            .foregroundColor(.orange)
+                                        Text(notes)
+                                            .font(.system(size: 13))
+                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                     }
                                 }
-                            } else {
-                                HStack(alignment: .top, spacing: 6) {
-                                    Image(systemName: "note.text.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                                    
-                                    Text(notes)
-                                        .font(.system(size: 13))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                }
                             }
+                            .padding(.top, 4)
                         }
                     }
                 }
