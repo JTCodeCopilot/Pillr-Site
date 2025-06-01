@@ -44,38 +44,56 @@ struct AISearchMedicationView: View {
                 .padding(.horizontal)
                 
                 // Search bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                        .font(.system(size: 16, weight: .medium))
-                    
-                    TextField("Search for a medication...", text: $searchQuery)
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-                        .font(.system(size: 16, weight: .medium))
-                        .disableAutocorrection(true)
-                        .autocapitalization(.none)
-                    
-                    if !searchQuery.isEmpty {
-                        Button(action: {
-                            searchQuery = ""
-                            searchResults = []
-                            errorMessage = nil
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                                .font(.system(size: 16, weight: .medium))
+                HStack(spacing: 8) {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        TextField("Search for a medication...", text: $searchQuery)
+                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .font(.system(size: 16, weight: .medium))
+                            .disableAutocorrection(true)
+                            .autocapitalization(.none)
+                        
+                        if !searchQuery.isEmpty {
+                            Button(action: {
+                                searchQuery = ""
+                                searchResults = []
+                                errorMessage = nil
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .font(.system(size: 16, weight: .medium))
+                            }
                         }
                     }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.black.opacity(0.2))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    
+                    // Search button
+                    Button(action: {
+                        if !searchQuery.isEmpty {
+                            if userSettings.isPremiumUser {
+                                searchMedications()
+                            } else {
+                                showingPremiumUpgrade = true
+                            }
+                        }
+                    }) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .foregroundColor(!searchQuery.isEmpty ? Color(hex: "#E8E8E0") : Color(hex: "#C7C7BD").opacity(0.5))
+                            .font(.system(size: 36, weight: .medium))
+                    }
+                    .disabled(searchQuery.isEmpty)
                 }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.black.opacity(0.2))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
-                        )
-                )
                 .padding(.horizontal)
                 
                 // Premium required notice (if not premium)
@@ -136,6 +154,15 @@ struct AISearchMedicationView: View {
                                 }
                                 .padding(.horizontal)
                             }
+                            
+                            // Disclaimer text
+                            Text("Information is AI-generated and not a substitute for professional medical advice. Always consult your healthcare provider.")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 12)
+                                .padding(.bottom, 8)
                         } else {
                             // Initial state
                             VStack(spacing: 20) {
@@ -273,12 +300,25 @@ struct AISearchMedicationView: View {
             
             // Common dosage
             if let dosage = result.commonDosage {
-                HStack {
+                HStack(alignment: .top) {
                     Image(systemName: "scalemass.fill")
                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                         .font(.system(size: 14))
                     
-                    Text("Common dosage: \(dosage)")
+                    Text(dosage)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                }
+            }
+            
+            // Need to know information
+            if let needToKnow = result.needToKnow {
+                HStack(alignment: .top) {
+                    Image(systemName: "exclamationmark.circle")
+                        .foregroundColor(Color(hex: "#D4A017"))
+                        .font(.system(size: 14))
+                    
+                    Text("Need to know: \(needToKnow)")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                 }
@@ -340,6 +380,7 @@ struct MedicationSearchResult: Identifiable {
     let name: String
     let description: String
     let commonDosage: String?
+    let needToKnow: String?
 }
 
 // Preview

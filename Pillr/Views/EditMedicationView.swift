@@ -34,6 +34,8 @@ struct EditMedicationView: View {
     @State private var trackPillCount: Bool = false
     @State private var isOneTimeWithFollowUp: Bool = false
     @State private var showingPremiumUpgrade: Bool = false
+    @State private var customUnit: String = ""
+    @State private var isCustomUnitSelected: Bool = false
     
     // For dynamically adjusting scroll position when keyboard appears
     @State private var keyboardHeight: CGFloat = 0
@@ -49,7 +51,7 @@ struct EditMedicationView: View {
     }
 
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
-    let dosageUnits = ["mg", "ml", "tablets", "capsules"]
+    let dosageUnits = ["mg", "ml", "tablets", "capsules", "Custom"]
     
     // Helper function to get icon for each unit
     private func iconForUnit(_ unit: String) -> String {
@@ -62,6 +64,8 @@ struct EditMedicationView: View {
             return "circle.fill"
         case "capsules":
             return "pills.fill"
+        case "Custom":
+            return "text.cursor"
         default:
             return "pill.fill"
         }
@@ -93,19 +97,43 @@ struct EditMedicationView: View {
         self.medication = medication
         self.onUpdate = onUpdate
         
-        // Initialize state variables with existing medication values
         _name = State(initialValue: medication.name)
         _dosage = State(initialValue: medication.dosage)
-        _dosageUnit = State(initialValue: medication.dosageUnit)
+        
+        // Check if medication uses a custom unit
+        let standardUnits = ["mg", "ml", "tablets", "capsules"]
+        if standardUnits.contains(medication.dosageUnit) {
+            _dosageUnit = State(initialValue: medication.dosageUnit)
+            _customUnit = State(initialValue: "")
+            _isCustomUnitSelected = State(initialValue: false)
+        } else {
+            _dosageUnit = State(initialValue: "Custom")
+            _customUnit = State(initialValue: medication.dosageUnit)
+            _isCustomUnitSelected = State(initialValue: true)
+        }
+        
         _iconName = State(initialValue: medication.iconName)
         _frequency = State(initialValue: medication.frequency)
         _timeToTake = State(initialValue: medication.timeToTake)
-        _reminderTimes = State(initialValue: medication.reminderTimes.isEmpty ? [] : medication.reminderTimes)
+        _reminderTimes = State(initialValue: medication.reminderTimes)
         _notes = State(initialValue: medication.notes ?? "")
-        _enableNotification = State(initialValue: medication.notificationID != nil || !medication.notificationIDs.isEmpty)
-        _pillCountString = State(initialValue: medication.pillCount != nil ? String(medication.pillCount!) : "")
-        _pillsPerDoseString = State(initialValue: String(medication.pillsPerDose))
-        _refillThresholdString = State(initialValue: medication.refillThreshold != nil ? String(medication.refillThreshold!) : "")
+        _enableNotification = State(initialValue: medication.notificationIDs.count > 0 || medication.notificationID != nil)
+        
+        // Set up pill count tracking
+        if let pillCount = medication.pillCount {
+            _pillCountString = State(initialValue: "\(pillCount)")
+        } else {
+            _pillCountString = State(initialValue: "")
+        }
+        
+        _pillsPerDoseString = State(initialValue: "\(medication.pillsPerDose)")
+        
+        if let refillThreshold = medication.refillThreshold {
+            _refillThresholdString = State(initialValue: "\(refillThreshold)")
+        } else {
+            _refillThresholdString = State(initialValue: "")
+        }
+        
         _trackPillCount = State(initialValue: medication.pillCount != nil)
         _isOneTimeWithFollowUp = State(initialValue: medication.isOneTimeWithFollowUp)
     }
@@ -189,6 +217,7 @@ struct EditMedicationView: View {
                                             ForEach(dosageUnits, id: \.self) { unit in
                                                 Button {
                                                     dosageUnit = unit
+                                                    isCustomUnitSelected = unit == "Custom"
                                                     HapticManager.shared.lightImpact()
                                                 } label: {
                                                     HStack {
@@ -227,6 +256,21 @@ struct EditMedicationView: View {
                                         .buttonStyle(ScaleButtonStyle())
                                     }
                                     .frame(minWidth: 110)
+                                }
+
+                                // Add custom unit text field if needed - now moved under the dosage row
+                                if isCustomUnitSelected {
+                                    enhancedInputField(
+                                        title: "Custom Unit Type", 
+                                        placeholder: "e.g. drops, sprays", 
+                                        text: $customUnit, 
+                                        field: nil,
+                                        iconName: "text.cursor",
+                                        isRequired: true,
+                                        errorMessage: customUnit.isEmpty && showValidationErrors ? "Custom unit type is required" : nil
+                                    )
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                    .animation(.easeInOut, value: isCustomUnitSelected)
                                 }
                             }
                         }
@@ -437,7 +481,7 @@ struct EditMedicationView: View {
                         // Enhanced Notes Section
                         FormSection(title: "NOTES", icon: "note.text.fill") {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Additional Information")
+                                Text("Information")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                 
@@ -633,7 +677,7 @@ struct EditMedicationView: View {
         title: String, 
         placeholder: String, 
         text: Binding<String>, 
-        field: Field, 
+        field: Field?,
         iconName: String? = nil,
         isRequired: Bool = false,
         errorMessage: String? = nil,
@@ -736,7 +780,10 @@ struct EditMedicationView: View {
         let dosageValid = !dosage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let frequencyValid = !frequency.isEmpty
         
-        return nameValid && dosageValid && frequencyValid && nameError == nil && dosageError == nil
+        // Validate custom unit if selected
+        let customUnitValid = dosageUnit != "Custom" || (dosageUnit == "Custom" && !customUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        
+        return nameValid && dosageValid && frequencyValid && nameError == nil && dosageError == nil && customUnitValid
     }
     
     // Field navigation helpers
@@ -803,11 +850,14 @@ struct EditMedicationView: View {
             return
         }
         
+        // Use custom unit if "Custom" is selected
+        let finalDosageUnit = dosageUnit == "Custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+        
         // Create an updated medication object with the new values
         var updatedMedication = medication
         updatedMedication.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         updatedMedication.dosage = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
-        updatedMedication.dosageUnit = dosageUnit
+        updatedMedication.dosageUnit = finalDosageUnit
         updatedMedication.iconName = iconName
         updatedMedication.frequency = frequency
         updatedMedication.timeToTake = timeToTake

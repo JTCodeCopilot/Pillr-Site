@@ -11,14 +11,24 @@ class StoreManager: ObservableObject {
     @Published private(set) var purchasedProductIDs = Set<String>()
     @Published var isLoading = false
     
+    // Flag to disable StoreKit for testing
+    private let isTestMode = true
+    
     private var productsLoaded = false
     private var updateListenerTask: Task<Void, Error>?
     
     init() {
-        updateListenerTask = listenForTransactions()
-        Task {
-            await loadProducts()
-            await updatePurchasedProducts()
+        if isTestMode {
+            // In test mode, skip StoreKit initialization and set premium to true
+            Task {
+                await setTestModePremium()
+            }
+        } else {
+            updateListenerTask = listenForTransactions()
+            Task {
+                await loadProducts()
+                await updatePurchasedProducts()
+            }
         }
     }
     
@@ -26,8 +36,21 @@ class StoreManager: ObservableObject {
         updateListenerTask?.cancel()
     }
     
+    // Set premium status in test mode
+    private func setTestModePremium() async {
+        // Set premium status for testing
+        purchasedProductIDs.insert(productIdentifier)
+        OpenAIService.shared.setPremiumPurchased()
+        print("TEST MODE: Premium features enabled for testing")
+    }
+    
     // Load products from the App Store
     func loadProducts() async {
+        if isTestMode {
+            print("TEST MODE: Skipping App Store product loading")
+            return
+        }
+        
         guard !productsLoaded else { return }
         
         isLoading = true
@@ -69,6 +92,11 @@ class StoreManager: ObservableObject {
     // Update purchased products
     @MainActor
     func updatePurchasedProducts() async {
+        if isTestMode {
+            print("TEST MODE: Skipping purchased products update")
+            return
+        }
+        
         var purchasedIDs = Set<String>()
         
         // Check for previous purchases
@@ -92,6 +120,12 @@ class StoreManager: ObservableObject {
     
     // Purchase a product
     func purchase(_ product: Product) async throws -> StoreKit.Transaction? {
+        if isTestMode {
+            print("TEST MODE: Simulating successful purchase")
+            await setTestModePremium()
+            return nil
+        }
+        
         isLoading = true
         
         do {
@@ -124,6 +158,12 @@ class StoreManager: ObservableObject {
     
     // Restore purchases
     func restorePurchases() async throws {
+        if isTestMode {
+            print("TEST MODE: Simulating successful restore")
+            await setTestModePremium()
+            return
+        }
+        
         isLoading = true
         
         // Request a refresh of the app receipt
@@ -147,11 +187,18 @@ class StoreManager: ObservableObject {
     
     // Check if the user has purchased premium
     func isPremiumPurchased() -> Bool {
+        if isTestMode {
+            return true
+        }
         return !purchasedProductIDs.isEmpty
     }
     
     // Get premium product
     func getPremiumProduct() -> Product? {
+        if isTestMode {
+            print("TEST MODE: No actual product available in test mode")
+            return nil
+        }
         return products.first(where: { $0.id == productIdentifier })
     }
 }

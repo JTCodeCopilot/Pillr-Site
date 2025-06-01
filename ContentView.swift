@@ -1,22 +1,11 @@
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        // Create lightweight preview data stores
-        let previewStore = MedicationStore.previewStore()
-        let previewSettings = UserSettings.previewSettings()
-        
-        ContentView()
-            .environmentObject(previewStore)
-            .environmentObject(previewSettings)
-            .previewDisplayName("ContentView")
-    }
-}
-
 #if DEBUG
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
             .environmentObject(MedicationStore.previewStore())
             .environmentObject(UserSettings.previewSettings())
+            .environmentObject(InteractionStore.previewStore())
+            .environmentObject(StoreManager.previewManager())
             .previewDisplayName("ContentView Preview")
     }
 }
@@ -25,6 +14,8 @@ struct ContentView_Previews: PreviewProvider {
 struct ContentView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
+    @EnvironmentObject var interactionStore: InteractionStore
+    @EnvironmentObject var storeManager: StoreManager
     @State private var selectedTab: Tab = .medications
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
@@ -139,26 +130,5 @@ struct ContentView: View {
         }
         .preferredColorScheme(.dark)
         .accessibilityValue("Pillr Medication Tracker App")
-    }
-}
-
-@main
-struct PillrApp: App {
-    @StateObject private var store = MedicationStore.shared
-    @StateObject private var userSettings = UserSettings.shared
-    @StateObject private var storeManager = StoreManager.shared
-    
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environmentObject(store)
-                .environmentObject(userSettings)
-                .environmentObject(storeManager)
-                .preferredColorScheme(.dark)
-                .task {
-                    // Initialize StoreKit and check for purchases
-                    await storeManager.updatePurchasedProducts()
-                }
-        }
     }
 } 

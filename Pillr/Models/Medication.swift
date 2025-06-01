@@ -28,7 +28,8 @@ struct Medication: Identifiable, Codable, Hashable {
         case "capsules":
             return "pills.fill"
         default:
-            return "pill.fill"
+            // For custom units
+            return "text.cursor"
         }
     }
     

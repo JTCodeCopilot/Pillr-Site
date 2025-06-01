@@ -580,6 +580,23 @@ struct MedicationLogContentView: View {
                             
                             Spacer()
                             
+                            // Export button
+                            Button(action: {
+                                shareCSV()
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "doc.text.fill")
+                                        .font(.system(size: 16))
+                                    Text("Export")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color(hex: "#525E55"))
+                                .cornerRadius(20)
+                            }
+                            
                             // Filter button
                             Button(action: {
                                 showingFilterOptions.toggle()
@@ -599,12 +616,12 @@ struct MedicationLogContentView: View {
                             }
                         }
                         
-                                                 // Stats row
-                         HStack(spacing: 16) {
-                             StatCard(title: "Total Doses", value: "\(store.logs.filter { !$0.skipped }.count)", icon: "pills.fill")
-                             StatCard(title: "This Week", value: "\(logsThisWeek)", icon: "calendar")
-                             StatCard(title: "Streak", value: "\(currentStreak) days", icon: "flame.fill")
-                         }
+                        // Stats row
+                        HStack(spacing: 16) {
+                            StatCard(title: "Total Doses", value: "\(store.logs.filter { !$0.skipped }.count)", icon: "pills.fill")
+                            StatCard(title: "This Week", value: "\(logsThisWeek)", icon: "calendar")
+                            StatCard(title: "Streak", value: "\(currentStreak) days", icon: "flame.fill")
+                        }
                         
                         // Selected date indicator (if not today)
                         if !Calendar.current.isDateInToday(selectedDate) {
@@ -741,6 +758,128 @@ struct MedicationLogContentView: View {
             return max((geometry.size.width - 650) / 2, 16)
         }
         return 16
+    }
+    
+    // MARK: - Export Functionality
+    // Function to export medication logs as plain text
+    private func exportMedicationLogsAsText() -> String {
+        // Create a readable text format
+        var textContent = "MEDICATION HISTORY\n"
+        textContent += "=================\n\n"
+        
+        // Date formatters
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .long
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        
+        // Filter logs based on selected medication
+        let filteredLogs = store.logs.filter { log in
+            selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter
+        }
+        
+        // Group logs by date for better readability
+        let calendar = Calendar.current
+        var groupedByDate: [Date: [MedicationLog]] = [:]
+        
+        for log in filteredLogs {
+            let dateComponents = calendar.dateComponents([.year, .month, .day], from: log.takenAt)
+            if let date = calendar.date(from: dateComponents) {
+                if groupedByDate[date] == nil {
+                    groupedByDate[date] = [log]
+                } else {
+                    groupedByDate[date]?.append(log)
+                }
+            }
+        }
+        
+        // Sort dates in descending order (most recent first)
+        let sortedDates = groupedByDate.keys.sorted(by: >)
+        
+        // Add content for each date
+        for date in sortedDates {
+            textContent += "\(dateFormatter.string(from: date))\n"
+            textContent += String(repeating: "-", count: dateFormatter.string(from: date).count) + "\n\n"
+            
+            // Sort logs for this date by time
+            let logsForDate = groupedByDate[date]?.sorted(by: { $0.takenAt > $1.takenAt }) ?? []
+            
+            for log in logsForDate {
+                let medicationName = log.medicationName
+                let time = timeFormatter.string(from: log.takenAt)
+                
+                // Get medication details if available
+                let medication = store.medications.first { $0.id == log.medicationID }
+                let dosage = medication != nil ? "\(medication!.dosage) \(medication!.dosageUnit)" : ""
+                
+                textContent += "• \(medicationName) - \(dosage) at \(time)\n"
+                
+                // Add status (skipped or taken)
+                if log.skipped {
+                    textContent += "  Status: Skipped\n"
+                } else {
+                    textContent += "  Status: Taken\n"
+                }
+                
+                // Add notes if present
+                if let notes = log.notes, !notes.isEmpty {
+                    textContent += "  Notes: \(notes)\n"
+                }
+                
+                textContent += "\n"
+            }
+        }
+        
+        // Add summary at the end
+        textContent += "===== SUMMARY =====\n"
+        textContent += "Total medications: \(filteredLogs.filter { !$0.skipped }.count) taken, \(filteredLogs.filter { $0.skipped }.count) skipped\n"
+        textContent += "Generated on: \(dateFormatter.string(from: Date()))\n"
+        
+        return textContent
+    }
+
+    // Function to create and share the text file
+    private func shareCSV() {
+        let textContent = exportMedicationLogsAsText()
+        
+        // Create a temporary file
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let fileName = "MedicationHistory_\(dateFormatter.string(from: Date())).txt"
+        
+        if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            let fileURL = dir.appendingPathComponent(fileName)
+            
+            do {
+                try textContent.write(to: fileURL, atomically: true, encoding: .utf8)
+                
+                // Share the file
+                let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
+                
+                // Ensure iPad gets a popover
+                if let popoverController = activityVC.popoverPresentationController {
+                    popoverController.sourceView = UIApplication.shared.windows.first?.rootViewController?.view
+                    popoverController.sourceRect = CGRect(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2, width: 0, height: 0)
+                    popoverController.permittedArrowDirections = []
+                }
+                
+                // Present the share sheet
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let rootViewController = windowScene.windows.first?.rootViewController {
+                    
+                    // If presented from a sheet, find the correct presenting controller
+                    var presentingController = rootViewController
+                    while let presented = presentingController.presentedViewController {
+                        presentingController = presented
+                    }
+                    
+                    presentingController.present(activityVC, animated: true, completion: nil)
+                }
+            } catch {
+                print("Error writing text file: \(error)")
+            }
+        }
     }
 }
 

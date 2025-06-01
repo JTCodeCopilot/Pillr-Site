@@ -256,9 +256,10 @@ struct OpenAIService {
         
         Format:
         {
-          "name": "Proper medication name",
+          "name": "Exact proper medication name with correct spelling and formatting (do not keep user's misspellings)",
           "description": "Brief description of the medication, its purpose, and important information",
-          "commonDosage": "Common dosage information (optional)"
+          "commonDosage": "Common dosage information without using 'The' at the beginning (e.g., 'typical starting dose is' instead of 'The typical starting dose is')",
+          "needToKnow": "Important administration information such as whether to take with/without food, specific timing requirements, storage needs, side effects to watch for, etc."
         }
         
         If you don't have information about this medication, return a JSON with "unknown" as name.
@@ -269,7 +270,7 @@ struct OpenAIService {
             let response = try await openAIService.chatCompletionRequest(body: .init(
                 model: "gpt-4o-mini",
                 messages: [
-                    .system(content: .text("You are a medical AI. Respond with valid JSON only. No text before or after the JSON.")),
+                    .system(content: .text("You are a medical AI. Respond with valid JSON only. No text before or after the JSON. Important: Always use the proper spelling and formatting of medication names in the response, ignoring any misspellings in the user's query. Avoid starting dosage information with 'The'.")),
                     .user(content: .text(prompt))
                 ],
                 temperature: 0.1
@@ -291,6 +292,7 @@ struct OpenAIService {
                 let name: String
                 let description: String
                 let commonDosage: String?
+                let needToKnow: String?
             }
             
             let medicationInfo = try JSONDecoder().decode(MedicationInfoResponse.self, from: jsonData)
@@ -304,7 +306,8 @@ struct OpenAIService {
                 id: UUID().uuidString,
                 name: medicationInfo.name,
                 description: medicationInfo.description,
-                commonDosage: medicationInfo.commonDosage
+                commonDosage: medicationInfo.commonDosage,
+                needToKnow: medicationInfo.needToKnow
             )
             
         } catch {

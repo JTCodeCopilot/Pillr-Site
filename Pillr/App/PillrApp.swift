@@ -38,6 +38,7 @@ struct PillrApp: App {
     @StateObject private var store = MedicationStore.shared
     @StateObject private var interactionStore = InteractionStore.shared
     @StateObject private var userSettings = UserSettings.shared
+    @StateObject private var storeManager = StoreManager.shared
     
     init() {
         // Set preview environment detection
@@ -90,10 +91,15 @@ struct PillrApp: App {
                 .environmentObject(store)
                 .environmentObject(interactionStore)
                 .environmentObject(userSettings)
+                .environmentObject(storeManager)
                 .preferredColorScheme(.dark)
                 .onAppear {
                     // Reset badge when ContentView appears
                     store.checkAndResetBadge()
+                }
+                .task {
+                    // Initialize StoreKit and check for purchases
+                    await storeManager.updatePurchasedProducts()
                 }
         }
     }

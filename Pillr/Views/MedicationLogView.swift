@@ -15,6 +15,7 @@ struct MedicationLogView: View {
     @State private var showingFilterOptions = false
     @State private var selectedMedicationFilter: String = "All"
     @State private var selectedMonth: Date = Date() // Current month for calendar view
+    @State private var showingExportOptions = false
     
     // Group logs by date
     private var groupedLogs: [Date: [MedicationLog]] {
@@ -119,6 +120,23 @@ struct MedicationLogView: View {
                                     .foregroundColor(Color(hex: "#C7C7BD"))
                                 
                                 Spacer()
+                                
+                                // Download button
+                                Button(action: {
+                                    shareCSV()
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "arrow.down.doc.fill")
+                                            .font(.system(size: 16))
+                                        Text("Export")
+                                            .font(.system(size: 14, weight: .medium))
+                                    }
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color(hex: "#525E55"))
+                                    .cornerRadius(20)
+                                }
                                 
                                 // Filter button
                                 Button(action: {
@@ -276,6 +294,12 @@ struct MedicationLogView: View {
                             Spacer()
                             
                             VStack(spacing: 12) {
+                                // Export button
+                                FloatingButton(
+                                    icon: "arrow.down.doc.fill",
+                                    action: { shareCSV() }
+                                )
+                                
                                 // Today button (only show if not on today)
                                 if !Calendar.current.isDateInToday(selectedDate) {
                                     FloatingButton(
@@ -395,6 +419,73 @@ struct MedicationLogView: View {
         let calendar = Calendar.current
         return calendar.component(.month, from: date) == calendar.component(.month, from: monthDate) &&
                calendar.component(.year, from: date) == calendar.component(.year, from: monthDate)
+    }
+    
+    // MARK: - Export Functionality
+    // Function to export medication logs as CSV
+    private func exportMedicationLogsAsCSV() -> String {
+        // CSV header
+        var csvString = "Date,Time,Medication,Dosage,Notes,Skipped\n"
+        
+        // Date formatters
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        
+        // Add data rows
+        let filteredLogs = store.logs.filter { log in
+            selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter
+        }
+        
+        for log in filteredLogs.sorted(by: { $0.takenAt > $1.takenAt }) {
+            let date = dateFormatter.string(from: log.takenAt)
+            let time = timeFormatter.string(from: log.takenAt)
+            let medicationName = log.medicationName
+            
+            // Get medication details if available
+            let medication = store.medications.first { $0.id == log.medicationID }
+            let dosage = medication != nil ? "\(medication!.dosage) \(medication!.dosageUnit)" : ""
+            
+            // Clean up notes to be CSV compatible
+            let cleanNotes = log.notes?.replacingOccurrences(of: ",", with: ";") ?? ""
+            let cleanMedicationName = medicationName.replacingOccurrences(of: ",", with: ";")
+            
+            // Add row
+            csvString += "\(date),\(time),\"\(cleanMedicationName)\",\"\(dosage)\",\"\(cleanNotes)\",\(log.skipped ? "Yes" : "No")\n"
+        }
+        
+        return csvString
+    }
+    
+    // Function to create and share the CSV file
+    private func shareCSV() {
+        let csvString = exportMedicationLogsAsCSV()
+        
+        // Create a temporary file
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let fileName = "MedicationHistory_\(dateFormatter.string(from: Date())).csv"
+        
+        if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            let fileURL = dir.appendingPathComponent(fileName)
+            
+            do {
+                try csvString.write(to: fileURL, atomically: true, encoding: .utf8)
+                
+                // Share the file
+                let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
+                
+                // Present the share sheet
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let rootViewController = windowScene.windows.first?.rootViewController {
+                    rootViewController.present(activityVC, animated: true, completion: nil)
+                }
+            } catch {
+                print("Error writing CSV file: \(error)")
+            }
+        }
     }
 }
 

@@ -51,7 +51,9 @@ struct AddMedicationView: View {
     }
 
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
-    let dosageUnits = ["mg", "ml", "tablets", "capsules"]
+    let dosageUnits = ["mg", "ml", "tablets", "capsules", "Custom"]
+    @State private var customUnit: String = ""
+    @State private var isCustomUnitSelected: Bool = false
 
     @State private var showFrequencyPicker = false
     
@@ -66,6 +68,8 @@ struct AddMedicationView: View {
             return "circle.fill"
         case "capsules":
             return "pills.fill"
+        case "Custom":
+            return "text.cursor"
         default:
             return "pill.fill"
         }
@@ -92,10 +96,6 @@ struct AddMedicationView: View {
                                 Text("Add Medication")
                                     .font(.system(size: 28, weight: .bold, design: .rounded))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
-                                
-                                Text("Fill in the details below to add your medication")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                             }
                             
                             // Enhanced Basic Information Section
@@ -174,6 +174,7 @@ struct AddMedicationView: View {
                                                 ForEach(dosageUnits, id: \.self) { unit in
                                                     Button {
                                                         dosageUnit = unit
+                                                        isCustomUnitSelected = unit == "Custom"
                                                         HapticManager.shared.lightImpact()
                                                     } label: {
                                                         HStack {
@@ -212,6 +213,21 @@ struct AddMedicationView: View {
                                             .buttonStyle(ScaleButtonStyle())
                                         }
                                         .frame(minWidth: 110)
+                                    }
+
+                                    // Add custom unit text field if needed - now moved under the dosage row
+                                    if isCustomUnitSelected {
+                                        enhancedInputField(
+                                            title: "Custom Unit Type", 
+                                            placeholder: "e.g. drops, sprays", 
+                                            text: $customUnit, 
+                                            field: nil,
+                                            iconName: "text.cursor",
+                                            isRequired: true,
+                                            errorMessage: customUnit.isEmpty && showValidationErrors ? "Custom unit type is required" : nil
+                                        )
+                                        .transition(.opacity.combined(with: .move(edge: .top)))
+                                        .animation(.easeInOut, value: isCustomUnitSelected)
                                     }
                                 }
                             }
@@ -421,7 +437,7 @@ struct AddMedicationView: View {
                             // Enhanced Notes Section
                             FormSection(title: "NOTES", icon: "note.text.fill") {
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("Additional Information")
+                                    Text("Information")
                                         .font(.system(size: 14, weight: .semibold))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                     
@@ -588,11 +604,12 @@ struct AddMedicationView: View {
         .sheet(isPresented: $showingAISearch) {
             NavigationView {
                 AISearchMedicationView(onSelectMedication: { result in
-                    // Handle medication selection
-                    name = result.name
-                    if let dosageStr = result.commonDosage, let firstPart = dosageStr.components(separatedBy: " ").first {
-                        dosage = firstPart
-                        // Try to determine dosage unit from the common dosage string
+                    // Always use the medication name exactly as returned by the AI
+                    name = result.name // This preserves proper spelling and capitalization
+                    
+                    // No longer prefilling dosage field
+                    // Keep track of dosage unit if needed for later
+                    if let dosageStr = result.commonDosage {
                         if dosageStr.contains("mg") {
                             dosageUnit = "mg"
                         } else if dosageStr.contains("ml") {
@@ -604,10 +621,21 @@ struct AddMedicationView: View {
                         }
                     }
                     
-                    // Add description to notes if available
+                    // Prepare notes with description and need-to-know information
+                    var notesText = ""
+                    
                     if !result.description.isEmpty {
-                        notes = result.description
+                        notesText = result.description
                     }
+                    
+                    if let needToKnow = result.needToKnow, !needToKnow.isEmpty {
+                        if !notesText.isEmpty {
+                            notesText += "\n\n"
+                        }
+                        notesText += "NEED TO KNOW: \(needToKnow)"
+                    }
+                    
+                    notes = notesText
                 })
             }
         }
@@ -651,7 +679,7 @@ struct AddMedicationView: View {
         title: String, 
         placeholder: String, 
         text: Binding<String>, 
-        field: Field, 
+        field: Field?,
         iconName: String? = nil,
         isRequired: Bool = false,
         errorMessage: String? = nil,
@@ -714,7 +742,7 @@ struct AddMedicationView: View {
     
 
     
-    private func getSubmitLabel(for field: Field) -> SubmitLabel {
+    private func getSubmitLabel(for field: Field?) -> SubmitLabel {
         switch field {
         case .name, .dosage: return .next
         case .pillCount, .pillsPerDose: return .next
@@ -722,7 +750,7 @@ struct AddMedicationView: View {
         }
     }
     
-    private func handleFieldSubmit(_ field: Field) {
+    private func handleFieldSubmit(_ field: Field?) {
         switch field {
         case .name: focusedField = .dosage
         case .dosage: focusedField = nil // Let user pick frequency
@@ -735,7 +763,7 @@ struct AddMedicationView: View {
         }
     }
     
-    private func validateField(_ field: Field, value: String) {
+    private func validateField(_ field: Field?, value: String) {
         switch field {
         case .name:
             nameError = value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Medication name is required" : nil
@@ -868,6 +896,9 @@ struct AddMedicationView: View {
                         !dosage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
                         !frequency.isEmpty
         
+        // Validate custom unit if selected
+        let customUnitValid = dosageUnit != "Custom" || (dosageUnit == "Custom" && !customUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        
         if needsMultipleReminders && reminderTimes.isEmpty {
             return false
         }
@@ -877,10 +908,10 @@ struct AddMedicationView: View {
             let pillCountValid = !pillCountString.isEmpty && Int(pillCountString) != nil
             let pillsPerDoseValid = !pillsPerDoseString.isEmpty && Int(pillsPerDoseString) != nil && Int(pillsPerDoseString)! > 0
             
-            return basicValid && pillCountValid && pillsPerDoseValid
+            return basicValid && pillCountValid && pillsPerDoseValid && customUnitValid
         }
         
-        return basicValid
+        return basicValid && customUnitValid
     }
 
     private func saveMedication() {
@@ -888,10 +919,13 @@ struct AddMedicationView: View {
         let pillsPerDose = trackPillCount ? (Int(pillsPerDoseString) ?? 1) : 1
         let refillThreshold = trackPillCount && !refillThresholdString.isEmpty ? Int(refillThresholdString) : nil
         
+        // Use custom unit if "Custom" is selected
+        let finalDosageUnit = dosageUnit == "Custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+        
         let success = store.addMedication(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             dosage: dosage.trimmingCharacters(in: .whitespacesAndNewlines),
-            dosageUnit: dosageUnit,
+            dosageUnit: finalDosageUnit,
             iconName: iconName,
             frequency: frequency,
             timeToTake: timeToTake,

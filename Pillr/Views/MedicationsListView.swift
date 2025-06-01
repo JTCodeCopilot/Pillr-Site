@@ -1011,9 +1011,8 @@ fileprivate struct MedicationRowHeaderView: View {
     
     private func dosageString() -> String {
         var baseString = "\(medication.dosage)"
-        if medication.dosageUnit == "mg" || medication.dosageUnit == "ml" {
-            baseString += " \(medication.dosageUnit)"
-        }
+        // Always display the unit type regardless of what it is
+        baseString += " \(medication.dosageUnit)"
         return "\(baseString) - \(medication.frequency)"
     }
     
