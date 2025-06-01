@@ -124,7 +124,7 @@ struct ContentView: View {
                 // Main content without bottom bar
                 MedicationsListView()
                     .scrollContentBackground(.hidden)
-                    .padding(.top, geometry.safeAreaInsets.top)
+                    .padding(.top, geometry.safeAreaInsets.top * 0.5)
                     .frame(maxHeight: .infinity)
                 
                 // Centered Menu Button at Bottom

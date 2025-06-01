@@ -403,7 +403,7 @@ fileprivate func MedicationsListContent(
             Spacer(minLength: 60)
         }
         .padding(.horizontal, horizontalInsets)
-        .padding(.top, 16)
+        .padding(.top, 8)
         .background(
             GeometryReader { geo in
                 Color.clear.preference(
