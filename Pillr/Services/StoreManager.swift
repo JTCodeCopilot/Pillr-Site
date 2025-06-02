@@ -5,14 +5,21 @@ import SwiftUI
 class StoreManager: ObservableObject {
     static let shared = StoreManager()
     
-    private let productIdentifier = "com.pillr.app.premium"
+    // Product identifiers
+    private let premiumIdentifier = "com.pillr.app.premium"
+    private let newProductIdentifier = "com.pillr.ai"
+    
+    // All product identifiers
+    private var productIdentifiers: [String] {
+        return [premiumIdentifier, newProductIdentifier]
+    }
     
     @Published private(set) var products: [Product] = []
     @Published private(set) var purchasedProductIDs = Set<String>()
     @Published var isLoading = false
     
     // Flag to disable StoreKit for testing
-    private let isTestMode = true
+    private let isTestMode = false
     
     private var productsLoaded = false
     private var updateListenerTask: Task<Void, Error>?
@@ -39,7 +46,7 @@ class StoreManager: ObservableObject {
     // Set premium status in test mode
     private func setTestModePremium() async {
         // Set premium status for testing
-        purchasedProductIDs.insert(productIdentifier)
+        purchasedProductIDs.insert(premiumIdentifier)
         OpenAIService.shared.setPremiumPurchased()
         print("TEST MODE: Premium features enabled for testing")
     }
@@ -56,7 +63,7 @@ class StoreManager: ObservableObject {
         isLoading = true
         
         do {
-            let storeProducts = try await Product.products(for: [productIdentifier])
+            let storeProducts = try await Product.products(for: productIdentifiers)
             DispatchQueue.main.async { [weak self] in
                 self?.products = storeProducts
                 self?.productsLoaded = true
@@ -112,7 +119,7 @@ class StoreManager: ObservableObject {
         purchasedProductIDs = purchasedIDs
         
         // Update UserSettings
-        if !purchasedIDs.isEmpty {
+        if purchasedIDs.contains(premiumIdentifier) {
             // If the user has purchased premium, update the UserSettings
             OpenAIService.shared.setPremiumPurchased()
         }
@@ -190,7 +197,15 @@ class StoreManager: ObservableObject {
         if isTestMode {
             return true
         }
-        return !purchasedProductIDs.isEmpty
+        return purchasedProductIDs.contains(premiumIdentifier)
+    }
+    
+    // Check if the user has purchased the new product
+    func isNewProductPurchased() -> Bool {
+        if isTestMode {
+            return true
+        }
+        return purchasedProductIDs.contains(newProductIdentifier)
     }
     
     // Get premium product
@@ -199,7 +214,16 @@ class StoreManager: ObservableObject {
             print("TEST MODE: No actual product available in test mode")
             return nil
         }
-        return products.first(where: { $0.id == productIdentifier })
+        return products.first(where: { $0.id == premiumIdentifier })
+    }
+    
+    // Get new product
+    func getNewProduct() -> Product? {
+        if isTestMode {
+            print("TEST MODE: No actual product available in test mode")
+            return nil
+        }
+        return products.first(where: { $0.id == newProductIdentifier })
     }
 }
 
