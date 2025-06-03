@@ -90,12 +90,18 @@ extension AnyTransition {
 struct ContentView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
+    @EnvironmentObject var storeManager: StoreManager
     @State private var showingPopoutMenu = false
     @State private var showingLogView = false
     @State private var showingSettingsView = false
     @State private var showingArchivedView = false
     @State private var showingInteractionAI = false
     @State private var showingMedicationSelectionSheet = false
+    @State private var showingPremiumUpgrade = false
+    @State private var showingInteractionHistory = false
+    @State private var showingPrivacyPolicyWebView = false
+    @State private var showingFeedbackWebView = false
+    @State private var showingContactUsWebView = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
 
@@ -152,6 +158,7 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .accessibilityAddTraits(.isButton)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Pillr - Your Personal Medication Tracker")
         .accessibilityHint("Manage your medications, track doses, and get reminders")
@@ -164,6 +171,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingSettingsView) {
             SettingsViewSheet(userSettings: userSettings, isPresented: $showingSettingsView)
+                .environmentObject(storeManager)
         }
         .sheet(isPresented: $showingArchivedView) {
             NavigationView {
@@ -185,6 +193,22 @@ struct ContentView: View {
         .sheet(isPresented: $showingMedicationSelectionSheet) {
             MedicationInteractionSelectionSheet()
                 .environmentObject(store)
+        }
+        .sheet(isPresented: $showingPremiumUpgrade) {
+            PremiumUpgradeView()
+                .environmentObject(storeManager)
+        }
+        .sheet(isPresented: $showingInteractionHistory) {
+            InteractionHistoryView()
+        }
+        .sheet(isPresented: $showingPrivacyPolicyWebView) {
+            EmbeddedWebView(url: URL(string: "https://tally.so/r/3yR6M4")!, title: "Privacy Policy", isPresented: $showingPrivacyPolicyWebView)
+        }
+        .sheet(isPresented: $showingFeedbackWebView) {
+            EmbeddedWebView(url: URL(string: "https://tally.so/r/w2yeXV")!, title: "Feedback", isPresented: $showingFeedbackWebView)
+        }
+        .sheet(isPresented: $showingContactUsWebView) {
+            EmbeddedWebView(url: URL(string: "https://tally.so/r/3qMdL7")!, title: "Contact Us", isPresented: $showingContactUsWebView)
         }
     }
 }
@@ -474,12 +498,14 @@ struct MedicationLogViewSheet: View {
 
 struct SettingsViewSheet: View {
     @ObservedObject var userSettings: UserSettings
+    @EnvironmentObject var storeManager: StoreManager
     @Binding var isPresented: Bool
     
     var body: some View {
         NavigationView {
             SettingsContentView()
                 .environmentObject(userSettings)
+                .environmentObject(storeManager)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
@@ -885,6 +911,7 @@ struct MedicationLogContentView: View {
 
 struct SettingsContentView: View {
     @EnvironmentObject var userSettings: UserSettings
+    @EnvironmentObject var storeManager: StoreManager
     @State private var showingPremiumUpgrade = false
     @State private var showingInteractionHistory = false
     @State private var showingPrivacyPolicyWebView = false
@@ -924,6 +951,7 @@ struct SettingsContentView: View {
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
+                .environmentObject(storeManager)
         }
         .sheet(isPresented: $showingInteractionHistory) {
             InteractionHistoryView()
@@ -1063,7 +1091,7 @@ struct SettingsContentView: View {
                         Spacer()
                         
                         HStack(spacing: 8) {
-                            Text("$4.99/mo")
+                            Text("$9.99")
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(Color(hex: "#D7CCC8"))
                                 .padding(.horizontal, 8)

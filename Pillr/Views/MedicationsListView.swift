@@ -95,6 +95,7 @@ struct MedicationsListView: View {
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
+                .environmentObject(StoreManager.shared)
         }
     }
     

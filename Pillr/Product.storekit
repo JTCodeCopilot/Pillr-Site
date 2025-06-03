@@ -15,23 +15,8 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.pillr.app.premium",
-      "referenceName" : "Premium Lifetime",
-      "type" : "NonConsumable"
-    },
-    {
-      "displayPrice" : "4.99",
-      "familyShareable" : false,
-      "internalID" : "1000001",
-      "localizations" : [
-        {
-          "description" : "Your new in-app purchase description",
-          "displayName" : "Your New Product Name",
-          "locale" : "en_US"
-        }
-      ],
       "productID" : "com.pillr.ai",
-      "referenceName" : "New Product",
+      "referenceName" : "Premium Lifetime",
       "type" : "NonConsumable"
     }
   ],

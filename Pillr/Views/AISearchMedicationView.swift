@@ -33,13 +33,15 @@ struct AISearchMedicationView: View {
                     
                     Spacer()
                     
-                    Text("PREMIUM")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color(hex: "#D4A017"))
-                        .cornerRadius(6)
+                    if !userSettings.isPremiumUser {
+                        Text("PREMIUM")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color(hex: "#D4A017"))
+                            .cornerRadius(6)
+                    }
                 }
                 .padding(.horizontal)
                 

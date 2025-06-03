@@ -6,12 +6,11 @@ class StoreManager: ObservableObject {
     static let shared = StoreManager()
     
     // Product identifiers
-    private let premiumIdentifier = "com.pillr.app.premium"
-    private let newProductIdentifier = "com.pillr.ai"
+    private let premiumIdentifier = "com.pillr.ai"
     
     // All product identifiers
     private var productIdentifiers: [String] {
-        return [premiumIdentifier, newProductIdentifier]
+        return [premiumIdentifier]
     }
     
     @Published private(set) var products: [Product] = []
@@ -23,6 +22,13 @@ class StoreManager: ObservableObject {
     
     private var productsLoaded = false
     private var updateListenerTask: Task<Void, Error>?
+    
+    // Static method to create a preview manager
+    static func previewManager() -> StoreManager {
+        let manager = StoreManager()
+        manager.isLoading = false
+        return manager
+    }
     
     init() {
         if isTestMode {
@@ -200,14 +206,6 @@ class StoreManager: ObservableObject {
         return purchasedProductIDs.contains(premiumIdentifier)
     }
     
-    // Check if the user has purchased the new product
-    func isNewProductPurchased() -> Bool {
-        if isTestMode {
-            return true
-        }
-        return purchasedProductIDs.contains(newProductIdentifier)
-    }
-    
     // Get premium product
     func getPremiumProduct() -> Product? {
         if isTestMode {
@@ -215,15 +213,6 @@ class StoreManager: ObservableObject {
             return nil
         }
         return products.first(where: { $0.id == premiumIdentifier })
-    }
-    
-    // Get new product
-    func getNewProduct() -> Product? {
-        if isTestMode {
-            print("TEST MODE: No actual product available in test mode")
-            return nil
-        }
-        return products.first(where: { $0.id == newProductIdentifier })
     }
 }
 

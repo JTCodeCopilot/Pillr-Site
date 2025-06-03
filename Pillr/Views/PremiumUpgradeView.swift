@@ -3,10 +3,12 @@ import StoreKit
 
 struct PremiumUpgradeView: View {
     @Environment(\.dismiss) var dismiss
-    @ObservedObject private var storeManager = StoreManager.shared
+    @EnvironmentObject private var storeManager: StoreManager
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var hasTriedFeatures = false
+    @State private var isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    @State private var isButtonLoading = false
     
     var body: some View {
         NavigationView {
@@ -124,10 +126,11 @@ struct PremiumUpgradeView: View {
                             // Purchase button
                             if let product = storeManager.getPremiumProduct() {
                                 Button(action: {
+                                    isButtonLoading = true
                                     purchasePremium(product: product)
                                 }) {
                                     HStack {
-                                        if storeManager.isLoading {
+                                        if isButtonLoading && !isPreview {
                                             ProgressView()
                                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                                 .scaleEffect(0.8)
@@ -156,9 +159,9 @@ struct PremiumUpgradeView: View {
                                     .cornerRadius(16)
                                     .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 8, x: 0, y: 4)
                                 }
-                                .disabled(storeManager.isLoading)
-                                .scaleEffect(storeManager.isLoading ? 0.98 : 1.0)
-                                .animation(.easeInOut(duration: 0.1), value: storeManager.isLoading)
+                                .disabled(isButtonLoading && !isPreview)
+                                .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
+                                .animation(.easeInOut(duration: 0.1), value: isButtonLoading)
                                 .accessibilityLabel("Purchase Pillr Premium for \(product.displayPrice)")
                             } else {
                                 Button(action: {
@@ -166,7 +169,7 @@ struct PremiumUpgradeView: View {
                                     showingAlert = true
                                 }) {
                                     HStack {
-                                        if storeManager.isLoading {
+                                        if isButtonLoading && !isPreview {
                                             ProgressView()
                                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                                 .scaleEffect(0.8)
@@ -195,7 +198,7 @@ struct PremiumUpgradeView: View {
                                     .cornerRadius(16)
                                     .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 8, x: 0, y: 4)
                                 }
-                                .disabled(storeManager.isLoading)
+                                .disabled(isButtonLoading && !isPreview)
                                 .accessibilityLabel("Purchase Pillr Premium for $9.99")
                             }
                             
@@ -210,23 +213,8 @@ struct PremiumUpgradeView: View {
                             }
                             .accessibilityLabel("Continue with free version of Pillr")
                             
-                            // Terms and restore
+                            // Restore purchases
                             HStack {
-                                Button(action: {
-                                    // Show terms
-                                    if let url = URL(string: "https://pillr.app/terms") {
-                                        UIApplication.shared.open(url)
-                                    }
-                                }) {
-                                    Text("Terms of Use")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                        .underline()
-                                }
-                                
-                                Text("•")
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                                
                                 Button(action: {
                                     // Restore purchases
                                     restorePurchases()
@@ -294,15 +282,14 @@ struct PremiumUpgradeView: View {
             Text(alertMessage)
         }
         .task {
-            // Load products when view appears
-            await storeManager.loadProducts()
-            
-            // Check if user has tried core features before seeing upgrade screen
-            hasTriedFeatures = UserDefaults.standard.bool(forKey: "has_used_core_features")
-        }
-        .onAppear {
-            // Check for existing purchases when view appears
-            Task {
+            if !isPreview {
+                // Load products when view appears
+                await storeManager.loadProducts()
+                
+                // Check if user has tried core features before seeing upgrade screen
+                hasTriedFeatures = UserDefaults.standard.bool(forKey: "has_used_core_features")
+                
+                // Check for existing purchases when view appears
                 await storeManager.updatePurchasedProducts()
                 
                 // If user has already purchased premium, dismiss the view
@@ -326,15 +313,18 @@ struct PremiumUpgradeView: View {
                     // Update user settings to reflect premium status
                     OpenAIService.shared.setPremiumPurchased()
                 }
+                isButtonLoading = false
             } catch {
                 // Purchase failed
                 alertMessage = "Purchase failed: \(error.localizedDescription)"
                 showingAlert = true
+                isButtonLoading = false
             }
         }
     }
     
     private func restorePurchases() {
+        isButtonLoading = true
         Task {
             do {
                 // Attempt to restore purchases
@@ -350,9 +340,11 @@ struct PremiumUpgradeView: View {
                     alertMessage = "No purchases found to restore."
                     showingAlert = true
                 }
+                isButtonLoading = false
             } catch {
                 alertMessage = "Failed to restore purchases: \(error.localizedDescription)"
                 showingAlert = true
+                isButtonLoading = false
             }
         }
     }
