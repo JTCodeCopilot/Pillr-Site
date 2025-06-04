@@ -235,3 +235,15 @@ enum StoreError: Error {
         }
     }
 } 
+
+// MARK: - StoreKit Product Extension
+extension Product {
+    /// Returns the price formatted according to the locale of the App Store the product was loaded from.
+    /// This ensures the price is displayed in the correct format for the user's current region.
+    var localizedDisplayPrice: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = priceFormatStyle.locale
+        return formatter.string(from: price as NSNumber) ?? displayPrice
+    }
+} 

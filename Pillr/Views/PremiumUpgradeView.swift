@@ -105,7 +105,7 @@ struct PremiumUpgradeView: View {
                                 if let product = storeManager.getPremiumProduct() {
                                     PricingOption(
                                         title: "Lifetime Premium",
-                                        price: product.displayPrice,
+                                        price: product.localizedDisplayPrice,
                                         period: "one-time payment",
                                         savings: "No subscription required",
                                         isPopular: true,
@@ -139,7 +139,7 @@ struct PremiumUpgradeView: View {
                                         } else {
                                             Image(systemName: "crown.fill")
                                                 .font(.system(size: 16, weight: .bold))
-                                            Text("Purchase - \(product.displayPrice)")
+                                            Text("Purchase - \(product.localizedDisplayPrice)")
                                                 .font(.system(size: 18, weight: .bold))
                                         }
                                     }
@@ -162,7 +162,7 @@ struct PremiumUpgradeView: View {
                                 .disabled(isButtonLoading && !isPreview)
                                 .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
                                 .animation(.easeInOut(duration: 0.1), value: isButtonLoading)
-                                .accessibilityLabel("Purchase Pillr Premium for \(product.displayPrice)")
+                                .accessibilityLabel("Purchase Pillr Premium for \(product.localizedDisplayPrice)")
                             } else {
                                 Button(action: {
                                     alertMessage = "Products are currently unavailable. Please try again later."

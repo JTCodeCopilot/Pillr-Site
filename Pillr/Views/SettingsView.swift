@@ -180,7 +180,7 @@ struct SettingsView: View {
                         
                         if let product = storeManager.getPremiumProduct() {
                             HStack(spacing: 8) {
-                                Text(product.displayPrice)
+                                Text(product.localizedDisplayPrice)
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(Color(hex: "#D7CCC8"))
                                     .padding(.horizontal, 8)
