@@ -3,6 +3,7 @@ import SwiftUI
 struct AISearchMedicationView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var userSettings: UserSettings
+    @EnvironmentObject var storeManager: StoreManager
     @State private var searchQuery = ""
     @State private var isSearching = false
     @State private var searchResults: [MedicationSearchResult] = []
@@ -216,6 +217,7 @@ struct AISearchMedicationView: View {
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
+                .environmentObject(storeManager)
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)

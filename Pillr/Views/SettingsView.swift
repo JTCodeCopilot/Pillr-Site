@@ -42,7 +42,7 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
-                .environmentObject(storeManager)
+                .environmentObject(StoreManager.shared)
         }
         .sheet(isPresented: $showingInteractionHistory) {
             InteractionHistoryView()

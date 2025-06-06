@@ -13,6 +13,7 @@ struct EditMedicationView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject var storeManager: StoreManager
     
     // Passed-in medication to edit
     var medication: Medication
@@ -590,6 +591,7 @@ struct EditMedicationView: View {
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
+                .environmentObject(StoreManager.shared)
         }
     }
     

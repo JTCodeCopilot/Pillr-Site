@@ -3,6 +3,7 @@ import SwiftUI
 struct MedicationInteractionSelectionSheet: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var store: MedicationStore
+    @EnvironmentObject var storeManager: StoreManager
     @State private var selectedMedicationIDs: Set<UUID> = []
     @State private var isCheckingInteractions = false
     @State private var foundInteractions: [DrugInteraction]? = nil
@@ -108,6 +109,7 @@ struct MedicationInteractionSelectionSheet: View {
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
+                .environmentObject(storeManager)
         }
         .onChange(of: showingPremiumUpgrade) { isShowing in
             if !isShowing && OpenAIService.shared.isPremiumUser() {

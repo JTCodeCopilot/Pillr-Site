@@ -119,7 +119,11 @@ struct AddMedicationView: View {
                                                 Spacer()
                                                 Button(action: {
                                                     HapticManager.shared.lightImpact()
-                                                    showingAISearch = true
+                                                    if userSettings.isPremiumUser {
+                                                        showingAISearch = true
+                                                    } else {
+                                                        showingPremiumUpgrade = true
+                                                    }
                                                 }) {
                                                     HStack(spacing: 6) {
                                                         Image(systemName: "magnifyingglass")
@@ -641,6 +645,7 @@ struct AddMedicationView: View {
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
+                .environmentObject(StoreManager.shared)
         }
     }
     
