@@ -18,7 +18,11 @@ class StoreManager: ObservableObject {
     @Published var isLoading = false
     
     // Flag to disable StoreKit for testing
+    #if targetEnvironment(simulator)
+    private let isTestMode = false // Keep this false to allow StoreKit to work in simulator
+    #else
     private let isTestMode = false
+    #endif
     
     private var productsLoaded = false
     private var updateListenerTask: Task<Void, Error>?
@@ -69,7 +73,18 @@ class StoreManager: ObservableObject {
         isLoading = true
         
         do {
+            // Request products with the user's current locale to get proper regional pricing
             let storeProducts = try await Product.products(for: productIdentifiers)
+            
+            // Log the products and their prices for debugging
+            for product in storeProducts {
+                print("Loaded product: \(product.id)")
+                print("  - Display name: \(product.displayName)")
+                print("  - Price: \(product.price) \(product.priceFormatStyle.locale.currencyCode ?? "Unknown")")
+                print("  - Formatted price: \(product.displayPrice)")
+                print("  - Locale: \(product.priceFormatStyle.locale.identifier)")
+            }
+            
             DispatchQueue.main.async { [weak self] in
                 self?.products = storeProducts
                 self?.productsLoaded = true
@@ -214,6 +229,33 @@ class StoreManager: ObservableObject {
         }
         return products.first(where: { $0.id == premiumIdentifier })
     }
+    
+    // Get the localized price for a country if product is not available
+    func getLocalizedFallbackPrice() -> String {
+        let locale = Locale.current
+        let currencyCode = locale.currencyCode ?? "USD"
+        let currencySymbol = locale.currencySymbol ?? "$"
+        let regionCode = locale.regionCode ?? "US"
+        
+        // Fallback prices for different regions
+        let priceMappings: [String: String] = [
+            "US": "9.99",   // USD
+            "AU": "14.99",  // AUD
+            "GB": "7.99",   // GBP
+            "CA": "12.99",  // CAD
+            "EU": "8.99",   // EUR
+            "JP": "1100",   // JPY
+            "NZ": "15.99",  // NZD
+            "IN": "799",    // INR
+        ]
+        
+        // Get the price for the region or fallback to USD
+        let price = priceMappings[regionCode] ?? "9.99"
+        
+        print("Using fallback price for region \(regionCode): \(currencySymbol)\(price) (\(currencyCode))")
+        
+        return "\(currencySymbol)\(price)"
+    }
 }
 
 enum StoreError: Error {
@@ -244,6 +286,13 @@ extension Product {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.locale = priceFormatStyle.locale
-        return formatter.string(from: price as NSNumber) ?? displayPrice
+        
+        // Use the StoreKit's locale for proper regional pricing
+        // This will show prices in the user's local currency (e.g., AUD for Australia)
+        let formattedPrice = formatter.string(from: price as NSNumber) ?? displayPrice
+        
+        print("Product: \(id), Price: \(price), Formatted: \(formattedPrice), Locale: \(priceFormatStyle.locale.identifier)")
+        
+        return formattedPrice
     }
 } 

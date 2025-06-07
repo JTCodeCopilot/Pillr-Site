@@ -13,100 +13,95 @@ struct PremiumUpgradeView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#404C42").ignoresSafeArea()
+                Color(hex: "#525E55").ignoresSafeArea()
                 
                 ScrollView {
-                    VStack(spacing: 32) {
+                    VStack(spacing: 24) {
                         // Header
-                        VStack(spacing: 20) {
+                        VStack(spacing: 14) {
                             ZStack {
                                 Circle()
                                     .fill(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(hex: "#F5F5F5"),
-                                                Color(hex: "#C7A76B")
+                                                Color(hex: "#D4AF37"),
+                                                Color(hex: "#D4AF37")
                                             ]),
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                     )
-                                    .frame(width: 90, height: 90)
-                                    .shadow(color: Color(hex: "#F5F5F5").opacity(0.3), radius: 10, x: 0, y: 5)
+                                    .frame(width: 100, height: 100)
+                                    .shadow(color: Color(hex: "#ffffff").opacity(0.4), radius: 12, x: 0, y: 5)
                                 
                                 Image(systemName: "brain.head.profile")
-                                    .font(.system(size: 40, weight: .bold))
+                                    .font(.system(size: 44, weight: .bold))
                                     .foregroundColor(.white)
                             }
                             .accessibilityHidden(true)
+                            .padding(.top, 10)
                             
-                            VStack(spacing: 12) {
+                            VStack(spacing: 14) {
                                 Text("Pillr Premium")
-                                    .font(.system(size: 28, weight: .bold))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .font(.system(size: 32, weight: .bold))
+                                    .foregroundColor(Color(hex: "#FFFFFF"))
                                 
-                                Text("Advanced Medication Management")
+                                Text("Advanced Management")
                                     .font(.system(size: 22, weight: .bold))
-                                    .foregroundColor(Color(hex: "#F5F5F5"))
+                                    .foregroundColor(Color(hex: "#D4AF37"))
                                 
-                                Text("Enhance your medication tracking with unlimited medications, AI analysis, and advanced features")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 20)
                             }
                         }
-                        .padding(.top, 10)
                         
                         // Features
-                        VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 12) {
                             Text("Premium Features")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(Color(hex: "#FFFFFF"))
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, 4)
                             
                             PremiumFeature(
                                 icon: "pills.fill",
                                 title: "Unlimited Medications",
                                 description: "Track all of your medications without limits",
-                                iconColor: Color(hex: "#F5F5F5")
+                                iconColor: Color(hex: "#D4AF37")
                             )
                             
                             PremiumFeature(
                                 icon: "brain.head.profile",
                                 title: "AI Interaction Analysis",
                                 description: "Check for potential medication interactions",
-                                iconColor: Color(hex: "#F5F5F5")
+                                iconColor: Color(hex: "#D4AF37")
                             )
                             
                             PremiumFeature(
                                 icon: "number.circle.fill",
                                 title: "Pill Count Tracking",
                                 description: "Monitor inventory and get refill reminders",
-                                iconColor: Color(hex: "#F5F5F5")
+                                iconColor: Color(hex: "#D4AF37")
                             )
                             
                             PremiumFeature(
                                 icon: "arrow.clockwise.circle.fill",
                                 title: "Smart Reminders",
                                 description: "Follow-up alerts if you miss a dose",
-                                iconColor: Color(hex: "#F5F5F5")
+                                iconColor: Color(hex: "#D4AF37")
                             )
                         }
                         
                         // Pricing
-                        VStack(spacing: 20) {
-                            Text("One-Time Purchase")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                        VStack(spacing: 24) {
+                            Text("ONE-TIME PURCHASE")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(Color(hex: "#FFFFFF"))
                             
                             VStack(spacing: 12) {
                                 if let product = storeManager.getPremiumProduct() {
                                     PricingOption(
                                         title: "Lifetime Premium",
-                                        price: product.localizedDisplayPrice,
-                                        period: "one-time payment",
+                                        price: product.displayPrice,
+                                        period: "",
                                         savings: "No subscription required",
                                         isPopular: true,
                                         isSelected: true
@@ -114,8 +109,8 @@ struct PremiumUpgradeView: View {
                                 } else {
                                     PricingOption(
                                         title: "Lifetime Premium",
-                                        price: "$9.99",
-                                        period: "one-time payment",
+                                        price: storeManager.getLocalizedFallbackPrice(),
+                                        period: "",
                                         savings: "No subscription required",
                                         isPopular: true,
                                         isSelected: true
@@ -138,31 +133,33 @@ struct PremiumUpgradeView: View {
                                                 .font(.system(size: 18, weight: .semibold))
                                         } else {
                                             Image(systemName: "crown.fill")
-                                                .font(.system(size: 16, weight: .bold))
-                                            Text("Purchase - \(product.localizedDisplayPrice)")
+                                                .font(.system(size: 18, weight: .bold))
+                                            
+                                            Text("Purchase for \(product.displayPrice)")
                                                 .font(.system(size: 18, weight: .bold))
                                         }
                                     }
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
+                                    .padding(.vertical, 18)
                                     .background(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(hex: "#D4A017"),
-                                                Color(hex: "#D4A017")
+                                                Color(hex: "#D4AF37"),
+                                                Color(hex: "#D4AF37")
                                             ]),
                                             startPoint: .top,
                                             endPoint: .bottom
                                         )
                                     )
                                     .cornerRadius(16)
-                                    .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 8, x: 0, y: 4)
+                                    .shadow(color: Color(hex: "#D4AF37").opacity(0.5), radius: 10, x: 0, y: 4)
                                 }
-                                .disabled(isButtonLoading && !isPreview)
+                                .buttonStyle(PlainButtonStyle())
                                 .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
                                 .animation(.easeInOut(duration: 0.1), value: isButtonLoading)
-                                .accessibilityLabel("Purchase Pillr Premium for \(product.localizedDisplayPrice)")
+                                .disabled(isButtonLoading && !isPreview)
+                                .accessibilityLabel("Purchase Pillr Premium for \(product.displayPrice)")
                             } else {
                                 Button(action: {
                                     alertMessage = "Products are currently unavailable. Please try again later."
@@ -177,29 +174,33 @@ struct PremiumUpgradeView: View {
                                                 .font(.system(size: 18, weight: .semibold))
                                         } else {
                                             Image(systemName: "crown.fill")
-                                                .font(.system(size: 16, weight: .bold))
-                                            Text("Purchase - $9.99")
+                                                .font(.system(size: 18, weight: .bold))
+                                            
+                                            Text("Purchase for \(storeManager.getLocalizedFallbackPrice())")
                                                 .font(.system(size: 18, weight: .bold))
                                         }
                                     }
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
+                                    .padding(.vertical, 18)
                                     .background(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(hex: "#D4A017"),
-                                                Color(hex: "#D4A017")
+                                                Color(hex: "#D4AF37"),
+                                                Color(hex: "#D4AF37")
                                             ]),
                                             startPoint: .top,
                                             endPoint: .bottom
                                         )
                                     )
                                     .cornerRadius(16)
-                                    .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 8, x: 0, y: 4)
+                                    .shadow(color: Color(hex: "#D4AF37").opacity(0.5), radius: 10, x: 0, y: 4)
                                 }
+                                .buttonStyle(PlainButtonStyle())
+                                .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
+                                .animation(.easeInOut(duration: 0.1), value: isButtonLoading)
                                 .disabled(isButtonLoading && !isPreview)
-                                .accessibilityLabel("Purchase Pillr Premium for $9.99")
+                                .accessibilityLabel("Purchase Pillr Premium for \(storeManager.getLocalizedFallbackPrice())")
                             }
                             
                             // Continue with free version
@@ -208,56 +209,55 @@ struct PremiumUpgradeView: View {
                             }) {
                                 Text("Continue with Free Version")
                                     .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color(hex: "#CCCCCC"))
                                     .padding(.vertical, 12)
                             }
                             .accessibilityLabel("Continue with free version of Pillr")
                             
                             // Restore purchases
-                            HStack {
-                                Button(action: {
-                                    // Restore purchases
-                                    restorePurchases()
-                                }) {
-                                    Text("Restore Purchases")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                        .underline()
-                                }
+                            Button(action: {
+                                restorePurchases()
+                            }) {
+                                Text("Restore Purchases")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(Color(hex: "#D4AF37"))
+                                    .underline()
+                                    .padding(.vertical, 8)
                             }
-                            .padding(.top, 8)
                         }
                         
                         // Disclaimer
-                        VStack(spacing: 12) {
+                        VStack(spacing: 6) {
                             HStack {
                                 Image(systemName: "info.circle.fill")
-                                    .foregroundColor(.orange)
-                                    .font(.system(size: 16))
+                                    .foregroundColor(Color(hex: "#D4AF37"))
+                                    .font(.system(size: 18))
                                 
                                 Text("Medical Disclaimer")
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .foregroundColor(Color(hex: "#FFFFFF"))
                                 
                                 Spacer()
                             }
                             
                             Text("This app is for tracking purposes only and should not replace professional medical advice. Always consult your healthcare provider regarding your medications.")
                                 .font(.system(size: 14))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .foregroundColor(Color(hex: "#CCCCCC"))
                                 .multilineTextAlignment(.leading)
                         }
-                        .padding(16)
-                        .background(Color.orange.opacity(0.08))
+                        .padding(8)
+                        .background(Color(hex: "#D4AF37").opacity(0.1))
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                                .stroke(Color(hex: "#D4AF37").opacity(0.3), lineWidth: 1)
                         )
                         
-                        Spacer()
+                        Spacer(minLength: 20)
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 32)
                 }
             }
             .navigationTitle("Premium Upgrade")
@@ -267,7 +267,8 @@ struct PremiumUpgradeView: View {
                     Button("Close") {
                         dismiss()
                     }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color(hex: "#FFFFFF"))
+                    .font(.system(size: 16, weight: .medium))
                 }
             }
         }
@@ -283,8 +284,13 @@ struct PremiumUpgradeView: View {
         }
         .task {
             if !isPreview {
-                // Load products when view appears
+                // Force reload products to ensure we get current regional pricing
                 await storeManager.loadProducts()
+                
+                // Log the user's locale for debugging
+                print("User locale: \(Locale.current.identifier)")
+                print("User region: \(Locale.current.regionCode ?? "Unknown")")
+                print("User currency: \(Locale.current.currencyCode ?? "Unknown")")
                 
                 // Check if user has tried core features before seeing upgrade screen
                 hasTriedFeatures = UserDefaults.standard.bool(forKey: "has_used_core_features")
@@ -350,6 +356,13 @@ struct PremiumUpgradeView: View {
     }
 }
 
+// Extension to add computed property for StoreKit Product for automatic price localization
+extension Product {
+    var displayPrice: String {
+        self.localizedDisplayPrice
+    }
+}
+
 struct PremiumFeature: View {
     let icon: String
     let title: String
@@ -357,37 +370,38 @@ struct PremiumFeature: View {
     let iconColor: Color
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 18) {
             ZStack {
                 Circle()
-                    .fill(iconColor.opacity(0.2))
-                    .frame(width: 48, height: 48)
+                    .fill(iconColor.opacity(0.15))
+                    .frame(width: 54, height: 54)
                 
                 Image(systemName: icon)
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(.system(size: 26, weight: .semibold))
                     .foregroundColor(iconColor)
             }
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(Color(hex: "#FFFFFF"))
                 
                 Text(description)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .font(.system(size: 15))
+                    .foregroundColor(Color(hex: "#CCCCCC"))
                     .multilineTextAlignment(.leading)
             }
             
             Spacer()
         }
-        .padding()
-        .background(Color.black.opacity(0.15))
-        .cornerRadius(12)
+        .padding(16)
+        .background(Color.black.opacity(0.2))
+        .cornerRadius(16)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(iconColor.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(iconColor.opacity(0.2), lineWidth: 1)
         )
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -416,11 +430,12 @@ struct PricingOption: View {
                 // Selection indicator
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color(hex: "#D4A017") : Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 2)
-                        .frame(width: 24, height: 24)
+                        .stroke(isSelected ? Color(hex: "#D4AF37") : Color(hex: "#999999").opacity(0.4), lineWidth: 2)
+                        .frame(width: 26, height: 26)
                         .background(
                             Circle()
-                                .fill(isSelected ? Color(hex: "#D4A017") : Color.clear)
+                                .fill(isSelected ? Color(hex: "#D4AF37") : Color.clear)
+                                .frame(width: 26, height: 26)
                         )
                     
                     if isSelected {
@@ -430,19 +445,19 @@ struct PricingOption: View {
                     }
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text(title)
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color(hex: "#FFFFFF"))
                         
                         if isPopular {
                             Text("POPULAR")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
-                                .background(Color(hex: "#D4A017"))
+                                .padding(.vertical, 3)
+                                .background(Color(hex: "#D4AF37"))
                                 .cornerRadius(6)
                         }
                         
@@ -451,54 +466,43 @@ struct PricingOption: View {
                     
                     HStack {
                         Text(price)
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(Color(hex: "#F5F5F5"))
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(Color(hex: "#D4AF37"))
                         
                         Text(period)
-                            .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: "#CCCCCC"))
                         
                         Spacer()
                     }
                     
                     if let savings = savings {
                         Text(savings)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#F5F5F5"))
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(Color(hex: "#CCCCCC"))
                     }
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.vertical, 18)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.black.opacity(isSelected ? 0.3 : 0.15))
+                    .fill(Color.black.opacity(0.25))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(
-                                isSelected ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD").opacity(0.2),
+                                isSelected ? Color(hex: "#D4AF37") : Color(hex: "#999999").opacity(0.2),
                                 lineWidth: isSelected ? 2 : 1
                             )
                     )
             )
+            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
     }
 }
 
-struct TrustIndicator: View {
-    let icon: String
-    let text: String
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#F5F5F5"))
-            
-            Text(text)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD"))
-        }
-    }
-} 
+#Preview {
+    PremiumUpgradeView()
+        .environmentObject(StoreManager())
+}

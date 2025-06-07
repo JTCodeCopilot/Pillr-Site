@@ -12,6 +12,11 @@ struct AISearchMedicationView: View {
     
     var onSelectMedication: (MedicationSearchResult) -> Void
     
+    // Function to dismiss keyboard
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+    
     var body: some View {
         ZStack {
             // Background
@@ -84,6 +89,8 @@ struct AISearchMedicationView: View {
                     // Search button
                     Button(action: {
                         if !searchQuery.isEmpty {
+                            // Dismiss keyboard before initiating search
+                            dismissKeyboard()
                             if userSettings.isPremiumUser {
                                 searchMedications()
                             } else {
@@ -196,6 +203,8 @@ struct AISearchMedicationView: View {
         }
         .onSubmit(of: .text) {
             if !searchQuery.isEmpty && userSettings.isPremiumUser {
+                // Dismiss keyboard when submitting search
+                dismissKeyboard()
                 searchMedications()
             } else if !userSettings.isPremiumUser {
                 showingPremiumUpgrade = true
@@ -342,6 +351,8 @@ struct AISearchMedicationView: View {
     // Search for medications using OpenAI
     private func searchMedications() {
         guard !searchQuery.isEmpty else { return }
+        
+        // We've already dismissed the keyboard in the calling function
         
         isSearching = true
         errorMessage = nil
