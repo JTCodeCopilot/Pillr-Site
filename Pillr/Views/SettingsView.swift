@@ -48,7 +48,8 @@ struct SettingsView: View {
             InteractionHistoryView()
         }
         .task {
-            // Update purchased products when the view appears
+            // Update purchased products and load products when the view appears
+            await storeManager.loadProducts()
             await storeManager.updatePurchasedProducts()
         }
     }
@@ -194,7 +195,7 @@ struct SettingsView: View {
                             }
                         } else {
                             HStack(spacing: 8) {
-                                Text("$9.99")
+                                Text(storeManager.getLocalizedFallbackPrice())
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(Color(hex: "#D7CCC8"))
                                     .padding(.horizontal, 8)

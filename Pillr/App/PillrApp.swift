@@ -103,7 +103,8 @@ struct PillrApp: App {
                     store.checkAndResetBadge()
                 }
                 .task {
-                    // Initialize StoreKit and check for purchases
+                    // Initialize StoreKit, load products and check for purchases
+                    await storeManager.loadProducts()
                     await storeManager.updatePurchasedProducts()
                 }
         }

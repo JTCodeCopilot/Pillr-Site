@@ -102,6 +102,7 @@ struct ContentView: View {
     @State private var showingPrivacyPolicyWebView = false
     @State private var showingFeedbackWebView = false
     @State private var showingContactUsWebView = false
+    @State private var showingAddMedicationSheet = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
 
@@ -152,6 +153,7 @@ struct ContentView: View {
                         showingSettingsView: $showingSettingsView,
                         showingArchivedView: $showingArchivedView,
                         showingMedicationSelectionSheet: $showingMedicationSelectionSheet,
+                        showingAddMedicationSheet: $showingAddMedicationSheet,
                         geometry: geometry
                     )
                 }
@@ -209,6 +211,13 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingContactUsWebView) {
             EmbeddedWebView(url: URL(string: "https://tally.so/r/3qMdL7")!, title: "Contact Us", isPresented: $showingContactUsWebView)
+        }
+        .sheet(isPresented: $showingAddMedicationSheet) {
+            NavigationView {
+                AddMedicationView(onAdd: { showingAddMedicationSheet = false })
+                    .environmentObject(store)
+                    .environmentObject(userSettings)
+            }
         }
     }
 }
@@ -297,6 +306,7 @@ struct PopoutMenuOverlay: View {
     @Binding var showingSettingsView: Bool
     @Binding var showingArchivedView: Bool
     @Binding var showingMedicationSelectionSheet: Bool
+    @Binding var showingAddMedicationSheet: Bool
     let geometry: GeometryProxy
     @State private var animateItems = false
     
@@ -318,66 +328,82 @@ struct PopoutMenuOverlay: View {
                 Spacer()
                 
                 VStack(spacing: 16) {
-                    // Settings button (appears first)
+                    // 1. Add Medication button
                     MenuItemButton(
-                        icon: "gearshape",
-                        title: "Settings",
-                        delay: 0.0, // No delay for first item
+                        icon: "pills",
+                        title: "Add Medication",
+                        delay: 0.0,
                         animateItems: animateItems,
                         action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Reduced delay
-                                showingSettingsView = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                showingAddMedicationSheet = true
                             }
                         }
                     )
                     
-                    // Interaction AI button (now second)
+                    // 2. Interaction AI button
                     MenuItemButton(
                         icon: "brain.head.profile",
                         title: "Interaction AI",
-                        delay: 0.05, // Reduced delay (was for Archived Meds)
+                        delay: 0.05,
                         animateItems: animateItems,
                         action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Reduced delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                                 showingMedicationSelectionSheet = true
                             }
                         }
                     )
                     
-                    // Archived medications button (now third)
+                    // 3. Medication History button
                     MenuItemButton(
-                        icon: "archivebox.fill",
-                        title: "Archived Meds",
-                        delay: 0.1, // Delay that was for Interaction AI
+                        icon: "checklist.checked",
+                        title: "Medication History",
+                        delay: 0.1,
                         animateItems: animateItems,
                         action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Reduced delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                showingLogView = true
+                            }
+                        }
+                    )
+                    
+                    // 4. Archived medications button
+                    MenuItemButton(
+                        icon: "archivebox.fill",
+                        title: "Archived Meds",
+                        delay: 0.15,
+                        animateItems: animateItems,
+                        action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                showingPopoutMenu = false
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                                 showingArchivedView = true
                             }
                         }
                     )
                     
-                    // Log button (appears last)
+                    // 5. Settings button
                     MenuItemButton(
-                        icon: "checklist.checked",
-                        title: "Medication History",
-                        delay: 0.15, // Increased delay for last item
+                        icon: "gearshape",
+                        title: "Settings",
+                        delay: 0.2,
                         animateItems: animateItems,
                         action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 showingPopoutMenu = false
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Reduced delay
-                                showingLogView = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                showingSettingsView = true
                             }
                         }
                     )
@@ -965,6 +991,11 @@ struct SettingsContentView: View {
         .sheet(isPresented: $showingContactUsWebView) {
             EmbeddedWebView(url: URL(string: "https://tally.so/r/3qMdL7")!, title: "Contact Us", isPresented: $showingContactUsWebView)
         }
+        .task {
+            // Load products and update purchased products when the view appears
+            await storeManager.loadProducts()
+            await storeManager.updatePurchasedProducts()
+        }
     }
     
     // Computed property for App Settings section
@@ -1091,7 +1122,7 @@ struct SettingsContentView: View {
                         Spacer()
                         
                         HStack(spacing: 8) {
-                            Text("$9.99")
+                            Text(storeManager.getLocalizedFallbackPrice())
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(Color(hex: "#D7CCC8"))
                                 .padding(.horizontal, 8)
