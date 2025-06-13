@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pillr - Your Smart Medication Reminder</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💊</text></svg>">
+    
+    <!-- Google Fonts: Inter for general text, Playfair Display for intro heading -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Playfair+Display:wght@300;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+/* --- LIQUID GLASS APPLE DESIGN REFINEMENT START --- */
+:root {
+    /* Enhanced glass variables */
+    --glass-bg: rgba(255, 255, 255, 0.18);
+    --glass-bg-dark: rgba(40, 60, 50, 0.28);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-border-dark: rgba(60, 80, 70, 0.25);
+    --glass-highlight: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.12);
+    --glass-blur: 20px;
+    --glass-radius: 28px;
+    --glass-radius-small: 16px;
+    --glass-radius-header: 40px;
+    --glass-tint: rgba(146, 255, 131, 0.1);
+    
+    /* New variables for enhanced effects */
+    --glass-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --glass-intensity: 0.8;
+    --glass-contrast: 1.05;
+
+    /* Pillr App Inspired Colors */
+    --color-primary: #00676A; /* Deep Teal / Blue-Green */
+    --color-secondary: #92FF83; /* Bright Lime Green */
+    --color-dark: #1A1A1A; /* Very Dark Gray for strong elements/footer */
+    --color-light-background: #F8F9FA; /* Off-White / Light Gray for main backgrounds (matches image background) */
+    --color-white: #ffffff;
+    --color-text: #34495E; /* General Body Text for nav links etc. */
+
+    /* Liquid Glass Specific Colors (removed from elements not in view in the image) */
+    --soft-shadow: rgba(0, 0, 0, 0.05); /* Softer shadow as seen in the image */
+
+    /* Typography */
+    --font-serif: 'Playfair Display', serif;
+    --font-body: 'Inter', sans-serif;
+
+    /* Spacing & Sizing */
+    --container-width: 1100px;
+    --border-radius-btn: 12px; /* Slightly more rounded buttons */
+}
+
+body {
+    font-family: var(--font-body);
+    line-height: 1.6;
+    color: var(--color-text);
+    background-color: #DAD1C2;
+    overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+header {
+    background-color: #394B38;
+    backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-intensity))) saturate(180%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-intensity))) saturate(180%);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 
+        0 4px 30px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    border-bottom-left-radius: var(--glass-radius-header);
+    border-bottom-right-radius: var(--glass-radius-header);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 25px 0;
+    transition: var(--glass-transition);
+}
+
+/* Added footer styles to match header */
+footer {
+    background-color: #394B38;
+    backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-intensity))) saturate(180%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-intensity))) saturate(180%);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 
+        0 -4px 30px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    border-top-left-radius: var(--glass-radius-header);
+    border-top-right-radius: var(--glass-radius-header);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 25px 0;
+    transition: var(--glass-transition);
+}
+
+footer:hover {
+    --glass-intensity: 1;
+    --glass-contrast: 1.08;
+    transform: translateY(0) scale(var(--glass-contrast));
+    box-shadow: 
+        0 -8px 40px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+}
+
+header:hover {
+    --glass-intensity: 1;
+    --glass-contrast: 1.08;
+    transform: translateY(0) scale(var(--glass-contrast));
+    box-shadow: 
+        0 8px 40px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    border: 1.5px solid var(--color-secondary);
+}
+
+nav ul li a {
+    color: #fff;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.08);
+}
+nav ul li a:hover {
+    color: var(--color-secondary);
+}
+
+.intro-section {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        rgba(146, 255, 131, 0.08) 100%
+    );
+    border-radius: var(--glass-radius);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
+    border: 1.5px solid var(--glass-border);
+    margin-top: 110px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+    transition: var(--glass-transition);
+}
+
+.intro-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+        circle at center,
+        rgba(146, 255, 131, 0.1) 0%,
+        transparent 60%
+    );
+    opacity: 0.6;
+    pointer-events: none;
+    animation: float 15s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(2%, 2%) rotate(1deg); }
+    50% { transform: translate(0, 4%) rotate(0deg); }
+    75% { transform: translate(-2%, 2%) rotate(-1deg); }
+}
+
+.intro-title {
+    color: #ffffff; /* White color for all text */
+    -webkit-text-fill-color: #ffffff; /* For WebKit browsers */
+    text-fill-color: #ffffff; /* Standard property */
+    filter: drop-shadow(0 2px 8px rgba(146,255,131,0.08));
+    /* Ensure all text in title is white by default */
+    --text-color: #ffffff;
+}
+.intro-title .pillr-highlight {
+    color: #485744 !important; /* Solid green color with !important */
+    font-style: italic;
+    -webkit-text-fill-color: #485744 !important; /* For WebKit browsers */
+    text-fill-color: #485744 !important; /* Ensure consistent color across browsers */
+}
+
+.intro-actions a {
+    background: transparent; /* Removed the glass background */
+    border-radius: var(--glass-radius-small);
+    box-shadow: none; /* Removed the shadow */
+    border: none; /* Removed the border */
+    backdrop-filter: none; /* Removed the blur effect */
+    -webkit-backdrop-filter: none; /* Removed the blur effect */
+    transition: none; /* Removed the transition */
+}
+.intro-actions a:hover {
+    box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.18);
+    border: 1.5px solid var(--color-secondary);
+}
+
+/* Make App Store button larger */
+.app-store-button img {
+    width: 280px;
+    height: auto;
+    max-width: 90vw;
+    transition: transform 0.3s ease;
+}
+
+.app-store-button:hover img {
+    transform: scale(1.05);
+}
+
+.scroll-down-indicator {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    font-size: 2.2rem;
+    z-index: 999;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: float-down 3s ease-in-out infinite;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 1; /* Initially visible */
+    pointer-events: auto; /* Initially clickable */
+}
+
+/* Added scroll-up indicator styles */
+.scroll-up-indicator {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    font-size: 2.2rem;
+    z-index: 1001;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: float-up 3s ease-in-out infinite;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 0; /* Initially hidden */
+    pointer-events: none; /* Initially not clickable */
+}
+
+.scroll-down-indicator i {
+    display: block;
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+    font-size: 1.8rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    top: 0;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Added scroll-up indicator icon styles */
+.scroll-up-indicator i {
+    display: block;
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+    font-size: 1.8rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    top: 0;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.scroll-down-indicator:hover {
+    transform: translateX(-50%) translateY(-4px);
+}
+
+.scroll-up-indicator:hover {
+    transform: translateX(-50%) translateY(-4px);
+}
+
+.scroll-down-indicator:hover i {
+    transform: translateY(4px);
+    color: #ffffff;
+    text-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.scroll-up-indicator:hover i {
+    transform: translateY(-4px);
+    color: #ffffff;
+    text-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+@keyframes float-down {
+    0%, 100% {
+        transform: translateX(-50%) translateY(0);
+    }
+    50% {
+        transform: translateX(-50%) translateY(8px);
+    }
+}
+
+@keyframes float-up {
+    0%, 100% {
+        transform: translateX(-50%) translateY(0);
+    }
+    50% {
+        transform: translateX(-50%) translateY(-8px);
+    }
+}
+
+/* Features section */
+.features-section {
+    position: relative;
+    background: #DDD8BE;
+    border-radius: var(--glass-radius);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin: 0;
+    border: 1px solid rgba(200, 220, 200, 0.3);
+    padding: 64px 0 56px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 2;
+    min-width: 300px;
+}
+
+/* Feature card styles */
+.feature-card {
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Feature section container */
+.features-section .container {
+    position: relative;
+    z-index: 1;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 28px;
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    padding: 0 24px;
+}
+.feature-card {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.08) 100%
+    );
+    border-radius: var(--glass-radius-small);
+    box-shadow: 
+        0 8px 40px rgba(0, 0, 0, 0.15),
+        0 4px 20px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    padding: 32px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    opacity: 0;
+    transition: var(--glass-transition);
+}
+
+.feature-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 
+        0 16px 60px rgba(0, 0, 0, 0.2),
+        0 8px 30px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.feature-card:hover::before {
+    opacity: 1;
+    transform: translateY(0);
+}
+.feature-icon {
+    color: var(--color-primary);
+    filter: drop-shadow(0 1px 4px rgba(146,255,131,0.10));
+}
+
+.btn {
+    background: linear-gradient(120deg, rgba(255,255,255,0.22) 0%, var(--color-primary) 100%);
+    color: var(--color-dark);
+    border-radius: var(--glass-radius-small);
+    border: 1.2px solid var(--glass-border);
+    box-shadow: 0 2px 12px 0 rgba(31, 38, 135, 0.10);
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    transition: box-shadow 0.2s, border 0.2s, background 0.2s;
+}
+.btn:hover {
+    background: linear-gradient(120deg, var(--color-secondary) 0%, #fff 100%);
+    color: var(--color-dark);
+    border: 1.5px solid var(--color-secondary);
+    box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.18);
+}
+.btn.secondary {
+    background: linear-gradient(120deg, rgba(146,255,131,0.22) 0%, #fff 100%);
+    color: var(--color-dark);
+}
+.btn.secondary:hover {
+    background: linear-gradient(120deg, #79d16b 0%, #fff 100%);
+    color: var(--color-dark);
+}
+
+/* Responsive glassmorphism tweaks */
+@media (max-width: 900px) {
+    .intro-section, .features-section, .screenshots-section {
+        border-radius: 18px;
+    }
+}
+@media (max-width: 600px) {
+    .intro-section, .features-section, .screenshots-section {
+        border-radius: 10px;
+        margin: 10px 0;
+    }
+    .feature-card, .screenshot-img, .intro-screenshot {
+        border-radius: 8px;
+    }
+}
+/* --- LIQUID GLASS APPLE DESIGN REFINEMENT END --- */
+
+/* General Reset & Box-sizing */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Utility Classes */
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* NEW: Minimal Intro Section (Matching Image Precisely) */
+.intro-section {
+    min-height: calc(100vh - 80px); /* Full viewport height minus header height (approx) */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.intro-section .intro-title {
+    font-family: var(--font-serif);
+    font-size: 5rem;
+    font-weight: 700; /* Bolder font weight for "The Pillr..." text as seen in image */
+    color: var(--color-dark);
+    line-height: 1.1;
+    margin-bottom: 40px;
+    max-width: 900px;
+}
+
+.intro-section .intro-title .pillr-highlight {
+    color: #485744 !important; /* Solid green color with !important */
+    font-style: italic;
+    -webkit-text-fill-color: #485744 !important; /* For WebKit browsers */
+}
+
+.intro-section .intro-btn {
+    margin-top: 20px;
+}
+
+.features-section {
+    padding: 40px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.features-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(146,255,131,0.05) 100%);
+    z-index: -1;
+}
+
+.features-title {
+    font-family: var(--font-serif);
+    font-size: 2.2rem;
+    color: var(--color-dark);
+    margin: 0 auto 30px;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: -0.5px;
+    position: relative;
+    display: inline-block;
+    padding: 0 24px;
+}
+
+.features-title::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: #4B5847;
+    border-radius: 3px;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 28px;
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    padding: 0 24px;
+}
+
+.feature-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border-radius: var(--glass-radius);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.feature-card:hover::before {
+    opacity: 1;
+}
+
+.feature-icon {
+    font-size: 2.2rem;
+    color: var(--color-primary);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.feature-content p {
+    font-size: 1.02rem;
+    color: #5a6c7d;
+    margin: 0;
+    font-weight: 400;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+.feature-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+}
+
+.feature-card:hover::after {
+    transform: scaleX(1);
+}
+.intro-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 48px;
+}
+.intro-screenshot-col {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.intro-screenshot {
+    width: 320px;
+    max-width: 95vw;
+    border-radius: 24px;
+    box-shadow: 0 6px 32px rgba(0,0,0,0.13);
+    margin: 0;
+    display: block;
+    border-bottom-left-radius: 24px; /* Rounded bottom-left corner */
+    border-bottom-right-radius: 24px; /* Rounded bottom-right corner */
+}
+
+.screenshots-section {
+    background: #444C43;
+    padding: 64px 0 56px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+}
+.screenshots-container {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: center;
+    max-width: 900px;
+    margin: 0 auto;
+    flex: 1;
+    min-width: 300px;
+    align-items: center;
+    justify-content: center;
+}
+.screenshot-item img {
+    width: 320px;
+    max-width: 90vw;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    background: #394B38;
+    display: block;
+}
+
+/* --- MOBILE IMPROVEMENTS START --- */
+
+@media (max-width: 900px) {
+    .intro-flex {
+        flex-direction: column;
+        gap: 32px;
+    }
+    .intro-screenshot {
+        width: 90vw;
+        max-width: 400px;
+    }
+    .intro-screenshot-col {
+        width: 100%;
+    }
+    .screenshots-container {
+        flex-direction: column;
+        gap: 28px;
+    }
+    .screenshot-item img {
+        width: 95vw;
+        max-width: 400px;
+    }
+    .intro-section .intro-title {
+        font-size: 4rem;
+    }
+}
+
+@media (max-width: 768px) {
+    header .container {
+        flex-direction: column;
+        align-items: flex-end;
+        padding: 0 8px;
+    }
+    nav ul {
+        margin-top: 15px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    nav ul li {
+        margin: 5px 10px;
+    }
+    .intro-section {
+        min-height: calc(100vh - 120px); /* Adjust height for condensed header */
+    }
+    .intro-section .intro-title {
+        font-size: 3rem;
+        margin-bottom: 30px;
+    }
+    .intro-section .intro-btn {
+        padding: 15px 30px;
+        font-size: 1rem;
+    }
+    .features-grid {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .feature-card {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+}
+
+@media (max-width: 600px) {
+  /* General Mobile Setup */
+  header, footer, .scroll-up-indicator {
+    display: none;
+  }
+  main {
+    padding-bottom: 0;
+  }
+
+  /* Scroll Down Indicator */
+  .scroll-down-indicator {
+    display: block;
+    bottom: 30px;
+    animation: float-down 3s ease-in-out infinite;
+  }
+  .scroll-down-indicator i {
+    color: #485744;
+    text-shadow: none;
+    font-size: 2.5rem;
+  }
+
+  /* Intro Section */
+  .intro-section {
+    padding: 20px;
+    min-height: 100vh;
+    justify-content: center;
+  }
+  .intro-flex {
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+  }
+  .intro-text {
+    flex: 0 1 auto;
+    text-align: center !important;
+  }
+  .intro-title {
+    font-size: 3.5rem !important;
+    margin-bottom: 0 !important;
+  }
+  .intro-actions {
+    flex: 0 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px !important;
+    width: 100% !important;
+    align-items: center !important;
+    margin-top: 80px !important;
+  }
+  .intro-actions a {
+    margin-top: 0;
+    max-width: 600px !important;
+  }
+  .intro-screenshot-col {
+    display: none;
+  }
+  
+  /* Features Section */
+  .features-section {
+    padding: 32px 10px;
+  }
+  .features-title {
+    font-size: 2rem;
+    margin-bottom: 24px;
+  }
+  .features-grid {
+    gap: 16px;
+  }
+  .feature-card {
+    padding: 16px 12px;
+    border-radius: 12px;
+    gap: 12px;
+    flex-direction: row;
+    align-items: center;
+  }
+  .feature-icon {
+    font-size: 1.2rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+  .feature-content h3 {
+    font-size: 1rem;
+  }
+  .feature-content p {
+    font-size: 0.95rem;
+  }
+
+  /* Screenshots Section */
+  .screenshots-container {
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 10px 10px 10px;
+    justify-content: flex-start;
+  }
+  .screenshots-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 15px;
+  }
+  .screenshot-item {
+    flex-shrink: 0;
+  }
+  .screenshot-item img {
+    width: 70vw;
+    max-width: 280px;
+    border-radius: 16px;
+  }
+}
+
+/* Add padding to main content to accommodate fixed footer */
+main {
+    padding-bottom: 100px;
+}
+
+/* --- MOBILE IMPROVEMENTS END --- */
+
+@media (min-width: 768px) {
+    .feature-card {
+        padding: 40px; /* Adjust as needed */
+        font-size: 1.2rem; /* Adjust as needed */
+    }
+}
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+        </div>
+    </header>
+
+    <main>
+        <!-- ONLY this section remains, styled to match the image -->
+        <section class="intro-section">
+            <div class="container intro-flex">
+                <div class="intro-text">
+                    <h1 class="intro-title">
+                        The <span class="pillr-highlight">Pillr</span> of medication<br>
+                        tracking.
+                    </h1>
+                    <div class="intro-actions">
+                        <a href="https://apps.apple.com/us/app/pillr-medication-reminder/id6746717689?itscg=30200&itsct=apps_box_badge&mttnsubad=6746717689" class="app-store-button">
+                            <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/white/en-us?releaseDate=1749168000" alt="Download on the App Store" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-down-indicator">
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </section>
+        <!-- Features and Carousel Section -->
+        <section class="features-carousel-container">
+            <div class="features-section">
+                <div>
+                    <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-pills"></i></div>
+                <div class="feature-content">
+                    <h3>Medication Management Made Easy</h3>
+                    <p>Create detailed medication profiles including dosages, schedules, and frequencies for easy organisation. Our intuitive interface makes managing your medications simple and stress-free.</p>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-bell"></i></div>
+                <div class="feature-content">
+                    <h3>Smart Reminders</h3>
+                    <p>Never miss a dose with our intelligent notification system that keeps you on track with your medication schedule.</p>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="feature-content">
+                    <h3>Progress Tracking</h3>
+                    <p>Visualize your medication adherence and health progress with beautiful, easy-to-understand charts.</p>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="feature-content">
+                    <h3>Custom Schedules</h3>
+                    <p>Set up personalized medication schedules that fit your unique routine, no matter how complex your regimen may be.</p>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="feature-content">
+                    <h3>Privacy First</h3>
+                    <p>Your health data stays on your device, protected by industry-leading security measures.</p>
+                </div>
+            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="screenshots-container">
+                <div class="screenshots-grid">
+                    <div class="screenshot-item">
+                        <img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/44/57/7c/44577cac-460c-d203-c88e-85872da866f1/4d.png/460x0w.webp" alt="Pillr app screenshot 3" />
+                    </div>
+                    <div class="screenshot-item">
+                        <img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/26/6e/b4/266eb4a9-2c59-6c6b-ba72-f22361f09f3e/2.png/460x0w.webp" alt="Pillr app screenshot 4" />
+                    </div>
+                    <div class="screenshot-item">
+                        <img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/c2/27/ee/c227eecb-b907-623d-0e5d-be2e897e16a3/2b.png/460x0w.webp" alt="Pillr app screenshot 2" />
+                    </div>
+                    <div class="screenshot-item">
+                        <img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/23/91/1e/23911ece-47b0-12f5-aa46-78ba04799f81/1a.png/460x0w.webp" alt="Pillr app screenshot 1" />
+                    </div>
+                </div>
+            </div>
+        </section>
+        <style>
+            .features-carousel-container {
+                display: flex;
+                flex-wrap: wrap;
+                width: 100%;
+                padding: 20px;
+                gap: 20px;
+            }
+            
+            .screenshots-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                max-width: 100%;
+            }
+            
+            .screenshot-item {
+                overflow: hidden;
+                border-radius: 15px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                transition: transform 0.3s ease;
+            }
+            
+            .screenshot-item:hover {
+                transform: translateY(-5px);
+            }
+            
+            .screenshot-item img {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+        </style>
+        <!-- Features section moved into the features-carousel-container -->
+    </main>
+
+    <!-- Added footer that matches header style -->
+    <footer>
+        <div class="container">
+        </div>
+        <div class="scroll-up-indicator">
+            <i class="fas fa-chevron-up"></i>
+        </div>
+    </footer>
+
+    <!-- Removed all other sections and footer -->
+
+    <script>
+        // Scroll indicator
+        window.addEventListener('scroll', () => {
+          const scrollDownIndicator = document.querySelector('.scroll-down-indicator');
+          const scrollUpIndicator = document.querySelector('.scroll-up-indicator');
+          const header = document.querySelector('header');
+          const footer = document.querySelector('footer');
+          
+          if (window.scrollY > 20) {
+            scrollDownIndicator.style.opacity = "0";
+            scrollDownIndicator.style.pointerEvents = "none";
+            scrollUpIndicator.style.opacity = "1";
+            scrollUpIndicator.style.pointerEvents = "auto";
+            
+            // Make header and footer transparent when scrolling
+            header.classList.add('transparent');
+            footer.classList.add('transparent');
+          } else {
+            scrollDownIndicator.style.opacity = "1";
+            scrollDownIndicator.style.pointerEvents = "auto";
+            scrollUpIndicator.style.opacity = "0";
+            scrollUpIndicator.style.pointerEvents = "none";
+            
+            // Restore original appearance when back at top
+            header.classList.remove('transparent');
+            footer.classList.remove('transparent');
+          }
+        });
+
+        // Added scroll-to-top functionality
+        document.querySelector('.scroll-up-indicator').addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Add click handler for scroll down
+        document.querySelector('.scroll-down-indicator').addEventListener('click', () => {
+            const featuresSection = document.querySelector('.features-section');
+            featuresSection.scrollIntoView({ behavior: 'smooth' });
+        });
+        
+    </script>
+    
+    <style>
+        /* Glass appearance for header and footer when scrolling */
+        header.transparent, footer.transparent {
+            background: rgba(57, 75, 56, 0.25) !important; /* More transparent version of #394B38 */
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</body>
+</html>
