@@ -360,7 +360,7 @@ nav ul li a:hover {
 /* Features section */
 .features-section {
     position: relative;
-    background: #DDD8BE;
+    background: transparent;
     border-radius: var(--glass-radius);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     overflow: hidden;
@@ -400,19 +400,12 @@ nav ul li a:hover {
     padding: 0 24px;
 }
 .feature-card {
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.18) 0%,
-        rgba(255, 255, 255, 0.08) 100%
-    );
+    background: transparent;
     border-radius: var(--glass-radius-small);
-    box-shadow: 
-        0 8px 40px rgba(0, 0, 0, 0.15),
-        0 4px 20px rgba(0, 0, 0, 0.1),
-        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1.5px solid rgba(255, 255, 255, 0.25);
+    box-shadow: none;
+    border: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     padding: 32px;
     transition: all 0.3s ease;
     position: relative;
@@ -544,7 +537,7 @@ nav ul li a:hover {
     padding: 40px 0;
     position: relative;
     overflow: hidden;
-    background: #DED9BF;
+    background: transparent;
 }
 
 .features-section::before {
@@ -593,11 +586,12 @@ nav ul li a:hover {
 }
 
 .feature-card {
-    background: #E2D8C5;
+    background: transparent;
     border-radius: var(--glass-radius);
-    backdrop-filter: blur(16px) saturate(160%);
-    -webkit-backdrop-filter: blur(16px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: none;
+    border: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     padding: 32px;
     display: flex;
     flex-direction: column;
@@ -606,7 +600,6 @@ nav ul li a:hover {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
 }
 
 .feature-card::before {
@@ -616,15 +609,15 @@ nav ul li a:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+    background: transparent;
     opacity: 0;
     transition: opacity 0.4s ease;
 }
 
 .feature-card:hover {
     transform: translateY(-8px);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: none;
+    border-color: none;
 }
 
 .feature-card:hover::before {
@@ -634,7 +627,7 @@ nav ul li a:hover {
 .feature-icon {
     font-size: 2.2rem;
     color: var(--color-primary);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+    background: transparent;
     width: 64px;
     height: 64px;
     border-radius: 16px;
@@ -649,7 +642,7 @@ nav ul li a:hover {
 
 .feature-card:hover .feature-icon {
     transform: scale(1.1) rotate(5deg);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
 }
 
 .feature-content p {
@@ -730,7 +723,7 @@ nav ul li a:hover {
     max-width: 90vw;
     border-radius: 24px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-    background: #394B38;
+    background: transparent;
     display: block;
 }
 
@@ -872,9 +865,9 @@ nav ul li a:hover {
     flex-direction: column;
     align-items: center;
     margin-bottom: 20px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
-    background: #E2D8C5;
-    border: 1px solid rgba(0,103,106,0.08);
+    box-shadow: none;
+    background: transparent;
+    border: none;
     text-align: center;
   }
   .feature-icon {
@@ -944,12 +937,12 @@ main {
   margin-bottom: 18px;
   font-size: 2.2rem;
   color: var(--color-primary);
-  box-shadow: 0 2px 10px rgba(0,103,106,0.12);
+  box-shadow: none;
   transition: transform 0.3s, box-shadow 0.3s;
 }
 .feature-card:hover .feature-icon-bg {
   transform: scale(1.08) rotate(3deg);
-  box-shadow: 0 8px 24px rgba(0,103,106,0.18);
+  box-shadow: none;
 }
 .feature-content h3 {
   font-family: var(--font-serif);
@@ -969,17 +962,17 @@ main {
   min-height: 260px;
   align-items: center;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+  box-shadow: none;
   border-radius: 20px;
   padding: 40px 30px;
-  background: #E2D8C5;
+  background: transparent;
   transition: transform 0.2s, box-shadow 0.2s;
-  border: 1px solid rgba(146,255,131,0.08);
+  border: none;
 }
 .feature-card:hover {
   transform: translateY(-8px) scale(1.03);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.32);
-  border: 1.5px solid var(--color-primary);
+  box-shadow: none;
+  border: none;
 }
 .features-title {
   font-family: var(--font-serif);
@@ -1156,6 +1149,115 @@ main {
             }
         </style>
         <!-- Features section moved into the features-carousel-container -->
+
+        <!-- Testimonials Section -->
+        <section class="testimonials-section">
+            <h2 class="testimonials-title">What Our Users Say</h2>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-quote">“Pillr has completely changed how I manage my meds. I used to forget doses all the time, but now I get reminders right when I need them. Simple, reliable, and exactly what I needed.”</div>
+                    <div class="testimonial-author">— Sarah L.</div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-quote">“I’ve tried a few medication trackers, but Pillr is the only one that actually fits my routine. Clean interface, easy to log everything, and no annoying ads. Highly recommend.”</div>
+                    <div class="testimonial-author">— Marcus P.</div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-quote">“Pillr helps me track my prescriptions and supplements in one place. I like that it’s not cluttered with useless features. Just works like it should.”</div>
+                    <div class="testimonial-author">— Angela K.</div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-quote">“After my surgery, I had a strict med schedule. Pillr kept me on track every day. No missed doses, no confusion. Honestly a lifesaver.”</div>
+                    <div class="testimonial-author">— Tom D.</div>
+                </div>
+            </div>
+        </section>
+        <style>
+            .testimonials-section {
+                background: #f8f9fa;
+                border-radius: 24px;
+                box-shadow: 0 4px 24px rgba(44,62,80,0.08);
+                padding: 60px 0 56px 0;
+                margin: 48px auto 0 auto;
+                max-width: 1100px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .testimonials-title {
+                font-family: var(--font-serif);
+                font-size: 2.1rem;
+                color: #394B38;
+                margin-bottom: 38px;
+                font-weight: 700;
+                text-align: center;
+                letter-spacing: -0.5px;
+                position: relative;
+            }
+            .testimonials-title::after {
+                content: '';
+                position: absolute;
+                bottom: -12px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 50px;
+                height: 3px;
+                background: #4B5847;
+                border-radius: 3px;
+            }
+            .testimonials-grid {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 36px;
+                justify-content: center;
+                width: 100%;
+                max-width: 900px;
+            }
+            .testimonial-card {
+                background: #fff;
+                border-radius: 18px;
+                box-shadow: 0 8px 24px rgba(44,62,80,0.12), 0 4px 12px rgba(44,62,80,0.08);
+                padding: 32px 28px;
+                max-width: 340px;
+                flex: 1 1 280px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .testimonial-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 32px rgba(44,62,80,0.16), 0 8px 16px rgba(44,62,80,0.1);
+            }
+            .testimonial-quote {
+                font-size: 1.08rem;
+                color: #34495E;
+                font-style: italic;
+                margin-bottom: 18px;
+                opacity: 0.93;
+            }
+            .testimonial-author {
+                font-size: 1rem;
+                color: #4B5847;
+                font-weight: 600;
+            }
+            @media (max-width: 900px) {
+                .testimonials-section {
+                    padding: 36px 0 36px 0;
+                }
+                .testimonials-title {
+                    font-size: 1.5rem;
+                }
+                .testimonials-grid {
+                    gap: 18px;
+                }
+                .testimonial-card {
+                    padding: 22px 14px;
+                    max-width: 95vw;
+                }
+            }
+        </style>
     </main>
 
     <!-- Added footer that matches header style -->
@@ -1184,8 +1286,8 @@ main {
           if (window.scrollY > 20) {
             scrollDownIndicator.style.opacity = "0";
             scrollDownIndicator.style.pointerEvents = "none";
-            scrollUpIndicator.style.opacity = "1";
-            scrollUpIndicator.style.pointerEvents = "auto";
+            scrollUpIndicator.style.opacity = "0";
+            scrollUpIndicator.style.pointerEvents = "none";
             
             // Make header and footer transparent when scrolling
             header.classList.add('transparent');
@@ -1193,8 +1295,8 @@ main {
           } else {
             scrollDownIndicator.style.opacity = "1";
             scrollDownIndicator.style.pointerEvents = "auto";
-            scrollUpIndicator.style.opacity = "0";
-            scrollUpIndicator.style.pointerEvents = "none";
+            scrollUpIndicator.style.opacity = "1";
+            scrollUpIndicator.style.pointerEvents = "auto";
             
             // Restore original appearance when back at top
             header.classList.remove('transparent');
@@ -1239,31 +1341,30 @@ main {
           margin-bottom: 40px;
         }
         .embed-card {
-          background: #E2D8C5;
-          border-radius: 20px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-          backdrop-filter: blur(16px) saturate(160%);
-          -webkit-backdrop-filter: blur(16px) saturate(160%);
-          border: 1px solid rgba(255,255,255,0.22);
-          padding: 32px;
-          max-width: 1200px;
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          margin: 0 auto;
-        }
+  background: none !important;
+  border-radius: 20px;
+  box-shadow: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 32px;
+  max-width: 1200px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+}
         .embed-card iframe {
-          width: 100%;
-          min-height: 180px;
-          border: none;
-          border-radius: 12px;
-          background: #E2D8C5;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-        }
+  width: 100%;
+  min-height: 180px;
+  border: none;
+  border-radius: 12px;
+  background: none !important;
+  box-shadow: none !important;
+}
     </style>
-    <div class="section-divider"></div>
-    
+
     <script>var d=document,w="https://tally.so/widgets/embed.js",v=function(){"undefined"!=typeof Tally?Tally.loadEmbeds():d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function(e){e.src=e.dataset.tallySrc}))};if("undefined"!=typeof Tally)v();else if(d.querySelector('script[src="'+w+'"]')==null){var s=d.createElement("script");s.src=w,s.onload=v,s.onerror=v,d.body.appendChild(s);}</script>
 </body>
 </html>
