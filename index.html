@@ -360,18 +360,18 @@ nav ul li a:hover {
 /* Features section */
 .features-section {
     position: relative;
-    background: transparent;
-    border-radius: var(--glass-radius);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     overflow: hidden;
-    margin: 0;
-    border: 1px solid rgba(200, 220, 200, 0.3);
-    padding: 64px 0 56px 0;
+    margin: 0 auto;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 60px 0;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    flex: 2;
-    min-width: 300px;
+    max-width: 1200px;
+    width: calc(100% - 40px);
 }
 
 /* Feature card styles */
@@ -394,11 +394,13 @@ nav ul li a:hover {
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 28px;
+    gap: 32px;
+    width: 100%;
     max-width: 1200px;
-    margin: 0 auto 40px;
-    padding: 0 24px;
+    margin: 0 auto 20px;
+    padding: 0 40px;
 }
+
 .feature-card {
     background: transparent;
     border-radius: var(--glass-radius-small);
@@ -654,19 +656,7 @@ nav ul li a:hover {
     opacity: 0.9;
 }
 
-/* .feature-card::after removed */
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.4s ease;
-}
-
+/* Feature card hover effect removed */
 .feature-card:hover::after {
     transform: scaleX(0);
 }
@@ -1112,16 +1102,34 @@ main {
                         </div>
                     </div>
                 </div>
-            </div>
 
+                <!-- Testimonials Section -->
+                <div class="testimonials-container">
+                    <h2 class="testimonials-title">What Our Users Say</h2>
+                    <p class="testimonials-subtitle">Don't just take our word for it - hear from our community</p>
+                    <div class="testimonials-grid">
+                        <div class="testimonial-card">
+                            <div class="testimonial-quote">"Pillr has completely changed how I manage my meds. I used to forget doses all the time, but now I get reminders right when I need them. Simple, reliable, and exactly what I needed."</div>
+                            <div class="testimonial-author">— Sarah L.</div>
+                        </div>
+                        <div class="testimonial-card">
+                            <div class="testimonial-quote">"I've tried a few medication trackers, but Pillr is the only one that actually fits my routine. Clean interface, easy to log everything, and no annoying ads. Highly recommend."</div>
+                            <div class="testimonial-author">— Marcus P.</div>
+                        </div>
+                        <div class="testimonial-card">
+                            <div class="testimonial-quote">"Pillr helps me track my prescriptions and supplements in one place. I like that it's not cluttered with useless features. Just works like it should."</div>
+                            <div class="testimonial-author">— Angela K.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
         <style>
             .features-carousel-container {
-                display: flex;
-                flex-wrap: wrap;
                 width: 100%;
-                padding: 20px;
-                gap: 20px;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 40px 20px;
             }
             
             .screenshots-grid {
@@ -1147,43 +1155,26 @@ main {
                 height: auto;
                 display: block;
             }
-        </style>
-        <!-- Features section moved into the features-carousel-container -->
 
-        <!-- Testimonials Section -->
-        <section class="testimonials-section">
-            <h2 class="testimonials-title">What Our Users Say</h2>
-            <div class="testimonials-grid">
-                <div class="testimonial-card">
-                    <div class="testimonial-quote">“Pillr has completely changed how I manage my meds. I used to forget doses all the time, but now I get reminders right when I need them. Simple, reliable, and exactly what I needed.”</div>
-                    <div class="testimonial-author">— Sarah L.</div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="testimonial-quote">“I’ve tried a few medication trackers, but Pillr is the only one that actually fits my routine. Clean interface, easy to log everything, and no annoying ads. Highly recommend.”</div>
-                    <div class="testimonial-author">— Marcus P.</div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="testimonial-quote">“Pillr helps me track my prescriptions and supplements in one place. I like that it’s not cluttered with useless features. Just works like it should.”</div>
-                    <div class="testimonial-author">— Angela K.</div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="testimonial-quote">“After my surgery, I had a strict med schedule. Pillr kept me on track every day. No missed doses, no confusion. Honestly a lifesaver.”</div>
-                    <div class="testimonial-author">— Tom D.</div>
-                </div>
-            </div>
-        </section>
-        <style>
-            .testimonials-section {
-                background: #f8f9fa;
-                border-radius: 24px;
-                box-shadow: 0 4px 24px rgba(44,62,80,0.08);
-                padding: 60px 0 56px 0;
-                margin: 48px auto 0 auto;
-                max-width: 1100px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
+            /* Testimonials styling */
+            .testimonials-container {
+                width: 100%;
+                max-width: 1200px;
+                margin: 40px auto 0;
+                padding: 0 40px;
+                text-align: center;
             }
+            
+            .testimonials-subtitle {
+                font-size: 1.1rem;
+                color: #5a6c7d;
+                margin-bottom: 40px;
+                max-width: 700px;
+                margin-left: auto;
+                margin-right: auto;
+                line-height: 1.6;
+            }
+
             .testimonials-title {
                 font-family: var(--font-serif);
                 font-size: 2.1rem;
@@ -1194,6 +1185,7 @@ main {
                 letter-spacing: -0.5px;
                 position: relative;
             }
+
             .testimonials-title::after {
                 content: '';
                 position: absolute;
@@ -1205,38 +1197,139 @@ main {
                 background: #4B5847;
                 border-radius: 3px;
             }
+
             .testimonials-grid {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 36px;
-                justify-content: center;
-                width: 100%;
-                max-width: 900px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 30px;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 0 20px;
             }
+
             .testimonial-card {
                 background: #fff;
                 border-radius: 18px;
                 box-shadow: 0 8px 24px rgba(44,62,80,0.12), 0 4px 12px rgba(44,62,80,0.08);
                 padding: 32px 28px;
-                max-width: 340px;
-                flex: 1 1 280px;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+                overflow: hidden;
+                height: 100%;
                 display: flex;
                 flex-direction: column;
-                align-items: center;
-                text-align: center;
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                border: 1px solid rgba(0,0,0,0.04);
             }
+            
+            .testimonial-card::before {
+                content: '"';
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                font-family: 'Playfair Display', serif;
+                font-size: 5rem;
+                color: rgba(74, 85, 104, 0.1);
+                line-height: 1;
+                z-index: 0;
+            }
+
             .testimonial-card:hover {
-                transform: translateY(-4px);
+                transform: translateY(-5px);
                 box-shadow: 0 12px 32px rgba(44,62,80,0.16), 0 8px 16px rgba(44,62,80,0.1);
             }
+
             .testimonial-quote {
-                font-size: 1.08rem;
-                color: #34495E;
-                font-style: italic;
-                margin-bottom: 18px;
-                opacity: 0.93;
+                font-size: 1.05rem;
+                color: #2D3748;
+                margin-bottom: 20px;
+                line-height: 1.7;
+                position: relative;
+                z-index: 1;
+                flex-grow: 1;
+                font-weight: 400;
             }
+
+            .testimonial-author {
+                font-size: 0.95rem;
+                color: #4B5847;
+                font-weight: 600;
+                text-align: right;
+                margin-top: auto;
+                padding-top: 16px;
+                border-top: 1px solid rgba(0,0,0,0.05);
+                position: relative;
+                z-index: 1;
+            }
+
+            @media (max-width: 1024px) {
+                .features-section {
+                    padding: 50px 0;
+                    width: calc(100% - 30px);
+                }
+                
+                .features-grid,
+                .testimonials-container {
+                    padding: 0 30px;
+                }
+                
+                .testimonials-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 24px;
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .features-section {
+                    padding: 40px 0;
+                    width: calc(100% - 20px);
+                    border-radius: 16px;
+                }
+                
+                .features-grid,
+                .testimonials-container {
+                    padding: 0 20px;
+                }
+                
+                .features-grid {
+                    grid-template-columns: 1fr;
+                    gap: 24px;
+                }
+                
+                .testimonials-container {
+                    margin: 40px 0 20px;
+                }
+                
+                .testimonials-title {
+                    font-size: 1.8rem;
+                    margin-bottom: 12px;
+                }
+                
+                .testimonials-subtitle {
+                    font-size: 1rem;
+                    margin-bottom: 24px;
+                    padding: 0;
+                }
+                
+                .testimonials-grid {
+                    grid-template-columns: 1fr;
+                    padding: 0;
+                    gap: 20px;
+                }
+                
+                .testimonial-card {
+                    padding: 22px 18px;
+                    border-radius: 14px;
+                }
+                
+                .testimonial-quote {
+                    font-size: 0.98rem;
+                }
+                
+                .testimonial-author {
+                    font-size: 0.88rem;
+                }
+            }
+
             .testimonial-author {
                 font-size: 1rem;
                 color: #4B5847;
