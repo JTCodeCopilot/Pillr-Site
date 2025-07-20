@@ -14,6 +14,39 @@
     
     <style>
 /* --- LIQUID GLASS APPLE DESIGN REFINEMENT START --- */
+.section-divider {
+    width: 100%;
+    max-width: 440px;
+    height: 18px;
+    margin: 0 auto 32px auto;
+    border-radius: 24px;
+    background: #E2D8C5;
+    box-shadow: none;
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+}
+.section-divider::after {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 200%;
+    height: 4px;
+    background: rgba(255,255,255,0.45);
+    border-radius: 8px;
+    box-shadow: 0 8px 56px 0 rgba(40,48,40,0.45), 0 4px 24px 0 rgba(31,38,135,0.10), 0 0 32px 8px rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px) saturate(130%);
+    -webkit-backdrop-filter: blur(10px) saturate(130%);
+    opacity: 0.85;
+}
+
+
 :root {
     /* Enhanced glass variables */
     --glass-bg: rgba(255, 255, 255, 0.18);
@@ -122,7 +155,7 @@ header:hover {
     box-shadow: 
         0 8px 40px rgba(0, 0, 0, 0.15),
         0 0 0 1px rgba(255, 255, 255, 0.15) inset;
-    border: 1.5px solid var(--color-secondary);
+    /* border removed to eliminate green underline */
 }
 
 nav ul li a {
@@ -193,7 +226,7 @@ nav ul li a:hover {
 }
 
 .intro-actions a {
-    background: transparent; /* Removed the glass background */
+    background: #E2D8C5; /* Removed the glass background */
     border-radius: var(--glass-radius-small);
     box-shadow: none; /* Removed the shadow */
     border: none; /* Removed the border */
@@ -212,6 +245,8 @@ nav ul li a:hover {
     height: auto;
     max-width: 90vw;
     transition: transform 0.3s ease;
+    box-shadow: 0 6px 32px 0 rgba(0,0,0,0.30), 0 1.5px 18px 0 rgba(0,0,0,0.22), 0 0.5px 2px 0 rgba(0,0,0,0.18); /* Deep, layered shadow */
+    border-radius: 16px;
 }
 
 .app-store-button:hover img {
@@ -228,7 +263,7 @@ nav ul li a:hover {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     animation: float-down 3s ease-in-out infinite;
     cursor: pointer;
-    background: transparent;
+    background: #E2D8C5;
     border: none;
     padding: 0;
     box-shadow: none;
@@ -249,7 +284,7 @@ nav ul li a:hover {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     animation: float-up 3s ease-in-out infinite;
     cursor: pointer;
-    background: transparent;
+    background: #E2D8C5;
     border: none;
     padding: 0;
     box-shadow: none;
@@ -491,12 +526,14 @@ nav ul li a:hover {
     line-height: 1.1;
     margin-bottom: 40px;
     max-width: 900px;
+    text-shadow: 0 4px 16px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.10); /* More visible shadow for hero text */
 }
 
 .intro-section .intro-title .pillr-highlight {
     color: #485744 !important; /* Solid green color with !important */
     font-style: italic;
     -webkit-text-fill-color: #485744 !important; /* For WebKit browsers */
+    text-shadow: 0 4px 16px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.10); /* More visible shadow for highlight */
 }
 
 .intro-section .intro-btn {
@@ -507,6 +544,7 @@ nav ul li a:hover {
     padding: 40px 0;
     position: relative;
     overflow: hidden;
+    background: #DED9BF;
 }
 
 .features-section::before {
@@ -555,7 +593,7 @@ nav ul li a:hover {
 }
 
 .feature-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+    background: #E2D8C5;
     border-radius: var(--glass-radius);
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
@@ -828,23 +866,33 @@ nav ul li a:hover {
     gap: 16px;
   }
   .feature-card {
-    padding: 16px 12px;
-    border-radius: 12px;
-    gap: 12px;
-    flex-direction: row;
+    padding: 22px 14px;
+    border-radius: 18px;
+    gap: 14px;
+    flex-direction: column;
     align-items: center;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    background: #E2D8C5;
+    border: 1px solid rgba(0,103,106,0.08);
+    text-align: center;
   }
   .feature-icon {
-    font-size: 1.2rem;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    font-size: 1.5rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    margin-bottom: 8px;
   }
   .feature-content h3 {
-    font-size: 1rem;
+    font-size: 1.18rem;
+    font-weight: 600;
+    margin-bottom: 6px;
   }
   .feature-content p {
-    font-size: 0.95rem;
+    font-size: 1.03rem;
+    line-height: 1.7;
+    opacity: 0.92;
   }
 
   /* Screenshots Section */
@@ -924,7 +972,7 @@ main {
   box-shadow: 0 8px 32px rgba(0,0,0,0.28);
   border-radius: 20px;
   padding: 40px 30px;
-  background: transparent;
+  background: #E2D8C5;
   transition: transform 0.2s, box-shadow 0.2s;
   border: 1px solid rgba(146,255,131,0.08);
 }
@@ -1119,7 +1167,11 @@ main {
         </div>
     </footer>
 
-    <!-- Removed all other sections and footer -->
+    <div class="embed-card-container">
+      <div class="embed-card">
+        <iframe data-tally-src="https://tally.so/embed/3qMdL7?alignLeft=1&transparentBackground=1&dynamicHeight=1" loading="lazy" width="100%" height="180" frameborder="0" marginheight="0" marginwidth="0" title="How can we help? (Pillr)"></iframe>
+      </div>
+    </div>
 
     <script>
         // Scroll indicator
@@ -1175,6 +1227,43 @@ main {
             transition: all 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        .tally-embed-container {
+            margin-bottom: 32px;
+        }
+        .embed-card-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+          margin-top: 36px;
+          margin-bottom: 40px;
+        }
+        .embed-card {
+          background: #E2D8C5;
+          border-radius: 20px;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+          backdrop-filter: blur(16px) saturate(160%);
+          -webkit-backdrop-filter: blur(16px) saturate(160%);
+          border: 1px solid rgba(255,255,255,0.22);
+          padding: 32px;
+          max-width: 1200px;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin: 0 auto;
+        }
+        .embed-card iframe {
+          width: 100%;
+          min-height: 180px;
+          border: none;
+          border-radius: 12px;
+          background: #E2D8C5;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
     </style>
+    <div class="section-divider"></div>
+    
+    <script>var d=document,w="https://tally.so/widgets/embed.js",v=function(){"undefined"!=typeof Tally?Tally.loadEmbeds():d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function(e){e.src=e.dataset.tallySrc}))};if("undefined"!=typeof Tally)v();else if(d.querySelector('script[src="'+w+'"]')==null){var s=d.createElement("script");s.src=w,s.onload=v,s.onerror=v,d.body.appendChild(s);}</script>
 </body>
 </html>
