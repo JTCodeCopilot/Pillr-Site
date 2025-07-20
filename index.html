@@ -203,7 +203,7 @@ nav ul li a:hover {
 }
 .intro-actions a:hover {
     box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.18);
-    border: 1.5px solid var(--color-secondary);
+    border: 1.5px solid var(--color-primary);
 }
 
 /* Make App Store button larger */
@@ -623,7 +623,7 @@ nav ul li a:hover {
     opacity: 0.9;
 }
 
-.feature-card::after {
+/* .feature-card::after removed */
     content: '';
     position: absolute;
     bottom: 0;
@@ -637,20 +637,23 @@ nav ul li a:hover {
 }
 
 .feature-card:hover::after {
-    transform: scaleX(1);
+    transform: scaleX(0);
 }
+
 .intro-flex {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 48px;
 }
+
 .intro-screenshot-col {
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
 }
+
 .intro-screenshot {
     width: 320px;
     max-width: 95vw;
@@ -670,6 +673,7 @@ nav ul li a:hover {
     align-items: center;
     margin: 0;
 }
+
 .screenshots-container {
     display: flex;
     gap: 40px;
@@ -682,6 +686,7 @@ nav ul li a:hover {
     align-items: center;
     justify-content: center;
 }
+
 .screenshot-item img {
     width: 320px;
     max-width: 90vw;
@@ -878,6 +883,103 @@ main {
         font-size: 1.2rem; /* Adjust as needed */
     }
 }
+
+/* --- Feature Card Visual Enhancements --- */
+.feature-icon-bg {
+  background: none;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  font-size: 2.2rem;
+  color: var(--color-primary);
+  box-shadow: 0 2px 10px rgba(0,103,106,0.12);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.feature-card:hover .feature-icon-bg {
+  transform: scale(1.08) rotate(3deg);
+  box-shadow: 0 8px 24px rgba(0,103,106,0.18);
+}
+.feature-content h3 {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #34495E;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+.feature-content p {
+  font-size: 1.06rem;
+  color: #5a6c7d;
+  line-height: 1.7;
+  opacity: 0.92;
+}
+.feature-card {
+  min-height: 260px;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+  border-radius: 20px;
+  padding: 40px 30px;
+  background: transparent;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid rgba(146,255,131,0.08);
+}
+.feature-card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.32);
+  border: 1.5px solid var(--color-primary);
+}
+.features-title {
+  font-family: var(--font-serif);
+  font-size: 2.3rem;
+  color: #1A1A1A;
+  margin-bottom: 36px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: -0.5px;
+  position: relative;
+  display: block;
+}
+.features-title::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 3px;
+}
+
+@media (max-width: 768px) {
+  .feature-icon-bg {
+    width: 48px;
+    height: 48px;
+    font-size: 1.3rem;
+    margin-bottom: 0;
+  }
+  .feature-content h3 {
+    font-size: 1.1rem;
+  }
+  .feature-content p {
+    font-size: 0.97rem;
+  }
+  .feature-card {
+    min-height: unset;
+    padding: 18px 10px;
+    border-radius: 14px;
+  }
+  .features-title {
+    font-size: 1.35rem;
+    margin-bottom: 22px;
+  }
+}
+
     </style>
 </head>
 <body>
@@ -910,63 +1012,67 @@ main {
         <!-- Features and Carousel Section -->
         <section class="features-carousel-container">
             <div class="features-section">
-                <div>
-                    <div class="features-grid">
+
+                <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon"><i class="fas fa-pills"></i></div>
+                <div class="feature-icon-bg">
+                  <i class="fas fa-pills"></i>
+                </div>
                 <div class="feature-content">
-                    <h3>Medication Management Made Easy</h3>
-                    <p>Create detailed medication profiles including dosages, schedules, and frequencies for easy organisation. Our intuitive interface makes managing your medications simple and stress-free.</p>
+                  <h3>Medication Management</h3>
+                  <p>Organize all your meds, dosages, and schedules in one stress-free place.</p>
                 </div>
             </div>
             <div class="feature-card">
-                <div class="feature-icon"><i class="fas fa-bell"></i></div>
+                <div class="feature-icon-bg">
+                  <i class="fas fa-bell"></i>
+                </div>
                 <div class="feature-content">
-                    <h3>Smart Reminders</h3>
-                    <p>Never miss a dose with our intelligent notification system that keeps you on track with your medication schedule.</p>
+                  <h3>Smart Reminders</h3>
+                  <p>Never miss a dose - get intelligent notifications right on time.</p>
                 </div>
             </div>
             <div class="feature-card">
-                <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="feature-icon-bg">
+                  <i class="fas fa-chart-line"></i>
+                </div>
                 <div class="feature-content">
-                    <h3>Progress Tracking</h3>
-                    <p>Visualize your medication adherence and health progress with beautiful, easy-to-understand charts.</p>
+                  <h3>Progress Tracking</h3>
+                  <p>Visualize your adherence and health progress.</p>
                 </div>
             </div>
             <div class="feature-card">
-                <div class="feature-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="feature-icon-bg">
+                  <i class="fas fa-calendar-alt"></i>
+                </div>
                 <div class="feature-content">
-                    <h3>Custom Schedules</h3>
-                    <p>Set up personalized medication schedules that fit your unique routine, no matter how complex your regimen may be.</p>
+                  <h3>Custom Schedules</h3>
+                  <p>Personalize medication routines to fit your unique lifestyle.</p>
                 </div>
             </div>
             <div class="feature-card">
-                <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="feature-icon-bg">
+                  <i class="fas fa-robot"></i>
+                </div>
                 <div class="feature-content">
-                    <h3>Privacy First</h3>
-                    <p>Your health data stays on your device, protected by industry-leading security measures.</p>
+                  <h3>AI Medication Safety</h3>
+                  <p>AI is built-in to help you avoid medication interactions and to smartly add new meds based on your needs - making your health management safer and easier.</p>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon-bg">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="feature-content">
+                  <h3>Privacy First</h3>
+                  <p>Your health data stays on your device, protected by industry leading security.</p>
                 </div>
             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="screenshots-container">
-                <div class="screenshots-grid">
-                    <div class="screenshot-item">
-                        <img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/44/57/7c/44577cac-460c-d203-c88e-85872da866f1/4d.png/460x0w.webp" alt="Pillr app screenshot 3" />
-                    </div>
-                    <div class="screenshot-item">
-                        <img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/26/6e/b4/266eb4a9-2c59-6c6b-ba72-f22361f09f3e/2.png/460x0w.webp" alt="Pillr app screenshot 4" />
-                    </div>
-                    <div class="screenshot-item">
-                        <img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/c2/27/ee/c227eecb-b907-623d-0e5d-be2e897e16a3/2b.png/460x0w.webp" alt="Pillr app screenshot 2" />
-                    </div>
-                    <div class="screenshot-item">
-                        <img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/23/91/1e/23911ece-47b0-12f5-aa46-78ba04799f81/1a.png/460x0w.webp" alt="Pillr app screenshot 1" />
-                    </div>
-                </div>
-            </div>
+
         </section>
         <style>
             .features-carousel-container {
