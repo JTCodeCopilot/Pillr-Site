@@ -69,24 +69,47 @@ struct PillrApp: App {
     
     private func configureAppAppearance() {
         // Configure navigation bar appearance
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
-        appearance.backgroundColor = UIColor(Color(hex: "#404C42"))
-        appearance.titleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
-        
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().compactAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        if #available(iOS 26.0, *) {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithTransparentBackground()
+            appearance.backgroundEffect = nil
+            appearance.backgroundColor = .clear
+            appearance.shadowColor = .clear
+            appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().compactAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        } else {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithTransparentBackground()
+            appearance.backgroundColor = UIColor(Color(hex: "#404C42"))
+            appearance.titleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().compactAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        }
         
         // Configure tab bar appearance
-        let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithTransparentBackground()
-        tabBarAppearance.backgroundColor = UIColor(Color(hex: "#404C42"))
-        
-        UITabBar.appearance().standardAppearance = tabBarAppearance
-        if #available(iOS 15.0, *) {
-            UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+        if #available(iOS 26.0, *) {
+            let tabBarAppearance = UITabBarAppearance()
+            tabBarAppearance.configureWithTransparentBackground()
+            tabBarAppearance.backgroundEffect = nil
+            tabBarAppearance.backgroundColor = .clear
+            tabBarAppearance.shadowColor = .clear
+            UITabBar.appearance().standardAppearance = tabBarAppearance
+            if #available(iOS 15.0, *) {
+                UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+            }
+        } else {
+            let tabBarAppearance = UITabBarAppearance()
+            tabBarAppearance.configureWithTransparentBackground()
+            tabBarAppearance.backgroundColor = UIColor(Color(hex: "#404C42"))
+            UITabBar.appearance().standardAppearance = tabBarAppearance
+            if #available(iOS 15.0, *) {
+                UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+            }
         }
     }
     

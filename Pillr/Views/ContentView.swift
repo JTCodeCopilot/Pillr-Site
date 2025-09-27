@@ -70,6 +70,42 @@ extension Color {
     }
 }
 
+// MARK: - Glass Effect Extensions
+
+extension View {
+    func glassCircleBackground(diameter: CGFloat, opacity: Double = 0.98) -> some View {
+        self
+            .background(
+                Circle()
+                    .fill(Color.white.opacity(opacity))
+                    .blur(radius: 30)
+                    .background(
+                        Circle()
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
+                    .compositingGroup()
+                    .shadow(color: Color.white.opacity(0.25), radius: 8, x: 0, y: 0)
+            )
+            .clipShape(Circle())
+    }
+    
+    func glassRectBackground(cornerRadius: CGFloat = 18, opacity: Double = 0.98) -> some View {
+        self
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color.white.opacity(opacity))
+                    .blur(radius: 25)
+                    .background(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
+                    .compositingGroup()
+                    .shadow(color: Color.white.opacity(0.25), radius: 6, x: 0, y: 0)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+    }
+}
+
 // Custom transition for tab view
 extension AnyTransition {
     static var moveAndFade: AnyTransition {
@@ -243,35 +279,24 @@ struct MenuButton: View {
                         .opacity(pulseAnimation ? 0.3 : 0.6)
                 }
                 
-                // Main floating button with enhanced gradient and shadows
+                // Main floating button with glass background and shadows
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(hex: "#F9F6F0"),
-                                Color(hex: "#F5F1E8"),
-                                Color(hex: "#F0EBE0")
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
                     .frame(width: 60, height: 60)
+                    .glassCircleBackground(diameter: 60, opacity: 0.98)
                     .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
                     .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
-                    .shadow(color: Color(hex: "#F5F1E8").opacity(0.5), radius: 2, x: 0, y: 1)
                     .scaleEffect(isPressed ? 0.92 : 1.0)
                     .scaleEffect(showingPopoutMenu ? 1.08 : 1.0)
                 
-                // Icon with no animation
+                // Icon with no animation and light color on glass
                 if showingPopoutMenu {
                     Image(systemName: "xmark")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#404C42"))
+                        .foregroundColor(Color.white.opacity(0.95))
                 } else {
                     Image(systemName: "line.3.horizontal")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#404C42"))
+                        .foregroundColor(Color(hex: "#525E55"))
                 }
             }
         }
@@ -440,33 +465,19 @@ struct MenuItemButton: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Color(hex: "#404C42"))
+                    .foregroundColor(Color(hex: "#525E55"))
                     .frame(width: 24)
                 
                 Text(title)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "#404C42"))
-                
+                    .foregroundColor(Color(hex: "#525E55"))
                 Spacer()
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(hex: "#F9F6F0"),
-                                Color(hex: "#F5F1E8"),
-                                Color(hex: "#F0EBE0")
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 6)
-                    .shadow(color: Color(hex: "#F5F1E8").opacity(0.3), radius: 4, x: 0, y: 2)
-            )
+            .glassRectBackground(cornerRadius: 18, opacity: 0.98)
+            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+            .shadow(color: Color.white.opacity(0.06), radius: 2, x: 0, y: 1)
             .scaleEffect(isPressed ? 0.96 : 1.0)
             .brightness(isPressed ? -0.05 : 0)
         }
@@ -1043,12 +1054,7 @@ struct SettingsContentView: View {
             .buttonStyle(PlainButtonStyle())
         }
         .padding()
-        .background(Color.black.opacity(0.12))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
-        )
+        .glassRectBackground(cornerRadius: 12, opacity: 0.9)
         .padding(.horizontal)
     }
     
@@ -1141,12 +1147,7 @@ struct SettingsContentView: View {
             }
         }
         .padding()
-        .background(Color.black.opacity(0.12))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
-        )
+        .glassRectBackground(cornerRadius: 12, opacity: 0.9)
         .padding(.horizontal)
     }
     
@@ -1236,12 +1237,7 @@ struct SettingsContentView: View {
             .buttonStyle(PlainButtonStyle())
         }
         .padding()
-        .background(Color.black.opacity(0.12))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(hex: "#C7C7BD").opacity(0.05), lineWidth: 0.8)
-        )
+        .glassRectBackground(cornerRadius: 12, opacity: 0.9)
         .padding(.horizontal)
     }
 }
@@ -1357,7 +1353,7 @@ struct EmbeddedWebView: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(.white)
                     }
                 }
             }
@@ -1412,3 +1408,4 @@ struct ContentView_Previews: PreviewProvider {
             .environmentObject(UserSettings.shared)
     }
 }
+

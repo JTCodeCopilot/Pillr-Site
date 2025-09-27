@@ -158,24 +158,26 @@ struct MedicationLogView: View {
                             }
                             
                             // Stats row
-                            HStack(spacing: 20) {
-                                StatCard(
-                                    title: "Total Doses",
-                                    value: "\(store.logs.filter { !$0.skipped }.count)",
-                                    icon: "pills.fill"
-                                )
-                                
-                                StatCard(
-                                    title: "This Week",
-                                    value: "\(logsThisWeek)",
-                                    icon: "calendar.badge.clock"
-                                )
-                                
-                                StatCard(
-                                    title: "Streak",
-                                    value: "\(currentStreak) days",
-                                    icon: "flame.fill"
-                                )
+                            GlassContainer(spacing: 20) {
+                                HStack(spacing: 20) {
+                                    StatCard(
+                                        title: "Total Doses",
+                                        value: "\(store.logs.filter { !$0.skipped }.count)",
+                                        icon: "pills.fill"
+                                    )
+                                    
+                                    StatCard(
+                                        title: "This Week",
+                                        value: "\(logsThisWeek)",
+                                        icon: "calendar.badge.clock"
+                                    )
+                                    
+                                    StatCard(
+                                        title: "Streak",
+                                        value: "\(currentStreak) days",
+                                        icon: "flame.fill"
+                                    )
+                                }
                             }
                         }
                         .padding(.horizontal, 16)
@@ -259,8 +261,7 @@ struct MedicationLogView: View {
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
-                                .background(Color.black.opacity(0.15))
-                                .cornerRadius(8)
+                                .glassRectBackground(cornerRadius: 8, opacity: 0.9)
                                 .padding(.horizontal, 8)
                             }
                         }
@@ -588,8 +589,7 @@ struct StatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(Color.black.opacity(0.15))
-        .cornerRadius(12)
+        .glassRectBackground(cornerRadius: 12, opacity: 0.95)
     }
 }
 
@@ -614,8 +614,7 @@ struct EmptyHistoryView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(40)
-            .background(Color.black.opacity(0.12))
-            .cornerRadius(16)
+            .glassRectBackground(cornerRadius: 16, opacity: 0.92)
             .padding(.horizontal, 16)
             .padding(.top, 40)
         }
@@ -646,8 +645,7 @@ struct NoLogsForDateView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(30)
-            .background(Color.black.opacity(0.12))
-            .cornerRadius(12)
+            .glassRectBackground(cornerRadius: 12, opacity: 0.92)
             .padding(.horizontal, 16)
             .padding(.top, 20)
         }
@@ -866,21 +864,7 @@ struct EnhancedLogEntryRow: View {
             }
         }
         .padding(16)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.black.opacity(0.15),
-                    Color.black.opacity(0.08)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(hex: "#C7C7BD").opacity(0.1), lineWidth: 1)
-        )
+        .glassRectBackground(cornerRadius: 12, opacity: 0.9)
     }
     
     private var timeFormatter: DateFormatter {
@@ -898,20 +882,9 @@ struct FloatingButton: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(hex: "#404C42"))
+                .foregroundColor(Color.white)
                 .frame(width: 50, height: 50)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "#E8E8E0"),
-                            Color(hex: "#D0D0C8"),
-                            Color(hex: "#C7C7BD")
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .clipShape(Circle())
+                .glassCircleBackground(diameter: 50, opacity: 0.98)
                 .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 3)
                 .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
         }
@@ -987,8 +960,7 @@ struct FilterOptionsOverlay: View {
                 .padding(.horizontal, 8)
                 .padding(.bottom, 20)
             }
-            .background(Color(hex: "#404C42"))
-            .cornerRadius(16)
+            .glassRectBackground(cornerRadius: 16, opacity: 0.95)
             .frame(width: min(geometry.size.width - 40, 350))
             .padding(.horizontal, 20)
         }
@@ -1061,12 +1033,9 @@ struct DatePickerOverlay: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
-            .background(Color(hex: "#404C42"))
-            .cornerRadius(16)
+            .glassRectBackground(cornerRadius: 16, opacity: 0.95)
             .frame(width: min(geometry.size.width - 40, 400))
             .padding(.horizontal, 20)
         }
     }
 }
-
-
