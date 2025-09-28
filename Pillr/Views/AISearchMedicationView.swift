@@ -408,3 +408,4 @@ struct AISearchMedicationView_Previews: PreviewProvider {
         .preferredColorScheme(.dark)
     }
 } 
+

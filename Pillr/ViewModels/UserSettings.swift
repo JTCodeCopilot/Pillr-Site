@@ -125,3 +125,4 @@ class UserSettings: ObservableObject {
         return isPremiumUser
     }
 } 
+

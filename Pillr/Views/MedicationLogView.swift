@@ -12,7 +12,6 @@ struct MedicationLogView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showingCalendar = false
     @State private var selectedDate: Date = Date()
-    @State private var showingFilterOptions = false
     @State private var selectedMedicationFilter: String = "All"
     @State private var selectedMonth: Date = Date() // Current month for calendar view
     @State private var showingExportOptions = false
@@ -139,9 +138,13 @@ struct MedicationLogView: View {
                                 }
                                 
                                 // Filter button
-                                Button(action: {
-                                    showingFilterOptions.toggle()
-                                }) {
+                                Menu {
+                                    Picker("Filter by Medication", selection: $selectedMedicationFilter) {
+                                        ForEach(uniqueMedicationNames, id: \.self) { medicationName in
+                                            Text(medicationName).tag(medicationName)
+                                        }
+                                    }
+                                } label: {
                                     HStack(spacing: 4) {
                                         Image(systemName: "line.3.horizontal.decrease.circle")
                                             .font(.system(size: 16))
@@ -317,17 +320,6 @@ struct MedicationLogView: View {
                         .padding(.bottom, 50)
                     }
                     .zIndex(2)
-                    
-                    // Filter options overlay
-                    if showingFilterOptions {
-                        FilterOptionsOverlay(
-                            uniqueMedicationNames: uniqueMedicationNames,
-                            selectedMedicationFilter: $selectedMedicationFilter,
-                            showingFilterOptions: $showingFilterOptions,
-                            geometry: geometry
-                        )
-                        .zIndex(3)
-                    }
                 }
             }
         }
@@ -576,20 +568,22 @@ struct StatCard: View {
         VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(Color(hex: "#D7CCC8"))
+                .foregroundColor(Color(hex: "#525E55"))
             
             Text(value)
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color(hex: "#525E55"))
             
             Text(title)
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(Color(hex: "#525E55").opacity(0.7))
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .glassRectBackground(cornerRadius: 12, opacity: 0.95)
+        .glassRectBackground(cornerRadius: 20, opacity: 1)
+        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+        .shadow(color: Color.white.opacity(1), radius: 2, x: 0, y: 1)
     }
 }
 
@@ -599,22 +593,24 @@ struct EmptyHistoryView: View {
             VStack(spacing: 20) {
                 Image(systemName: "clock.badge.checkmark")
                     .font(.system(size: 60))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                    .foregroundColor(Color(hex: "#525E55").opacity(0.6))
                     .padding(.bottom, 10)
                 
                 Text("No medication history yet")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color(hex: "#525E55"))
                 
                 Text("Start logging your medications to see your history here. Your medication adherence journey begins with the first dose!")
                     .font(.system(size: 16))
                     .multilineTextAlignment(.center)
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    .foregroundColor(Color(hex: "#525E55").opacity(0.8))
                     .padding(.horizontal)
             }
             .frame(maxWidth: .infinity)
             .padding(40)
-            .glassRectBackground(cornerRadius: 16, opacity: 0.92)
+            .glassRectBackground(cornerRadius: 20, opacity: 1)
+            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+            .shadow(color: Color.white.opacity(1), radius: 2, x: 0, y: 1)
             .padding(.horizontal, 16)
             .padding(.top, 40)
         }
@@ -630,22 +626,24 @@ struct NoLogsForDateView: View {
             VStack(spacing: 20) {
                 Image(systemName: "calendar.badge.exclamationmark")
                     .font(.system(size: 50))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                    .foregroundColor(Color(hex: "#525E55").opacity(0.6))
                     .padding(.bottom, 10)
                 
                 Text("No medications taken")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color(hex: "#525E55"))
                 
                 Text("No medications were logged on \(dateFormatter.string(from: date))")
                     .font(.system(size: 14))
                     .multilineTextAlignment(.center)
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                    .foregroundColor(Color(hex: "#525E55").opacity(0.7))
                     .padding(.horizontal)
             }
             .frame(maxWidth: .infinity)
             .padding(30)
-            .glassRectBackground(cornerRadius: 12, opacity: 0.92)
+            .glassRectBackground(cornerRadius: 20, opacity: 1)
+            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+            .shadow(color: Color.white.opacity(1), radius: 2, x: 0, y: 1)
             .padding(.horizontal, 16)
             .padding(.top, 20)
         }
@@ -759,12 +757,12 @@ struct EnhancedLogEntryRow: View {
                 // Medication icon
                 ZStack {
                     Circle()
-                        .fill(Color(hex: "#D7CCC8").opacity(0.2))
+                        .fill(Color(hex: "#525E55").opacity(0.15))
                         .frame(width: 44, height: 44)
                     
                     Image(systemName: medication?.unitIconName ?? "pill.fill")
                         .font(.system(size: 20))
-                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .foregroundColor(Color(hex: "#525E55"))
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
@@ -772,14 +770,14 @@ struct EnhancedLogEntryRow: View {
                     HStack {
                         Text(logEntry.medicationName)
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color(hex: "#525E55"))
                         
                         Spacer()
                         
                         // Time taken
                         Text(timeFormatter.string(from: logEntry.takenAt))
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                            .foregroundColor(Color(hex: "#525E55").opacity(0.8))
                     }
                     
                     // Dosage information
@@ -787,12 +785,12 @@ struct EnhancedLogEntryRow: View {
                         HStack(spacing: 8) {
                             Text("\(med.dosage) \(med.dosageUnit)")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#D7CCC8"))
+                                .foregroundColor(Color(hex: "#525E55"))
                             
                             if let pillsConsumed = logEntry.pillsConsumed, pillsConsumed > 1 {
                                 Text("• \(pillsConsumed) pills")
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color(hex: "#525E55").opacity(0.7))
                             }
                             
                             Spacer()
@@ -809,13 +807,13 @@ struct EnhancedLogEntryRow: View {
                             HStack {
                                 Text("Additional Information")
                                     .font(.system(size: 13))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    .foregroundColor(Color(hex: "#525E55").opacity(0.8))
                                 
                                 Spacer()
                                 
                                 Image(systemName: showAdditionalInfo ? "chevron.up" : "chevron.down")
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                                    .foregroundColor(Color(hex: "#525E55").opacity(0.5))
                             }
                             .padding(.top, 6)
                         }
@@ -830,7 +828,7 @@ struct EnhancedLogEntryRow: View {
                                     if components.count > 0 && !components[0].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                         Text(components[0].trimmingCharacters(in: .whitespacesAndNewlines))
                                             .font(.system(size: 13))
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                            .foregroundColor(Color(hex: "#525E55").opacity(0.8))
                                     }
                                     
                                     // Side effects
@@ -849,11 +847,11 @@ struct EnhancedLogEntryRow: View {
                                     HStack(alignment: .top, spacing: 6) {
                                         Image(systemName: "note.text.fill")
                                             .font(.system(size: 12))
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                                            .foregroundColor(Color(hex: "#525E55").opacity(0.6))
                                         
                                         Text(notes)
                                             .font(.system(size: 13))
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                            .foregroundColor(Color(hex: "#525E55").opacity(0.8))
                                     }
                                 }
                             }
@@ -864,7 +862,9 @@ struct EnhancedLogEntryRow: View {
             }
         }
         .padding(16)
-        .glassRectBackground(cornerRadius: 12, opacity: 0.9)
+        .glassRectBackground(cornerRadius: 20, opacity: 1)
+        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+        .shadow(color: Color.white.opacity(1), radius: 2, x: 0, y: 1)
     }
     
     private var timeFormatter: DateFormatter {
@@ -889,81 +889,6 @@ struct FloatingButton: View {
                 .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
         }
         .buttonStyle(ScaleButtonStyle(hapticStyle: .pulseButton))
-    }
-}
-
-struct FilterOptionsOverlay: View {
-    let uniqueMedicationNames: [String]
-    @Binding var selectedMedicationFilter: String
-    @Binding var showingFilterOptions: Bool
-    let geometry: GeometryProxy
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    showingFilterOptions = false
-                }
-            
-            VStack(spacing: 16) {
-                HStack {
-                    Text("Filter by Medication")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        showingFilterOptions = false
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                ScrollView {
-                    VStack(spacing: 8) {
-                        ForEach(uniqueMedicationNames, id: \.self) { medicationName in
-                            Button(action: {
-                                selectedMedicationFilter = medicationName
-                                showingFilterOptions = false
-                            }) {
-                                HStack {
-                                    Text(medicationName)
-                                        .font(.system(size: 16))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                    
-                                    Spacer()
-                                    
-                                    if selectedMedicationFilter == medicationName {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#D7CCC8"))
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 12)
-                                .background(
-                                    selectedMedicationFilter == medicationName ? 
-                                    Color.black.opacity(0.3) : Color.clear
-                                )
-                                .cornerRadius(8)
-                            }
-                        }
-                    }
-                }
-                .frame(maxHeight: 300)
-                .padding(.horizontal, 8)
-                .padding(.bottom, 20)
-            }
-            .glassRectBackground(cornerRadius: 16, opacity: 0.95)
-            .frame(width: min(geometry.size.width - 40, 350))
-            .padding(.horizontal, 20)
-        }
     }
 }
 

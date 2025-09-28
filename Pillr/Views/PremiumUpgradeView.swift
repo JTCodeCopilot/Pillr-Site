@@ -109,7 +109,7 @@ struct PremiumUpgradeView: View {
                                 } else {
                                     PricingOption(
                                         title: "Lifetime Premium",
-                                        price: storeManager.getLocalizedFallbackPrice(),
+                                        price: "Unavailable",
                                         period: "",
                                         savings: "No subscription required",
                                         isPopular: true,
@@ -176,7 +176,7 @@ struct PremiumUpgradeView: View {
                                             Image(systemName: "crown.fill")
                                                 .font(.system(size: 18, weight: .bold))
                                             
-                                            Text("Purchase for \(storeManager.getLocalizedFallbackPrice())")
+                                            Text("Purchase Unavailable")
                                                 .font(.system(size: 18, weight: .bold))
                                         }
                                     }
@@ -200,7 +200,7 @@ struct PremiumUpgradeView: View {
                                 .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
                                 .animation(.easeInOut(duration: 0.1), value: isButtonLoading)
                                 .disabled(isButtonLoading && !isPreview)
-                                .accessibilityLabel("Purchase Pillr Premium for \(storeManager.getLocalizedFallbackPrice())")
+                                .accessibilityLabel("Purchase Pillr Premium (unavailable)")
                             }
                             
                             // Continue with free version
