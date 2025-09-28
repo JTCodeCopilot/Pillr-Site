@@ -475,9 +475,9 @@ struct MenuItemButton: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            .glassRectBackground(cornerRadius: 18, opacity: 0.98)
+            .glassRectBackground(cornerRadius: 20, opacity: 1)
             .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
-            .shadow(color: Color.white.opacity(0.06), radius: 2, x: 0, y: 1)
+            .shadow(color: Color.white.opacity(1), radius: 2, x: 0, y: 1)
             .scaleEffect(isPressed ? 0.96 : 1.0)
             .brightness(isPressed ? -0.05 : 0)
         }
