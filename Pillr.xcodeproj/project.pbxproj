@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		4901EA942DE700CB000B3979 /* AIProxy in Frameworks */ = {isa = PBXBuildFile; productRef = 4901EA932DE700CB000B3979 /* AIProxy */; };
+		4911A1532E88B7070009E975 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = 4911A1522E88B7070009E975 /* TelemetryDeck */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4901EA942DE700CB000B3979 /* AIProxy in Frameworks */,
+				4911A1532E88B7070009E975 /* TelemetryDeck in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +73,7 @@
 			name = Pillr;
 			packageProductDependencies = (
 				4901EA932DE700CB000B3979 /* AIProxy */,
+				4911A1522E88B7070009E975 /* TelemetryDeck */,
 			);
 			productName = Pillr;
 			productReference = 4964701E2DD3F0E9003964BD /* Pillr.app */;
@@ -102,6 +105,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				4901EA922DE700CB000B3979 /* XCRemoteSwiftPackageReference "AIProxySwift" */,
+				4911A1512E88B7070009E975 /* XCRemoteSwiftPackageReference "SwiftSDK" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4964701F2DD3F0E9003964BD /* Products */;
@@ -363,6 +367,14 @@
 				minimumVersion = 0.101.3;
 			};
 		};
+		4911A1512E88B7070009E975 /* XCRemoteSwiftPackageReference "SwiftSDK" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/TelemetryDeck/SwiftSDK";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.4;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -370,6 +382,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4901EA922DE700CB000B3979 /* XCRemoteSwiftPackageReference "AIProxySwift" */;
 			productName = AIProxy;
+		};
+		4911A1522E88B7070009E975 /* TelemetryDeck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4911A1512E88B7070009E975 /* XCRemoteSwiftPackageReference "SwiftSDK" */;
+			productName = TelemetryDeck;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

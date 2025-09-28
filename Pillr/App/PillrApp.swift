@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UserNotifications
+import TelemetryDeck
 
 // App Delegate to handle application lifecycle events
 class PillrAppDelegate: NSObject, UIApplicationDelegate {
@@ -65,6 +66,9 @@ struct PillrApp: App {
         
         // Application appearance settings
         configureAppAppearance()
+        // Initialize TelemetryDeck analytics
+        let telemetryConfig = TelemetryDeck.Config(appID: "1AEFCFCE-EC76-475D-A16E-8AC2A28ECF82")
+        TelemetryDeck.initialize(config: telemetryConfig)
     }
     
     private func configureAppAppearance() {
