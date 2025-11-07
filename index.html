@@ -29,10 +29,10 @@
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💊</text></svg>">
     
-    <!-- Google Fonts: Inter for general text, Playfair Display for intro heading -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Playfair+Display:wght@300;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome for icons -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
@@ -69,9 +69,7 @@
     opacity: 0.85;
 }
 
-
 :root {
-    /* Enhanced glass variables */
     --glass-bg: rgba(255, 255, 255, 0.18);
     --glass-bg-dark: rgba(40, 60, 50, 0.28);
     --glass-border: rgba(255, 255, 255, 0.4);
@@ -83,30 +81,25 @@
     --glass-radius-small: 16px;
     --glass-radius-header: 40px;
     --glass-tint: rgba(146, 255, 131, 0.1);
-    
-    /* New variables for enhanced effects */
+
     --glass-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     --glass-intensity: 0.8;
     --glass-contrast: 1.05;
 
-    /* Pillr App Inspired Colors */
-    --color-primary: #00676A; /* Deep Teal / Blue-Green */
-    --color-secondary: #92FF83; /* Bright Lime Green */
-    --color-dark: #1A1A1A; /* Very Dark Gray for strong elements/footer */
-    --color-light-background: #F8F9FA; /* Off-White / Light Gray for main backgrounds (matches image background) */
+    --color-primary: #00676A;
+    --color-secondary: #92FF83;
+    --color-dark: #1A1A1A;
+    --color-light-background: #F8F9FA;
     --color-white: #ffffff;
-    --color-text: #34495E; /* General Body Text for nav links etc. */
+    --color-text: #34495E;
 
-    /* Liquid Glass Specific Colors (removed from elements not in view in the image) */
-    --soft-shadow: rgba(0, 0, 0, 0.05); /* Softer shadow as seen in the image */
+    --soft-shadow: rgba(0, 0, 0, 0.05);
 
-    /* Typography */
     --font-serif: 'Playfair Display', serif;
     --font-body: 'Inter', sans-serif;
 
-    /* Spacing & Sizing */
     --container-width: 1100px;
-    --border-radius-btn: 12px; /* Slightly more rounded buttons */
+    --border-radius-btn: 12px;
 }
 
 body {
@@ -114,7 +107,7 @@ body {
     line-height: 1.6;
     color: var(--color-text);
     background-color: #DAD1C2;
-    overflow-x: hidden; /* Prevent horizontal scroll */
+    overflow-x: hidden;
 }
 
 @keyframes gradientBG {
@@ -142,7 +135,7 @@ header {
     transition: var(--glass-transition);
 }
 
-/* Added footer styles to match header */
+/* Footer */
 footer {
     background-color: #394B38;
     backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-intensity))) saturate(180%);
@@ -178,27 +171,16 @@ header:hover {
     box-shadow: 
         0 8px 40px rgba(0, 0, 0, 0.15),
         0 0 0 1px rgba(255, 255, 255, 0.15) inset;
-    /* border removed to eliminate green underline */
 }
 
-nav ul li a {
-    color: #fff;
-    text-shadow: 0 1px 8px rgba(0,0,0,0.08);
-}
-nav ul li a:hover {
-    color: var(--color-secondary);
-}
+nav ul li a { color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,0.08); }
+nav ul li a:hover { color: var(--color-secondary); }
 
+/* Intro section */
 .intro-section {
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.15) 0%,
-        rgba(146, 255, 131, 0.08) 100%
-    );
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(146, 255, 131, 0.08) 100%);
     border-radius: var(--glass-radius);
-    box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.08),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
     backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
     -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(160%);
     border: 1.5px solid var(--glass-border);
@@ -207,6 +189,9 @@ nav ul li a:hover {
     position: relative;
     overflow: hidden;
     transition: var(--glass-transition);
+    min-height: calc(100vh - 80px);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 40px 20px;
 }
 
 .intro-section::before {
@@ -216,11 +201,7 @@ nav ul li a:hover {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(
-        circle at center,
-        rgba(146, 255, 131, 0.1) 0%,
-        transparent 60%
-    );
+    background: radial-gradient(circle at center, rgba(146, 255, 131, 0.1) 0%, transparent 60%);
     opacity: 0.6;
     pointer-events: none;
     animation: float 15s ease-in-out infinite;
@@ -233,49 +214,70 @@ nav ul li a:hover {
     75% { transform: translate(-2%, 2%) rotate(-1deg); }
 }
 
+/* New brand line above the H1 */
+.intro-brand{
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-size: clamp(3rem, 10vw, 6.5rem);
+  line-height: 1;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  text-shadow: 0 4px 16px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.10);
+  margin-bottom: 10px;
+}
+@media (max-width: 600px){
+  .intro-brand{ font-size: clamp(2.25rem, 12vw, 4rem); margin-bottom: 6px; }
+}
+
 .intro-title {
-    color: #ffffff; /* White color for all text */
-    -webkit-text-fill-color: #ffffff; /* For WebKit browsers */
-    text-fill-color: #ffffff; /* Standard property */
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+    text-fill-color: #ffffff;
     filter: drop-shadow(0 2px 8px rgba(146,255,131,0.08));
-    /* Ensure all text in title is white by default */
     --text-color: #ffffff;
+    font-family: var(--font-serif);
+    font-size: 5rem;
+    font-weight: 700;
+    color: var(--color-dark);
+    line-height: 1.1;
+    margin-bottom: 40px;
+    max-width: 900px;
+    text-shadow: 0 4px 16px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.10);
 }
 .intro-title .pillr-highlight {
-    color: #485744 !important; /* Solid green color with !important */
+    color: #485744 !important;
     font-style: italic;
-    -webkit-text-fill-color: #485744 !important; /* For WebKit browsers */
-    text-fill-color: #485744 !important; /* Ensure consistent color across browsers */
+    -webkit-text-fill-color: #485744 !important;
+    text-shadow: 0 4px 16px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.10);
 }
 
 .intro-actions a {
-    background: #E2D8C5; /* Removed the glass background */
+    background: #E2D8C5;
     border-radius: var(--glass-radius-small);
-    box-shadow: none; /* Removed the shadow */
-    border: none; /* Removed the border */
-    backdrop-filter: none; /* Removed the blur effect */
-    -webkit-backdrop-filter: none; /* Removed the blur effect */
-    transition: none; /* Removed the transition */
+    box-shadow: none;
+    border: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: none;
 }
 .intro-actions a:hover {
     box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.18);
     border: 1.5px solid var(--color-primary);
 }
 
-/* Make App Store button larger */
+/* App Store button */
 .app-store-button img {
     width: 280px;
     height: auto;
     max-width: 90vw;
     transition: transform 0.3s ease;
-    box-shadow: 0 6px 32px 0 rgba(0,0,0,0.30), 0 1.5px 18px 0 rgba(0,0,0,0.22), 0 0.5px 2px 0 rgba(0,0,0,0.18); /* Deep, layered shadow */
+    box-shadow: 0 6px 32px 0 rgba(0,0,0,0.30), 0 1.5px 18px 0 rgba(0,0,0,0.22), 0 0.5px 2px 0 rgba(0,0,0,0.18);
     border-radius: 16px;
 }
+.app-store-button:hover img { transform: scale(1.05); }
 
-.app-store-button:hover img {
-    transform: scale(1.05);
-}
-
+/* Scroll indicators */
 .scroll-down-indicator {
     position: absolute;
     bottom: 10px;
@@ -292,11 +294,9 @@ nav ul li a:hover {
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    opacity: 1; /* Initially visible */
-    pointer-events: auto; /* Initially clickable */
+    opacity: 1;
+    pointer-events: auto;
 }
-
-/* Added scroll-up indicator styles */
 .scroll-up-indicator {
     position: fixed;
     bottom: 40px;
@@ -313,22 +313,10 @@ nav ul li a:hover {
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    opacity: 0; /* Initially hidden */
-    pointer-events: none; /* Initially not clickable */
+    opacity: 0;
+    pointer-events: none;
 }
-
-.scroll-down-indicator i {
-    display: block;
-    color: #ffffff;
-    text-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
-    font-size: 1.8rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    top: 0;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
-}
-
-/* Added scroll-up indicator icon styles */
+.scroll-down-indicator i,
 .scroll-up-indicator i {
     display: block;
     color: #ffffff;
@@ -339,46 +327,13 @@ nav ul li a:hover {
     top: 0;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
+.scroll-down-indicator:hover { transform: translateX(-50%) translateY(-4px); }
+.scroll-up-indicator:hover { transform: translateX(-50%) translateY(-4px); }
+.scroll-down-indicator:hover i { transform: translateY(4px); }
+.scroll-up-indicator:hover i { transform: translateY(-4px); }
 
-.scroll-down-indicator:hover {
-    transform: translateX(-50%) translateY(-4px);
-}
-
-.scroll-up-indicator:hover {
-    transform: translateX(-50%) translateY(-4px);
-}
-
-.scroll-down-indicator:hover i {
-    transform: translateY(4px);
-    color: #ffffff;
-    text-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-.scroll-up-indicator:hover i {
-    transform: translateY(-4px);
-    color: #ffffff;
-    text-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-@keyframes float-down {
-    0%, 100% {
-        transform: translateX(-50%) translateY(0);
-    }
-    50% {
-        transform: translateX(-50%) translateY(8px);
-    }
-}
-
-@keyframes float-up {
-    0%, 100% {
-        transform: translateX(-50%) translateY(0);
-    }
-    50% {
-        transform: translateX(-50%) translateY(-8px);
-    }
-}
+@keyframes float-down { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(8px); } }
+@keyframes float-up { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-8px); } }
 
 /* Features section */
 .features-section {
@@ -396,24 +351,9 @@ nav ul li a:hover {
     max-width: 1200px;
     width: calc(100% - 40px);
 }
-
-/* Feature card styles */
-.feature-card {
-    position: relative;
-    z-index: 1;
-    transition: transform 0.3s ease;
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-}
-
-/* Feature section container */
-.features-section .container {
-    position: relative;
-    z-index: 1;
-}
-
+.feature-card { position: relative; z-index: 1; transition: transform 0.3s ease; }
+.feature-card:hover { transform: translateY(-5px); }
+.features-section .container { position: relative; z-index: 1; }
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -423,7 +363,6 @@ nav ul li a:hover {
     margin: 0 auto 20px;
     padding: 0 40px;
 }
-
 .feature-card {
     background: transparent;
     border-radius: var(--glass-radius-small);
@@ -436,36 +375,24 @@ nav ul li a:hover {
     position: relative;
     overflow: hidden;
 }
-
 .feature-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
     opacity: 0;
     transition: var(--glass-transition);
 }
-
 .feature-card:hover {
     transform: translateY(-4px) scale(1.02);
-    box-shadow: 
-        0 16px 60px rgba(0, 0, 0, 0.2),
-        0 8px 30px rgba(0, 0, 0, 0.15),
-        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    box-shadow: 0 16px 60px rgba(0, 0, 0, 0.2),
+                0 8px 30px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.15) inset;
     border: 1px solid rgba(255, 255, 255, 0.5);
 }
-
-.feature-card:hover::before {
-    opacity: 1;
-    transform: translateY(0);
-}
-.feature-icon {
-    color: var(--color-primary);
-    filter: drop-shadow(0 1px 4px rgba(146,255,131,0.10));
-}
+.feature-card:hover::before { opacity: 1; transform: translateY(0); }
+.feature-icon { color: var(--color-primary); filter: drop-shadow(0 1px 4px rgba(146,255,131,0.10)); }
 
 .btn {
     background: linear-gradient(120deg, rgba(255,255,255,0.22) 0%, var(--color-primary) 100%);
@@ -483,557 +410,111 @@ nav ul li a:hover {
     border: 1.5px solid var(--color-secondary);
     box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.18);
 }
-.btn.secondary {
-    background: linear-gradient(120deg, rgba(146,255,131,0.22) 0%, #fff 100%);
-    color: var(--color-dark);
-}
-.btn.secondary:hover {
-    background: linear-gradient(120deg, #79d16b 0%, #fff 100%);
-    color: var(--color-dark);
-}
+.btn.secondary { background: linear-gradient(120deg, rgba(146,255,131,0.22) 0%, #fff 100%); color: var(--color-dark); }
+.btn.secondary:hover { background: linear-gradient(120deg, #79d16b 0%, #fff 100%); color: var(--color-dark); }
 
-/* Responsive glassmorphism tweaks */
+/* Responsive tweaks */
 @media (max-width: 900px) {
-    .intro-section, .features-section, .screenshots-section {
-        border-radius: 18px;
-    }
+    .intro-section, .features-section, .screenshots-section { border-radius: 18px; }
 }
 @media (max-width: 600px) {
-    .intro-section, .features-section, .screenshots-section {
-        border-radius: 10px;
-        margin: 10px 0;
-    }
-    .feature-card, .screenshot-img, .intro-screenshot {
-        border-radius: 8px;
-    }
-}
-/* --- LIQUID GLASS APPLE DESIGN REFINEMENT END --- */
-
-/* General Reset & Box-sizing */
-*, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+    .intro-section, .features-section, .screenshots-section { border-radius: 10px; margin: 10px 0; }
+    .feature-card, .screenshot-img, .intro-screenshot { border-radius: 8px; }
 }
 
-/* Utility Classes */
-.container {
-    max-width: var(--container-width);
-    margin: 0 auto;
-    padding: 0 20px;
-}
+/* Reset and utilities */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.container { max-width: var(--container-width); margin: 0 auto; padding: 0 20px; }
 
-/* NEW: Minimal Intro Section (Matching Image Precisely) */
-.intro-section {
-    min-height: calc(100vh - 80px); /* Full viewport height minus header height (approx) */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 40px 20px;
-    position: relative;
-    overflow: hidden;
-}
-
-.intro-section .intro-title {
-    font-family: var(--font-serif);
-    font-size: 5rem;
-    font-weight: 700; /* Bolder font weight for "The Pillr..." text as seen in image */
-    color: var(--color-dark);
-    line-height: 1.1;
-    margin-bottom: 40px;
-    max-width: 900px;
-    text-shadow: 0 4px 16px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.10); /* More visible shadow for hero text */
-}
-
-.intro-section .intro-title .pillr-highlight {
-    color: #485744 !important; /* Solid green color with !important */
-    font-style: italic;
-    -webkit-text-fill-color: #485744 !important; /* For WebKit browsers */
-    text-shadow: 0 4px 16px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.10); /* More visible shadow for highlight */
-}
-
-.intro-section .intro-btn {
-    margin-top: 20px;
-}
-
-.features-section {
-    padding: 40px 0;
-    position: relative;
-    overflow: hidden;
-    background: transparent;
-}
-
-.features-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(146,255,131,0.05) 100%);
-    z-index: -1;
-}
-
-.features-title {
-    font-family: var(--font-serif);
-    font-size: 2.2rem;
-    color: var(--color-dark);
-    margin: 0 auto 30px;
-    font-weight: 600;
-    text-align: center;
-    letter-spacing: -0.5px;
-    position: relative;
-    display: inline-block;
-    padding: 0 24px;
-}
-
-.features-title::after {
-    content: '';
-    position: absolute;
-    bottom: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 3px;
-    background: #4B5847;
-    border-radius: 3px;
-}
-
-.features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 28px;
-    max-width: 1200px;
-    margin: 0 auto 40px;
-    padding: 0 24px;
-}
-
-.feature-card {
-    background: transparent;
-    border-radius: var(--glass-radius);
-    box-shadow: none;
-    border: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.feature-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-}
-
-.feature-card:hover {
-    transform: translateY(-8px);
-    box-shadow: none;
-    border-color: none;
-}
-
-.feature-card:hover::before {
-    opacity: 1;
-}
-
-.feature-icon {
-    font-size: 2.2rem;
-    color: var(--color-primary);
-    background: transparent;
-    width: 64px;
-    height: 64px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 8px;
-    position: relative;
-    z-index: 1;
-    transition: transform 0.4s ease, box-shadow 0.4s ease;
-}
-
-.feature-card:hover .feature-icon {
-    transform: scale(1.1) rotate(5deg);
-    box-shadow: none;
-}
-
-.feature-content p {
-    font-size: 1.02rem;
-    color: #5a6c7d;
-    margin: 0;
-    font-weight: 400;
-    line-height: 1.6;
-    opacity: 0.9;
-}
-
-/* Feature card hover effect removed */
-.feature-card:hover::after {
-    transform: scaleX(0);
-}
-
-.intro-flex {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 48px;
-}
-
-.intro-screenshot-col {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
+/* Additional layout bits reused from original */
+.intro-flex { display: flex; justify-content: space-between; align-items: center; gap: 48px; }
+.intro-screenshot-col { flex: 1; display: flex; justify-content: center; align-items: center; }
 .intro-screenshot {
-    width: 320px;
-    max-width: 95vw;
-    border-radius: 24px;
-    box-shadow: 0 6px 32px rgba(0,0,0,0.13);
-    margin: 0;
-    display: block;
-    border-bottom-left-radius: 24px; /* Rounded bottom-left corner */
-    border-bottom-right-radius: 24px; /* Rounded bottom-right corner */
+    width: 320px; max-width: 95vw; border-radius: 24px; box-shadow: 0 6px 32px rgba(0,0,0,0.13); margin: 0; display: block;
+    border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
 }
 
-.screenshots-section {
-    background: #444C43;
-    padding: 64px 0 56px 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0;
-}
+.screenshots-section { background: #444C43; padding: 64px 0 56px 0; display: flex; justify-content: center; align-items: center; margin: 0; }
+.screenshots-container { display: flex; gap: 40px; justify-content: center; align-items: center; max-width: 900px; margin: 0 auto; flex: 1; min-width: 300px; }
+.screenshot-item img { width: 320px; max-width: 90vw; border-radius: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); background: transparent; display: block; }
 
-.screenshots-container {
-    display: flex;
-    gap: 40px;
-    justify-content: center;
-    align-items: center;
-    max-width: 900px;
-    margin: 0 auto;
-    flex: 1;
-    min-width: 300px;
-    align-items: center;
-    justify-content: center;
-}
-
-.screenshot-item img {
-    width: 320px;
-    max-width: 90vw;
-    border-radius: 24px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-    background: transparent;
-    display: block;
-}
-
-/* --- MOBILE IMPROVEMENTS START --- */
-
+/* Mobile adjustments */
 @media (max-width: 900px) {
-    .intro-flex {
-        flex-direction: column;
-        gap: 32px;
-    }
-    .intro-screenshot {
-        width: 90vw;
-        max-width: 400px;
-    }
-    .intro-screenshot-col {
-        width: 100%;
-    }
-    .screenshots-container {
-        flex-direction: column;
-        gap: 28px;
-    }
-    .screenshot-item img {
-        width: 95vw;
-        max-width: 400px;
-    }
-    .intro-section .intro-title {
-        font-size: 4rem;
-    }
+    .intro-flex { flex-direction: column; gap: 32px; }
+    .intro-screenshot { width: 90vw; max-width: 400px; }
+    .intro-screenshot-col { width: 100%; }
+    .screenshots-container { flex-direction: column; gap: 28px; }
+    .screenshot-item img { width: 95vw; max-width: 400px; }
+    .intro-title { font-size: 4rem; }
 }
-
 @media (max-width: 768px) {
-    header .container {
-        flex-direction: column;
-        align-items: flex-end;
-        padding: 0 8px;
-    }
-    nav ul {
-        margin-top: 15px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-    }
-    nav ul li {
-        margin: 5px 10px;
-    }
-    .intro-section {
-        min-height: calc(100vh - 120px); /* Adjust height for condensed header */
-    }
-    .intro-section .intro-title {
-        font-size: 3rem;
-        margin-bottom: 30px;
-    }
-    .intro-section .intro-btn {
-        padding: 15px 30px;
-        font-size: 1rem;
-    }
-    .features-grid {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .feature-card {
-        width: 100%;
-        margin-bottom: 15px;
-    }
+    header .container { flex-direction: column; align-items: flex-end; padding: 0 8px; }
+    nav ul { margin-top: 15px; flex-wrap: wrap; justify-content: flex-end; }
+    nav ul li { margin: 5px 10px; }
+    .intro-section { min-height: calc(100vh - 120px); }
+    .intro-title { font-size: 3rem; margin-bottom: 30px; }
+    .intro-btn { padding: 15px 30px; font-size: 1rem; }
+    .features-grid { display: flex; flex-direction: column; }
+    .feature-card { width: 100%; margin-bottom: 15px; }
 }
-
 @media (max-width: 600px) {
-  /* General Mobile Setup */
-  header, footer, .scroll-up-indicator {
-    display: none;
-  }
-  main {
-    padding-bottom: 0;
-  }
+  header, footer, .scroll-up-indicator { display: none; }
+  main { padding-bottom: 0; }
 
-  /* Scroll Down Indicator */
-  .scroll-down-indicator {
-    display: block;
-    bottom: 30px;
-    animation: float-down 3s ease-in-out infinite;
-  }
-  .scroll-down-indicator i {
-    color: #485744;
-    text-shadow: none;
-    font-size: 2.5rem;
-  }
+  .scroll-down-indicator { display: block; bottom: 30px; animation: float-down 3s ease-in-out infinite; }
+  .scroll-down-indicator i { color: #485744; text-shadow: none; font-size: 2.5rem; }
 
-  /* Intro Section */
-  .intro-section {
-    padding: 20px;
-    min-height: 100vh;
-    justify-content: center;
-  }
-  .intro-flex {
-    flex-direction: column;
-    gap: 24px;
-    align-items: center;
-  }
-  .intro-text {
-    flex: 0 1 auto;
-    text-align: center !important;
-  }
-  .intro-title {
-    font-size: 3.5rem !important;
-    margin-bottom: 0 !important;
-  }
-  .intro-actions {
-    flex: 0 1 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px !important;
-    width: 100% !important;
-    align-items: center !important;
-    margin-top: 80px !important;
-  }
-  .intro-actions a {
-    margin-top: 0;
-    max-width: 600px !important;
-  }
-  .intro-screenshot-col {
-    display: none;
-  }
+  .intro-section { padding: 20px; min-height: 100vh; justify-content: center; }
+  .intro-flex { flex-direction: column; gap: 24px; align-items: center; }
+  .intro-text { flex: 0 1 auto; text-align: center !important; }
+  .intro-title { font-size: 3.5rem !important; margin-bottom: 0 !important; }
+  .intro-actions { flex: 0 1 auto; display: flex; flex-direction: column; gap: 12px !important; width: 100% !important; align-items: center !important; margin-top: 80px !important; }
+  .intro-actions a { margin-top: 0; max-width: 600px !important; }
+  .intro-screenshot-col { display: none; }
   
-  /* Features Section */
-  .features-section {
-    padding: 32px 10px;
-  }
-  .features-title {
-    font-size: 2rem;
-    margin-bottom: 24px;
-  }
-  .features-grid {
-    gap: 16px;
-  }
-  .feature-card {
-    padding: 22px 14px;
-    border-radius: 18px;
-    gap: 14px;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 20px;
-    box-shadow: none;
-    background: transparent;
-    border: none;
-    text-align: center;
-  }
-  .feature-icon {
-    font-size: 1.5rem;
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    margin-bottom: 8px;
-  }
-  .feature-content h3 {
-    font-size: 1.18rem;
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  .feature-content p {
-    font-size: 1.03rem;
-    line-height: 1.7;
-    opacity: 0.92;
-  }
+  .features-section { padding: 32px 10px; }
+  .features-title { font-size: 2rem; margin-bottom: 24px; }
+  .features-grid { gap: 16px; }
+  .feature-card { padding: 22px 14px; border-radius: 18px; gap: 14px; flex-direction: column; align-items: center; margin-bottom: 20px; box-shadow: none; background: transparent; border: none; text-align: center; }
+  .feature-icon { font-size: 1.5rem; width: 56px; height: 56px; border-radius: 14px; margin-bottom: 8px; }
+  .feature-content h3 { font-size: 1.18rem; font-weight: 600; margin-bottom: 6px; }
+  .feature-content p { font-size: 1.03rem; line-height: 1.7; opacity: 0.92; }
 
-  /* Screenshots Section */
-  .screenshots-container {
-    flex-direction: row;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 0 10px 10px 10px;
-    justify-content: flex-start;
-  }
-  .screenshots-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 15px;
-  }
-  .screenshot-item {
-    flex-shrink: 0;
-  }
-  .screenshot-item img {
-    width: 70vw;
-    max-width: 280px;
-    border-radius: 16px;
-  }
+  .screenshots-container { flex-direction: row; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 10px 10px 10px; justify-content: flex-start; }
+  .screenshots-grid { display: flex; flex-wrap: nowrap; gap: 15px; }
+  .screenshot-item { flex-shrink: 0; }
+  .screenshot-item img { width: 70vw; max-width: 280px; border-radius: 16px; }
 }
 
-/* Add padding to main content to accommodate fixed footer */
-main {
-    padding-bottom: 100px;
-}
-
-/* --- MOBILE IMPROVEMENTS END --- */
+/* Add padding for fixed footer */
+main { padding-bottom: 100px; }
 
 @media (min-width: 768px) {
-    .feature-card {
-        padding: 40px; /* Adjust as needed */
-        font-size: 1.2rem; /* Adjust as needed */
-    }
+    .feature-card { padding: 40px; font-size: 1.2rem; }
 }
 
-/* --- Feature Card Visual Enhancements --- */
+/* Feature card visuals */
 .feature-icon-bg {
-  background: none;
-  border-radius: 50%;
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 18px;
-  font-size: 2.2rem;
-  color: var(--color-primary);
-  box-shadow: none;
-  transition: transform 0.3s, box-shadow 0.3s;
+  background: none; border-radius: 50%; width: 64px; height: 64px;
+  display: flex; align-items: center; justify-content: center; margin-bottom: 18px;
+  font-size: 2.2rem; color: var(--color-primary); box-shadow: none; transition: transform 0.3s, box-shadow 0.3s;
 }
-.feature-card:hover .feature-icon-bg {
-  transform: scale(1.08) rotate(3deg);
-  box-shadow: none;
-}
-.feature-content h3 {
-  font-family: var(--font-serif);
-  font-size: 1.35rem;
-  font-weight: 600;
-  color: #34495E;
-  margin-bottom: 8px;
-  letter-spacing: -0.5px;
-}
-.feature-content p {
-  font-size: 1.06rem;
-  color: #5a6c7d;
-  line-height: 1.7;
-  opacity: 0.92;
-}
-.feature-card {
-  min-height: 260px;
-  align-items: center;
-  text-align: center;
-  box-shadow: none;
-  border-radius: 20px;
-  padding: 40px 30px;
-  background: transparent;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: none;
-}
-.feature-card:hover {
-  transform: translateY(-8px) scale(1.03);
-  box-shadow: none;
-  border: none;
-}
-.features-title {
-  font-family: var(--font-serif);
-  font-size: 2.3rem;
-  color: #1A1A1A;
-  margin-bottom: 36px;
-  font-weight: 700;
-  text-align: center;
-  letter-spacing: -0.5px;
-  position: relative;
-  display: block;
-}
-.features-title::after {
-  content: '';
-  position: absolute;
-  bottom: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 3px;
-  background: var(--color-primary);
-  border-radius: 3px;
-}
+.feature-card:hover .feature-icon-bg { transform: scale(1.08) rotate(3deg); box-shadow: none; }
+.feature-content h3 { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 600; color: #34495E; margin-bottom: 8px; letter-spacing: -0.5px; }
+.feature-content p { font-size: 1.06rem; color: #5a6c7d; line-height: 1.7; opacity: 0.92; }
+.feature-card { min-height: 260px; align-items: center; text-align: center; box-shadow: none; border-radius: 20px; padding: 40px 30px; background: transparent; transition: transform 0.2s, box-shadow 0.2s; border: none; }
+.feature-card:hover { transform: translateY(-8px) scale(1.03); box-shadow: none; border: none; }
+.features-title { font-family: var(--font-serif); font-size: 2.3rem; color: #1A1A1A; margin-bottom: 36px; font-weight: 700; text-align: center; letter-spacing: -0.5px; position: relative; display: block; }
+.features-title::after { content: ''; position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); width: 60px; height: 3px; background: var(--color-primary); border-radius: 3px; }
 
 @media (max-width: 768px) {
-  .feature-icon-bg {
-    width: 48px;
-    height: 48px;
-    font-size: 1.3rem;
-    margin-bottom: 0;
-  }
-  .feature-content h3 {
-    font-size: 1.1rem;
-  }
-  .feature-content p {
-    font-size: 0.97rem;
-  }
-  .feature-card {
-    min-height: unset;
-    padding: 18px 10px;
-    border-radius: 14px;
-  }
-  .features-title {
-    font-size: 1.35rem;
-    margin-bottom: 22px;
-  }
+  .feature-icon-bg { width: 48px; height: 48px; font-size: 1.3rem; margin-bottom: 0; }
+  .feature-content h3 { font-size: 1.1rem; }
+  .feature-content p { font-size: 0.97rem; }
+  .feature-card { min-height: unset; padding: 18px 10px; border-radius: 14px; }
+  .features-title { font-size: 1.35rem; margin-bottom: 22px; }
+/* --- LIQUID GLASS APPLE DESIGN REFINEMENT END --- */
 }
-
     </style>
 
     <!-- Structured Data -->
@@ -1045,39 +526,31 @@ main {
       "applicationCategory": "HealthApplication",
       "operatingSystem": "iOS",
       "description": "Medication reminder and daily pill tracking app that helps users stay consistent and organized.",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "url": "https://pillr.app/",
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.9",
-        "reviewCount": "180"
-      }
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "url": "https://pillr.app/"
     }
     </script>
 </head>
 <body>
 
     <header>
-        <div class="container">
-        </div>
+        <div class="container"></div>
     </header>
 
     <main>
-        <!-- ONLY this section remains, styled to match the image -->
+        <!-- Intro -->
         <section class="intro-section">
             <div class="container intro-flex">
                 <div class="intro-text">
+                    <div class="intro-brand" aria-hidden="false">Pillr</div>
                     <h1 class="intro-title">
-                        The <span class="pillr-highlight">Pillr</span> of medication<br>
-                        tracking.
+                        <span class="pillr-highlight">medication reminder</span><br>
+                        and pill tracker<br>
+                        for iPhone
                     </h1>
                     <div class="intro-actions">
                         <a href="https://apps.apple.com/us/app/pillr-medication-reminder/id6746717689?itscg=30200&itsct=apps_box_badge&mttnsubad=6746717689" class="app-store-button">
-                            <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/white/en-us?releaseDate=1749168000" alt="Download on the App Store" />
+                            <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/white/en-us?releaseDate=1749168000" alt="Download Pillr medication reminder on the App Store" />
                         </a>
                     </div>
                 </div>
@@ -1086,323 +559,143 @@ main {
                 <i class="fas fa-chevron-down"></i>
             </div>
         </section>
+
         <!-- Features and Carousel Section -->
         <section class="features-carousel-container">
-            <div class="features-section">
+            <!-- Visually hidden semantic H2 for SEO -->
+            <h2 style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">
+                Medication reminder app features
+            </h2>
 
+            <div class="features-section">
                 <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon-bg">
-                  <i class="fas fa-pills"></i>
-                </div>
-                <div class="feature-content">
-                  <h3>Medication Management</h3>
-                  <p>Organize all your meds, dosages, and schedules in one stress-free place.</p>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon-bg">
-                  <i class="fas fa-bell"></i>
-                </div>
-                <div class="feature-content">
-                  <h3>Smart Reminders</h3>
-                  <p>Never miss a dose - get intelligent notifications right on time.</p>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon-bg">
-                  <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="feature-content">
-                  <h3>Progress Tracking</h3>
-                  <p>Visualize your adherence and health progress.</p>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon-bg">
-                  <i class="fas fa-calendar-alt"></i>
-                </div>
-                <div class="feature-content">
-                  <h3>Custom Schedules</h3>
-                  <p>Personalize medication routines to fit your unique lifestyle.</p>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon-bg">
-                  <i class="fas fa-robot"></i>
-                </div>
-                <div class="feature-content">
-                  <h3>AI Medication Safety</h3>
-                  <p>AI is built-in to help you avoid medication interactions and to smartly add new meds based on your needs - making your health management safer and easier.</p>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon-bg">
-                  <i class="fas fa-shield-alt"></i>
-                </div>
-                <div class="feature-content">
-                  <h3>Privacy First</h3>
-                  <p>Your health data stays on your device, protected by industry leading security.</p>
-                </div>
-            </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-bg">
+                          <i class="fas fa-pills"></i>
+                        </div>
+                        <div class="feature-content">
+                          <h3>Medication organizer and pill list</h3>
+                          <p>Organize prescriptions, doses, and refill dates in one simple medication organizer.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-bg">
+                          <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="feature-content">
+                          <h3>Medication reminders and dose alerts</h3>
+                          <p>Get reliable medication reminders and dose alerts at the right time.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-bg">
+                          <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="feature-content">
+                          <h3>Adherence tracker and health trends</h3>
+                          <p>Track adherence and view daily, weekly, and monthly progress.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-bg">
+                          <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="feature-content">
+                          <h3>Flexible medication schedules</h3>
+                          <p>Set custom schedules for daily, weekly, and as needed doses.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-bg">
+                          <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="feature-content">
+                          <h3>AI powered interaction checks</h3>
+                          <p>Use AI to help check potential interactions and add medications faster.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon-bg">
+                          <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="feature-content">
+                          <h3>Private on device health data</h3>
+                          <p>Your health data stays on your device with end to end security.</p>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Testimonials Section -->
-                <div class="testimonials-container">
-                    <h2 class="testimonials-title">What Our Users Say</h2>
-                    <p class="testimonials-subtitle">Don't just take our word for it - hear from our community</p>
-                    <div class="testimonials-grid">
-                        <div class="testimonial-card">
-                            <div class="testimonial-quote">"Pillr has completely changed how I manage my meds. I used to forget doses all the time, but now I get reminders right when I need them. Simple, reliable, and exactly what I needed."</div>
-                            <div class="testimonial-author">— Sarah L.</div>
-                        </div>
-                        <div class="testimonial-card">
-                            <div class="testimonial-quote">"I've tried a few medication trackers, but Pillr is the only one that actually fits my routine. Clean interface, easy to log everything, and no annoying ads. Highly recommend."</div>
-                            <div class="testimonial-author">— Marcus P.</div>
-                        </div>
-                        <div class="testimonial-card">
-                            <div class="testimonial-quote">"Pillr helps me track my prescriptions and supplements in one place. I like that it's not cluttered with useless features. Just works like it should."</div>
-                            <div class="testimonial-author">— Angela K.</div>
-                        </div>
+            <!-- Testimonials Section -->
+            <div class="testimonials-container">
+                <h2 class="testimonials-title">Why users choose Pillr</h2>
+                <p class="testimonials-subtitle">Real reviews from people who use Pillr every day</p>
+                <div class="testimonials-grid">
+                    <div class="testimonial-card">
+                        <div class="testimonial-quote">"Pillr has completely changed how I manage my meds. I used to forget doses all the time, but now I get reminders right when I need them. Simple and reliable."</div>
+                        <div class="testimonial-author">— Sarah L.</div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="testimonial-quote">"I have tried a few medication trackers, but Pillr is the only one that fits my routine. Clean interface and easy to log everything."</div>
+                        <div class="testimonial-author">— Marcus P.</div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="testimonial-quote">"Pillr helps me track my prescriptions and supplements in one place. It is not cluttered with useless features. It just works."</div>
+                        <div class="testimonial-author">— Angela K.</div>
                     </div>
                 </div>
             </div>
         </section>
+
         <style>
-            .features-carousel-container {
-                width: 100%;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 40px 20px;
-            }
-            
-            .screenshots-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 15px;
-                max-width: 100%;
-            }
-            
-            .screenshot-item {
-                overflow: hidden;
-                border-radius: 15px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-                transition: transform 0.3s ease;
-            }
-            
-            .screenshot-item:hover {
-                transform: translateY(-5px);
-            }
-            
-            .screenshot-item img {
-                width: 100%;
-                height: auto;
-                display: block;
-            }
+            .features-carousel-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+            .screenshots-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 100%; }
+            .screenshot-item { overflow: hidden; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
+            .screenshot-item:hover { transform: translateY(-5px); }
+            .screenshot-item img { width: 100%; height: auto; display: block; }
 
-            /* Testimonials styling */
-            .testimonials-container {
-                width: 100%;
-                max-width: 1200px;
-                margin: 40px auto 0;
-                padding: 0 40px;
-                text-align: center;
-            }
-            
-            .testimonials-subtitle {
-                font-size: 1.1rem;
-                color: #5a6c7d;
-                margin-bottom: 40px;
-                max-width: 700px;
-                margin-left: auto;
-                margin-right: auto;
-                line-height: 1.6;
-            }
+            .testimonials-container { width: 100%; max-width: 1200px; margin: 40px auto 0; padding: 0 40px; text-align: center; }
+            .testimonials-subtitle { font-size: 1.1rem; color: #5a6c7d; margin-bottom: 40px; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+            .testimonials-title { font-family: var(--font-serif); font-size: 2.1rem; color: #394B38; margin-bottom: 38px; font-weight: 700; text-align: center; letter-spacing: -0.5px; position: relative; }
+            .testimonials-title::after { content: ''; position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); width: 50px; height: 3px; background: #4B5847; border-radius: 3px; }
 
-            .testimonials-title {
-                font-family: var(--font-serif);
-                font-size: 2.1rem;
-                color: #394B38;
-                margin-bottom: 38px;
-                font-weight: 700;
-                text-align: center;
-                letter-spacing: -0.5px;
-                position: relative;
-            }
-
-            .testimonials-title::after {
-                content: '';
-                position: absolute;
-                bottom: -12px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 50px;
-                height: 3px;
-                background: #4B5847;
-                border-radius: 3px;
-            }
-
-            .testimonials-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 30px;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 0 20px;
-            }
-
-            .testimonial-card {
-                background: #fff;
-                border-radius: 18px;
-                box-shadow: 0 8px 24px rgba(44,62,80,0.12), 0 4px 12px rgba(44,62,80,0.08);
-                padding: 32px 28px;
-                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                position: relative;
-                overflow: hidden;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                border: 1px solid rgba(0,0,0,0.04);
-            }
-            
-            .testimonial-card::before {
-                content: '"';
-                position: absolute;
-                top: 20px;
-                left: 20px;
-                font-family: 'Playfair Display', serif;
-                font-size: 5rem;
-                color: rgba(74, 85, 104, 0.1);
-                line-height: 1;
-                z-index: 0;
-            }
-
-            .testimonial-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 12px 32px rgba(44,62,80,0.16), 0 8px 16px rgba(44,62,80,0.1);
-            }
-
-            .testimonial-quote {
-                font-size: 1.05rem;
-                color: #2D3748;
-                margin-bottom: 20px;
-                line-height: 1.7;
-                position: relative;
-                z-index: 1;
-                flex-grow: 1;
-                font-weight: 400;
-            }
-
-            .testimonial-author {
-                font-size: 0.95rem;
-                color: #4B5847;
-                font-weight: 600;
-                text-align: right;
-                margin-top: auto;
-                padding-top: 16px;
-                border-top: 1px solid rgba(0,0,0,0.05);
-                position: relative;
-                z-index: 1;
-            }
+            .testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+            .testimonial-card { background: #fff; border-radius: 18px; box-shadow: 0 8px 24px rgba(44,62,80,0.12), 0 4px 12px rgba(44,62,80,0.08); padding: 32px 28px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; height: 100%; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.04); }
+            .testimonial-card::before { content: '"'; position: absolute; top: 20px; left: 20px; font-family: 'Playfair Display', serif; font-size: 5rem; color: rgba(74, 85, 104, 0.1); line-height: 1; z-index: 0; }
+            .testimonial-card:hover { transform: translateY(-5px); box-shadow: 0 12px 32px rgba(44,62,80,0.16), 0 8px 16px rgba(44,62,80,0.1); }
+            .testimonial-quote { font-size: 1.05rem; color: #2D3748; margin-bottom: 20px; line-height: 1.7; position: relative; z-index: 1; flex-grow: 1; font-weight: 400; }
+            .testimonial-author { font-size: 0.95rem; color: #4B5847; font-weight: 600; text-align: right; margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.05); position: relative; z-index: 1; }
 
             @media (max-width: 1024px) {
-                .features-section {
-                    padding: 50px 0;
-                    width: calc(100% - 30px);
-                }
-                
-                .features-grid,
-                .testimonials-container {
-                    padding: 0 30px;
-                }
-                
-                .testimonials-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 24px;
-                }
+                .features-section { padding: 50px 0; width: calc(100% - 30px); }
+                .features-grid, .testimonials-container { padding: 0 30px; }
+                .testimonials-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
             }
-            
             @media (max-width: 768px) {
-                .features-section {
-                    padding: 40px 0;
-                    width: calc(100% - 20px);
-                    border-radius: 16px;
-                }
-                
-                .features-grid,
-                .testimonials-container {
-                    padding: 0 20px;
-                }
-                
-                .features-grid {
-                    grid-template-columns: 1fr;
-                    gap: 24px;
-                }
-                
-                .testimonials-container {
-                    margin: 40px 0 20px;
-                }
-                
-                .testimonials-title {
-                    font-size: 1.8rem;
-                    margin-bottom: 12px;
-                }
-                
-                .testimonials-subtitle {
-                    font-size: 1rem;
-                    margin-bottom: 24px;
-                    padding: 0;
-                }
-                
-                .testimonials-grid {
-                    grid-template-columns: 1fr;
-                    padding: 0;
-                    gap: 20px;
-                }
-                
-                .testimonial-card {
-                    padding: 22px 18px;
-                    border-radius: 14px;
-                }
-                
-                .testimonial-quote {
-                    font-size: 0.98rem;
-                }
-                
-                .testimonial-author {
-                    font-size: 0.88rem;
-                }
+                .features-section { padding: 40px 0; width: calc(100% - 20px); border-radius: 16px; }
+                .features-grid, .testimonials-container { padding: 0 20px; }
+                .features-grid { grid-template-columns: 1fr; gap: 24px; }
+                .testimonials-container { margin: 40px 0 20px; }
+                .testimonials-title { font-size: 1.8rem; margin-bottom: 12px; }
+                .testimonials-subtitle { font-size: 1rem; margin-bottom: 24px; padding: 0; }
+                .testimonials-grid { grid-template-columns: 1fr; padding: 0; gap: 20px; }
+                .testimonial-card { padding: 22px 18px; border-radius: 14px; }
+                .testimonial-quote { font-size: 0.98rem; }
+                .testimonial-author { font-size: 0.88rem; }
             }
-
-            .testimonial-author {
-                font-size: 1rem;
-                color: #4B5847;
-                font-weight: 600;
-            }
+            .testimonial-author { font-size: 1rem; color: #4B5847; font-weight: 600; }
             @media (max-width: 900px) {
-                .testimonials-section {
-                    padding: 36px 0 36px 0;
-                }
-                .testimonials-title {
-                    font-size: 1.5rem;
-                }
-                .testimonials-grid {
-                    gap: 18px;
-                }
-                .testimonial-card {
-                    padding: 22px 14px;
-                    max-width: 95vw;
-                }
+                .testimonials-section { padding: 36px 0 36px 0; }
+                .testimonials-title { font-size: 1.5rem; }
+                .testimonials-grid { gap: 18px; }
+                .testimonial-card { padding: 22px 14px; max-width: 95vw; }
             }
         </style>
     </main>
 
-    <!-- Added footer that matches header style -->
+    <!-- Footer -->
     <footer>
-        <div class="container">
-        </div>
+        <div class="container"></div>
         <div class="scroll-up-indicator">
             <i class="fas fa-chevron-up"></i>
         </div>
@@ -1410,7 +703,7 @@ main {
 
     <div class="embed-card-container">
       <div class="embed-card">
-        <iframe data-tally-src="https://tally.so/embed/3qMdL7?alignLeft=1&transparentBackground=1&dynamicHeight=1" loading="lazy" width="100%" height="180" frameborder="0" marginheight="0" marginwidth="0" title="How can we help? (Pillr)"></iframe>
+        <iframe data-tally-src="https://tally.so/embed/3qMdL7?alignLeft=1&transparentBackground=1&dynamicHeight=1" loading="lazy" width="100%" height="180" frameborder="0" marginheight="0" marginwidth="0" title="How can we help? Pillr"></iframe>
       </div>
     </div>
 
@@ -1427,8 +720,6 @@ main {
             scrollDownIndicator.style.pointerEvents = "none";
             scrollUpIndicator.style.opacity = "0";
             scrollUpIndicator.style.pointerEvents = "none";
-            
-            // Make header and footer transparent when scrolling
             header.classList.add('transparent');
             footer.classList.add('transparent');
           } else {
@@ -1436,74 +727,53 @@ main {
             scrollDownIndicator.style.pointerEvents = "auto";
             scrollUpIndicator.style.opacity = "1";
             scrollUpIndicator.style.pointerEvents = "auto";
-            
-            // Restore original appearance when back at top
             header.classList.remove('transparent');
             footer.classList.remove('transparent');
           }
         });
 
-        // Added scroll-to-top functionality
+        // Scroll to top
         document.querySelector('.scroll-up-indicator').addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
         
-        // Add click handler for scroll down
+        // Scroll down to features
         document.querySelector('.scroll-down-indicator').addEventListener('click', () => {
             const featuresSection = document.querySelector('.features-section');
             featuresSection.scrollIntoView({ behavior: 'smooth' });
         });
-        
     </script>
     
     <style>
         /* Glass appearance for header and footer when scrolling */
         header.transparent, footer.transparent {
-            background: rgba(57, 75, 56, 0.25) !important; /* More transparent version of #394B38 */
+            background: rgba(57, 75, 56, 0.25) !important;
             backdrop-filter: blur(8px) !important;
             -webkit-backdrop-filter: blur(8px) !important;
             transition: all 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .tally-embed-container {
-            margin-bottom: 32px;
-        }
-        .embed-card-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          width: 100%;
-          margin-top: 36px;
-          margin-bottom: 40px;
-        }
+        .tally-embed-container { margin-bottom: 32px; }
+        .embed-card-container { display: flex; justify-content: center; align-items: center; width: 100%; margin-top: 36px; margin-bottom: 40px; }
         .embed-card {
-  background: none !important;
-  border-radius: 20px;
-  box-shadow: none !important;
-  border: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  padding: 32px;
-  max-width: 1200px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0 auto;
-}
+          background: none !important; border-radius: 20px; box-shadow: none !important; border: none !important;
+          backdrop-filter: none !important; -webkit-backdrop-filter: none !important; padding: 32px; max-width: 1200px;
+          width: 100%; display: flex; flex-direction: column; align-items: center; margin: 0 auto;
+        }
         .embed-card iframe {
-  width: 100%;
-  min-height: 180px;
-  border: none;
-  border-radius: 12px;
-  background: none !important;
-  box-shadow: none !important;
-}
+          width: 100%; min-height: 180px; border: none; border-radius: 12px; background: none !important; box-shadow: none !important;
+        }
     </style>
 
-    <script>var d=document,w="https://tally.so/widgets/embed.js",v=function(){"undefined"!=typeof Tally?Tally.loadEmbeds():d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function(e){e.src=e.dataset.tallySrc}))};if("undefined"!=typeof Tally)v();else if(d.querySelector('script[src="'+w+'"]')==null){var s=d.createElement("script");s.src=w,s.onload=v,s.onerror=v,d.body.appendChild(s);}</script>
+    <script>
+      var d=document,w="https://tally.so/widgets/embed.js",v=function(){
+        if("undefined"!=typeof Tally) Tally.loadEmbeds();
+        else d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach(function(e){e.src=e.dataset.tallySrc});
+      };
+      if("undefined"!=typeof Tally) v();
+      else if(d.querySelector('script[src="'+w+'"]')==null){
+        var s=d.createElement("script"); s.src=w; s.onload=v; s.onerror=v; d.body.appendChild(s);
+      }
+    </script>
 </body>
 </html>
