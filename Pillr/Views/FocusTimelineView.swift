@@ -152,7 +152,7 @@ struct FocusTimelineView: View {
                 .font(.system(size: 28, weight: .bold, design: .rounded))
                 .foregroundColor(Color(hex: "#E8E8E0"))
             
-            Text("See when your ADHD stimulants are likely to start helping and when they may wear off, so you can plan focus time and breaks.")
+            Text("Each bar shows your day from midnight to midnight. The light segment is when this dose is likely to help most, and the thin vertical line marks right now.")
                 .font(.system(size: 14))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
         }
@@ -257,6 +257,7 @@ private struct FocusWindowRow: View {
                         .cornerRadius(12)
                 }
             }
+            .padding(.top, 10)
         }
         .padding(16)
         .background(
@@ -276,6 +277,7 @@ private struct FocusBar: View {
     let now: Date
     
     private let totalMinutes: CGFloat = 24 * 60
+    private let hourTicks: [CGFloat] = stride(from: 0, through: 24, by: 2).map { CGFloat($0 * 60) }
     
     private func minutesSinceMidnight(_ date: Date) -> CGFloat {
         let calendar = Calendar.current
@@ -283,6 +285,25 @@ private struct FocusBar: View {
         let hours = CGFloat(components.hour ?? 0)
         let minutes = CGFloat(components.minute ?? 0)
         return hours * 60 + minutes
+    }
+    
+    private func label(for minutes: CGFloat) -> String {
+        let clamped = max(0, min(Int(minutes), Int(totalMinutes)))
+        let hours = (clamped / 60) % 24
+        let hour12 = hours % 12
+        let displayHour = hour12 == 0 ? 12 : hour12
+        return "\(displayHour)"
+    }
+    
+    private func isPM(_ minutes: CGFloat) -> Bool {
+        let clamped = max(0, min(Int(minutes), Int(totalMinutes)))
+        // Treat the end-of-day (24:00) as PM so the
+        // right-edge "12" only appears on the PM row.
+        if clamped == Int(totalMinutes) {
+            return true
+        }
+        let hours = (clamped / 60) % 24
+        return hours >= 12
     }
     
     var body: some View {
@@ -300,35 +321,98 @@ private struct FocusBar: View {
             let nowX = width * (max(0, min(totalMinutes, nowMinutes)) / totalMinutes)
             let showNowMarker = nowMinutes >= 0 && nowMinutes <= totalMinutes
             
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.black.opacity(0.25))
-                    .frame(height: 8)
+            let labelRowHeight: CGFloat = 16
+            let barRowHeight: CGFloat = 24
+            
+            VStack(alignment: .leading, spacing: 4) {
+                // PM hours above the bar
+                ZStack(alignment: .topLeading) {
+                    ForEach(hourTicks, id: \.self) { tick in
+                        let tickX = width * (tick / totalMinutes)
+                        let isMidday = Int(tick) == 12 * 60
+                        let isLeftMidnight = Int(tick) == 0
+                        let isRightMidnight = Int(tick) == Int(totalMinutes)
+                        
+                        if isPM(tick) || isRightMidnight {
+                            Text(label(for: tick))
+                                .font(.system(size: 9, weight: isMidday ? .semibold : .regular))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(isMidday ? 0.9 : 0.7))
+                                .position(x: tickX, y: labelRowHeight / 2)
+                        }
+                    }
+                }
+                .frame(height: labelRowHeight)
                 
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(hex: "#C7C7BD"),
-                                Color(hex: "#D7CCC8")
-                            ]),
-                            startPoint: .leading,
-                            endPoint: .trailing
+                // Bar with ticks and "now" marker
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.black.opacity(0.25))
+                        .frame(height: 8)
+                    
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(hex: "#C7C7BD"),
+                                    Color(hex: "#D7CCC8")
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
                         )
-                    )
-                    .frame(width: barWidth, height: 8)
-                    .offset(x: barStart)
+                        .frame(width: barWidth, height: 8)
+                        .offset(x: barStart)
+                    
+                    ForEach(hourTicks, id: \.self) { tick in
+                        let tickX = width * (tick / totalMinutes)
+                        let isMidday = Int(tick) == 12 * 60
+                        
+                        Rectangle()
+                            .fill(Color.white.opacity(isMidday ? 0.35 : 0.18))
+                            .frame(width: 1, height: isMidday ? 10 : 6)
+                            .offset(x: tickX - 0.5, y: 10)
+                    }
+                    
+                    if showNowMarker {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.95))
+                            .frame(width: 2, height: 18)
+                            .offset(x: nowX - 1, y: -4)
+                            .shadow(color: Color.white.opacity(0.7), radius: 2, x: 0, y: 0)
+                    }
+                }
+                .frame(height: barRowHeight)
                 
-                if showNowMarker {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.9))
-                        .frame(width: 2, height: 16)
-                        .offset(x: nowX - 1)
-                        .shadow(color: Color.white.opacity(0.7), radius: 2, x: 0, y: 0)
+                // AM hours below the bar
+                ZStack(alignment: .topLeading) {
+                    ForEach(hourTicks, id: \.self) { tick in
+                        let tickX = width * (tick / totalMinutes)
+                        let isMidday = Int(tick) == 12 * 60
+                        let isLeftMidnight = Int(tick) == 0
+                        let isRightMidnight = Int(tick) == Int(totalMinutes)
+                        
+                        if !isPM(tick) || isLeftMidnight {
+                            Text(label(for: tick))
+                                .font(.system(size: 9, weight: isMidday ? .semibold : .regular))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(isMidday ? 0.9 : 0.7))
+                                .position(x: tickX, y: labelRowHeight / 2)
+                        }
+                    }
+                }
+                .frame(height: labelRowHeight)
+                
+                HStack {
+                    Text("am")
+                        .font(.system(size: 9))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                    Spacer()
+                    Text("pm")
+                        .font(.system(size: 9))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                 }
             }
         }
-        .frame(height: 20)
+        .frame(height: 64)
     }
 }
 
