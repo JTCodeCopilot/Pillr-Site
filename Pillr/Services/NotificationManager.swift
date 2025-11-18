@@ -30,7 +30,7 @@ class NotificationManager: ObservableObject {
             options: .foreground
         )
         
-        // Define the category (group of actions)
+        // Define the medication reminder category (group of actions)
         let category = UNNotificationCategory(
             identifier: "MEDICATION_REMINDER",
             actions: [takeAction, remindAction],
@@ -38,7 +38,7 @@ class NotificationManager: ObservableObject {
             options: []
         )
         
-        // Register the category
+        // Register categories (we may add more later)
         UNUserNotificationCenter.current().setNotificationCategories([category])
     }
     
@@ -88,6 +88,8 @@ class NotificationManager: ObservableObject {
             }
             // Schedule a one-time follow up 30 minutes later
             scheduleOneTimeFollowUp(for: medication, after: 30, originalID: notificationID, baseInterval: interval)
+            // Schedule stimulant phase notifications relative to this one-time reminder
+            scheduleOneTimeStimulantPhaseNotifications(for: medication, originalID: notificationID, baseInterval: interval)
             return notificationID
         }
         
@@ -111,6 +113,8 @@ class NotificationManager: ObservableObject {
         if UserSettings.shared.isPremiumUser {
             scheduleFollowUpNotification(for: medication, after: 30, originalID: notificationID)
         }
+        // Schedule stimulant phase notifications for repeating reminder
+        scheduleRepeatingStimulantPhaseNotifications(for: medication, originalID: notificationID, doseTime: medication.timeToTake)
         return notificationID
     }
     
@@ -205,6 +209,9 @@ class NotificationManager: ObservableObject {
         if UserSettings.shared.isPremiumUser {
             scheduleFollowUpNotification(for: medication, time: time, index: index, after: 30, originalID: notificationID)
         }
+        
+        // Schedule stimulant phase notifications for this dose time
+        scheduleRepeatingStimulantPhaseNotifications(for: medication, originalID: notificationID, doseTime: time)
         
         return notificationID
     }
@@ -309,10 +316,75 @@ class NotificationManager: ObservableObject {
         }
     }
     
+    // MARK: - Focus session helpers
+    
+    func scheduleFocusSession(start: Date, durationMinutes: Int) {
+        let center = UNUserNotificationCenter.current()
+        let calendar = Calendar.current
+        
+        // Start notification
+        let startContent = UNMutableNotificationContent()
+        startContent.title = "Focus session starting"
+        startContent.body = "Use this window for your most important tasks."
+        startContent.sound = UNNotificationSound.default
+        startContent.threadIdentifier = "focus-session"
+        
+        let startComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: start)
+        let startTrigger = UNCalendarNotificationTrigger(dateMatching: startComponents, repeats: false)
+        let startRequest = UNNotificationRequest(identifier: UUID().uuidString, content: startContent, trigger: startTrigger)
+        center.add(startRequest) { error in
+            if let error = error {
+                print("Error scheduling focus session start: \(error.localizedDescription)")
+            }
+        }
+        
+        // Mid-session gentle check-in (if long enough)
+        if durationMinutes >= 40 {
+            let midDate = start.addingTimeInterval(TimeInterval((durationMinutes / 2) * 60))
+            let midContent = UNMutableNotificationContent()
+            midContent.title = "Halfway through your focus session"
+            midContent.body = "Quick stretch, sip of water, or refocus if needed."
+            midContent.sound = UNNotificationSound.default
+            midContent.threadIdentifier = "focus-session"
+            
+            let midComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: midDate)
+            let midTrigger = UNCalendarNotificationTrigger(dateMatching: midComponents, repeats: false)
+            let midRequest = UNNotificationRequest(identifier: UUID().uuidString, content: midContent, trigger: midTrigger)
+            center.add(midRequest) { error in
+                if let error = error {
+                    print("Error scheduling focus session mid-point: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        // End notification
+        let endDate = start.addingTimeInterval(TimeInterval(durationMinutes * 60))
+        let endContent = UNMutableNotificationContent()
+        endContent.title = "Focus session ending"
+        endContent.body = "Time to wrap up or switch to lighter tasks."
+        endContent.sound = UNNotificationSound.default
+        endContent.threadIdentifier = "focus-session"
+        
+        let endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: endDate)
+        let endTrigger = UNCalendarNotificationTrigger(dateMatching: endComponents, repeats: false)
+        let endRequest = UNNotificationRequest(identifier: UUID().uuidString, content: endContent, trigger: endTrigger)
+        center.add(endRequest) { error in
+            if let error = error {
+                print("Error scheduling focus session end: \(error.localizedDescription)")
+            }
+        }
+    }
+    
     func cancelNotification(with id: UUID) {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id.uuidString])
-        // Also cancel the follow-up notification if it exists
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["\(id.uuidString)_followup"])
+        let baseID = id.uuidString
+        // Cancel the primary, follow-up, and stimulant phase notifications derived from this ID
+        let identifiers = [
+            baseID,
+            "\(baseID)_followup",
+            "\(baseID)_onset",
+            "\(baseID)_fade"
+        ]
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
     }
     
     func cancelMultipleNotifications(ids: [UUID]) {
@@ -360,6 +432,144 @@ class NotificationManager: ObservableObject {
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Error scheduling one-time follow-up notification: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    // MARK: - Stimulant phase notifications
+    
+    private func shouldScheduleStimulantTiming(for medication: Medication) -> Bool {
+        return medication.hasStimulantTiming
+    }
+    
+    // One-time (non-repeating) stimulant onset / fade notifications
+    private func scheduleOneTimeStimulantPhaseNotifications(for medication: Medication, originalID: UUID, baseInterval: TimeInterval) {
+        guard shouldScheduleStimulantTiming(for: medication),
+              let onset = medication.onsetMinutes,
+              let duration = medication.durationMinutes else { return }
+        
+        let center = UNUserNotificationCenter.current()
+        let baseID = originalID.uuidString
+        
+        // Onset notification
+        let onsetContent = UNMutableNotificationContent()
+        onsetContent.title = "Medication starting to work"
+        onsetContent.body = "\(medication.name) is likely starting to work. This can be a good time to ease into tasks or planning."
+        onsetContent.sound = UNNotificationSound.default
+        onsetContent.userInfo = [
+            "medicationID": medication.id.uuidString,
+            "phase": "onset"
+        ]
+        onsetContent.categoryIdentifier = "MEDICATION_REMINDER"
+        onsetContent.threadIdentifier = "medication-reminders"
+        
+        let onsetInterval = baseInterval + Double(onset * 60)
+        let onsetTrigger = UNTimeIntervalNotificationTrigger(timeInterval: onsetInterval, repeats: false)
+        let onsetRequest = UNNotificationRequest(identifier: "\(baseID)_onset", content: onsetContent, trigger: onsetTrigger)
+        center.add(onsetRequest) { error in
+            if let error = error {
+                print("Error scheduling stimulant onset notification: \(error.localizedDescription)")
+            }
+        }
+        
+        // Fade notification
+        let fadeContent = UNMutableNotificationContent()
+        fadeContent.title = "Medication may wear off soon"
+        fadeContent.body = "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks."
+        fadeContent.sound = UNNotificationSound.default
+        fadeContent.userInfo = [
+            "medicationID": medication.id.uuidString,
+            "phase": "fade"
+        ]
+        fadeContent.categoryIdentifier = "MEDICATION_REMINDER"
+        fadeContent.threadIdentifier = "medication-reminders"
+        
+        let fadeInterval = baseInterval + Double(duration * 60)
+        let fadeTrigger = UNTimeIntervalNotificationTrigger(timeInterval: fadeInterval, repeats: false)
+        let fadeRequest = UNNotificationRequest(identifier: "\(baseID)_fade", content: fadeContent, trigger: fadeTrigger)
+        center.add(fadeRequest) { error in
+            if let error = error {
+                print("Error scheduling stimulant fade notification: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    // Repeating daily stimulant onset / fade notifications
+    private func scheduleRepeatingStimulantPhaseNotifications(for medication: Medication, originalID: UUID, doseTime: Date) {
+        guard shouldScheduleStimulantTiming(for: medication),
+              let onset = medication.onsetMinutes,
+              let duration = medication.durationMinutes else { return }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        let center = UNUserNotificationCenter.current()
+        let baseID = originalID.uuidString
+        
+        // Helper to create repeating calendar trigger aligned with today/tomorrow logic
+        func triggerComponents(for date: Date) -> DateComponents {
+            let hour = calendar.component(.hour, from: date)
+            let minute = calendar.component(.minute, from: date)
+            
+            var components = DateComponents()
+            components.hour = hour
+            components.minute = minute
+            
+            let currentHour = calendar.component(.hour, from: now)
+            let currentMinute = calendar.component(.minute, from: now)
+            let hasPassedToday = (hour < currentHour || (hour == currentHour && minute <= currentMinute))
+            
+            if hasPassedToday {
+                if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) {
+                    components.day = calendar.component(.day, from: tomorrow)
+                    components.month = calendar.component(.month, from: tomorrow)
+                    components.year = calendar.component(.year, from: tomorrow)
+                }
+            }
+            
+            return components
+        }
+        
+        // Onset
+        if let onsetDate = calendar.date(byAdding: .minute, value: onset, to: doseTime) {
+            let onsetContent = UNMutableNotificationContent()
+            onsetContent.title = "Medication starting to work"
+            onsetContent.body = "\(medication.name) is likely starting to work. This can be a good time to ease into tasks or planning."
+            onsetContent.sound = UNNotificationSound.default
+            onsetContent.userInfo = [
+                "medicationID": medication.id.uuidString,
+                "phase": "onset"
+            ]
+            onsetContent.categoryIdentifier = "MEDICATION_REMINDER"
+            onsetContent.threadIdentifier = "medication-reminders"
+            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents(for: onsetDate), repeats: true)
+            let request = UNNotificationRequest(identifier: "\(baseID)_onset", content: onsetContent, trigger: trigger)
+            center.add(request) { error in
+                if let error = error {
+                    print("Error scheduling repeating stimulant onset notification: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        // Fade
+        if let fadeDate = calendar.date(byAdding: .minute, value: duration, to: doseTime) {
+            let fadeContent = UNMutableNotificationContent()
+            fadeContent.title = "Medication may wear off soon"
+            fadeContent.body = "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks."
+            fadeContent.sound = UNNotificationSound.default
+            fadeContent.userInfo = [
+                "medicationID": medication.id.uuidString,
+                "phase": "fade"
+            ]
+            fadeContent.categoryIdentifier = "MEDICATION_REMINDER"
+            fadeContent.threadIdentifier = "medication-reminders"
+            
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents(for: fadeDate), repeats: true)
+            let request = UNNotificationRequest(identifier: "\(baseID)_fade", content: fadeContent, trigger: trigger)
+            center.add(request) { error in
+                if let error = error {
+                    print("Error scheduling repeating stimulant fade notification: \(error.localizedDescription)")
+                }
             }
         }
     }
@@ -444,8 +654,12 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 
                 // Find the medication and log it as taken
                 if let medication = MedicationStore.shared.findMedication(with: medicationID) {
-                    // Log the medication as taken
-                    MedicationStore.shared.logMedicationTaken(medication: medication, actualTime: Date(), notes: nil)
+                    // Log the medication as taken (without additional check-in metadata)
+                    MedicationStore.shared.logMedicationTaken(
+                        medication: medication,
+                        actualTime: Date(),
+                        notes: nil
+                    )
                     
                     // Provide success haptic feedback
                     HapticManager.shared.successNotification()

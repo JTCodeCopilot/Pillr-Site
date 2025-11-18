@@ -26,6 +26,7 @@ struct MedicationsListView: View {
     @State private var isCheckingInteractions = false
     @State private var showingInteractionResultSheet = false
     @State private var showingPremiumUpgrade = false
+    @State private var showingFocusTimeline = false
     
     var body: some View {
         MedicationsListMainContent(
@@ -40,7 +41,8 @@ struct MedicationsListView: View {
             showingInteractionSheet: $showingInteractionSheet,
             isCheckingInteractions: $isCheckingInteractions,
             onCheckAllInteractions: showMedicationSelectionSheet,
-            onAddMedication: handleAddMedication
+            onAddMedication: handleAddMedication,
+            onShowFocusTimeline: { showingFocusTimeline = true }
         )
         .sheet(item: $showingLogSheetFor) { med in
             LogMedicationView(medicationToLog: med)
@@ -96,6 +98,10 @@ struct MedicationsListView: View {
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
                 .environmentObject(StoreManager.shared)
+        }
+        .sheet(isPresented: $showingFocusTimeline) {
+            FocusTimelineView()
+                .environmentObject(store)
         }
     }
     
@@ -239,7 +245,8 @@ fileprivate func MedicationsListContent(
     showingInteractionSheet: Binding<Bool>,
     isCheckingInteractions: Binding<Bool>,
     onCheckAllInteractions: @escaping () async -> Void,
-    onAddMedication: @escaping () -> Void
+    onAddMedication: @escaping () -> Void,
+    onShowFocusTimeline: @escaping () -> Void
 ) -> some View {
     ScrollView {
         VStack(spacing: 28) {
@@ -258,6 +265,52 @@ fileprivate func MedicationsListContent(
                 Spacer()
                 
                 HStack(spacing: 12) {
+                    // Focus timeline button
+                    Button(action: {
+                        HapticManager.shared.lightImpact()
+                        onShowFocusTimeline()
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(stops: [
+                                            .init(color: Color(hex: "#F0F0E8"), location: 0.0),
+                                            .init(color: Color(hex: "#E8E8E0"), location: 0.25),
+                                            .init(color: Color(hex: "#DFDFD9"), location: 0.5),
+                                            .init(color: Color(hex: "#C7C7BD"), location: 0.75),
+                                            .init(color: Color(hex: "#B8B8AE"), location: 1.0)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 50, height: 50)
+                                .overlay(
+                                    Circle()
+                                        .stroke(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [
+                                                    Color.white.opacity(0.5),
+                                                    Color.white.opacity(0.3),
+                                                    Color.clear,
+                                                    Color.black.opacity(0.1)
+                                                ]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1.5
+                                        )
+                                )
+                            
+                            Image(systemName: "brain.head.profile")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(Color(hex: "#404C42"))
+                        }
+                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+
                     // Check interactions button
                     Button(action: {
                         HapticManager.shared.lightImpact()
@@ -857,6 +910,7 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
     let onAddMedication: () -> Void
+    let onShowFocusTimeline: () -> Void
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -888,7 +942,8 @@ fileprivate struct MedicationsListMainContent: View {
                         showingInteractionSheet: $showingInteractionSheet,
                         isCheckingInteractions: $isCheckingInteractions,
                         onCheckAllInteractions: onCheckAllInteractions,
-                        onAddMedication: onAddMedication
+                        onAddMedication: onAddMedication,
+                        onShowFocusTimeline: onShowFocusTimeline
                     )
                 }
             }
@@ -1449,6 +1504,11 @@ fileprivate struct MedicationRowDetailsView: View {
     let onEditTap: () -> Void
     let onArchiveTap: (() -> Void)?
 
+    private var baseTimeForTiming: Date {
+        // Use the first reminder time if available, otherwise fall back to the primary time
+        medication.reminderTimes.first ?? medication.timeToTake
+    }
+
     private var reminderTimesString: String {
         if medication.reminderTimes.isEmpty {
             return commonFormatTime(medication.timeToTake) // Fallback to single timeToTake
@@ -1458,6 +1518,24 @@ fileprivate struct MedicationRowDetailsView: View {
 
     private var notificationsEnabled: Bool {
         return !(medication.notificationID == nil && medication.notificationIDs.isEmpty)
+    }
+    
+    private var stimulantTimingSummary: String? {
+        guard medication.hasStimulantTiming,
+              let onset = medication.onsetMinutes,
+              let duration = medication.durationMinutes else { return nil }
+        
+        let calendar = Calendar.current
+        let base = baseTimeForTiming
+        
+        guard let onsetDate = calendar.date(byAdding: .minute, value: onset, to: base),
+              let fadeDate = calendar.date(byAdding: .minute, value: duration, to: base) else {
+            return nil
+        }
+        
+        let onsetString = commonFormatTime(onsetDate)
+        let fadeString = commonFormatTime(fadeDate)
+        return "Starts ~\(onsetString), wears off ~\(fadeString)"
     }
 
     var body: some View {
@@ -1486,6 +1564,16 @@ fileprivate struct MedicationRowDetailsView: View {
                         value: notificationsEnabled ? "Enabled" : "Disabled", 
                         valueColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B"), 
                         iconColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B")
+                    )
+                }
+                
+                if let timingSummary = stimulantTimingSummary {
+                    detailCard(
+                        icon: "brain.head.profile",
+                        label: "Focus Window",
+                        value: timingSummary,
+                        lineLimit: 2,
+                        iconColor: Color(hex: "#D7CCC8")
                     )
                 }
                 

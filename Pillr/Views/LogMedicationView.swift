@@ -27,6 +27,8 @@ struct LogMedicationView: View {
     @State private var sideEffectTags: Set<String> = []
     @State private var customSideEffect: String = ""
     @State private var showingAddCustomSideEffect: Bool = false
+    @State private var focusRating: Int = 0 // 1–5, 0 = not set
+    @State private var sideEffectSeverity: Int = 0 // 1–5, 0 = not set
     
     // Quick time options for easier logging
     enum QuickTimeOption: String, CaseIterable {
@@ -290,6 +292,41 @@ struct LogMedicationView: View {
                         // Enhanced Notes & Side Effects Section
                         FormSection(title: "NOTES & SIDE EFFECTS", icon: "note.text.fill") {
                             VStack(alignment: .leading, spacing: 20) {
+                                // Quick check-in sliders
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Image(systemName: "brain.head.profile")
+                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                            .font(.system(size: 18))
+                                        Text("How was your focus?")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                    }
+                                    
+                                    RatingControl(
+                                        title: "Focus",
+                                        value: $focusRating,
+                                        lowLabel: "Foggy",
+                                        highLabel: "Very focused"
+                                    )
+                                    
+                                    HStack {
+                                        Image(systemName: "waveform.path.ecg")
+                                            .foregroundColor(Color(hex: "#FFB74D"))
+                                            .font(.system(size: 18))
+                                        Text("How strong were side effects?")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                    }
+                                    
+                                    RatingControl(
+                                        title: "Side effects",
+                                        value: $sideEffectSeverity,
+                                        lowLabel: "Barely noticed",
+                                        highLabel: "Very strong"
+                                    )
+                                }
+                                
                                 // Side effects quick selection
                                 VStack(alignment: .leading, spacing: 12) {
                                     HStack {
@@ -590,20 +627,27 @@ struct LogMedicationView: View {
         let finalNotes = combinedNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         let notesToSave = finalNotes.isEmpty ? nil : finalNotes
         
+        let focusToSave = focusRating > 0 ? focusRating : nil
+        let sideEffectToSave = sideEffectSeverity > 0 ? sideEffectSeverity : nil
+        
         if skipped {
              store.skipMedication(
                  medication: medicationToLog,
                  actualTime: timeToUse,
                  notes: notesToSave,
-                 reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
+                 reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
+                 focusRating: focusToSave,
+                 sideEffectSeverity: sideEffectToSave
              )
         } else {
             store.logMedicationTaken(
                 medication: medicationToLog,
                 actualTime: timeToUse,
                 notes: notesToSave,
-                skipped: false, 
-                reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil
+                skipped: false,
+                reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
+                focusRating: focusToSave,
+                sideEffectSeverity: sideEffectToSave
             )
         }
         dismiss()
@@ -624,4 +668,66 @@ struct LogMedicationView: View {
     }
 }
 
+// MARK: - Rating Control
 
+struct RatingControl: View {
+    let title: String
+    @Binding var value: Int
+    let lowLabel: String
+    let highLabel: String
+    
+    private let range = 1...5
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                if value > 0 {
+                    Text("\(value)/5")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                }
+            }
+            
+            HStack(spacing: 8) {
+                Text(lowLabel)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                
+                Spacer()
+                
+                Text(highLabel)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+            }
+            
+            HStack(spacing: 8) {
+                ForEach(range, id: \.self) { index in
+                    Button(action: {
+                        HapticManager.shared.lightImpact()
+                        if value == index {
+                            value = 0
+                        } else {
+                            value = index
+                        }
+                    }) {
+                        Circle()
+                            .fill(
+                                index <= value
+                                ? Color(hex: "#D7CCC8")
+                                : Color.black.opacity(0.3)
+                            )
+                            .frame(width: 22, height: 22)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color(hex: "#C7C7BD").opacity(0.5), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+            }
+        }
+    }
+}

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct MedicationLogView: View {
     @EnvironmentObject var store: MedicationStore
@@ -26,7 +27,7 @@ struct MedicationLogView: View {
             let medicationMatch = selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter
             return !log.skipped && medicationMatch
         }
-
+        
         for log in filteredLogs {
             let dateComponents = calendar.dateComponents([.year, .month, .day], from: log.takenAt)
             if let date = calendar.date(from: dateComponents) {
@@ -101,7 +102,7 @@ struct MedicationLogView: View {
         formatter.dateTimeStyle = .named
         return formatter
     }
-
+    
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
@@ -181,6 +182,34 @@ struct MedicationLogView: View {
                                         icon: "flame.fill"
                                     )
                                 }
+                            }
+                            
+                            if let trendsText = focusTrendsSummary {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "brain.head.profile")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                        Text("Focus & side-effect trends")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                    }
+                                    
+                                    Text(trendsText)
+                                        .font(.system(size: 13))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Color.black.opacity(0.18))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
+                                        )
+                                )
+                                .padding(.top, 4)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -308,7 +337,7 @@ struct MedicationLogView: View {
                                 if !Calendar.current.isDateInToday(selectedDate) {
                                     FloatingButton(
                                         icon: "house.fill",
-                                        action: { 
+                                        action: {
                                             selectedDate = Date()
                                             selectedMonth = Date()
                                         }
@@ -326,6 +355,7 @@ struct MedicationLogView: View {
         .background(Color.clear)
         .navigationViewStyle(.stack)
     }
+    
     
     // Calculate logs this week
     private var logsThisWeek: Int {
@@ -359,6 +389,90 @@ struct MedicationLogView: View {
         }
         
         return streak
+    }
+    
+    // Simple aggregated trends for ADHD-focused check-ins
+    private var focusTrendsSummary: String? {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: now) else { return nil }
+        
+        // Map medication ID -> Medication for quick lookup
+        let medsByID = Dictionary(uniqueKeysWithValues: store.medications.map { ($0.id, $0) })
+        
+        // Only consider logs in last 30 days with ratings
+        let recentLogs = store.logs.filter { log in
+            log.takenAt >= thirtyDaysAgo &&
+            log.takenAt <= now &&
+            !log.skipped &&
+            (log.focusRating != nil || log.sideEffectSeverity != nil)
+        }
+        
+        guard !recentLogs.isEmpty else { return nil }
+        
+        struct Agg {
+            var focusTotal = 0
+            var focusCount = 0
+            var sideTotal = 0
+            var sideCount = 0
+        }
+        
+        var aggByMed: [UUID: Agg] = [:]
+        
+        for log in recentLogs {
+            guard let med = medsByID[log.medicationID],
+                  med.medicationType == .stimulant else { continue }
+            
+            var agg = aggByMed[log.medicationID] ?? Agg()
+            if let f = log.focusRating {
+                agg.focusTotal += f
+                agg.focusCount += 1
+            }
+            if let s = log.sideEffectSeverity {
+                agg.sideTotal += s
+                agg.sideCount += 1
+            }
+            aggByMed[log.medicationID] = agg
+        }
+        
+        guard !aggByMed.isEmpty else { return nil }
+        
+        // Build short summary for at most top 2 meds with most focus ratings
+        let sorted = aggByMed.sorted { lhs, rhs in
+            lhs.value.focusCount > rhs.value.focusCount
+        }
+        
+        var parts: [String] = []
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        
+        for (index, entry) in sorted.enumerated() {
+            if index >= 2 { break }
+            guard let med = medsByID[entry.key] else { continue }
+            let agg = entry.value
+            
+            let focusText: String
+            if agg.focusCount > 0 {
+                let avgFocus = Double(agg.focusTotal) / Double(max(1, agg.focusCount))
+                focusText = String(format: "average focus ~%.1f/5 over %d check-ins", avgFocus, agg.focusCount)
+            } else {
+                focusText = "no focus ratings yet"
+            }
+            
+            let sideText: String
+            if agg.sideCount > 0 {
+                let avgSide = Double(agg.sideTotal) / Double(max(1, agg.sideCount))
+                sideText = String(format: "side effects ~%.1f/5", avgSide)
+            } else {
+                sideText = "no side-effect ratings yet"
+            }
+            
+            parts.append("\(med.name): \(focusText), \(sideText).")
+        }
+        
+        guard !parts.isEmpty else { return nil }
+        
+        return parts.joined(separator: " ")
     }
     
     // Check if date is recent (within last week)
@@ -411,7 +525,7 @@ struct MedicationLogView: View {
     private func isSameMonth(_ date: Date, _ monthDate: Date) -> Bool {
         let calendar = Calendar.current
         return calendar.component(.month, from: date) == calendar.component(.month, from: monthDate) &&
-               calendar.component(.year, from: date) == calendar.component(.year, from: monthDate)
+        calendar.component(.year, from: date) == calendar.component(.year, from: monthDate)
     }
     
     // MARK: - Export Functionality
@@ -480,7 +594,8 @@ struct MedicationLogView: View {
             }
         }
     }
-}
+} // <-- Added closing brace for var body here
+
 
 // MARK: - Calendar Day Cell
 struct CalendarDayCell: View {
@@ -523,8 +638,8 @@ struct CalendarDayCell: View {
                     .font(.system(size: 14, weight: isToday || isSelected ? .bold : .regular))
                     .foregroundColor(
                         isToday ? Color(hex: "#F5F5F5") :
-                        isSelected ? Color(hex: "#F5F5F5") :
-                        isCurrentMonth ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.4)
+                            isSelected ? Color(hex: "#F5F5F5") :
+                            isCurrentMonth ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.4)
                     )
                 
                 // Indicator dot for days with logs
@@ -532,7 +647,7 @@ struct CalendarDayCell: View {
                     Circle()
                         .fill(
                             isSelected ? Color(hex: "#F5F5F5") :
-                            isToday ? Color(hex: "#D7CCC8") : Color(hex: "#D7CCC8").opacity(0.8)
+                                isToday ? Color(hex: "#D7CCC8") : Color(hex: "#D7CCC8").opacity(0.8)
                         )
                         .frame(width: 6, height: 6)
                 }
@@ -964,3 +1079,4 @@ struct DatePickerOverlay: View {
         }
     }
 }
+

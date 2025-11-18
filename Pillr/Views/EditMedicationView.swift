@@ -34,6 +34,11 @@ struct EditMedicationView: View {
     @State private var refillThresholdString: String = ""
     @State private var trackPillCount: Bool = false
     @State private var isOneTimeWithFollowUp: Bool = false
+    // ADHD / stimulant specific fields
+    @State private var medicationType: MedicationType = .other
+    @State private var isExtendedRelease: Bool = false
+    @State private var onsetMinutesString: String = ""
+    @State private var durationMinutesString: String = ""
     @State private var showingPremiumUpgrade: Bool = false
     @State private var customUnit: String = ""
     @State private var isCustomUnitSelected: Bool = false
@@ -137,6 +142,18 @@ struct EditMedicationView: View {
         
         _trackPillCount = State(initialValue: medication.pillCount != nil)
         _isOneTimeWithFollowUp = State(initialValue: medication.isOneTimeWithFollowUp)
+        _medicationType = State(initialValue: medication.medicationType)
+        _isExtendedRelease = State(initialValue: medication.isExtendedRelease)
+        if let onset = medication.onsetMinutes {
+            _onsetMinutesString = State(initialValue: "\(onset)")
+        } else {
+            _onsetMinutesString = State(initialValue: "")
+        }
+        if let duration = medication.durationMinutes {
+            _durationMinutesString = State(initialValue: "\(duration)")
+        } else {
+            _durationMinutesString = State(initialValue: "")
+        }
     }
 
     var body: some View {
@@ -334,6 +351,62 @@ struct EditMedicationView: View {
                                         title: "Reminder Time",
                                         time: $timeToTake
                                     )
+                                }
+                            }
+                        }
+                        
+                        // ADHD / Stimulant timing section
+                        FormSection(title: "FOCUS & TIMING", icon: "brain.head.profile") {
+                            VStack(alignment: .leading, spacing: 16) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: "pills.circle.fill")
+                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                            .font(.system(size: 18))
+                                        Text("What kind of medication is this?")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                    }
+                                    
+                                    Picker("Medication type", selection: $medicationType) {
+                                        ForEach(MedicationType.allCases) { type in
+                                            Text(type.displayName).tag(type)
+                                        }
+                                    }
+                                    .pickerStyle(.segmented)
+                                }
+                                
+                                if medicationType == .stimulant {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Toggle(isOn: $isExtendedRelease) {
+                                            Text("Extended-release formulation")
+                                                .font(.system(size: 15, weight: .medium))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                        }
+                                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                        
+                                        enhancedInputField(
+                                            title: "Starts working after (minutes)",
+                                            placeholder: "30",
+                                            text: $onsetMinutesString,
+                                            field: nil,
+                                            iconName: "clock.arrow.circlepath",
+                                            keyboardType: .numberPad
+                                        )
+                                        
+                                        enhancedInputField(
+                                            title: "Lasts about (minutes)",
+                                            placeholder: "240",
+                                            text: $durationMinutesString,
+                                            field: nil,
+                                            iconName: "timer",
+                                            keyboardType: .numberPad
+                                        )
+                                        
+                                        Text("These help Pillr estimate when this medication will start working and when it will wear off, so you can plan focus time and breaks.")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    }
                                 }
                             }
                         }
@@ -785,6 +858,12 @@ struct EditMedicationView: View {
         // Validate custom unit if selected
         let customUnitValid = dosageUnit != "Custom" || (dosageUnit == "Custom" && !customUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         
+        if medicationType == .stimulant {
+            let onsetValid = onsetMinutesString.isEmpty || Int(onsetMinutesString) != nil
+            let durationValid = durationMinutesString.isEmpty || Int(durationMinutesString) != nil
+            return nameValid && dosageValid && frequencyValid && nameError == nil && dosageError == nil && customUnitValid && onsetValid && durationValid
+        }
+        
         return nameValid && dosageValid && frequencyValid && nameError == nil && dosageError == nil && customUnitValid
     }
     
@@ -862,6 +941,16 @@ struct EditMedicationView: View {
         updatedMedication.dosageUnit = finalDosageUnit
         updatedMedication.iconName = iconName
         updatedMedication.frequency = frequency
+        updatedMedication.medicationType = medicationType
+        if medicationType == .stimulant {
+            updatedMedication.isExtendedRelease = isExtendedRelease
+            updatedMedication.onsetMinutes = Int(onsetMinutesString)
+            updatedMedication.durationMinutes = Int(durationMinutesString)
+        } else {
+            updatedMedication.isExtendedRelease = false
+            updatedMedication.onsetMinutes = nil
+            updatedMedication.durationMinutes = nil
+        }
         updatedMedication.timeToTake = timeToTake
         updatedMedication.reminderTimes = needsMultipleReminders ? reminderTimes : []
         let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)

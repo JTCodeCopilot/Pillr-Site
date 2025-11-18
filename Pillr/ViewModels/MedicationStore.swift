@@ -67,7 +67,11 @@ class MedicationStore: ObservableObject {
         pillCount: Int? = nil,
         pillsPerDose: Int = 1,
         refillThreshold: Int? = nil,
-        isOneTimeWithFollowUp: Bool = false
+        isOneTimeWithFollowUp: Bool = false,
+        medicationType: MedicationType = .other,
+        isExtendedRelease: Bool = false,
+        onsetMinutes: Int? = nil,
+        durationMinutes: Int? = nil
     ) -> Bool {
         // Check if user can add more medications
         let currentActiveMedications = activeMedications.count
@@ -81,12 +85,16 @@ class MedicationStore: ObservableObject {
         let finalRefillThreshold = UserSettings.shared.isPremiumUser ? refillThreshold : nil
         
         var newMed = Medication(
-            name: name, 
-            dosage: dosage, 
+            name: name,
+            dosage: dosage,
             dosageUnit: dosageUnit,
             iconName: iconName,
             createdAt: Date(), // Set creation date to now
-            frequency: frequency, 
+            frequency: frequency,
+            medicationType: medicationType,
+            isExtendedRelease: isExtendedRelease,
+            onsetMinutes: onsetMinutes,
+            durationMinutes: durationMinutes,
             timeToTake: timeToTake,
             reminderTimes: reminderTimes,
             notes: notes,
@@ -170,7 +178,15 @@ class MedicationStore: ObservableObject {
         }
     }
 
-    func logMedicationTaken(medication: Medication, actualTime: Date, notes: String?, skipped: Bool = false, reminderIndex: Int? = nil) {
+    func logMedicationTaken(
+        medication: Medication,
+        actualTime: Date,
+        notes: String?,
+        skipped: Bool = false,
+        reminderIndex: Int? = nil,
+        focusRating: Int? = nil,
+        sideEffectSeverity: Int? = nil
+    ) {
         let pillsConsumed = skipped ? 0 : medication.pillsPerDose
         
         // Remove any existing logs for this specific medication, day, and reminder index
@@ -182,13 +198,15 @@ class MedicationStore: ObservableObject {
         }
         
         let newLog = MedicationLog(
-            medicationID: medication.id, 
-            medicationName: medication.name, 
-            takenAt: actualTime, 
+            medicationID: medication.id,
+            medicationName: medication.name,
+            takenAt: actualTime,
             notes: notes,
             skipped: skipped,
             pillsConsumed: pillsConsumed,
-            reminderIndex: reminderIndex
+            reminderIndex: reminderIndex,
+            focusRating: focusRating,
+            sideEffectSeverity: sideEffectSeverity
         )
         
         logs.insert(newLog, at: 0) // Add to the top
@@ -286,8 +304,23 @@ class MedicationStore: ObservableObject {
         resetBadgeIfNeeded()
     }
     
-    func skipMedication(medication: Medication, actualTime: Date, notes: String?, reminderIndex: Int? = nil) {
-        logMedicationTaken(medication: medication, actualTime: actualTime, notes: notes, skipped: true, reminderIndex: reminderIndex)
+    func skipMedication(
+        medication: Medication,
+        actualTime: Date,
+        notes: String?,
+        reminderIndex: Int? = nil,
+        focusRating: Int? = nil,
+        sideEffectSeverity: Int? = nil
+    ) {
+        logMedicationTaken(
+            medication: medication,
+            actualTime: actualTime,
+            notes: notes,
+            skipped: true,
+            reminderIndex: reminderIndex,
+            focusRating: focusRating,
+            sideEffectSeverity: sideEffectSeverity
+        )
     }
     
     func toggleSkipStatus(for medicationID: UUID) {

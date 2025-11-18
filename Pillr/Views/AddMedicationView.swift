@@ -31,6 +31,12 @@ struct AddMedicationView: View {
 
     @State private var isOneTimeWithFollowUp: Bool = false
     
+    // ADHD / stimulant specific fields
+    @State private var medicationType: MedicationType = .other
+    @State private var isExtendedRelease: Bool = false
+    @State private var onsetMinutesString: String = ""
+    @State private var durationMinutesString: String = ""
+    
     // New state variable for AI search
     @State private var showingAISearch: Bool = false
     
@@ -293,6 +299,62 @@ struct AddMedicationView: View {
                                             title: "Reminder Time",
                                             time: $timeToTake
                                         )
+                                    }
+                                }
+                            }
+                            
+                            // ADHD / Stimulant timing section
+                            FormSection(title: "FOCUS & TIMING", icon: "brain.head.profile") {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack {
+                                            Image(systemName: "pills.circle.fill")
+                                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                                .font(.system(size: 18))
+                                            Text("What kind of medication is this?")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                        }
+                                        
+                                        Picker("Medication type", selection: $medicationType) {
+                                            ForEach(MedicationType.allCases) { type in
+                                                Text(type.displayName).tag(type)
+                                            }
+                                        }
+                                        .pickerStyle(.segmented)
+                                    }
+                                    
+                                    if medicationType == .stimulant {
+                                        VStack(alignment: .leading, spacing: 12) {
+                                            Toggle(isOn: $isExtendedRelease) {
+                                                Text("Extended-release formulation")
+                                                    .font(.system(size: 15, weight: .medium))
+                                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                            }
+                                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                            
+                                            enhancedInputField(
+                                                title: "Starts working after (minutes)",
+                                                placeholder: "30",
+                                                text: $onsetMinutesString,
+                                                field: nil,
+                                                iconName: "clock.arrow.circlepath",
+                                                keyboardType: .numberPad
+                                            )
+                                            
+                                            enhancedInputField(
+                                                title: "Lasts about (minutes)",
+                                                placeholder: "240",
+                                                text: $durationMinutesString,
+                                                field: nil,
+                                                iconName: "timer",
+                                                keyboardType: .numberPad
+                                            )
+                                            
+                                            Text("These help Pillr estimate when this medication will start working and when it will wear off, so you can plan focus time and breaks.")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        }
                                     }
                                 }
                             }
@@ -897,8 +959,8 @@ struct AddMedicationView: View {
     
     // Form validation status
     private var isFormValid: Bool {
-        let basicValid = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
-                        !dosage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
+        let basicValid = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                        !dosage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
                         !frequency.isEmpty
         
         // Validate custom unit if selected
@@ -916,6 +978,12 @@ struct AddMedicationView: View {
             return basicValid && pillCountValid && pillsPerDoseValid && customUnitValid
         }
         
+        if medicationType == .stimulant {
+            let onsetValid = onsetMinutesString.isEmpty || Int(onsetMinutesString) != nil
+            let durationValid = durationMinutesString.isEmpty || Int(durationMinutesString) != nil
+            return basicValid && customUnitValid && onsetValid && durationValid
+        }
+        
         return basicValid && customUnitValid
     }
 
@@ -926,6 +994,9 @@ struct AddMedicationView: View {
         
         // Use custom unit if "Custom" is selected
         let finalDosageUnit = dosageUnit == "Custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+        
+        let onsetMinutes = medicationType == .stimulant ? Int(onsetMinutesString) : nil
+        let durationMinutes = medicationType == .stimulant ? Int(durationMinutesString) : nil
         
         let success = store.addMedication(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -943,7 +1014,11 @@ struct AddMedicationView: View {
             pillCount: pillCount,
             pillsPerDose: pillsPerDose,
             refillThreshold: refillThreshold,
-            isOneTimeWithFollowUp: isOneTimeWithFollowUp
+            isOneTimeWithFollowUp: isOneTimeWithFollowUp,
+            medicationType: medicationType,
+            isExtendedRelease: isExtendedRelease,
+            onsetMinutes: onsetMinutes,
+            durationMinutes: durationMinutes
         )
         
         if success {
@@ -1084,4 +1159,3 @@ extension View {
         }
     }
 }
-
