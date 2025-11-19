@@ -286,7 +286,7 @@ fileprivate func MedicationsListContent(
         VStack(alignment: .leading, spacing: 28) {
             // Enhanced header section
             VStack(alignment: .leading, spacing: 4) {
-                Text("My Meds")
+                Text("My Medications")
                     .font(.system(size: 36, weight: .bold))
                     .foregroundColor(Color(hex: "#E8E8E0"))
                 
@@ -325,10 +325,8 @@ fileprivate func MedicationsListContent(
             .padding(.horizontal, horizontalInsets)
             
 
-            
             Spacer(minLength: 60)
         }
-        .padding(.top, 8)
         .background(
             GeometryReader { geo in
                 Color.clear.preference(

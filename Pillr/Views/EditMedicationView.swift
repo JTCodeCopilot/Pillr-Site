@@ -830,6 +830,15 @@ struct EditMedicationView: View {
             TextField(placeholder, text: text)
                 .keyboardType(keyboardType)
                 .focused($focusedField, equals: field)
+                .onChange(of: text.wrappedValue) { _, newValue in
+                    // For dosage, restrict input to numeric characters only
+                    if field == .dosage {
+                        let filtered = newValue.filter { $0.isNumber }
+                        if filtered != newValue {
+                            text.wrappedValue = filtered
+                        }
+                    }
+                }
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(Color(hex: "#E8E8E0"))
                 .padding(.horizontal, 16)

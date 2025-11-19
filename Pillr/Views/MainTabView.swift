@@ -91,10 +91,8 @@ struct MedicationsHomeView: View {
                 
                 MedicationsListView()
                     .scrollContentBackground(.hidden)
-                    .padding(.top, geometry.safeAreaInsets.top * 0.5)
                     .frame(maxHeight: .infinity)
             }
         }
     }
 }
-

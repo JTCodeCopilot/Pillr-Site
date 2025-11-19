@@ -102,7 +102,7 @@ struct AddMedicationView: View {
                             // Enhanced Header
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Add Medication")
-                                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                                    .font(.system(size: 36, weight: .bold))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
                             }
                             
@@ -827,7 +827,18 @@ struct AddMedicationView: View {
                     handleFieldSubmit(field)
                 }
                 .onChange(of: text.wrappedValue) { _, newValue in
-                    validateField(field, value: newValue)
+                    var processedValue = newValue
+                    
+                    // For dosage, restrict input to numeric characters only
+                    if field == .dosage {
+                        let filtered = newValue.filter { $0.isNumber }
+                        if filtered != newValue {
+                            processedValue = filtered
+                            text.wrappedValue = filtered
+                        }
+                    }
+                    
+                    validateField(field, value: processedValue)
                 }
             
             if let errorMessage = errorMessage, showValidationErrors {
