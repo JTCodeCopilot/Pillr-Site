@@ -66,6 +66,10 @@ struct Medication: Identifiable, Codable, Hashable {
         medicationType == .stimulant && onsetMinutes != nil && durationMinutes != nil
     }
     
+    /// When enabled for ADHD stimulants, Pillr will prompt
+    /// a daily check-in around the time the medication wears off.
+    var enableDailyCheckIn: Bool = false
+    
     var timeToTake: Date // Primary time to take - legacy support
     var reminderTimes: [Date] = [] // Multiple reminder times for medications
     var notes: String?
@@ -90,6 +94,7 @@ struct Medication: Identifiable, Codable, Hashable {
         case isExtendedRelease
         case onsetMinutes
         case durationMinutes
+        case enableDailyCheckIn
         case timeToTake
         case reminderTimes
         case notes
@@ -115,6 +120,7 @@ struct Medication: Identifiable, Codable, Hashable {
         isExtendedRelease: Bool = false,
         onsetMinutes: Int? = nil,
         durationMinutes: Int? = nil,
+        enableDailyCheckIn: Bool = false,
         timeToTake: Date,
         reminderTimes: [Date] = [],
         notes: String? = nil,
@@ -138,6 +144,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.isExtendedRelease = isExtendedRelease
         self.onsetMinutes = onsetMinutes
         self.durationMinutes = durationMinutes
+        self.enableDailyCheckIn = enableDailyCheckIn
         self.timeToTake = timeToTake
         self.reminderTimes = reminderTimes
         self.notes = notes
@@ -167,6 +174,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.isExtendedRelease = try container.decodeIfPresent(Bool.self, forKey: .isExtendedRelease) ?? false
         self.onsetMinutes = try container.decodeIfPresent(Int.self, forKey: .onsetMinutes)
         self.durationMinutes = try container.decodeIfPresent(Int.self, forKey: .durationMinutes)
+        self.enableDailyCheckIn = try container.decodeIfPresent(Bool.self, forKey: .enableDailyCheckIn) ?? false
 
         self.timeToTake = try container.decode(Date.self, forKey: .timeToTake)
         self.reminderTimes = try container.decodeIfPresent([Date].self, forKey: .reminderTimes) ?? []
@@ -194,6 +202,7 @@ struct Medication: Identifiable, Codable, Hashable {
         try container.encode(isExtendedRelease, forKey: .isExtendedRelease)
         try container.encodeIfPresent(onsetMinutes, forKey: .onsetMinutes)
         try container.encodeIfPresent(durationMinutes, forKey: .durationMinutes)
+        try container.encode(enableDailyCheckIn, forKey: .enableDailyCheckIn)
         try container.encode(timeToTake, forKey: .timeToTake)
         try container.encode(reminderTimes, forKey: .reminderTimes)
         try container.encodeIfPresent(notes, forKey: .notes)

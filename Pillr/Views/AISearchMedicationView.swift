@@ -288,7 +288,7 @@ struct AISearchMedicationView: View {
     // Medication result card
     private func medicationResultCard(_ result: MedicationSearchResult) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Medication name and icon
+            // Medication name and add button
             HStack {
                 Image(systemName: "pill.fill")
                     .foregroundColor(Color(hex: "#C7C7BD"))
@@ -300,9 +300,29 @@ struct AISearchMedicationView: View {
                 
                 Spacer()
                 
-                Image(systemName: "plus.circle.fill")
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                    .font(.system(size: 22, weight: .medium))
+                Button(action: {
+                    HapticManager.shared.mediumImpact()
+                    onSelectMedication(result)
+                    dismiss()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("ADD")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(Color(hex: "#C7C7BD"))
+                            .shadow(color: Color.black.opacity(0.25), radius: 4, x: 0, y: 2)
+                    )
+                    .foregroundColor(Color(hex: "#404C42"))
+                }
+                .buttonStyle(ScaleButtonStyle(hapticStyle: .medium))
+                .accessibilityLabel("Add \(result.name)")
+                .accessibilityHint("Adds this medication to your list")
             }
             
             // Description
@@ -408,4 +428,3 @@ struct AISearchMedicationView_Previews: PreviewProvider {
         .preferredColorScheme(.dark)
     }
 } 
-

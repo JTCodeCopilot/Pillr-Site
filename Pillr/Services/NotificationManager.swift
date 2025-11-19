@@ -472,14 +472,20 @@ class NotificationManager: ObservableObject {
             }
         }
         
-        // Fade notification
+        // Fade notification – optionally framed as a daily check-in
         let fadeContent = UNMutableNotificationContent()
-        fadeContent.title = "Medication may wear off soon"
-        fadeContent.body = "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks."
+        if medication.enableDailyCheckIn {
+            fadeContent.title = "Daily check-in for \(medication.name)"
+            fadeContent.body = "How was your focus and side effects today? Take a moment to log a quick check-in."
+        } else {
+            fadeContent.title = "Medication may wear off soon"
+            fadeContent.body = "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks."
+        }
         fadeContent.sound = UNNotificationSound.default
         fadeContent.userInfo = [
             "medicationID": medication.id.uuidString,
-            "phase": "fade"
+            "phase": "fade",
+            "isDailyCheckIn": medication.enableDailyCheckIn
         ]
         fadeContent.categoryIdentifier = "MEDICATION_REMINDER"
         fadeContent.threadIdentifier = "medication-reminders"
@@ -554,12 +560,18 @@ class NotificationManager: ObservableObject {
         // Fade
         if let fadeDate = calendar.date(byAdding: .minute, value: duration, to: doseTime) {
             let fadeContent = UNMutableNotificationContent()
-            fadeContent.title = "Medication may wear off soon"
-            fadeContent.body = "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks."
+            if medication.enableDailyCheckIn {
+                fadeContent.title = "Daily check-in for \(medication.name)"
+                fadeContent.body = "How was your focus and side effects today? Take a moment to log a quick check-in."
+            } else {
+                fadeContent.title = "Medication may wear off soon"
+                fadeContent.body = "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks."
+            }
             fadeContent.sound = UNNotificationSound.default
             fadeContent.userInfo = [
                 "medicationID": medication.id.uuidString,
-                "phase": "fade"
+                "phase": "fade",
+                "isDailyCheckIn": medication.enableDailyCheckIn
             ]
             fadeContent.categoryIdentifier = "MEDICATION_REMINDER"
             fadeContent.threadIdentifier = "medication-reminders"
@@ -685,15 +697,26 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             }
             
         default:
-            // User tapped the notification itself - reset badge
+            // User tapped the notification itself.
             if let medicationIDString = userInfo["medicationID"] as? String,
-               let medicationID = UUID(uuidString: medicationIDString) {
+               let medicationID = UUID(uuidString: medicationIDString),
+               let medication = MedicationStore.shared.findMedication(with: medicationID) {
                 
-                // Find the medication and ensure it's properly reset
-                if MedicationStore.shared.findMedication(with: medicationID) != nil {
-                    // Reset badge count 
-                    NotificationManager.shared.resetApplicationBadge()
+                // If this is a stimulant fade notification with daily check-in enabled,
+                // surface the notes & side-effects logging sheet for this medication.
+                if let phase = userInfo["phase"] as? String,
+                   phase == "fade",
+                   medication.enableDailyCheckIn {
+                    DispatchQueue.main.async {
+                        MedicationStore.shared.dailyCheckInMedication = medication
+                    }
                 }
+                
+                // Always reset badge count after tapping a medication notification.
+                NotificationManager.shared.resetApplicationBadge()
+            } else {
+                // Fallback: still reset badge.
+                NotificationManager.shared.resetApplicationBadge()
             }
         }
         

@@ -103,6 +103,19 @@ struct MedicationsListView: View {
             FocusTimelineView()
                 .environmentObject(store)
         }
+        .sheet(item: $store.dailyCheckInMedication, onDismiss: {
+            store.dailyCheckInMedication = nil
+        }) { med in
+            LogMedicationView(medicationToLog: med)
+                .environmentObject(store)
+        }
+        .sheet(item: $store.recentADHDDoseTimeline, onDismiss: {
+            store.recentADHDDoseTimeline = nil
+        }) { entry in
+            ADHDDoseTimelineSheet(entry: entry)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
     }
     
     private func showMedicationSelectionSheet() async {
@@ -166,39 +179,17 @@ fileprivate func EmptyMedicationsView(onAddMedication: @escaping () -> Void) -> 
 fileprivate func sortedMedications(_ medications: [Medication]) -> [Medication] {
     let calendar = Calendar.current
     let now = Date()
-    let today = calendar.startOfDay(for: now)
     
     return medications.sorted { med1, med2 in
         // Helper function to get medication status
         func getMedicationStatus(_ medication: Medication) -> (isOverdue: Bool, isAsNeeded: Bool, effectiveDueTime: Date) {
-            // Check if taken or skipped today (simplified version of the logic from MedicationRow)
-            // We'll use a simplified approach for sorting that doesn't check logs
-            
-            if medication.frequency == "As needed" {
-                return (false, true, medication.timeToTake)
-            }
-            
-            // Calculate effective due time (simplified version)
-            var effectiveDueTime = medication.timeToTake
-            let medicationDayStart = calendar.startOfDay(for: medication.timeToTake)
-            let dayDifferenceComponents = calendar.dateComponents([.day], from: medicationDayStart, to: today)
-            let dayDifference = dayDifferenceComponents.day ?? 0
-            
-            if dayDifference >= 2 {
-                let timeComponents = calendar.dateComponents([.hour, .minute], from: medication.timeToTake)
-                if var newDueTime = calendar.date(bySettingHour: timeComponents.hour ?? 0,
-                                                 minute: timeComponents.minute ?? 0,
-                                                 second: 0,
-                                                 of: now) {
-                    if newDueTime < now {
-                        newDueTime = calendar.date(byAdding: .day, value: 1, to: newDueTime) ?? newDueTime
-                    }
-                    effectiveDueTime = newDueTime
-                }
-            }
-            
-            let isOverdue = effectiveDueTime < now && effectiveDueTime >= today
-            return (isOverdue, false, effectiveDueTime)
+            let isAsNeeded = (medication.frequency == "As needed")
+            let effectiveDueTime = calculateEffectiveDueTime(for: medication, at: now)
+            // Overdue means: the due time for *today* has passed but we're still on that same day.
+            let isOverdue = !isAsNeeded &&
+                effectiveDueTime < now &&
+                calendar.isDate(effectiveDueTime, inSameDayAs: now)
+            return (isOverdue, isAsNeeded, effectiveDueTime)
         }
         
         let status1 = getMedicationStatus(med1)
@@ -229,6 +220,49 @@ fileprivate func sortedMedications(_ medications: [Medication]) -> [Medication] 
         
         return false
     }
+}
+
+/// Calculate the effective daily due time for a medication, anchored to the
+/// current day and time-of-day of its schedule.
+///
+/// Behaviour:
+/// - For recurring meds, we always anchor the due time to *today* at the
+///   scheduled hour/minute so that:
+///     - Before that time: status is "Due in …"
+///     - After that time (until midnight): status is "Overdue by …"
+///     - After midnight: the due time rolls forward to the new day and
+///       status goes back to "Due in …".
+/// - For meds created *today* where the chosen time was already in the past
+///   at the moment they were added, we treat the first dose as
+///   "tomorrow at that time" so they don't appear immediately overdue when
+///   first created. After that first day, they behave like any other recurring
+///   medication and can become overdue.
+fileprivate func calculateEffectiveDueTime(for medication: Medication, at referenceDate: Date = Date()) -> Date {
+    let calendar = Calendar.current
+
+    // Use the first reminder time if available, otherwise the legacy single time.
+    let baseTime = medication.reminderTimes.first ?? medication.timeToTake
+    let components = calendar.dateComponents([.hour, .minute], from: baseTime)
+    let dayStart = calendar.startOfDay(for: referenceDate)
+
+    var scheduledForToday = calendar.date(
+        bySettingHour: components.hour ?? 8,
+        minute: components.minute ?? 0,
+        second: 0,
+        of: dayStart
+    ) ?? baseTime
+
+    // Special case: medication was added today *after* the scheduled time.
+    // We compare against the creation time rather than "now" so this rule
+    // only applies on the day it's created. On later days the medication can
+    // correctly become overdue after the scheduled time passes.
+    if let creationDate = medication.createdAt,
+       calendar.isDate(creationDate, inSameDayAs: referenceDate),
+       scheduledForToday < creationDate {
+        scheduledForToday = calendar.date(byAdding: .day, value: 1, to: scheduledForToday) ?? scheduledForToday
+    }
+
+    return scheduledForToday
 }
 
 @ViewBuilder
@@ -1187,54 +1221,7 @@ struct MedicationRow: View {
     
     // Helper to get the effective due time, considering the reset logic
     private var effectiveDueTime: Date {
-        let now = Date()
-        let calendar = Calendar.current
-        
-        var calculatedEffectiveTimeToTake = medication.timeToTake
-
-        let medicationDayStart = calendar.startOfDay(for: medication.timeToTake)
-        let currentDayStart = calendar.startOfDay(for: now)
-        
-        let dayDifferenceComponents = calendar.dateComponents([.day], from: medicationDayStart, to: currentDayStart)
-        let dayDifference = dayDifferenceComponents.day ?? 0
-        
-        // If the original due date was two or more days ago, reset by calculating the next due time.
-        if dayDifference >= 2 {
-            let timeComponents = calendar.dateComponents([.hour, .minute], from: medication.timeToTake)
-            if var newPotentialDueTime = calendar.date(bySettingHour: timeComponents.hour ?? 0,
-                                                       minute: timeComponents.minute ?? 0,
-                                                       second: 0,
-                                                       of: now) {
-                // If this time has already passed today, set it for the same time tomorrow
-                if newPotentialDueTime < now {
-                    newPotentialDueTime = calendar.date(byAdding: .day, value: 1, to: newPotentialDueTime) ?? newPotentialDueTime
-                }
-                calculatedEffectiveTimeToTake = newPotentialDueTime
-            }
-        }
-        // Check if medication was added today and the scheduled time has already passed
-        else if dayDifference == 0 {
-            // Extract scheduled time components
-            let medicationHour = calendar.component(.hour, from: medication.timeToTake)
-            let medicationMinute = calendar.component(.minute, from: medication.timeToTake)
-            
-            // Extract current time components
-            let currentHour = calendar.component(.hour, from: now)
-            let currentMinute = calendar.component(.minute, from: now)
-            
-            // If the medication time is earlier than the current time
-            if medicationHour < currentHour || (medicationHour == currentHour && medicationMinute <= currentMinute) {
-                // Check if the medication was created today (by comparing creation date to current day)
-                if let creationDate = medication.createdAt, calendar.isDate(creationDate, inSameDayAs: now) {
-                    // If medication was added today and scheduled time has passed,
-                    // set effective due time to tomorrow at the same time
-                    if let tomorrowSameTime = calendar.date(byAdding: .day, value: 1, to: medication.timeToTake) {
-                        calculatedEffectiveTimeToTake = tomorrowSameTime
-                    }
-                }
-            }
-        }
-        return calculatedEffectiveTimeToTake
+        calculateEffectiveDueTime(for: medication, at: Date())
     }
 
     // Calculates minutes to the effective due time
@@ -1252,16 +1239,11 @@ struct MedicationRow: View {
             return .asNeeded
         } else {
             let minutes = minutesToEffectiveDueTime
-            let calendar = Calendar.current
-            let now = Date()
-
-            if minutes < 0 { // It's past its effectiveDueTime
-                // If effectiveDueTime was for a calendar day before today's start
-                if effectiveDueTime < calendar.startOfDay(for: now) {
-                    return .skipped
-                } else { // Overdue today
-                    return .overdue(minutesPast: abs(minutes))
-                }
+            
+            if minutes < 0 {
+                // Once the daily due time has passed (but before midnight),
+                // show this as overdue rather than jumping ahead 24 hours.
+                return .overdue(minutesPast: abs(minutes))
             } else { // Due in the future (today or later)
                 return .due(minutesRemaining: minutes)
             }

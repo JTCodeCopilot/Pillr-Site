@@ -35,10 +35,12 @@ struct EditMedicationView: View {
     @State private var trackPillCount: Bool = false
     @State private var isOneTimeWithFollowUp: Bool = false
     // ADHD / stimulant specific fields
+    @State private var isADHDMedication: Bool = false
     @State private var medicationType: MedicationType = .other
     @State private var isExtendedRelease: Bool = false
     @State private var onsetMinutesString: String = ""
     @State private var durationMinutesString: String = ""
+    @State private var enableDailyCheckIn: Bool = false
     @State private var showingPremiumUpgrade: Bool = false
     @State private var customUnit: String = ""
     @State private var isCustomUnitSelected: Bool = false
@@ -143,7 +145,9 @@ struct EditMedicationView: View {
         _trackPillCount = State(initialValue: medication.pillCount != nil)
         _isOneTimeWithFollowUp = State(initialValue: medication.isOneTimeWithFollowUp)
         _medicationType = State(initialValue: medication.medicationType)
+        _isADHDMedication = State(initialValue: medication.medicationType != .other)
         _isExtendedRelease = State(initialValue: medication.isExtendedRelease)
+        _enableDailyCheckIn = State(initialValue: medication.enableDailyCheckIn)
         if let onset = medication.onsetMinutes {
             _onsetMinutesString = State(initialValue: "\(onset)")
         } else {
@@ -363,20 +367,33 @@ struct EditMedicationView: View {
                                         Image(systemName: "pills.circle.fill")
                                             .foregroundColor(Color(hex: "#C7C7BD"))
                                             .font(.system(size: 18))
-                                        Text("What kind of medication is this?")
+                                        Text("Is this an ADHD medication?")
                                             .font(.system(size: 16, weight: .semibold))
                                             .foregroundColor(Color(hex: "#E8E8E0"))
                                     }
                                     
-                                    Picker("Medication type", selection: $medicationType) {
-                                        ForEach(MedicationType.allCases) { type in
-                                            Text(type.displayName).tag(type)
-                                        }
+                                    Picker("ADHD medication", selection: $isADHDMedication) {
+                                        Text("Yes").tag(true)
+                                        Text("No").tag(false)
                                     }
                                     .pickerStyle(.segmented)
                                 }
                                 
-                                if medicationType == .stimulant {
+                                if isADHDMedication {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("What kind of ADHD medication?")
+                                            .font(.system(size: 15, weight: .medium))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                        
+                                        Picker("Medication type", selection: $medicationType) {
+                                            Text("Stimulant").tag(MedicationType.stimulant)
+                                            Text("Non-stimulant").tag(MedicationType.nonStimulant)
+                                        }
+                                        .pickerStyle(.segmented)
+                                    }
+                                }
+                                
+                                if isADHDMedication && medicationType == .stimulant {
                                     VStack(alignment: .leading, spacing: 12) {
                                         Toggle(isOn: $isExtendedRelease) {
                                             Text("Extended-release formulation")
@@ -403,10 +420,45 @@ struct EditMedicationView: View {
                                             keyboardType: .numberPad
                                         )
                                         
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Toggle(isOn: $enableDailyCheckIn) {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text("Daily check-in")
+                                                        .font(.system(size: 15, weight: .semibold))
+                                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                                    Text("At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication.")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                                }
+                                            }
+                                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                        }
+                                        
                                         Text("These help Pillr estimate when this medication will start working and when it will wear off, so you can plan focus time and breaks.")
                                             .font(.system(size: 12))
                                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                     }
+                                }
+                            }
+                            .onChange(of: isADHDMedication) { newValue in
+                                if newValue {
+                                    if medicationType == .other {
+                                        medicationType = .stimulant
+                                    }
+                                } else {
+                                    medicationType = .other
+                                    isExtendedRelease = false
+                                    onsetMinutesString = ""
+                                    durationMinutesString = ""
+                                    enableDailyCheckIn = false
+                                }
+                            }
+                            .onChange(of: medicationType) { newType in
+                                if newType != .stimulant {
+                                    isExtendedRelease = false
+                                    onsetMinutesString = ""
+                                    durationMinutesString = ""
+                                    enableDailyCheckIn = false
                                 }
                             }
                         }
@@ -946,10 +998,12 @@ struct EditMedicationView: View {
             updatedMedication.isExtendedRelease = isExtendedRelease
             updatedMedication.onsetMinutes = Int(onsetMinutesString)
             updatedMedication.durationMinutes = Int(durationMinutesString)
+            updatedMedication.enableDailyCheckIn = enableDailyCheckIn
         } else {
             updatedMedication.isExtendedRelease = false
             updatedMedication.onsetMinutes = nil
             updatedMedication.durationMinutes = nil
+            updatedMedication.enableDailyCheckIn = false
         }
         updatedMedication.timeToTake = timeToTake
         updatedMedication.reminderTimes = needsMultipleReminders ? reminderTimes : []

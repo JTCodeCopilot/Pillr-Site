@@ -14,6 +14,12 @@ struct FocusTimelineView: View {
         let onsetTime: Date
         let fadeTime: Date
     }
+
+    struct FocusWindowGroup: Identifiable {
+        let id: UUID
+        let medication: Medication
+        let windows: [FocusWindow]
+    }
     
     private var focusWindows: [FocusWindow] {
         let calendar = Calendar.current
@@ -25,36 +31,89 @@ struct FocusTimelineView: View {
             guard let onsetMinutes = medication.onsetMinutes,
                   let durationMinutes = medication.durationMinutes else { continue }
             
-            let times = medication.reminderTimes.isEmpty ? [medication.timeToTake] : medication.reminderTimes
+            let isAsNeededWithoutReminder = medication.frequency == "As needed" && medication.reminderTimes.isEmpty
             
-            for (index, rawTime) in times.enumerated() {
-                let timeComponents = calendar.dateComponents([.hour, .minute], from: rawTime)
-                guard let base = calendar.date(
-                    bySettingHour: timeComponents.hour ?? 8,
-                    minute: timeComponents.minute ?? 0,
-                    second: 0,
-                    of: today
-                ) else { continue }
+            if isAsNeededWithoutReminder {
+                // For ADHD medications that are "As needed" without reminders,
+                // build focus windows only from doses actually logged today.
+                let todaysLogs = store.logs.filter { log in
+                    !log.skipped &&
+                    log.medicationID == medication.id &&
+                    calendar.isDate(log.takenAt, inSameDayAs: today)
+                }
                 
-                guard let onset = calendar.date(byAdding: .minute, value: onsetMinutes, to: base),
-                      let fade = calendar.date(byAdding: .minute, value: durationMinutes, to: base) else { continue }
-                
-                // Only keep windows that intersect today
-                if fade > today {
-                    windows.append(
-                        FocusWindow(
-                            medication: medication,
-                            doseIndex: index,
-                            doseTime: base,
-                            onsetTime: onset,
-                            fadeTime: fade
+                for (index, log) in todaysLogs.enumerated() {
+                    let base = log.takenAt
+                    
+                    guard let onset = calendar.date(byAdding: .minute, value: onsetMinutes, to: base),
+                          let fade = calendar.date(byAdding: .minute, value: durationMinutes, to: base) else { continue }
+                    
+                    // Only keep windows that intersect today
+                    if fade > today {
+                        windows.append(
+                            FocusWindow(
+                                medication: medication,
+                                doseIndex: index,
+                                doseTime: base,
+                                onsetTime: onset,
+                                fadeTime: fade
+                            )
                         )
-                    )
+                    }
+                }
+            } else {
+                // For scheduled ADHD medications, derive windows from their reminder times.
+                let times = medication.reminderTimes.isEmpty ? [medication.timeToTake] : medication.reminderTimes
+                
+                for (index, rawTime) in times.enumerated() {
+                    let timeComponents = calendar.dateComponents([.hour, .minute], from: rawTime)
+                    guard let base = calendar.date(
+                        bySettingHour: timeComponents.hour ?? 8,
+                        minute: timeComponents.minute ?? 0,
+                        second: 0,
+                        of: today
+                    ) else { continue }
+                    
+                    guard let onset = calendar.date(byAdding: .minute, value: onsetMinutes, to: base),
+                          let fade = calendar.date(byAdding: .minute, value: durationMinutes, to: base) else { continue }
+                    
+                    // Only keep windows that intersect today
+                    if fade > today {
+                        windows.append(
+                            FocusWindow(
+                                medication: medication,
+                                doseIndex: index,
+                                doseTime: base,
+                                onsetTime: onset,
+                                fadeTime: fade
+                            )
+                        )
+                    }
                 }
             }
         }
         
         return windows.sorted { $0.onsetTime < $1.onsetTime }
+    }
+
+    private var focusWindowGroups: [FocusWindowGroup] {
+        let grouped = Dictionary(grouping: focusWindows, by: { $0.medication.id })
+
+        return grouped.values.map { group in
+            let sortedGroup = group.sorted { $0.doseTime < $1.doseTime }
+            return FocusWindowGroup(
+                id: sortedGroup.first?.medication.id ?? UUID(),
+                medication: sortedGroup.first?.medication ?? group[0].medication,
+                windows: sortedGroup
+            )
+        }
+        .sorted { first, second in
+            guard let firstTime = first.windows.first?.doseTime,
+                  let secondTime = second.windows.first?.doseTime else {
+                return first.medication.name < second.medication.name
+            }
+            return firstTime < secondTime
+        }
     }
     
     private var hasWindows: Bool {
@@ -104,9 +163,9 @@ struct FocusTimelineView: View {
                             }
                             .buttonStyle(ScaleButtonStyle())
                             
-                            ForEach(focusWindows) { window in
+                            ForEach(focusWindowGroups) { group in
                                 FocusWindowRow(
-                                    window: window,
+                                    group: group,
                                     formatTime: formatTime
                                 )
                             }
@@ -188,15 +247,11 @@ struct FocusTimelineView: View {
 }
 
 private struct FocusWindowRow: View {
-    let window: FocusTimelineView.FocusWindow
+    let group: FocusTimelineView.FocusWindowGroup
     let formatTime: (Date) -> String
     
     private var now: Date {
         Date()
-    }
-    
-    private var isNowInsideWindow: Bool {
-        now >= window.onsetTime && now <= window.fadeTime
     }
     
     var body: some View {
@@ -207,57 +262,74 @@ private struct FocusWindowRow: View {
                     .foregroundColor(Color(hex: "#D7CCC8"))
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(window.medication.name)
+                    Text(group.medication.name)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(Color(hex: "#E8E8E0"))
                     
-                    Text(window.medication.dosage)
+                    Text(group.medication.dosage)
                         .font(.system(size: 13))
                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
                 }
                 
                 Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Dose \(window.doseIndex + 1)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
-                    
-                    Text(formatTime(window.doseTime))
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                }
             }
-            
-            FocusBar(
-                onsetTime: window.onsetTime,
-                fadeTime: window.fadeTime,
-                now: now
-            )
-            
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Kicks in ~\(formatTime(window.onsetTime))")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
-                    Text("Wears off ~\(formatTime(window.fadeTime))")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+
+            ForEach(group.windows) { window in
+                let isNowInsideWindow = now >= window.onsetTime && now <= window.fadeTime
+                let isAsNeededWithoutReminder = window.medication.frequency == "As needed" && window.medication.reminderTimes.isEmpty
+
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Dose \(window.doseIndex + 1)")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                            
+                            Text(formatTime(window.doseTime))
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        }
+
+                        Spacer()
+
+                        if isNowInsideWindow {
+                            Text("Now in focus window")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(Color(hex: "#404C42"))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color(hex: "#D7CCC8"))
+                                .cornerRadius(12)
+                        }
+                    }
+
+                    FocusBar(
+                        onsetTime: window.onsetTime,
+                        fadeTime: window.fadeTime,
+                        now: now
+                    )
+                    .padding(.bottom, 8)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        if isAsNeededWithoutReminder {
+                            Text("Logged at \(formatTime(window.doseTime))")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                        } else {
+                            Text("Based on reminder at \(formatTime(window.doseTime))")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                        }
+                        Text("Kicks in ~\(formatTime(window.onsetTime))")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                        Text("Wears off ~\(formatTime(window.fadeTime))")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    }
                 }
-                
-                Spacer()
-                
-                if isNowInsideWindow {
-                    Text("Now in focus window")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(Color(hex: "#404C42"))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color(hex: "#D7CCC8"))
-                        .cornerRadius(12)
-                }
+                .padding(.top, 6)
             }
-            .padding(.top, 10)
         }
         .padding(16)
         .background(
@@ -312,11 +384,29 @@ private struct FocusBar: View {
             let onsetMinutes = minutesSinceMidnight(onsetTime)
             let fadeMinutes = minutesSinceMidnight(fadeTime)
             let nowMinutes = minutesSinceMidnight(now)
+            let calendar = Calendar.current
+
+            // Determine if this window crosses midnight into the next day.
+            let crossesMidnight = !calendar.isDate(onsetTime, inSameDayAs: fadeTime)
             
             let clampedOnset = max(0, min(totalMinutes, onsetMinutes))
-            let clampedFade = max(clampedOnset, min(totalMinutes, fadeMinutes))
-            let barStart = width * (clampedOnset / totalMinutes)
-            let barWidth = max(4, width * ((clampedFade - clampedOnset) / totalMinutes))
+            let clampedFadeRaw = max(0, min(totalMinutes, fadeMinutes))
+            
+            // Compute one or two bar segments depending on whether the window
+            // crosses midnight. When it does, we render:
+            //   - from onset -> midnight on the right side
+            //   - from midnight -> fade on the left side
+            let segments: [(start: CGFloat, end: CGFloat)] = {
+                if crossesMidnight {
+                    return [
+                        (start: clampedOnset, end: totalMinutes),
+                        (start: 0, end: clampedFadeRaw)
+                    ]
+                } else {
+                    let clampedFade = max(clampedOnset, clampedFadeRaw)
+                    return [(start: clampedOnset, end: clampedFade)]
+                }
+            }()
             
             let nowX = width * (max(0, min(totalMinutes, nowMinutes)) / totalMinutes)
             let showNowMarker = nowMinutes >= 0 && nowMinutes <= totalMinutes
@@ -349,19 +439,24 @@ private struct FocusBar: View {
                         .fill(Color.black.opacity(0.25))
                         .frame(height: 8)
                     
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(hex: "#C7C7BD"),
-                                    Color(hex: "#D7CCC8")
-                                ]),
-                                startPoint: .leading,
-                                endPoint: .trailing
+                    ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+                        let barStart = width * (segment.start / totalMinutes)
+                        let barWidth = max(4, width * ((segment.end - segment.start) / totalMinutes))
+                        
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(hex: "#C7C7BD"),
+                                        Color(hex: "#D7CCC8")
+                                    ]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
                             )
-                        )
-                        .frame(width: barWidth, height: 8)
-                        .offset(x: barStart)
+                            .frame(width: barWidth, height: 8)
+                            .offset(x: barStart)
+                    }
                     
                     ForEach(hourTicks, id: \.self) { tick in
                         let tickX = width * (tick / totalMinutes)
@@ -413,6 +508,139 @@ private struct FocusBar: View {
             }
         }
         .frame(height: 64)
+    }
+}
+
+struct ADHDDoseTimelineSheet: View {
+    let entry: ADHDDoseTimelineEntry
+
+    @Environment(\.dismiss) private var dismiss
+
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date)
+    }
+
+    private var shiftDescription: String? {
+        guard let scheduled = entry.scheduledTime else { return nil }
+
+        let minutesShift = Int(entry.actualTime.timeIntervalSince(scheduled) / 60)
+        if minutesShift == 0 {
+            return "You took this right on time."
+        }
+
+        let direction = minutesShift > 0 ? "later" : "earlier"
+        let absoluteMinutes = abs(minutesShift)
+
+        if absoluteMinutes < 60 {
+            return "About \(absoluteMinutes) min \(direction) than planned."
+        } else {
+            let hours = absoluteMinutes / 60
+            let minutesRemainder = absoluteMinutes % 60
+            if minutesRemainder == 0 {
+                return "About \(hours) hour\(hours == 1 ? "" : "s") \(direction) than planned."
+            } else {
+                return "About \(hours)h \(minutesRemainder)m \(direction) than planned."
+            }
+        }
+    }
+
+    private var effectWindowDescription: String {
+        let start = formatTime(entry.onsetTime)
+        let end = formatTime(entry.fadeTime)
+        return "Expected focus window ~\(start) to ~\(end)."
+    }
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "#404C42"),
+                    Color(hex: "#3A443D")
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 22) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "brain.head.profile")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(Color(hex: "#D7CCC8"))
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Today's focus timeline")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
+
+                        Text(entry.medication.name)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+
+                        Text("\(entry.medication.dosage) \(entry.medication.dosageUnit)")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    }
+                }
+
+                FocusBar(
+                    onsetTime: entry.onsetTime,
+                    fadeTime: entry.fadeTime,
+                    now: Date()
+                )
+                .padding(.top, 4)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    if let scheduled = entry.scheduledTime {
+                        Text("Scheduled for \(formatTime(scheduled)), logged at \(formatTime(entry.actualTime)).")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    } else {
+                        Text("Logged at \(formatTime(entry.actualTime)).")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    }
+
+                    Text(effectWindowDescription)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+
+                    if let shift = shiftDescription {
+                        Text(shift)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    }
+                }
+                .padding(.top, 4)
+
+                Spacer()
+
+                HStack {
+                    Spacer()
+                    Button {
+                        HapticManager.shared.lightImpact()
+                        dismiss()
+                    } label: {
+                        Text("Close")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "#404C42"))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(hex: "#D7CCC8"))
+                            )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 32)
+            .padding(.bottom, 16)
+        }
     }
 }
 

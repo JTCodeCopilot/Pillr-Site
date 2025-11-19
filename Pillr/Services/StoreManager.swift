@@ -17,9 +17,9 @@ class StoreManager: ObservableObject {
     @Published private(set) var purchasedProductIDs = Set<String>()
     @Published var isLoading = false
     
-    // Flag to disable StoreKit for testing
-    #if targetEnvironment(simulator)
-    private let isTestMode = false // Keep this false to allow StoreKit to work in simulator
+    // Flag to disable StoreKit and force premium for local testing
+    #if DEBUG
+    private let isTestMode = true
     #else
     private let isTestMode = false
     #endif

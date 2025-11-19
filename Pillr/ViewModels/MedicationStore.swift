@@ -10,9 +10,22 @@ import SwiftUI
 import Combine
 import UserNotifications
 
+struct ADHDDoseTimelineEntry: Identifiable, Equatable {
+    let id = UUID()
+    let medication: Medication
+    let actualTime: Date
+    let scheduledTime: Date?
+    let onsetTime: Date
+    let fadeTime: Date
+}
+
 class MedicationStore: ObservableObject {
     @Published var medications: [Medication] = []
     @Published var logs: [MedicationLog] = []
+    @Published var recentADHDDoseTimeline: ADHDDoseTimelineEntry?
+    /// When set (typically from a notification tap), the UI
+    /// should present a daily check-in logging sheet for this medication.
+    @Published var dailyCheckInMedication: Medication?
     private let notificationManager = NotificationManager.shared
     private let hapticManager = HapticManager.shared
     
@@ -71,7 +84,8 @@ class MedicationStore: ObservableObject {
         medicationType: MedicationType = .other,
         isExtendedRelease: Bool = false,
         onsetMinutes: Int? = nil,
-        durationMinutes: Int? = nil
+        durationMinutes: Int? = nil,
+        enableDailyCheckIn: Bool = false
     ) -> Bool {
         // Check if user can add more medications
         let currentActiveMedications = activeMedications.count
@@ -95,6 +109,7 @@ class MedicationStore: ObservableObject {
             isExtendedRelease: isExtendedRelease,
             onsetMinutes: onsetMinutes,
             durationMinutes: durationMinutes,
+            enableDailyCheckIn: enableDailyCheckIn,
             timeToTake: timeToTake,
             reminderTimes: reminderTimes,
             notes: notes,
@@ -262,6 +277,34 @@ class MedicationStore: ObservableObject {
         
         // Reset application badge if no more pending medications for today
         resetBadgeIfNeeded()
+
+        // If this is an ADHD stimulant with timing metadata and not skipped, prepare a focus timeline entry
+        if !skipped,
+           medication.hasStimulantTiming,
+           let onsetMinutes = medication.onsetMinutes,
+           let durationMinutes = medication.durationMinutes {
+
+            let calendar = Calendar.current
+
+            // Compute onset/fade based on the actual logged time
+            let onsetTime = calendar.date(byAdding: .minute, value: onsetMinutes, to: actualTime) ?? actualTime
+            let fadeTime = calendar.date(byAdding: .minute, value: durationMinutes, to: actualTime) ?? actualTime
+
+            // Best-effort scheduled time for today (for copy like "Scheduled for 8:00, logged at 8:45")
+            let scheduledTime = scheduledTimeForToday(
+                medication: medication,
+                actualTime: actualTime,
+                reminderIndex: reminderIndex
+            )
+
+            recentADHDDoseTimeline = ADHDDoseTimelineEntry(
+                medication: medication,
+                actualTime: actualTime,
+                scheduledTime: scheduledTime,
+                onsetTime: onsetTime,
+                fadeTime: fadeTime
+            )
+        }
     }
     
     // Helper method to check if badge should be reset
@@ -365,6 +408,57 @@ class MedicationStore: ObservableObject {
     func deleteLog(at offsets: IndexSet) {
         logs.remove(atOffsets: offsets)
         saveLogs()
+    }
+
+    private func scheduledTimeForToday(
+        medication: Medication,
+        actualTime: Date,
+        reminderIndex: Int?
+    ) -> Date? {
+        // For ADHD medications that are explicitly "As needed" without reminders,
+        // we treat doses as ad-hoc and do not surface a scheduled time. This keeps
+        // the copy in the focus timeline sheet aligned with how the user configured it.
+        if medication.frequency == "As needed" && medication.reminderTimes.isEmpty {
+            return nil
+        }
+
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: actualTime)
+
+        // Build candidate times for today from reminderTimes if present
+        if !medication.reminderTimes.isEmpty {
+            let baseTimes: [Date] = medication.reminderTimes.compactMap { raw in
+                let components = calendar.dateComponents([.hour, .minute], from: raw)
+                return calendar.date(
+                    bySettingHour: components.hour ?? 8,
+                    minute: components.minute ?? 0,
+                    second: 0,
+                    of: dayStart
+                )
+            }
+
+            guard !baseTimes.isEmpty else { return nil }
+
+            if let index = reminderIndex,
+               index >= 0,
+               index < baseTimes.count {
+                return baseTimes[index]
+            }
+
+            // Fallback: nearest scheduled time to when the dose was actually logged
+            return baseTimes.min(by: { lhs, rhs in
+                abs(lhs.timeIntervalSince(actualTime)) < abs(rhs.timeIntervalSince(actualTime))
+            })
+        } else {
+            // Legacy single-time medications: anchor timeToTake to today
+            let components = calendar.dateComponents([.hour, .minute], from: medication.timeToTake)
+            return calendar.date(
+                bySettingHour: components.hour ?? 8,
+                minute: components.minute ?? 0,
+                second: 0,
+                of: dayStart
+            )
+        }
     }
     
     // Helper function to update medication names in existing logs
