@@ -119,7 +119,7 @@ struct PillrApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
                 .environmentObject(store)
                 .environmentObject(interactionStore)
                 .environmentObject(userSettings)
@@ -139,4 +139,3 @@ struct PillrApp: App {
 }
 
 // Using the NotificationDelegate defined in NotificationManager.swift
-

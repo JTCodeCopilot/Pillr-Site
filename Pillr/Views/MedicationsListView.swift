@@ -283,181 +283,18 @@ fileprivate func MedicationsListContent(
     onShowFocusTimeline: @escaping () -> Void
 ) -> some View {
     ScrollView {
-        VStack(spacing: 28) {
+        VStack(alignment: .leading, spacing: 28) {
             // Enhanced header section
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("My Meds")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-                    
-                    Text("\(store.activeMedications.count) medication\(store.activeMedications.count == 1 ? "" : "s")")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                }
+            VStack(alignment: .leading, spacing: 4) {
+                Text("My Meds")
+                    .font(.system(size: 36, weight: .bold))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
                 
-                Spacer()
-                
-                HStack(spacing: 12) {
-                    // Focus timeline button
-                    Button(action: {
-                        HapticManager.shared.lightImpact()
-                        onShowFocusTimeline()
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(stops: [
-                                            .init(color: Color(hex: "#F0F0E8"), location: 0.0),
-                                            .init(color: Color(hex: "#E8E8E0"), location: 0.25),
-                                            .init(color: Color(hex: "#DFDFD9"), location: 0.5),
-                                            .init(color: Color(hex: "#C7C7BD"), location: 0.75),
-                                            .init(color: Color(hex: "#B8B8AE"), location: 1.0)
-                                        ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 50, height: 50)
-                                .overlay(
-                                    Circle()
-                                        .stroke(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [
-                                                    Color.white.opacity(0.5),
-                                                    Color.white.opacity(0.3),
-                                                    Color.clear,
-                                                    Color.black.opacity(0.1)
-                                                ]),
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 1.5
-                                        )
-                                )
-                            
-                            Image(systemName: "brain.head.profile")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(Color(hex: "#404C42"))
-                        }
-                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-
-                    // Check interactions button
-                    Button(action: {
-                        HapticManager.shared.lightImpact()
-                        Task {
-                            await onCheckAllInteractions()
-                        }
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(stops: [
-                                            .init(color: Color(hex: "#F0F0E8"), location: 0.0),
-                                            .init(color: Color(hex: "#E8E8E0"), location: 0.3),
-                                            .init(color: Color(hex: "#DFDFD9"), location: 0.6),
-                                            .init(color: Color(hex: "#C7C7BD"), location: 0.85),
-                                            .init(color: Color(hex: "#B8B8AE"), location: 1.0)
-                                        ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 50, height: 50)
-                                .scaleEffect(isCheckingInteractions.wrappedValue ? 1.08 : 1.0)
-                                .overlay(
-                                    Circle()
-                                        .stroke(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [
-                                                    Color.white.opacity(0.6),
-                                                    Color.white.opacity(0.2),
-                                                    Color.clear,
-                                                    Color.black.opacity(0.1)
-                                                ]),
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 1.5
-                                        )
-                                )
-                            
-                            if isCheckingInteractions.wrappedValue {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#404C42")))
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "checkmark.shield.fill")
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#404C42"))
-                            }
-                        }
-                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
-                    }
-                    .disabled(isCheckingInteractions.wrappedValue)
-                    .buttonStyle(ScaleButtonStyle())
-                    
-                    // Add medication button (moved from floating position)
-                    Button(action: {
-                        HapticManager.shared.lightImpact()
-                        onAddMedication()
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(stops: [
-                                            .init(color: Color(hex: "#F0F0E8"), location: 0.0),
-                                            .init(color: Color(hex: "#E8E8E0"), location: 0.25),
-                                            .init(color: Color(hex: "#DFDFD9"), location: 0.5),
-                                            .init(color: Color(hex: "#C7C7BD"), location: 0.75),
-                                            .init(color: Color(hex: "#B8B8AE"), location: 1.0)
-                                        ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 50, height: 50)
-                                .overlay(
-                                    Circle()
-                                        .stroke(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [
-                                                    Color.white.opacity(0.5),
-                                                    Color.white.opacity(0.3),
-                                                    Color.clear,
-                                                    Color.black.opacity(0.1)
-                                                ]),
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 1.5
-                                        )
-                                )
-                            
-                            // Plus icon
-                            ZStack {
-                                // Horizontal bar
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color(hex: "#3A443D"))
-                                    .frame(width: 20, height: 3)
-                                
-                                // Vertical bar
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color(hex: "#3A443D"))
-                                    .frame(width: 3, height: 20)
-                            }
-                        }
-                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                }
+                Text("\(store.activeMedications.count) medication\(store.activeMedications.count == 1 ? "" : "s")")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, horizontalInsets)
             .padding(.bottom, 8)
             
             // Enhanced medication cards section
@@ -485,12 +322,12 @@ fileprivate func MedicationsListContent(
                     ))
                 }
             }
+            .padding(.horizontal, horizontalInsets)
             
 
             
             Spacer(minLength: 60)
         }
-        .padding(.horizontal, horizontalInsets)
         .padding(.top, 8)
         .background(
             GeometryReader { geo in

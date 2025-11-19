@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FocusTimelineView: View {
     @EnvironmentObject var store: MedicationStore
+    let isModal: Bool
     @Environment(\.dismiss) var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showingPlanner = false
@@ -127,6 +128,10 @@ struct FocusTimelineView: View {
         return formatter.string(from: date)
     }
     
+    init(isModal: Bool = true) {
+        self.isModal = isModal
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -180,11 +185,13 @@ struct FocusTimelineView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") {
-                        dismiss()
+                if isModal {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Close") {
+                            dismiss()
+                        }
+                        .foregroundColor(Color(hex: "#C7C7BD"))
                     }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
                 }
             }
         }

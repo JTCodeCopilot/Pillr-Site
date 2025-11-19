@@ -648,30 +648,6 @@ struct AddMedicationView: View {
                         }
                     }
                 }
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Save") {
-                            HapticManager.shared.mediumImpact()
-                            if validateForm() {
-                                saveMedication()
-                            } else {
-                                showValidationErrors = true
-                                HapticManager.shared.errorNotification()
-                            }
-                        }
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(isFormValid ? Color(hex: "#C7C7BD") : Color.gray)
-                        .disabled(!isFormValid)
-                    }
-                    
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button("Cancel") {
-                            HapticManager.shared.lightImpact()
-                            dismiss()
-                        }
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                    }
-                }
                 .onAppear {
                     setupKeyboardObservers()
                     // Auto-focus the name field when view appears
@@ -1045,6 +1021,39 @@ struct AddMedicationView: View {
         return basicValid && customUnitValid
     }
 
+    private func resetForm() {
+        name = ""
+        dosage = ""
+        dosageUnit = "mg"
+        iconName = "pill.fill"
+        frequency = "As needed"
+        timeToTake = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+        reminderTimes = []
+        notes = ""
+        enableNotification = true
+        pillCountString = ""
+        pillsPerDoseString = "1"
+        refillThresholdString = ""
+        trackPillCount = false
+        isOneTimeWithFollowUp = false
+        isADHDMedication = false
+        medicationType = .other
+        isExtendedRelease = false
+        onsetMinutesString = ""
+        durationMinutesString = ""
+        enableDailyCheckIn = false
+        showingAISearch = false
+        showingPremiumUpgrade = false
+        keyboardHeight = 0
+        focusedField = nil
+        showValidationErrors = false
+        nameError = nil
+        dosageError = nil
+        customUnit = ""
+        isCustomUnitSelected = false
+        showFrequencyPicker = false
+    }
+
     private func saveMedication() {
         let pillCount = trackPillCount ? Int(pillCountString) : nil
         let pillsPerDose = trackPillCount ? (Int(pillsPerDoseString) ?? 1) : 1
@@ -1082,6 +1091,7 @@ struct AddMedicationView: View {
         )
         
         if success {
+            resetForm()
             onAdd()
         }
         // If not successful, the medication limit was reached - UI should handle this

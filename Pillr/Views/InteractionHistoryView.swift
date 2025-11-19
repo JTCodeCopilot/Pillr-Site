@@ -2,6 +2,7 @@ import SwiftUI
 import PDFKit
 
 struct InteractionHistoryView: View {
+    let isModal: Bool
     @StateObject private var interactionStore = InteractionStore.shared
     @Environment(\.dismiss) var dismiss
     @State private var searchText = ""
@@ -30,6 +31,10 @@ struct InteractionHistoryView: View {
             case .csv: return "tablecells"
             }
         }
+    }
+    
+    init(isModal: Bool = true) {
+        self.isModal = isModal
     }
     
     var filteredInteractions: [DrugInteraction] {
@@ -81,12 +86,14 @@ struct InteractionHistoryView: View {
             .navigationTitle("Interaction History")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") {
-                        dismiss()
+                if isModal {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Done") {
+                            dismiss()
+                        }
+                        .foregroundColor(Color.pillrAccent)
+                        .font(.system(size: 16, weight: .medium))
                     }
-                    .foregroundColor(Color.pillrAccent)
-                    .font(.system(size: 16, weight: .medium))
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
