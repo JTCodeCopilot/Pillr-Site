@@ -74,7 +74,7 @@ struct AddMedicationView: View {
     }
 
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
-    let dosageUnits = ["mg", "ml", "tablets", "capsules", "Custom"]
+    let dosageUnits = ["mg", "ml", "tablets", "capsules", "custom"]
     @State private var customUnit: String = ""
     @State private var isCustomUnitSelected: Bool = false
 
@@ -94,8 +94,9 @@ struct AddMedicationView: View {
 
             ScrollViewReader { scrollProxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 24) {
+                    LazyVStack(alignment: .leading, spacing: 20) {
                         header
+                        stepProgressView
 
                         if currentStep != .basics {
                             summaryCard
@@ -117,6 +118,8 @@ struct AddMedicationView: View {
                         navigationFooter
                     }
                     .padding(.horizontal, 20)
+                    .frame(maxWidth: 620)
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .scrollContentBackground(.hidden)
                 .contentMargins(.top, 0, for: .scrollContent)
@@ -144,6 +147,7 @@ struct AddMedicationView: View {
             ToolbarItemGroup(placement: .keyboard) {
                 HStack {
                     Button(action: {
+                        triggerStrongHaptic()
                         moveToPreviousField()
                     }) {
                         Image(systemName: "chevron.up")
@@ -152,6 +156,7 @@ struct AddMedicationView: View {
                     .disabled(!canMoveToPreviousField)
 
                     Button(action: {
+                        triggerStrongHaptic()
                         moveToNextField()
                     }) {
                         Image(systemName: "chevron.down")
@@ -161,8 +166,11 @@ struct AddMedicationView: View {
 
                     Spacer()
 
-                    Button("Done") {
+                    Button(action: {
+                        triggerStrongHaptic()
                         focusedField = nil
+                    }) {
+                        Text("Done")
                     }
                     .foregroundColor(Color(hex: "#C7C7BD"))
                 }
@@ -222,34 +230,45 @@ struct AddMedicationView: View {
 
     @ViewBuilder
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("Add Medication")
-                .font(.system(size: 32, weight: .bold))
+                .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
-            Text(stepTitle)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD"))
-
-            Text("Step \(currentStep.rawValue + 1) of \(AddMedicationStep.allCases.count)")
+            Text("Step \(currentStep.rawValue + 1) of \(AddMedicationStep.allCases.count) • \(stepTitle)")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
         }
+        // Add a touch more leading padding so the title
+        // doesn't feel tight against the screen edge
+        .padding(.leading, 4)
+    }
+
+    @ViewBuilder
+    private var stepProgressView: some View {
+        ProgressView(
+            value: Double(currentStep.rawValue + 1),
+            total: Double(AddMedicationStep.allCases.count)
+        )
+        .tint(Color(hex: "#C7C7BD"))
+        .scaleEffect(x: 1, y: 1.6, anchor: .center)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 4)
+        .padding(.bottom, 2)
     }
 
     @ViewBuilder
     private var basicsSection: some View {
         FormSection(title: "MEDICATION INFO", icon: "pills.fill") {
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // Name + AI search
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .bottom, spacing: 12) {
+                    HStack(alignment: .bottom, spacing: 10) {
                         enhancedInputField(
                             title: "Medication Name",
-                            placeholder: "e.g., Aspirin, Tylenol",
+                            placeholder: "e.g., Vyvanse, Ritalin",
                             text: $name,
                             field: .name,
-                            iconName: "pill.circle.fill",
                             isRequired: true,
                             errorMessage: nameError
                         )
@@ -258,7 +277,7 @@ struct AddMedicationView: View {
                         VStack {
                             Spacer()
                             Button(action: {
-                                HapticManager.shared.lightImpact()
+                                triggerStrongHaptic()
                                 if userSettings.isPremiumUser {
                                     showingAISearch = true
                                 } else {
@@ -276,8 +295,8 @@ struct AddMedicationView: View {
                                     }
                                 }
                                 .foregroundColor(Color(hex: "#E8E8E0"))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 12)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(Color.black.opacity(0.3))
@@ -289,12 +308,12 @@ struct AddMedicationView: View {
                             }
                             .buttonStyle(ScaleButtonStyle())
                         }
-                        .frame(height: 70)
+                        .frame(height: 60)
                     }
                 }
 
                 // Dosage + unit
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
                     enhancedInputField(
                         title: "Dosage",
                         placeholder: dosageUnit == "ml" ? "10" : "50",
@@ -307,7 +326,7 @@ struct AddMedicationView: View {
                     )
                     .id(Field.dosage)
 
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("Unit")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(Color(hex: "#E8E8E0"))
@@ -315,22 +334,17 @@ struct AddMedicationView: View {
                         Menu {
                             ForEach(dosageUnits, id: \.self) { unit in
                                 Button {
+                                    triggerStrongHaptic()
                                     dosageUnit = unit
-                                    isCustomUnitSelected = unit == "Custom"
-                                    HapticManager.shared.lightImpact()
+                                    isCustomUnitSelected = unit == "custom"
                                 } label: {
-                                    HStack {
-                                        Image(systemName: iconForUnit(unit))
-                                            .font(.system(size: 14, weight: .medium))
-                                        Text(unit)
-                                    }
+                                    Text(unit)
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
                                 }
                             }
                         } label: {
                             HStack(spacing: 6) {
-                                Image(systemName: iconForUnit(dosageUnit))
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                 Text(dosageUnit)
                                     .font(.system(size: 15, weight: .medium))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
@@ -340,8 +354,8 @@ struct AddMedicationView: View {
                                     .font(.system(size: 10, weight: .semibold))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 12)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 10)
                             .frame(minWidth: 90)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
@@ -354,19 +368,19 @@ struct AddMedicationView: View {
                         }
                         .buttonStyle(ScaleButtonStyle())
                     }
-                    .frame(minWidth: 110)
+                    .frame(minWidth: 100)
                 }
 
                 if isCustomUnitSelected {
-                    enhancedInputField(
-                        title: "Custom Unit Type",
-                        placeholder: "e.g. drops, sprays",
-                        text: $customUnit,
-                        field: nil,
-                        iconName: "text.cursor",
-                        isRequired: true,
-                        errorMessage: customUnit.isEmpty && showValidationErrors ? "Custom unit type is required" : nil
-                    )
+                enhancedInputField(
+                    title: "Custom Unit Type",
+                    placeholder: "e.g. drops, sprays",
+                    text: $customUnit,
+                    field: nil,
+                    iconName: nil,
+                    isRequired: true,
+                    errorMessage: customUnit.isEmpty && showValidationErrors ? "Custom unit type is required" : nil
+                )
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
@@ -376,49 +390,38 @@ struct AddMedicationView: View {
     @ViewBuilder
     private var scheduleSection: some View {
         FormSection(title: "SCHEDULE", icon: "calendar.badge.clock") {
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // Frequency picker
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "repeat.circle.fill")
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                            .font(.system(size: 20))
-                        Text("How often?")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
-                    }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("How often?")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
 
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 6) {
                         ForEach(frequencies, id: \.self) { freq in
-                            FrequencyCard(
-                                frequency: freq,
-                                isSelected: frequency == freq,
-                                onTap: {
-                                    HapticManager.shared.lightImpact()
-                                    frequency = freq
-                                    setupReminderTimesForFrequency(freq)
-                                    if enableNotification {
-                                        requestNotificationPermissionIfNeeded()
-                                    }
+                        FrequencyCard(
+                            frequency: freq,
+                            isSelected: frequency == freq,
+                            onTap: {
+                                frequency = freq
+                                setupReminderTimesForFrequency(freq)
+                                if enableNotification {
+                                    requestNotificationPermissionIfNeeded()
                                 }
-                            )
+                            }
+                        )
                         }
                     }
                 }
 
                 // Time pickers
                 if needsMultipleReminders {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Image(systemName: "clock.fill")
-                                .foregroundColor(Color(hex: "#C7C7BD"))
-                                .font(.system(size: 18))
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("Reminder Times")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 15, weight: .semibold))
                                 .foregroundColor(Color(hex: "#E8E8E0"))
-                        }
 
-                        ForEach(0..<reminderTimes.count, id: \.self) { index in
+                            ForEach(0..<reminderTimes.count, id: \.self) { index in
                             TimePickerRow(
                                 title: "Dose \(index + 1)",
                                 time: $reminderTimes[index]
@@ -436,42 +439,43 @@ struct AddMedicationView: View {
 
         if frequency != "As needed" {
             FormSection(title: "NOTIFICATIONS", icon: "bell.fill") {
-                VStack(spacing: 16) {
+                VStack(spacing: 12) {
                     if needsMultipleReminders || frequency == "Once daily" {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 6) {
                             Toggle(isOn: $isOneTimeWithFollowUp.animation(.easeInOut)) {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Image(systemName: "arrow.clockwise.circle.fill")
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                            .font(.system(size: 18))
-                                        Text("One-time with Follow-up")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
-                                        if !userSettings.isPremiumUser {
-                                            Button(action: {
-                                                showingPremiumUpgrade = true
-                                            }) {
-                                                Text("PREMIUM")
-                                                    .font(.system(size: 10, weight: .bold))
-                                                    .foregroundColor(.white)
-                                                    .padding(.horizontal, 6)
-                                                    .padding(.vertical, 2)
-                                                    .background(Color(hex: "#D4A017"))
-                                                    .cornerRadius(4)
-                                            }
-                                        }
+                            HStack {
+                                Text("One-time with Follow-up")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                if !userSettings.isPremiumUser {
+                                    Button(action: {
+                                        triggerStrongHaptic()
+                                        showingPremiumUpgrade = true
+                                    }) {
+                                        Text("PREMIUM")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Color(hex: "#D4A017"))
+                                            .cornerRadius(4)
                                     }
+                                }
+                            }
                                     Text(userSettings.isPremiumUser ?
                                          "Single reminder + 30-min follow-up if not taken" :
                                             "Follow-up reminders require premium subscription")
-                                    .font(.system(size: 13))
+                                    .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                 }
                             }
                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                             .disabled(!userSettings.isPremiumUser)
                             .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
+                            .onChange(of: isOneTimeWithFollowUp) { _ in
+                                triggerStrongHaptic()
+                            }
                         }
                     }
                 }
@@ -483,16 +487,11 @@ struct AddMedicationView: View {
     private var trackingAndADHDSection: some View {
         // ADHD timing
         FormSection(title: "FOCUS & TIMING", icon: "brain.head.profile") {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "pills.circle.fill")
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                            .font(.system(size: 18))
-                        Text("Is this an ADHD medication?")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
-                    }
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Is this an ADHD medication?")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
 
                     Picker("ADHD medication", selection: $isADHDMedication) {
                         Text("Yes").tag(true)
@@ -502,9 +501,9 @@ struct AddMedicationView: View {
                 }
 
                 if isADHDMedication {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("What kind of ADHD medication?")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(Color(hex: "#E8E8E0"))
 
                         Picker("Medication type", selection: $medicationType) {
@@ -516,20 +515,22 @@ struct AddMedicationView: View {
                 }
 
                 if isADHDMedication && medicationType == .stimulant {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Toggle(isOn: $isExtendedRelease) {
                             Text("Extended-release formulation")
-                                .font(.system(size: 15, weight: .medium))
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(hex: "#E8E8E0"))
                         }
                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                        .onChange(of: isExtendedRelease) { _ in
+                            triggerStrongHaptic()
+                        }
 
                         enhancedInputField(
                             title: "Starts working after (minutes)",
                             placeholder: "30",
                             text: $onsetMinutesString,
                             field: nil,
-                            iconName: "clock.arrow.circlepath",
                             keyboardType: .numberPad
                         )
 
@@ -538,7 +539,6 @@ struct AddMedicationView: View {
                             placeholder: "240",
                             text: $durationMinutesString,
                             field: nil,
-                            iconName: "timer",
                             keyboardType: .numberPad
                         )
 
@@ -554,11 +554,15 @@ struct AddMedicationView: View {
                                 }
                             }
                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                            .onChange(of: enableDailyCheckIn) { _ in
+                                triggerStrongHaptic()
+                            }
                         }
                     }
                 }
             }
             .onChange(of: isADHDMedication) { newValue in
+                triggerStrongHaptic()
                 if newValue {
                     if medicationType == .other {
                         medicationType = .stimulant
@@ -572,6 +576,7 @@ struct AddMedicationView: View {
                 }
             }
             .onChange(of: medicationType) { newType in
+                triggerStrongHaptic()
                 if newType != .stimulant {
                     isExtendedRelease = false
                     onsetMinutesString = ""
@@ -583,52 +588,52 @@ struct AddMedicationView: View {
 
         // Inventory
         FormSection(title: "INVENTORY", icon: "archivebox.fill") {
-            VStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
+            VStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
                     Toggle(isOn: $trackPillCount.animation(.easeInOut)) {
                         VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Image(systemName: "number.circle.fill")
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                    .font(.system(size: 18))
-                                Text("Track Pill Count")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                if !userSettings.isPremiumUser {
-                                    Button(action: {
-                                        showingPremiumUpgrade = true
-                                    }) {
-                                        Text("PREMIUM")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Color(hex: "#D4A017"))
-                                            .cornerRadius(4)
-                                    }
-                                }
+                    HStack {
+                        Text("Track Pill Count")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
+                        if !userSettings.isPremiumUser {
+                            Button(action: {
+                                triggerStrongHaptic()
+                                showingPremiumUpgrade = true
+                            }) {
+                                Text("PREMIUM")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color(hex: "#D4A017"))
+                                    .cornerRadius(4)
                             }
+                        }
+                    }
                             Text(userSettings.isPremiumUser ?
                                  "Get refill reminders and track usage" :
                                     "Inventory tracking requires premium subscription")
-                            .font(.system(size: 13))
+                            .font(.system(size: 12))
                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                         }
                     }
                     .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                     .disabled(!userSettings.isPremiumUser)
                     .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
+                    .onChange(of: trackPillCount) { _ in
+                        triggerStrongHaptic()
+                    }
                 }
 
                 if trackPillCount {
-                    VStack(spacing: 16) {
-                        HStack(spacing: 12) {
+                    VStack(spacing: 12) {
+                        HStack(spacing: 10) {
                             enhancedInputField(
                                 title: "Total Pills",
                                 placeholder: "30",
                                 text: $pillCountString,
                                 field: .pillCount,
-                                iconName: "pill.fill",
                                 keyboardType: .numberPad
                             )
                             .id(Field.pillCount)
@@ -638,7 +643,6 @@ struct AddMedicationView: View {
                                 placeholder: "1",
                                 text: $pillsPerDoseString,
                                 field: .pillsPerDose,
-                                iconName: "pills.fill",
                                 keyboardType: .numberPad
                             )
                             .id(Field.pillsPerDose)
@@ -649,7 +653,6 @@ struct AddMedicationView: View {
                             placeholder: "5",
                             text: $refillThresholdString,
                             field: .refillThreshold,
-                            iconName: "bell.badge.fill",
                             keyboardType: .numberPad
                         )
                         .id(Field.refillThreshold)
@@ -663,7 +666,7 @@ struct AddMedicationView: View {
     @ViewBuilder
     private var notesAndReviewSection: some View {
         FormSection(title: "NOTES", icon: "note.text.fill") {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Information")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color(hex: "#E8E8E0"))
@@ -683,18 +686,14 @@ struct AddMedicationView: View {
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
                         .padding(12)
-                        .overlay(
-                            Group {
-                                if notes.isEmpty {
-                                    Text("e.g., Take with food, side effects to watch for...")
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
-                                        .padding(.top, 20)
-                                        .padding(.leading, 16)
-                                        .allowsHitTesting(false)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                            }
-                        )
+
+                    if notes.isEmpty {
+                        Text("e.g., Take with food, side effects to watch for...")
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                            .padding(.horizontal, 16)
+                            .padding(.top, 20)
+                            .allowsHitTesting(false)
+                    }
                 }
             }
             .id(Field.notes)
@@ -707,7 +706,7 @@ struct AddMedicationView: View {
             HStack {
                 if currentStep != .basics {
                     Button(action: {
-                        HapticManager.shared.lightImpact()
+                        triggerStrongHaptic()
                         goToPreviousStep()
                     }) {
                         HStack {
@@ -728,7 +727,7 @@ struct AddMedicationView: View {
                 Spacer()
 
                 Button(action: {
-                    HapticManager.shared.mediumImpact()
+                    triggerStrongHaptic()
                     if currentStep == .notesAndReview {
                         if validateForm() {
                             saveMedication()
@@ -859,21 +858,19 @@ struct AddMedicationView: View {
         icon: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
+            let _ = icon
             HStack {
-                Image(systemName: icon)
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                    .font(.system(size: 16, weight: .semibold))
                 Text(title)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                     .tracking(0.5)
             }
 
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 content()
             }
-            .padding(20)
+            .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.black.opacity(0.15))
@@ -962,17 +959,6 @@ struct AddMedicationView: View {
     }
 
     // MARK: - Helper Functions
-
-    private func iconForUnit(_ unit: String) -> String {
-        switch unit {
-        case "mg": return "scalemass.fill"
-        case "ml": return "drop.fill"
-        case "tablets": return "circle.fill"
-        case "capsules": return "pills.fill"
-        case "Custom": return "text.cursor"
-        default: return "pill.fill"
-        }
-    }
 
     private var stepTitle: String {
         switch currentStep {
@@ -1129,6 +1115,10 @@ struct AddMedicationView: View {
         }
     }
 
+    private func triggerStrongHaptic() {
+        HapticManager.shared.pulseRigid()
+    }
+
     private func setupReminderTimesForFrequency(_ frequency: String) {
         let calendar = Calendar.current
 
@@ -1161,7 +1151,7 @@ struct AddMedicationView: View {
         !dosage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !frequency.isEmpty
 
-        let customUnitValid = dosageUnit != "Custom" || (dosageUnit == "Custom" && !customUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        let customUnitValid = dosageUnit != "custom" || (dosageUnit == "custom" && !customUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
         if needsMultipleReminders && reminderTimes.isEmpty {
             return false
@@ -1220,7 +1210,7 @@ struct AddMedicationView: View {
         let pillsPerDose = trackPillCount ? (Int(pillsPerDoseString) ?? 1) : 1
         let refillThreshold = trackPillCount && !refillThresholdString.isEmpty ? Int(refillThresholdString) : nil
 
-        let finalDosageUnit = dosageUnit == "Custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+        let finalDosageUnit = dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
 
         let onsetMinutes = medicationType == .stimulant ? Int(onsetMinutesString) : nil
         let durationMinutes = medicationType == .stimulant ? Int(durationMinutesString) : nil
@@ -1286,12 +1276,10 @@ struct FrequencyCard: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: {
+            onTap()
+        }) {
             VStack(spacing: 8) {
-                Image(systemName: iconForFrequency(frequency))
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(isSelected ? Color(hex: "#404C42") : Color(hex: "#C7C7BD"))
-
                 Text(frequency)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(isSelected ? Color(hex: "#404C42") : Color(hex: "#E8E8E0"))
@@ -1313,17 +1301,7 @@ struct FrequencyCard: View {
                     )
             )
         }
-        .buttonStyle(ScaleButtonStyle())
-    }
-
-    private func iconForFrequency(_ frequency: String) -> String {
-        switch frequency {
-        case "Once daily": return "sun.max.fill"
-        case "Twice daily": return "sunrise.fill"
-        case "Three times daily": return "clock.fill"
-        case "As needed": return "hand.raised.fill"
-        default: return "pill.fill"
-        }
+        .buttonStyle(ScaleButtonStyle(hapticStyle: .pulseRigid))
     }
 }
 
@@ -1349,6 +1327,9 @@ struct TimePickerRow: View {
                 .labelsHidden()
                 .colorScheme(.dark)
                 .accentColor(Color(hex: "#C7C7BD"))
+                .onChange(of: time) { _ in
+                    HapticManager.shared.pulseRigid()
+                }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

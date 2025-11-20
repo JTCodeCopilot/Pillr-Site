@@ -35,11 +35,11 @@ struct PrivacyNoticeView: View {
                         
                         Text("Your Privacy Matters")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color(hex: "#F5F7F4"))
                         
                         Text("Welcome to Pillr! Here's how we protect your data.")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                     }
                     
                     // Privacy features
@@ -77,7 +77,7 @@ struct PrivacyNoticeView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Technical Details")
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color(hex: "#F5F7F4"))
                         
                         VStack(alignment: .leading, spacing: 12) {
                             bulletPoint("Data is stored using iOS UserDefaults and device keychain")
@@ -127,7 +127,7 @@ struct PrivacyNoticeView: View {
                 
                 Text("You can review this information anytime in Settings")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 24)
@@ -169,11 +169,11 @@ struct PrivacyNoticeView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                 
                 Text(description)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color(hex: "#E0E7DC"))
                     .lineLimit(nil)
                     .multilineTextAlignment(.leading)
             }
@@ -184,7 +184,7 @@ struct PrivacyNoticeView: View {
         .padding(.horizontal, 16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.15))
+                .fill(Color(hex: "#5B695D"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(iconColor.opacity(0.2), lineWidth: 1)
@@ -196,13 +196,13 @@ struct PrivacyNoticeView: View {
     private func bulletPoint(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Circle()
-                .fill(Color(hex: "#C7C7BD"))
+                .fill(Color(hex: "#E0E7DC"))
                 .frame(width: 4, height: 4)
                 .padding(.top, 8)
             
             Text(text)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color(hex: "#E0E7DC"))
                 .lineLimit(nil)
             
             Spacer()

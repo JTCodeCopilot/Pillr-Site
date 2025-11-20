@@ -59,7 +59,7 @@ struct EditMedicationView: View {
     }
 
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
-    let dosageUnits = ["mg", "ml", "tablets", "capsules", "Custom"]
+    let dosageUnits = ["mg", "ml", "tablets", "capsules", "custom"]
     
     // Helper function to get icon for each unit
     private func iconForUnit(_ unit: String) -> String {
@@ -72,7 +72,7 @@ struct EditMedicationView: View {
             return "circle.fill"
         case "capsules":
             return "pills.fill"
-        case "Custom":
+        case "custom":
             return "text.cursor"
         default:
             return "pill.fill"
@@ -239,7 +239,7 @@ struct EditMedicationView: View {
                                             ForEach(dosageUnits, id: \.self) { unit in
                                                 Button {
                                                     dosageUnit = unit
-                                                    isCustomUnitSelected = unit == "Custom"
+                                                    isCustomUnitSelected = unit == "custom"
                                                     HapticManager.shared.lightImpact()
                                                 } label: {
                                                     HStack {
@@ -867,40 +867,25 @@ struct EditMedicationView: View {
     @ViewBuilder
     private func FrequencyCard(frequency: String, isSelected: Bool, onTap: @escaping () -> Void) -> some View {
         Button(action: onTap) {
-            VStack(spacing: 8) {
-                Image(systemName: frequencyIcon(for: frequency))
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(isSelected ? Color(hex: "#404C42") : Color(hex: "#C7C7BD"))
-                
-                Text(frequency)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(isSelected ? Color(hex: "#404C42") : Color(hex: "#C7C7BD"))
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color(hex: "#C7C7BD") : Color.black.opacity(0.2))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(
-                                isSelected ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.3), 
-                                lineWidth: isSelected ? 2 : 1
-                            )
-                    )
-            )
+            Text(frequency)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(isSelected ? Color(hex: "#404C42") : Color(hex: "#C7C7BD"))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isSelected ? Color(hex: "#C7C7BD") : Color.black.opacity(0.2))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(
+                                    isSelected ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.3), 
+                                    lineWidth: isSelected ? 2 : 1
+                                )
+                        )
+                )
         }
         .buttonStyle(ScaleButtonStyle())
-    }
-    
-    private func frequencyIcon(for frequency: String) -> String {
-        switch frequency {
-        case "Once daily": return "sun.max.fill"
-        case "Twice daily": return "sun.and.horizon.fill"
-        case "As needed": return "hand.raised.fill"
-        default: return "clock.fill"
-        }
     }
     
     // Helper function to format the time
@@ -917,7 +902,7 @@ struct EditMedicationView: View {
         let frequencyValid = !frequency.isEmpty
         
         // Validate custom unit if selected
-        let customUnitValid = dosageUnit != "Custom" || (dosageUnit == "Custom" && !customUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        let customUnitValid = dosageUnit != "custom" || (dosageUnit == "custom" && !customUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         
         if medicationType == .stimulant {
             let onsetValid = onsetMinutesString.isEmpty || Int(onsetMinutesString) != nil
@@ -993,7 +978,7 @@ struct EditMedicationView: View {
         }
         
         // Use custom unit if "Custom" is selected
-        let finalDosageUnit = dosageUnit == "Custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+        let finalDosageUnit = dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
         
         // Create an updated medication object with the new values
         var updatedMedication = medication

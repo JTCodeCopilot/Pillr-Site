@@ -5,7 +5,6 @@ enum MainTab: Hashable {
     case add
     case focus
     case interactions
-    case settings
 }
 
 struct MainTabView: View {
@@ -54,13 +53,6 @@ struct MainTabView: View {
                         Label("Interactions", systemImage: "checkmark.circle")
                     }
                     .tag(MainTab.interactions)
-                
-                // Settings
-                SettingsView()
-                    .tabItem {
-                        Label("Settings", systemImage: "gearshape")
-                    }
-                    .tag(MainTab.settings)
             }
             .accentColor(Color.pillrAccent)
         }
@@ -72,10 +64,11 @@ struct MedicationsHomeView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var showingSettings = false
     
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
+            ZStack(alignment: .topTrailing) {
                 // Match the existing ContentView background
                 LinearGradient.pillrBackground
                     .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
@@ -89,10 +82,13 @@ struct MedicationsHomeView: View {
                     .frame(height: geometry.safeAreaInsets.top + 44)
                     .ignoresSafeArea(edges: .top)
                 
-                MedicationsListView()
+                MedicationsListView(onShowSettings: { showingSettings = true })
                     .scrollContentBackground(.hidden)
                     .frame(maxHeight: .infinity)
             }
+        }
+        .fullScreenCover(isPresented: $showingSettings) {
+            SettingsView()
         }
     }
 }

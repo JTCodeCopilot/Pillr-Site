@@ -6,39 +6,45 @@ struct SettingsView: View {
     @ObservedObject private var storeManager = StoreManager.shared
     @State private var showingPremiumUpgrade = false
     @State private var showingInteractionHistory = false
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
             ZStack {
-                // Background
                 Color(hex: "#404C42")
-                    .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
-                
+                    .ignoresSafeArea()
+
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Title
-                        HStack {
-                            Text("Settings")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(Color.pillrAccent)
-                            Spacer()
-                        }
-                        .padding(.horizontal)
-                        .padding(.top, 10)
-                        
                         appSettingsSection
-                        
+
                         aiSettingsSection
-                        
+
                         supportLinksSection
-                        
+
                         Spacer()
                     }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
                     .padding(.bottom, 50)
                 }
             }
-            .navigationBarTitle("", displayMode: .inline)
-            .navigationBarHidden(true)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Settings")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(role: .cancel) {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+                }
+            }
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
@@ -60,14 +66,14 @@ struct SettingsView: View {
             HStack {
                 Image(systemName: "gearshape")
                     .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                 Text("App Settings")
                     .font(.headline)
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                 Spacer()
             }
             Divider()
-                .background(Color(hex: "#525E55").opacity(0.15))
+                .background(Color(hex: "#E0E7DC").opacity(0.15))
             
             // Interaction History
             Button(action: {
@@ -75,23 +81,23 @@ struct SettingsView: View {
             }) {
                 HStack {
                     Image(systemName: "clock.arrow.circlepath")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color(hex: "#E0E7DC"))
                         .frame(width: 20)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Interaction History")
-                            .foregroundColor(Color(hex: "#525E55"))
+                            .foregroundColor(Color(hex: "#F5F7F4"))
                             .font(.system(size: 16, weight: .medium))
                         
                         Text("View and manage your interaction checks")
-                            .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
                             .font(.system(size: 14))
                     }
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.6))
                         .font(.system(size: 14))
                 }
                 .padding(.vertical, 4)
@@ -100,9 +106,7 @@ struct SettingsView: View {
 
         }
         .padding()
-        .glassRectBackground(cornerRadius: 20, opacity: 1)
-        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
-        .shadow(color: Color.white.opacity(1), radius: 2, x: 0, y: 1)
+        .settingsCardStyle()
         .padding(.horizontal)
     }
     
@@ -112,15 +116,15 @@ struct SettingsView: View {
             HStack {
                 Image(systemName: "brain.head.profile")
                     .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                 Text("AI Features")
                     .font(.headline)
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                 Spacer()
             }
             
             Divider()
-                .background(Color(hex: "#525E55").opacity(0.15))
+                .background(Color(hex: "#E0E7DC").opacity(0.15))
             
             // Premium Subscription
             if storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser() {
@@ -132,16 +136,16 @@ struct SettingsView: View {
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Premium Active")
-                            .foregroundColor(Color(hex: "#525E55"))
+                            .foregroundColor(Color(hex: "#F5F7F4"))
                             .font(.system(size: 16, weight: .medium))
                         
                         if let subscriptionType = OpenAIService.shared.getSubscriptionType() {
                             Text("\(subscriptionType.capitalized) subscription")
-                                .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
                                 .font(.system(size: 14))
                         } else {
                             Text("AI-powered interaction checking enabled")
-                                .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
                                 .font(.system(size: 14))
                         }
                     }
@@ -149,7 +153,7 @@ struct SettingsView: View {
                     Spacer()
                     
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
                         .font(.system(size: 16))
                 }
                 .padding(.vertical, 4)
@@ -160,23 +164,23 @@ struct SettingsView: View {
                 }) {
                     HStack {
                         Image(systemName: "brain.head.profile")
-                            .foregroundColor(Color(hex: "#525E55"))
+                            .foregroundColor(Color(hex: "#E0E7DC"))
                             .frame(width: 20)
                         
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Upgrade to Premium")
-                                .foregroundColor(Color(hex: "#525E55"))
+                                .foregroundColor(Color(hex: "#F5F7F4"))
                                 .font(.system(size: 16, weight: .medium))
                             
                             Text("Unlock AI-powered medication analysis")
-                                .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
                                 .font(.system(size: 14))
                         }
                         
                         Spacer()
                         
                         Image(systemName: "chevron.right")
-                            .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.6))
                             .font(.system(size: 14))
                     }
                     .padding(.vertical, 4)
@@ -185,9 +189,7 @@ struct SettingsView: View {
             }
         }
         .padding()
-        .glassRectBackground(cornerRadius: 20, opacity: 1)
-        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
-        .shadow(color: Color.white.opacity(1), radius: 2, x: 0, y: 1)
+        .settingsCardStyle()
         .padding(.horizontal)
     }
     
@@ -197,15 +199,15 @@ struct SettingsView: View {
             HStack {
                 Image(systemName: "link.circle")
                     .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                 Text("Support & Resources")
                     .font(.headline)
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                 Spacer()
             }
             
             Divider()
-                .background(Color(hex: "#525E55").opacity(0.15))
+                .background(Color(hex: "#E0E7DC").opacity(0.15))
             
             // Privacy Policy Link
             Button(action: {
@@ -215,17 +217,17 @@ struct SettingsView: View {
             }) {
                 HStack {
                     Image(systemName: "hand.raised.fill")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color(hex: "#E0E7DC"))
                         .frame(width: 20)
                     
                     Text("Privacy Policy")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
                         .font(.system(size: 16, weight: .medium))
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.6))
                         .font(.system(size: 14))
                 }
                 .padding(.vertical, 4)
@@ -240,17 +242,17 @@ struct SettingsView: View {
             }) {
                 HStack {
                     Image(systemName: "message.fill")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color(hex: "#E0E7DC"))
                         .frame(width: 20)
                     
                     Text("Feedback")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
                         .font(.system(size: 16, weight: .medium))
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.6))
                         .font(.system(size: 14))
                 }
                 .padding(.vertical, 4)
@@ -265,17 +267,17 @@ struct SettingsView: View {
             }) {
                 HStack {
                     Image(systemName: "envelope.fill")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color(hex: "#E0E7DC"))
                         .frame(width: 20)
                     
                     Text("Contact Us")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
                         .font(.system(size: 16, weight: .medium))
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.6))
                         .font(.system(size: 14))
                 }
                 .padding(.vertical, 4)
@@ -283,9 +285,7 @@ struct SettingsView: View {
             .buttonStyle(PlainButtonStyle())
         }
         .padding()
-        .glassRectBackground(cornerRadius: 20, opacity: 1)
-        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
-        .shadow(color: Color.white.opacity(1), radius: 2, x: 0, y: 1)
+        .settingsCardStyle()
         .padding(.horizontal)
     }
 }
@@ -298,14 +298,40 @@ struct InfoRow: View {
         HStack {
             Text(title)
                 .font(.subheadline)
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
             
             Spacer()
             
             Text(value)
                 .font(.subheadline)
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color(hex: "#E0E7DC"))
         }
+    }
+}
+
+fileprivate extension View {
+    func settingsCardStyle() -> some View {
+        self
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(hex: "#525E55"),
+                                Color(hex: "#4A554D"),
+                                Color(hex: "#424D45")
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+            .shadow(color: Color.white.opacity(0.08), radius: 2, x: 0, y: 1)
     }
 }
 

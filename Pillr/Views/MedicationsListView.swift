@@ -27,6 +27,11 @@ struct MedicationsListView: View {
     @State private var showingInteractionResultSheet = false
     @State private var showingPremiumUpgrade = false
     @State private var showingFocusTimeline = false
+    let onShowSettings: () -> Void
+
+    init(onShowSettings: @escaping () -> Void = {}) {
+        self.onShowSettings = onShowSettings
+    }
     
     var body: some View {
         MedicationsListMainContent(
@@ -42,6 +47,7 @@ struct MedicationsListView: View {
             isCheckingInteractions: $isCheckingInteractions,
             onCheckAllInteractions: showMedicationSelectionSheet,
             onAddMedication: handleAddMedication,
+            onShowSettings: onShowSettings,
             onShowFocusTimeline: { showingFocusTimeline = true }
         )
         .sheet(item: $showingLogSheetFor) { med in
@@ -162,12 +168,9 @@ struct MedicationsListView: View {
 fileprivate func EmptyMedicationsView(onAddMedication: @escaping () -> Void) -> some View {
     EmptyStateView(
         title: "Your medication list is empty",
-        message: "",
-        actionTitle: "Add Your First Medication",
-        action: {
-            HapticManager.shared.mediumImpact()
-            onAddMedication()
-        },
+        message: "Get started by adding your first medication below.",
+        actionTitle: nil,
+        action: nil,
         icon: "pills.fill"
     )
     .accessibilityElement(children: .combine)
@@ -282,63 +285,66 @@ fileprivate func MedicationsListContent(
     onAddMedication: @escaping () -> Void,
     onShowFocusTimeline: @escaping () -> Void
 ) -> some View {
-    ScrollView {
-        VStack(alignment: .leading, spacing: 28) {
-            // Enhanced header section
+    VStack(alignment: .leading, spacing: 16) {
+        ForEach(sortedMedications(store.activeMedications)) { med in
+            MedicationRow(
+                medication: med,
+                onLogTap: { 
+                    HapticManager.shared.lightImpact()
+                    showingLogSheetFor.wrappedValue = med 
+                },
+                onEditTap: { 
+                    HapticManager.shared.lightImpact()
+                    selectedMedicationToEdit.wrappedValue = med 
+                },
+                onArchiveTap: {
+                    HapticManager.shared.warningNotification()
+                    medicationToArchive.wrappedValue = med
+                    showArchiveAlert.wrappedValue = true
+                }
+            )
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
+                removal: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.95))
+            ))
+        }
+    }
+    .padding(.horizontal, horizontalInsets)
+}
+
+@ViewBuilder
+fileprivate func MedicationsListHeader(
+    store: MedicationStore,
+    horizontalInsets: CGFloat,
+    onShowSettings: @escaping () -> Void
+) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+        HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("My Medications")
                     .font(.system(size: 36, weight: .bold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                 
                 Text("\(store.activeMedications.count) medication\(store.activeMedications.count == 1 ? "" : "s")")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
             }
-            .padding(.horizontal, horizontalInsets)
-            .padding(.bottom, 8)
             
-            // Enhanced medication cards section
-            VStack(alignment: .leading, spacing: 16) {
-                ForEach(sortedMedications(store.activeMedications)) { med in
-                    MedicationRow(
-                        medication: med,
-                        onLogTap: { 
-                            HapticManager.shared.lightImpact()
-                            showingLogSheetFor.wrappedValue = med 
-                        },
-                        onEditTap: { 
-                            HapticManager.shared.lightImpact()
-                            selectedMedicationToEdit.wrappedValue = med 
-                        },
-                        onArchiveTap: {
-                            HapticManager.shared.warningNotification()
-                            medicationToArchive.wrappedValue = med
-                            showArchiveAlert.wrappedValue = true
-                        }
-                    )
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
-                        removal: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.95))
-                    ))
-                }
+            Spacer()
+            
+            Button(action: onShowSettings) {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .padding(10)
+                    .background(Color.black.opacity(0.25))
+                    .clipShape(Circle())
             }
-            .padding(.horizontal, horizontalInsets)
-            
-
-            Spacer(minLength: 60)
         }
-        .background(
-            GeometryReader { geo in
-                Color.clear.preference(
-                    key: ScrollOffsetPreferenceKey.self,
-                    value: geo.frame(in: .global).minY
-                )
-            }
-        )
     }
-    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-        scrolledOffset.wrappedValue = -value
-    }
+    .padding(.leading, horizontalInsets + 8)
+    .padding(.trailing, horizontalInsets)
+    .padding(.top, 12)
 }
 
 fileprivate struct FloatingActionButton: View {
@@ -643,11 +649,11 @@ func ArchivedMedicationsSheet(
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Archived Medications")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color(hex: "#F5F7F4"))
                         
                         Text("Medications you've archived can be restored anytime")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                     }
                     .padding(.top, 20)
                     
@@ -660,11 +666,11 @@ func ArchivedMedicationsSheet(
                             
                             Text("No archived medications")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .foregroundColor(Color(hex: "#F5F7F4"))
                             
                             Text("Medications you archive will appear here")
                                 .font(.system(size: 16))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                                 .multilineTextAlignment(.center)
                         }
                         .padding(.vertical, 40)
@@ -717,18 +723,18 @@ func ArchivedMedicationCard(
         VStack(alignment: .leading, spacing: 4) {
             Text(medication.name)
                 .font(.system(size: 18, weight: .bold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color(hex: "#F5F7F4"))
                 .lineLimit(1)
             
             Text("\(medication.dosage) \(medication.dosageUnit) - \(medication.frequency)")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color(hex: "#E0E7DC"))
                 .lineLimit(1)
             
             if let notes = medication.notes, !notes.isEmpty {
                 Text(notes)
                     .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#A8A8A0"))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -749,7 +755,7 @@ func ArchivedMedicationCard(
             .padding(.horizontal, 16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(hex: "#C7C7BD"))
+                    .fill(Color(hex: "#E0E7DC"))
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
             )
         }
@@ -758,10 +764,10 @@ func ArchivedMedicationCard(
     .padding(20)
     .background(
         RoundedRectangle(cornerRadius: 16)
-            .fill(Color.black.opacity(0.15))
+            .fill(Color(hex: "#5B695D"))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                    .stroke(Color(hex: "#E0E7DC").opacity(0.25), lineWidth: 1)
             )
     )
 }
@@ -779,6 +785,7 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
     let onAddMedication: () -> Void
+    let onShowSettings: () -> Void
     let onShowFocusTimeline: () -> Void
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -794,27 +801,53 @@ fileprivate struct MedicationsListMainContent: View {
         ZStack(alignment: .top) {
             Color(hex: "#404C42")
                 .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
-            VStack(spacing: 0) {
-                if store.medications.isEmpty {
-                    EmptyMedicationsView(onAddMedication: onAddMedication)
-                } else {
-                    MedicationsListContent(
+
+            ScrollView {
+                let horizontalInset = horizontalInsets(for: UIScreen.main.bounds.width)
+                VStack(alignment: .leading, spacing: 28) {
+                    MedicationsListHeader(
                         store: store,
-                        showingAddSheet: $showingAddSheet,
-                        scrolledOffset: $scrolledOffset,
-                        horizontalInsets: horizontalInsets(for: UIScreen.main.bounds.width),
-                        showingLogSheetFor: $showingLogSheetFor,
-                        selectedMedicationToEdit: $selectedMedicationToEdit,
-                        medicationToArchive: $medicationToArchive,
-                        showArchiveAlert: $showArchiveAlert,
-                        showingArchivedSheet: $showingArchivedSheet,
-                        showingInteractionSheet: $showingInteractionSheet,
-                        isCheckingInteractions: $isCheckingInteractions,
-                        onCheckAllInteractions: onCheckAllInteractions,
-                        onAddMedication: onAddMedication,
-                        onShowFocusTimeline: onShowFocusTimeline
+                        horizontalInsets: horizontalInset,
+                        onShowSettings: onShowSettings
                     )
+
+                    if store.medications.isEmpty {
+                        EmptyMedicationsView(onAddMedication: onAddMedication)
+                            .padding(.horizontal, horizontalInset)
+                    } else {
+                        MedicationsListContent(
+                            store: store,
+                            showingAddSheet: $showingAddSheet,
+                            scrolledOffset: $scrolledOffset,
+                            horizontalInsets: horizontalInset,
+                            showingLogSheetFor: $showingLogSheetFor,
+                            selectedMedicationToEdit: $selectedMedicationToEdit,
+                            medicationToArchive: $medicationToArchive,
+                            showArchiveAlert: $showArchiveAlert,
+                            showingArchivedSheet: $showingArchivedSheet,
+                            showingInteractionSheet: $showingInteractionSheet,
+                            isCheckingInteractions: $isCheckingInteractions,
+                            onCheckAllInteractions: onCheckAllInteractions,
+                            onAddMedication: onAddMedication,
+                            onShowFocusTimeline: onShowFocusTimeline
+                        )
+
+                    }
+                    
+                    Spacer(minLength: 60)
                 }
+                .padding(.bottom, 50)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: geo.frame(in: .global).minY
+                        )
+                    }
+                )
+            }
+            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                scrolledOffset = -value
             }
         }
     }
@@ -915,18 +948,18 @@ fileprivate struct MedicationRowHeaderView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(medication.name)
                 .font(.system(size: 19, weight: .bold))
-                .foregroundColor(Color(hex: "#F5F5F0"))
+                .foregroundColor(Color(hex: "#F5F7F4"))
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
             
             Text(dosageString())
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color(hex: "#E0E7DC"))
             
             if let notes = medication.notes, !notes.isEmpty {
                 Text(notes)
                     .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#A8A8A0"))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .padding(.top, 2)
@@ -975,7 +1008,7 @@ fileprivate struct MedicationRowHeaderView: View {
     private var chevronIcon: some View {
         Image(systemName: showDetails ? "chevron.up" : "chevron.down")
             .font(.system(size: 13))
-            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.7))
     }
     
     // Enhanced action button
@@ -1105,16 +1138,7 @@ struct MedicationRow: View {
             }
         }
         .background(
-            // Enhanced gradient background
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(hex: "#525E55"),
-                    Color(hex: "#4A554D"),
-                    Color(hex: "#424D45")
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            Color(hex: "#5B695D")
         )
         .cornerRadius(16)
         .overlay(enhancedBorderOverlay)

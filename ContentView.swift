@@ -66,7 +66,9 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     // Display only MedicationsListView in preview
                     if isPreview {
-                        MedicationsListView()
+                        MedicationsListView(onShowSettings: {
+                            selectedTab = .settings
+                        })
                             .scrollContentBackground(.hidden)
                             .padding(.top, geometry.safeAreaInsets.top)
                     } else {

@@ -11,7 +11,7 @@ struct InteractionHeaderView: View {
         HStack {
             Text(title)
                 .font(.system(size: 18, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color(hex: "#F5F7F4"))
             
             Spacer()
             
@@ -33,11 +33,11 @@ struct PremiumBadgeView: View {
     var body: some View {
         HStack {
             Image(systemName: "checkmark")
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color(hex: "#E0E7DC"))
             
             Text("Premium Mode Active")
                 .font(.system(size: 13))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color(hex: "#E0E7DC"))
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
@@ -67,7 +67,7 @@ struct InteractionSearchInputView: View {
             Button(action: onSearch) {
                 Text("Check Interaction")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                     .background(Color.black.opacity(0.15))
@@ -92,18 +92,18 @@ struct APIKeyWarningView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "exclamationmark.triangle")
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color(hex: "#E0E7DC"))
                 
                 Text("Premium Access Required")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                 
                 Spacer()
             }
             
             Text(warningText)
                 .font(.system(size: 13))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
             
             Button(action: onEnablePremium) {
                 HStack {
@@ -180,12 +180,12 @@ struct LoadingView: View {
             VStack(spacing: 8) {
                 Text(message)
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
                     .multilineTextAlignment(.center)
                 
                 Text("Please wait...")
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
             }
         }
         .frame(maxWidth: .infinity)
@@ -193,7 +193,7 @@ struct LoadingView: View {
         .padding(.horizontal, 32)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color.black.opacity(0.15))
+                .fill(Color(hex: "#5B695D"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(Color(hex: "#F5F5F5").opacity(0.2), lineWidth: 1)
@@ -237,12 +237,12 @@ struct ErrorStateView: View {
                 VStack(spacing: 12) {
                     Text(title)
                         .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
                         .multilineTextAlignment(.center)
                     
                     Text(message)
                         .font(.system(size: 16))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                         .multilineTextAlignment(.center)
                         .lineLimit(nil)
                         .lineSpacing(2)
@@ -316,12 +316,12 @@ struct EmptyStateView: View {
                 VStack(spacing: 12) {
                     Text(title)
                         .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
                         .multilineTextAlignment(.center)
                     
                     Text(message)
                         .font(.system(size: 16))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                         .multilineTextAlignment(.center)
                         .lineLimit(nil)
                         .lineSpacing(2)
