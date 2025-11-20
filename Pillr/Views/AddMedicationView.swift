@@ -843,10 +843,10 @@ struct AddMedicationView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 8)
                 .fill(Color.black.opacity(0.18))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 8)
                         .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
                 )
         )
@@ -872,10 +872,10 @@ struct AddMedicationView: View {
             }
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(Color.black.opacity(0.15))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 8)
                             .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
                     )
             )

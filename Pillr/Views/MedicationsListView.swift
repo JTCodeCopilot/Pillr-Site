@@ -112,7 +112,7 @@ struct MedicationsListView: View {
         .sheet(item: $store.dailyCheckInMedication, onDismiss: {
             store.dailyCheckInMedication = nil
         }) { med in
-            LogMedicationView(medicationToLog: med)
+            LogMedicationView(medicationToLog: med, isDailyCheckIn: true)
                 .environmentObject(store)
         }
         .sheet(item: $store.recentADHDDoseTimeline, onDismiss: {
@@ -1030,7 +1030,7 @@ fileprivate struct MedicationRowHeaderView: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 18)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 10)
                     .fill(properties.bgColor)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
             )
@@ -1140,7 +1140,7 @@ struct MedicationRow: View {
         .background(
             Color(hex: "#5B695D")
         )
-        .cornerRadius(16)
+        .cornerRadius(10)
         .overlay(enhancedBorderOverlay)
         .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
@@ -1236,7 +1236,7 @@ struct MedicationRow: View {
             borderWidth = 0.0
         }
         
-        return RoundedRectangle(cornerRadius: 16)
+        return RoundedRectangle(cornerRadius: 10)
             .stroke(
                 LinearGradient(
                     gradient: Gradient(colors: [

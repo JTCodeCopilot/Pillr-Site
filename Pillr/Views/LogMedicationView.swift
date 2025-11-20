@@ -211,17 +211,8 @@ struct LogMedicationView: View {
                         }
                         
                         // Enhanced Time Section with quick options
-                        FormSection(title: "TIME TAKEN", icon: "clock.fill") {
+                        FormSection(title: "TIME TAKEN", icon: "") {
                             VStack(alignment: .leading, spacing: 20) {
-                                HStack {
-                                    Image(systemName: "calendar.badge.clock")
-                                        .foregroundColor(Color(hex: "#FFB74D"))
-                                        .font(.system(size: 20))
-                                    Text("When did you take it?")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
-                                }
-                                
                                 // Quick time selection buttons
                                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
                                     ForEach(QuickTimeOption.allCases, id: \.self) { option in
@@ -463,15 +454,6 @@ struct LogMedicationView: View {
                         } else {
                             FormSection(title: "NOTES (OPTIONAL)", icon: "note.text.fill") {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    HStack {
-                                        Image(systemName: "square.and.pencil")
-                                            .foregroundColor(Color(hex: "#F5F5F5"))
-                                            .font(.system(size: 18))
-                                        Text("Any quick notes?")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
-                                    }
-                                    
                                     ZStack(alignment: .topLeading) {
                                         TextEditor(text: $logNotes)
                                             .frame(minHeight: 80, maxHeight: 120)
@@ -520,17 +502,11 @@ struct LogMedicationView: View {
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 18)
                                     .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color(hex: "#FF8A65"),
-                                                Color(hex: "#FF7043")
-                                            ]),
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .fill(Color(hex: "#FF8A65"))
                                     )
                                     .cornerRadius(20)
-                                    .shadow(color: Color(hex: "#FF7043").opacity(0.4), radius: 12, x: 0, y: 6)
+                                    .shadow(color: Color(hex: "#FF8A65").opacity(0.4), radius: 12, x: 0, y: 6)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 20)
                                             .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -538,7 +514,7 @@ struct LogMedicationView: View {
                                 }
                                 .buttonStyle(ScaleButtonStyle())
                             }
-                            
+
                             Button {
                                 HapticManager.shared.successNotification()
                                 processDoseAction(skipped: false)
@@ -549,24 +525,18 @@ struct LogMedicationView: View {
                                     Text("Log Medication")
                                         .font(.system(size: 18, weight: .bold, design: .rounded))
                                 }
-                                .foregroundColor(Color(hex: "#2E5339"))
+                                .foregroundColor(Color(hex: "#404C42"))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 18)
                                 .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color(hex: "#E8D4B8"),
-                                            Color(hex: "#F5F5F5")
-                                        ]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color(hex: "#E8E8E0"))
                                 )
                                 .cornerRadius(20)
-                                .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 12, x: 0, y: 6)
+                                .shadow(color: Color(hex: "#C7C7BD").opacity(0.3), radius: 8, x: 0, y: 4)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 20)
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                        .stroke(Color(hex: "#C7C7BD").opacity(0.5), lineWidth: 1)
                                 )
                             }
                             .buttonStyle(ScaleButtonStyle())
@@ -617,9 +587,11 @@ struct LogMedicationView: View {
     private func FormSection<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: icon)
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                    .font(.system(size: 16, weight: .semibold))
+                if !icon.isEmpty {
+                    Image(systemName: icon)
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .font(.system(size: 16, weight: .semibold))
+                }
                 Text(title)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
