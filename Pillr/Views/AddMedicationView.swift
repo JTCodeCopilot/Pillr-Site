@@ -15,6 +15,7 @@ struct AddMedicationView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     var onAdd: () -> Void
+    var onProgressStateChange: (Bool) -> Void = { _ in }
 
     // Core fields
     @State private var name: String = ""
@@ -58,6 +59,8 @@ struct AddMedicationView: View {
     @State private var showValidationErrors: Bool = false
     @State private var nameError: String? = nil
     @State private var dosageError: String? = nil
+    @State private var pillCountError: String? = nil
+    @State private var refillThresholdError: String? = nil
 
     // Multi-step flow
     enum AddMedicationStep: Int, CaseIterable {
@@ -138,6 +141,9 @@ struct AddMedicationView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     focusedField = .name
                 }
+            }
+            .onChange(of: currentStep) { newStep in
+                onProgressStateChange(newStep != .basics)
             }
         }
         .preferredColorScheme(.dark)
@@ -621,8 +627,12 @@ struct AddMedicationView: View {
                     .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                     .disabled(!userSettings.isPremiumUser)
                     .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
-                    .onChange(of: trackPillCount) { _ in
+                    .onChange(of: trackPillCount) { newValue in
                         triggerStrongHaptic()
+                        if !newValue {
+                            pillCountError = nil
+                            refillThresholdError = nil
+                        }
                     }
                 }
 
@@ -634,6 +644,8 @@ struct AddMedicationView: View {
                                 placeholder: "30",
                                 text: $pillCountString,
                                 field: .pillCount,
+                                isRequired: true,
+                                errorMessage: pillCountError,
                                 keyboardType: .numberPad
                             )
                             .id(Field.pillCount)
@@ -653,6 +665,8 @@ struct AddMedicationView: View {
                             placeholder: "5",
                             text: $refillThresholdString,
                             field: .refillThreshold,
+                            isRequired: true,
+                            errorMessage: refillThresholdError,
                             keyboardType: .numberPad
                         )
                         .id(Field.refillThreshold)
@@ -843,10 +857,10 @@ struct AddMedicationView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(Color.black.opacity(0.18))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: 12)
                         .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
                 )
         )
@@ -872,10 +886,10 @@ struct AddMedicationView: View {
             }
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(Color.black.opacity(0.15))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 12)
                             .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
                     )
             )
@@ -985,6 +999,11 @@ struct AddMedicationView: View {
             currentStep = .trackingAndADHD
             focusedField = nil
         case .trackingAndADHD:
+            if !validateInventoryFields() {
+                showValidationErrors = true
+                HapticManager.shared.errorNotification()
+                return
+            }
             currentStep = .notesAndReview
             focusedField = nil
         case .notesAndReview:
@@ -1033,6 +1052,32 @@ struct AddMedicationView: View {
             nameError = value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Medication name is required" : nil
         case .dosage:
             dosageError = value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Dosage is required" : nil
+        case .pillCount:
+            if trackPillCount && userSettings.isPremiumUser {
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty {
+                    pillCountError = "Total pills is required"
+                } else if let count = Int(trimmed), count > 0 {
+                    pillCountError = nil
+                } else {
+                    pillCountError = "Enter a valid number"
+                }
+            } else {
+                pillCountError = nil
+            }
+        case .refillThreshold:
+            if trackPillCount && userSettings.isPremiumUser {
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty {
+                    refillThresholdError = "Refill reminder is required"
+                } else if let days = Int(trimmed), days > 0 {
+                    refillThresholdError = nil
+                } else {
+                    refillThresholdError = "Enter a valid number"
+                }
+            } else {
+                refillThresholdError = nil
+            }
         default:
             break
         }
@@ -1042,6 +1087,19 @@ struct AddMedicationView: View {
         validateField(.name, value: name)
         validateField(.dosage, value: dosage)
         return isFormValid
+    }
+
+    private func validateInventoryFields() -> Bool {
+        guard trackPillCount && userSettings.isPremiumUser else {
+            pillCountError = nil
+            refillThresholdError = nil
+            return true
+        }
+
+        validateField(.pillCount, value: pillCountString)
+        validateField(.refillThreshold, value: refillThresholdString)
+
+        return pillCountError == nil && refillThresholdError == nil
     }
 
     private func setupKeyboardObservers() {
@@ -1158,9 +1216,16 @@ struct AddMedicationView: View {
         }
 
         if trackPillCount && userSettings.isPremiumUser {
-            let pillCountValid = !pillCountString.isEmpty && Int(pillCountString) != nil
-            let pillsPerDoseValid = !pillsPerDoseString.isEmpty && Int(pillsPerDoseString) != nil && Int(pillsPerDoseString)! > 0
-            return basicValid && pillCountValid && pillsPerDoseValid && customUnitValid
+            let trimmedPillCount = pillCountString.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedPillsPerDose = pillsPerDoseString.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedRefillThreshold = refillThresholdString.trimmingCharacters(in: .whitespacesAndNewlines)
+            let pillCountValue = Int(trimmedPillCount) ?? 0
+            let pillsPerDoseValue = Int(trimmedPillsPerDose) ?? 0
+            let refillThresholdValue = Int(trimmedRefillThreshold) ?? 0
+            let pillCountValid = !trimmedPillCount.isEmpty && pillCountValue > 0
+            let pillsPerDoseValid = !trimmedPillsPerDose.isEmpty && pillsPerDoseValue > 0
+            let refillThresholdValid = !trimmedRefillThreshold.isEmpty && refillThresholdValue > 0
+            return basicValid && pillCountValid && pillsPerDoseValid && refillThresholdValid && customUnitValid
         }
 
         if medicationType == .stimulant {
@@ -1201,8 +1266,11 @@ struct AddMedicationView: View {
         showValidationErrors = false
         nameError = nil
         dosageError = nil
+        pillCountError = nil
+        refillThresholdError = nil
         customUnit = ""
         isCustomUnitSelected = false
+        onProgressStateChange(false)
     }
 
     private func saveMedication() {

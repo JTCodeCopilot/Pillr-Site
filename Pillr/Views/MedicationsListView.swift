@@ -1030,7 +1030,7 @@ fileprivate struct MedicationRowHeaderView: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 18)
             .background(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 14)
                     .fill(properties.bgColor)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
             )
@@ -1140,7 +1140,7 @@ struct MedicationRow: View {
         .background(
             Color(hex: "#5B695D")
         )
-        .cornerRadius(10)
+        .cornerRadius(14)
         .overlay(enhancedBorderOverlay)
         .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
@@ -1236,7 +1236,7 @@ struct MedicationRow: View {
             borderWidth = 0.0
         }
         
-        return RoundedRectangle(cornerRadius: 10)
+        return RoundedRectangle(cornerRadius: 14)
             .stroke(
                 LinearGradient(
                     gradient: Gradient(colors: [

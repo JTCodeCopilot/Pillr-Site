@@ -13,14 +13,32 @@ struct MainTabView: View {
     @EnvironmentObject var storeManager: StoreManager
     
     @State private var selectedTab: MainTab = .meds
+    @State private var hasUnsavedAddFlow = false
+    @State private var pendingTabSelection: MainTab?
+    @State private var showDiscardAlert = false
     
+    private var tabSelection: Binding<MainTab> {
+        Binding(
+            get: { selectedTab },
+            set: { newValue in
+                if selectedTab == .add && newValue != .add && hasUnsavedAddFlow {
+                    pendingTabSelection = newValue
+                    showDiscardAlert = true
+                } else {
+                    selectedTab = newValue
+                    pendingTabSelection = nil
+                }
+            }
+        )
+    }
+
     var body: some View {
         ZStack {
             // Shared app background
             LinearGradient.pillrBackground
                 .ignoresSafeArea()
             
-            TabView(selection: $selectedTab) {
+            TabView(selection: tabSelection) {
                 // Home / My Meds
                 MedicationsHomeView()
                     .tabItem {
@@ -30,10 +48,14 @@ struct MainTabView: View {
                 
                 // Add medication
                 NavigationView {
-                    AddMedicationView(onAdd: {
-                        // After saving, return to My Meds tab
-                        selectedTab = .meds
-                    })
+                    AddMedicationView(
+                        onAdd: {
+                            // After saving, return to My Meds tab
+                            hasUnsavedAddFlow = false
+                            selectedTab = .meds
+                        },
+                        onProgressStateChange: { hasUnsavedAddFlow = $0 }
+                    )
                 }
                 .tabItem {
                     Label("Add", systemImage: "plus.circle.fill")
@@ -55,6 +77,18 @@ struct MainTabView: View {
                     .tag(MainTab.interactions)
             }
             .accentColor(Color.pillrAccent)
+        }
+        .alert("Discard medication?", isPresented: $showDiscardAlert) {
+            Button("Discard", role: .destructive) {
+                hasUnsavedAddFlow = false
+                selectedTab = pendingTabSelection ?? .meds
+                pendingTabSelection = nil
+            }
+            Button("Keep editing", role: .cancel) {
+                pendingTabSelection = nil
+            }
+        } message: {
+            Text("Any progress you've made on this medication will be discarded.")
         }
         .preferredColorScheme(.dark)
     }
