@@ -5,14 +5,15 @@ struct InteractionHistoryView: View {
     let isModal: Bool
     @StateObject private var interactionStore = InteractionStore.shared
     @Environment(\.dismiss) var dismiss
-    @State private var searchText = ""
+    @EnvironmentObject var store: MedicationStore
+    @EnvironmentObject var storeManager: StoreManager
     @State private var showingShareSheet = false
     @State private var shareText = ""
-    @State private var showingSortOptions = false
     @State private var showingClearAlert = false
     @State private var showingSaveOptions = false
     @State private var saveFormat: SaveFormat = .text
     @State private var shareItems: [Any] = []
+    @State private var showingMedicationSelectionSheet = false
     
     enum SaveFormat: String, CaseIterable {
         case text = "Text File"
@@ -38,37 +39,18 @@ struct InteractionHistoryView: View {
     }
     
     var filteredInteractions: [DrugInteraction] {
-        let interactions = searchText.isEmpty ? interactionStore.filteredHistory : interactionStore.filteredHistory.filter { interaction in
-            let searchLower = searchText.lowercased()
-            return interaction.drugA.lowercased().contains(searchLower) ||
-                   interaction.drugB.lowercased().contains(searchLower) ||
-                   interaction.description.lowercased().contains(searchLower) ||
-                   interaction.severity.rawValue.lowercased().contains(searchLower)
-        }
-        return interactions
+        interactionStore.filteredHistory
     }
     
     var body: some View {
         NavigationView {
             ZStack {
-                // Background matching app theme
                 Color(hex: "#404C42").ignoresSafeArea()
-                
+
                 VStack(spacing: 0) {
-                    // Search and filter header
-                    headerSection
-                    
                     if filteredInteractions.isEmpty {
                         emptyStateView
                     } else {
-                        // Statistics section
-                        if !searchText.isEmpty {
-                            searchResultsHeader
-                        } else {
-                            statisticsSection
-                        }
-                        
-                        // Interactions list
                         ScrollView {
                             LazyVStack(spacing: 16) {
                                 ForEach(filteredInteractions) { interaction in
@@ -95,59 +77,14 @@ struct InteractionHistoryView: View {
                         .font(.system(size: 16, weight: .medium))
                     }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack {
-                        if !interactionStore.interactionHistory.isEmpty {
-                            Menu {
-                                // Save/Export options
-                                Menu {
-                                    ForEach(SaveFormat.allCases, id: \.self) { format in
-                                        Button {
-                                            saveInteractions(format: format)
-                                        } label: {
-                                            Label(format.rawValue, systemImage: format.systemImage)
-                                        }
-                                    }
-                                } label: {
-                                    Label("Save As...", systemImage: "square.and.arrow.down")
-                                }
-                                
-                                Button {
-                                    shareText = interactionStore.exportInteractionsAsText()
-                                    shareItems = [shareText]
-                                    showingShareSheet = true
-                                } label: {
-                                    Label("Share as Text", systemImage: "square.and.arrow.up")
-                                }
-                                
-                                Divider()
-                                
-                                Button {
-                                    saveToUserDefaults()
-                                } label: {
-                                    Label("Save to Device", systemImage: "internaldrive")
-                                }
-                                
-                                Divider()
-                                
-                                Button(role: .destructive) {
-                                    showingClearAlert = true
-                                } label: {
-                                    Label("Clear History", systemImage: "trash")
-                                }
-                            } label: {
-                                Image(systemName: "ellipsis.circle")
-                                    .foregroundColor(Color.pillrAccent)
-                                    .font(.system(size: 16))
-                            }
-                        }
-                    }
-                }
             }
-            .searchable(text: $searchText, prompt: "Search interactions...")
             .sheet(isPresented: $showingShareSheet) {
                 ShareSheet(activityItems: shareItems)
+            }
+            .sheet(isPresented: $showingMedicationSelectionSheet) {
+                MedicationInteractionSelectionSheet()
+                    .environmentObject(store)
+                    .environmentObject(storeManager)
             }
             .alert("Clear History", isPresented: $showingClearAlert) {
                 Button("Cancel", role: .cancel) { }
@@ -159,6 +96,26 @@ struct InteractionHistoryView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .safeAreaInset(edge: .bottom) {
+            if !interactionStore.interactionHistory.isEmpty {
+                HStack {
+                    Spacer()
+                    Button(action: { showingMedicationSelectionSheet = true }) {
+                        Text("Check Interactions")
+                            .font(.headline)
+                            .foregroundColor(Color(hex: "#404C42"))
+                            .frame(maxWidth: 320)
+                            .padding(.vertical, 14)
+                            .background(Color.pillrAccent)
+                            .cornerRadius(12)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+                .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
+            }
+        }
     }
     
     // MARK: - Subviews
@@ -183,171 +140,21 @@ struct InteractionHistoryView: View {
                 .padding(.horizontal, 32)
             
             Button(action: {
-                dismiss()
+                showingMedicationSelectionSheet = true
             }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Check Interactions")
-                }
-                .font(.headline)
-                .foregroundColor(Color(hex: "#404C42"))
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .background(Color.pillrAccent)
-                .cornerRadius(12)
+                Text("Check Interactions")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#404C42"))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .background(Color.pillrAccent)
+                    .cornerRadius(12)
             }
             .padding(.top, 16)
             
             Spacer()
         }
         .frame(maxWidth: .infinity)
-    }
-    
-    private var headerSection: some View {
-        VStack(spacing: 12) {
-            // Filter and sort controls
-            HStack(spacing: 12) {
-                // Severity filter
-                Menu {
-                    Button("All Severities") {
-                        interactionStore.filterBySeverity(nil)
-                    }
-                    
-                    ForEach(DrugInteraction.InteractionSeverity.allCases, id: \.self) { severity in
-                        Button(severity.rawValue) {
-                            interactionStore.filterBySeverity(severity)
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Text(interactionStore.selectedSeverityFilter?.rawValue ?? "All Severities")
-                            .font(.system(size: 14, weight: .medium))
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12))
-                    }
-                    .foregroundColor(Color(hex: "#E8E8E0"))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.black.opacity(0.15))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#C7C7BD").opacity(0.1), lineWidth: 1)
-                    )
-                }
-                
-                Spacer()
-                
-                // Sort options
-                Menu {
-                    ForEach(InteractionStore.SortOrder.allCases, id: \.self) { order in
-                        Button {
-                            interactionStore.setSortOrder(order)
-                        } label: {
-                            Label(order.rawValue, systemImage: order.systemImage)
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: interactionStore.sortOrder.systemImage)
-                            .font(.system(size: 12))
-                        Text("Sort")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(Color(hex: "#E8E8E0"))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.black.opacity(0.15))
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#C7C7BD").opacity(0.1), lineWidth: 1)
-                    )
-                }
-            }
-            .padding(.horizontal)
-        }
-        .padding(.vertical, 8)
-    }
-    
-    private var searchResultsHeader: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("\(filteredInteractions.count) result\(filteredInteractions.count == 1 ? "" : "s") for '\(searchText)'")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
-                
-                Spacer()
-                
-                Button("Clear") {
-                    searchText = ""
-                }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color.pillrAccent)
-            }
-            .padding(.horizontal)
-        }
-        .padding(.vertical, 8)
-    }
-    
-    private var statisticsSection: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(interactionStore.interactionHistory.count)")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-                    
-                    Text("Total Interactions")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                    
-                    if interactionStore.hasHighSeverityInteractions {
-                        HStack(spacing: 6) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.orange)
-                            
-                            Text("High severity found")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.orange)
-                        }
-                        .padding(.top, 4)
-                    }
-                }
-                
-                Spacer()
-                
-                // Severity breakdown
-                VStack(alignment: .trailing, spacing: 8) {
-                    Text("Severity Breakdown")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                    
-                    VStack(spacing: 6) {
-                        ForEach(DrugInteraction.InteractionSeverity.allCases, id: \.self) { severity in
-                            if let count = interactionStore.severityCounts[severity], count > 0 {
-                                HStack(spacing: 8) {
-                                    Text(severity.rawValue)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                    
-                                    Circle()
-                                        .fill(Color(hex: severity.color))
-                                        .frame(width: 8, height: 8)
-                                    
-                                    Text("\(count)")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .padding()
-            .background(Color.black.opacity(0.15))
-        }
     }
     
     // MARK: - Save Functions
@@ -392,7 +199,7 @@ struct InteractionHistoryView: View {
             let row = [
                 escapeCSVField(interaction.drugA),
                 escapeCSVField(interaction.drugB),
-                escapeCSVField(interaction.severity.rawValue),
+                escapeCSVField(interaction.severity.displayName),
                 escapeCSVField(interaction.description),
                 escapeCSVField(interaction.recommendedAction),
                 escapeCSVField(dateString)
@@ -436,7 +243,7 @@ struct HistoryInteractionRow: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("\(interaction.drugA) + \(interaction.drugB)")
+                        Text(interaction.displayTitle)
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(Color(hex: "#E8E8E0"))
                             .lineLimit(2)
@@ -455,7 +262,7 @@ struct HistoryInteractionRow: View {
                                     .fill(Color(hex: interaction.severity.color))
                                     .frame(width: 6, height: 6)
                                 
-                                Text(interaction.severity.rawValue)
+                                Text(interaction.severity.displayName)
                                     .font(.system(size: 12, weight: .bold))
                                     .foregroundColor(Color(hex: interaction.severity.color))
                             }
@@ -551,6 +358,8 @@ struct HistoryInteractionRow: View {
 struct InteractionHistoryView_Previews: PreviewProvider {
     static var previews: some View {
         InteractionHistoryView()
+            .environmentObject(MedicationStore.shared)
+            .environmentObject(StoreManager.shared)
             .onAppear {
                 // Add some sample data for preview
                 let store = InteractionStore.shared

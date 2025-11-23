@@ -371,7 +371,7 @@ struct PopoutMenuOverlay: View {
                     
                     // 2. Interaction AI button
                     MenuItemButton(
-                        icon: "brain.head.profile",
+                        icon: "hourglass",
                         title: "Interaction AI",
                         delay: 0.05,
                         animateItems: animateItems,
@@ -1064,7 +1064,7 @@ struct SettingsContentView: View {
     private var aiSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "brain.head.profile")
+                Image(systemName: "hourglass")
                     .font(.system(size: 20))
                     .foregroundColor(Color(hex: "#525E55"))
                 Text("AI Features")
@@ -1113,7 +1113,7 @@ struct SettingsContentView: View {
                     showingPremiumUpgrade = true
                 }) {
                     HStack {
-                        Image(systemName: "brain.head.profile")
+                        Image(systemName: "hourglass")
                             .foregroundColor(Color(hex: "#525E55"))
                             .frame(width: 20)
                         
@@ -1149,7 +1149,7 @@ struct SettingsContentView: View {
     private var supportLinksSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "link.circle")
+                Image(systemName: "link")
                     .font(.system(size: 20))
                     .foregroundColor(Color(hex: "#525E55"))
                 Text("Support & Resources")

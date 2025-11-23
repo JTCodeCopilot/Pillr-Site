@@ -187,7 +187,7 @@ struct MedicationLogView: View {
                             if let trendsText = focusTrendsSummary {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack(spacing: 6) {
-                                        Image(systemName: "brain.head.profile")
+                                        Image(systemName: "hourglass")
                                             .font(.system(size: 16))
                                             .foregroundColor(Color(hex: "#C7C7BD"))
                                         Text("Focus & side-effect trends")

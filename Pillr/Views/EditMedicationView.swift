@@ -53,31 +53,21 @@ struct EditMedicationView: View {
     @State private var showValidationErrors: Bool = false
     @State private var nameError: String? = nil
     @State private var dosageError: String? = nil
-    
+    @State private var pillCountError: String? = nil
+    @State private var pillsPerDoseError: String? = nil
+    @State private var refillThresholdError: String? = nil
+    @State private var onsetMinutesError: String? = nil
+    @State private var durationMinutesError: String? = nil
+    @State private var frequencyError: String? = nil
+    @State private var scrollTargetField: Field? = nil
+
     enum Field {
-        case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold
+        case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold, onsetMinutes, durationMinutes
     }
 
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
     let dosageUnits = ["mg", "ml", "tablets", "capsules", "custom"]
-    
-    // Helper function to get icon for each unit
-    private func iconForUnit(_ unit: String) -> String {
-        switch unit {
-        case "mg":
-            return "scalemass.fill"
-        case "ml":
-            return "drop.fill"
-        case "tablets":
-            return "circle.fill"
-        case "capsules":
-            return "pills.fill"
-        case "custom":
-            return "text.cursor"
-        default:
-            return "pill.fill"
-        }
-    }
+    private let standardFieldHeight: CGFloat = 52
     
     // Computed properties
     private var needsMultipleReminders: Bool {
@@ -202,14 +192,13 @@ struct EditMedicationView: View {
                         .padding(.top, 20)
                         
                         // Enhanced Basic Information Section
-                        FormSection(title: "MEDICATION INFO", icon: "pills.fill") {
+                        FormSection(title: "MEDICATION INFO") {
                             VStack(spacing: 16) {
                                 enhancedInputField(
                                     title: "Medication Name", 
                                     placeholder: "e.g., Aspirin, Tylenol",
                                     text: $name, 
                                     field: .name,
-                                    iconName: "pill.circle.fill",
                                     isRequired: true,
                                     errorMessage: nameError
                                 )
@@ -222,7 +211,6 @@ struct EditMedicationView: View {
                                         placeholder: dosageUnit == "ml" ? "10" : "50", 
                                         text: $dosage, 
                                         field: .dosage,
-                                        iconName: "scalemass.fill",
                                         isRequired: true,
                                         errorMessage: dosageError,
                                         keyboardType: .decimalPad
@@ -242,26 +230,17 @@ struct EditMedicationView: View {
                                                     isCustomUnitSelected = unit == "custom"
                                                     HapticManager.shared.lightImpact()
                                                 } label: {
-                                                    HStack {
-                                                        Image(systemName: iconForUnit(unit))
-                                                            .font(.system(size: 14, weight: .medium))
-                                                        Text(unit)
-                                                    }
+                                                    Text(unit)
                                                 }
                                             }
                                         } label: {
-                                            HStack(spacing: 6) {
-                                                Image(systemName: iconForUnit(dosageUnit))
-                                                    .font(.system(size: 14, weight: .medium))
-                                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                            HStack {
                                                 Text(dosageUnit)
                                                     .font(.system(size: 15, weight: .medium))
                                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                                     .lineLimit(1)
                                                     .minimumScaleFactor(0.8)
-                                                Image(systemName: "chevron.up.chevron.down")
-                                                    .font(.system(size: 10, weight: .semibold))
-                                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                                Spacer()
                                             }
                                             .padding(.horizontal, 12)
                                             .padding(.vertical, 12)
@@ -287,7 +266,6 @@ struct EditMedicationView: View {
                                         placeholder: "e.g. drops, sprays", 
                                         text: $customUnit, 
                                         field: nil,
-                                        iconName: "text.cursor",
                                         isRequired: true,
                                         errorMessage: customUnit.isEmpty && showValidationErrors ? "Custom unit type is required" : nil
                                     )
@@ -298,51 +276,68 @@ struct EditMedicationView: View {
                         }
                         
                         // Enhanced Schedule Section
-                        FormSection(title: "SCHEDULE", icon: "calendar.badge.clock") {
+                        FormSection(title: "SCHEDULE") {
                             VStack(spacing: 16) {
                                 // Frequency picker with better visual design
                                 VStack(alignment: .leading, spacing: 8) {
-                                    HStack {
-                                        Image(systemName: "repeat.circle.fill")
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                            .font(.system(size: 20))
-                                        Text("How often?")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
-                                    }
-                                    
-                                    // Frequency selection with cards
-                                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                                    Text("How often?")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                    let frequencyHasError = showValidationErrors && frequencyError != nil
+                                    Menu {
                                         ForEach(frequencies, id: \.self) { freq in
-                                            FrequencyCard(
-                                                frequency: freq,
-                                                isSelected: frequency == freq,
-                                                onTap: {
-                                                    HapticManager.shared.lightImpact()
-                                                    frequency = freq
-                                                    setupReminderTimesForFrequency(freq)
-                                                    // Disable notifications if "As needed" is selected
-                                                    if freq == "As needed" {
-                                                        enableNotification = false
-                                                    }
+                                            Button(action: {
+                                                HapticManager.shared.lightImpact()
+                                                frequency = freq
+                                                setupReminderTimesForFrequency(freq)
+                                                if freq == "As needed" {
+                                                    enableNotification = false
                                                 }
-                                            )
+                                            }) {
+                                                Text(freq)
+                                            }
                                         }
+                                    } label: {
+                                        HStack {
+                                            Text(frequency)
+                                                .font(.system(size: 15, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.65)
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .frame(height: standardFieldHeight)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color.black.opacity(0.2))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .stroke(
+                                                            frequencyHasError ? Color.red : Color(hex: "#C7C7BD").opacity(0.3),
+                                                            lineWidth: frequencyHasError ? 2 : 1
+                                                        )
+                                                )
+                                        )
+                                    }
+                                    .onChange(of: frequency) { newValue in
+                                        validateField(.frequency, value: newValue)
+                                    }
+                                    if frequencyHasError {
+                                        Text(frequencyError ?? "")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(.red)
                                     }
                                 }
+                                .id(Field.frequency)
                                 
                                 // Time pickers with enhanced design
                                 if needsMultipleReminders {
                                     VStack(alignment: .leading, spacing: 12) {
-                                        HStack {
-                                            Image(systemName: "clock.fill")
-                                                .foregroundColor(Color(hex: "#C7C7BD"))
-                                                .font(.system(size: 18))
-                                            Text("Reminder Times")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                        }
-                                        
+                                        Text("Reminder Times")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                       
                                         ForEach(0..<reminderTimes.count, id: \.self) { index in
                                             TimePickerRow(
                                                 title: "Dose \(index + 1)",
@@ -360,17 +355,12 @@ struct EditMedicationView: View {
                         }
                         
                         // ADHD / Stimulant timing section
-                        FormSection(title: "FOCUS & TIMING", icon: "brain.head.profile") {
+                        FormSection(title: "FOCUS & TIMING") {
                             VStack(alignment: .leading, spacing: 16) {
                                 VStack(alignment: .leading, spacing: 8) {
-                                    HStack {
-                                        Image(systemName: "pills.circle.fill")
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                            .font(.system(size: 18))
-                                        Text("Is this an ADHD medication?")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
-                                    }
+                                    Text("Is this an ADHD medication?")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
                                     
                                     Picker("ADHD medication", selection: $isADHDMedication) {
                                         Text("Yes").tag(true)
@@ -406,19 +396,23 @@ struct EditMedicationView: View {
                                             title: "Starts working after (minutes)",
                                             placeholder: "30",
                                             text: $onsetMinutesString,
-                                            field: nil,
-                                            iconName: "clock.arrow.circlepath",
+                                            field: .onsetMinutes,
+                                            isRequired: isADHDMedication && medicationType == .stimulant,
+                                            errorMessage: onsetMinutesError,
                                             keyboardType: .numberPad
                                         )
+                                        .id(Field.onsetMinutes)
                                         
                                         enhancedInputField(
                                             title: "Lasts about (minutes)",
                                             placeholder: "240",
                                             text: $durationMinutesString,
-                                            field: nil,
-                                            iconName: "timer",
+                                            field: .durationMinutes,
+                                            isRequired: isADHDMedication && medicationType == .stimulant,
+                                            errorMessage: durationMinutesError,
                                             keyboardType: .numberPad
                                         )
+                                        .id(Field.durationMinutes)
                                         
                                         VStack(alignment: .leading, spacing: 6) {
                                             Toggle(isOn: $enableDailyCheckIn) {
@@ -445,12 +439,15 @@ struct EditMedicationView: View {
                                     if medicationType == .other {
                                         medicationType = .stimulant
                                     }
+                                    _ = validateADHDFields()
                                 } else {
                                     medicationType = .other
                                     isExtendedRelease = false
                                     onsetMinutesString = ""
                                     durationMinutesString = ""
                                     enableDailyCheckIn = false
+                                    onsetMinutesError = nil
+                                    durationMinutesError = nil
                                 }
                             }
                             .onChange(of: medicationType) { newType in
@@ -459,21 +456,22 @@ struct EditMedicationView: View {
                                     onsetMinutesString = ""
                                     durationMinutesString = ""
                                     enableDailyCheckIn = false
+                                    onsetMinutesError = nil
+                                    durationMinutesError = nil
+                                } else {
+                                    _ = validateADHDFields()
                                 }
                             }
                         }
                         
                         // Enhanced Inventory Section (collapsible)
-                        FormSection(title: "INVENTORY", icon: "archivebox.fill") {
+                        FormSection(title: "INVENTORY") {
                             VStack(spacing: 16) {
                                 // Enhanced toggle with description
                                 VStack(alignment: .leading, spacing: 8) {
                                     Toggle(isOn: $trackPillCount.animation(.easeInOut)) {
                                         VStack(alignment: .leading, spacing: 4) {
                                             HStack {
-                                                Image(systemName: "number.circle.fill")
-                                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                                    .font(.system(size: 18))
                                                 Text("Track Pill Count")
                                                     .font(.system(size: 16, weight: .semibold))
                                                     .foregroundColor(Color(hex: "#E8E8E0"))
@@ -498,6 +496,15 @@ struct EditMedicationView: View {
                                                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                         }
                                     }
+                                    .onChange(of: trackPillCount) { isEnabled in
+                                        if !isEnabled {
+                                            pillCountError = nil
+                                            pillsPerDoseError = nil
+                                            refillThresholdError = nil
+                                        } else {
+                                            _ = validateInventoryFields()
+                                        }
+                                    }
                                     .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                                     .disabled(!userSettings.isPremiumUser)
                                     .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
@@ -506,15 +513,10 @@ struct EditMedicationView: View {
                                         Button(action: {
                                             showingPremiumUpgrade = true
                                         }) {
-                                            HStack {
-                                                Image(systemName: "crown.fill")
-                                                    .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(Color(hex: "#D4A017"))
-                                                Text("Upgrade to Premium")
-                                                    .font(.system(size: 14, weight: .medium))
-                                                    .foregroundColor(Color(hex: "#D4A017"))
-                                            }
-                                            .padding(.top, 4)
+                                            Text("Upgrade to Premium")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(Color(hex: "#D4A017"))
+                                                .padding(.top, 4)
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                     }
@@ -528,7 +530,8 @@ struct EditMedicationView: View {
                                                 placeholder: "30", 
                                                 text: $pillCountString, 
                                                 field: .pillCount, 
-                                                iconName: "pill.fill",
+                                                isRequired: trackPillCount && userSettings.isPremiumUser,
+                                                errorMessage: pillCountError,
                                                 keyboardType: .numberPad
                                             )
                                             .id(Field.pillCount)
@@ -538,18 +541,20 @@ struct EditMedicationView: View {
                                                 placeholder: "1", 
                                                 text: $pillsPerDoseString, 
                                                 field: .pillsPerDose, 
-                                                iconName: "pills.fill",
+                                                isRequired: trackPillCount,
+                                                errorMessage: pillsPerDoseError,
                                                 keyboardType: .numberPad
                                             )
                                             .id(Field.pillsPerDose)
                                         }
-                                        
+
                                         enhancedInputField(
                                             title: "Refill Reminder", 
                                             placeholder: "5", 
                                             text: $refillThresholdString, 
                                             field: .refillThreshold, 
-                                            iconName: "bell.badge.fill",
+                                            isRequired: trackPillCount && userSettings.isPremiumUser,
+                                            errorMessage: refillThresholdError,
                                             keyboardType: .numberPad
                                         )
                                         .id(Field.refillThreshold)
@@ -561,16 +566,13 @@ struct EditMedicationView: View {
                         
                         // Enhanced Notifications Section
                         if frequency != "As needed" {
-                            FormSection(title: "NOTIFICATIONS", icon: "bell.fill") {
+                            FormSection(title: "NOTIFICATIONS") {
                                 VStack(spacing: 16) {
                                     if needsMultipleReminders || frequency == "Once daily" {
                                         VStack(alignment: .leading, spacing: 8) {
                                             Toggle(isOn: $isOneTimeWithFollowUp.animation(.easeInOut)) {
                                                 VStack(alignment: .leading, spacing: 4) {
                                                     HStack {
-                                                        Image(systemName: "arrow.clockwise.circle.fill")
-                                                            .foregroundColor(Color(hex: "#C7C7BD"))
-                                                            .font(.system(size: 18))
                                                         Text("One-time with Follow-up")
                                                             .font(.system(size: 16, weight: .semibold))
                                                             .foregroundColor(Color(hex: "#E8E8E0"))
@@ -605,7 +607,7 @@ struct EditMedicationView: View {
                         }
                         
                         // Enhanced Notes Section
-                        FormSection(title: "NOTES", icon: "note.text.fill") {
+                        FormSection(title: "NOTES") {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Information")
                                     .font(.system(size: 14, weight: .semibold))
@@ -645,13 +647,17 @@ struct EditMedicationView: View {
                         
                         // Enhanced Update Button
                         VStack(spacing: 12) {
+                            if showValidationErrors && !isFormValid {
+                                Text("Please fill in all required fields")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.red)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                             Button {
                                 HapticManager.shared.mediumImpact()
                                 updateMedication()
                             } label: {
                                 HStack {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 18, weight: .semibold))
                                     Text("Update Medication")
                                         .font(.system(size: 18, weight: .bold, design: .rounded))
                                 }
@@ -689,19 +695,16 @@ struct EditMedicationView: View {
                         }
                     }
                 }
+                .onChange(of: scrollTargetField) { field in
+                    if let field = field {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            scrollProxy.scrollTo(field, anchor: .center)
+                        }
+                    }
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        HapticManager.shared.mediumImpact()
-                        updateMedication()
-                    }
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(isFormValid ? Color(hex: "#C7C7BD") : Color.gray)
-                    .disabled(!isFormValid)
-                }
-                
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         HapticManager.shared.lightImpact()
@@ -753,18 +756,13 @@ struct EditMedicationView: View {
     // MARK: - Helper Views
     
     @ViewBuilder
-    private func FormSection<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
+    private func FormSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: icon)
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                    .font(.system(size: 16, weight: .semibold))
-                Text(title)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                    .tracking(0.5)
-            }
-            
+            Text(title)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .tracking(0.5)
+
             VStack(alignment: .leading, spacing: 16) {
                 content()
             }
@@ -805,18 +803,12 @@ struct EditMedicationView: View {
         placeholder: String, 
         text: Binding<String>, 
         field: Field?,
-        iconName: String? = nil,
         isRequired: Bool = false,
         errorMessage: String? = nil,
         keyboardType: UIKeyboardType = .default
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                if let iconName = iconName {
-                    Image(systemName: iconName)
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                        .font(.system(size: 16, weight: .medium))
-                }
                 Text(title)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color(hex: "#E8E8E0"))
@@ -827,18 +819,12 @@ struct EditMedicationView: View {
                 }
             }
             
+            let showError = showValidationErrors && errorMessage != nil
+            let numericFields: [Field] = [.dosage, .pillCount, .pillsPerDose, .refillThreshold, .onsetMinutes, .durationMinutes]
+
             TextField(placeholder, text: text)
                 .keyboardType(keyboardType)
                 .focused($focusedField, equals: field)
-                .onChange(of: text.wrappedValue) { _, newValue in
-                    // For dosage, restrict input to numeric characters only
-                    if field == .dosage {
-                        let filtered = newValue.filter { $0.isNumber }
-                        if filtered != newValue {
-                            text.wrappedValue = filtered
-                        }
-                    }
-                }
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(Color(hex: "#E8E8E0"))
                 .padding(.horizontal, 16)
@@ -849,13 +835,32 @@ struct EditMedicationView: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(
-                                    errorMessage != nil ? Color.red : (focusedField == field ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.3)), 
-                                    lineWidth: focusedField == field || errorMessage != nil ? 2 : 1
+                                    focusedField == field
+                                    ? Color(hex: "#C7C7BD")
+                                    : (showError
+                                       ? Color.red
+                                       : Color(hex: "#C7C7BD").opacity(0.3)),
+                                    lineWidth: focusedField == field || showError ? 2 : 1
                                 )
                         )
                 )
+                .onChange(of: text.wrappedValue) { _, newValue in
+                    var processedValue = newValue
+
+                    if let field = field, numericFields.contains(field) {
+                        let filtered = newValue.filter { $0.isNumber }
+                        if filtered != newValue {
+                            processedValue = filtered
+                            text.wrappedValue = filtered
+                        }
+                    }
+
+                    if let field = field {
+                        validateField(field, value: processedValue)
+                    }
+                }
             
-            if let errorMessage = errorMessage {
+            if let errorMessage = errorMessage, showValidationErrors {
                 Text(errorMessage)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.red)
@@ -863,7 +868,7 @@ struct EditMedicationView: View {
             }
         }
     }
-    
+
     @ViewBuilder
     private func FrequencyCard(frequency: String, isSelected: Bool, onTap: @escaping () -> Void) -> some View {
         Button(action: onTap) {
@@ -887,7 +892,7 @@ struct EditMedicationView: View {
         }
         .buttonStyle(ScaleButtonStyle())
     }
-    
+
     // Helper function to format the time
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
@@ -903,43 +908,92 @@ struct EditMedicationView: View {
         
         // Validate custom unit if selected
         let customUnitValid = dosageUnit != "custom" || (dosageUnit == "custom" && !customUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        
-        if medicationType == .stimulant {
-            let onsetValid = onsetMinutesString.isEmpty || Int(onsetMinutesString) != nil
-            let durationValid = durationMinutesString.isEmpty || Int(durationMinutesString) != nil
-            return nameValid && dosageValid && frequencyValid && nameError == nil && dosageError == nil && customUnitValid && onsetValid && durationValid
+
+        if needsMultipleReminders && reminderTimes.isEmpty {
+            return false
         }
-        
-        return nameValid && dosageValid && frequencyValid && nameError == nil && dosageError == nil && customUnitValid
+
+        let inventoryRequired = trackPillCount && userSettings.isPremiumUser
+        let inventoryValid = !inventoryRequired || inventoryFieldsValid
+        let adhdRequired = isADHDMedication && medicationType == .stimulant
+        let adhdValid = !adhdRequired || adhdFieldsValid
+
+        return nameValid &&
+            dosageValid &&
+            frequencyValid &&
+            nameError == nil &&
+            dosageError == nil &&
+            customUnitValid &&
+            inventoryValid &&
+            adhdValid
+    }
+
+    private func firstInvalidField() -> Field? {
+        if nameError != nil {
+            return .name
+        }
+        if dosageError != nil {
+            return .dosage
+        }
+        if frequencyError != nil {
+            return .frequency
+        }
+        if trackPillCount && userSettings.isPremiumUser {
+            if pillCountError != nil {
+                return .pillCount
+            }
+            if pillsPerDoseError != nil {
+                return .pillsPerDose
+            }
+            if refillThresholdError != nil {
+                return .refillThreshold
+            }
+        }
+        if isADHDMedication && medicationType == .stimulant {
+            if onsetMinutesError != nil {
+                return .onsetMinutes
+            }
+            if durationMinutesError != nil {
+                return .durationMinutes
+            }
+        }
+        return nil
     }
     
     // Field navigation helpers
     private var canMoveToPreviousField: Bool {
         guard let currentField = focusedField else { return false }
         switch currentField {
-        case .name: return false  // Already at the first field
-        case .dosage, .frequency, .notes, .pillCount, .pillsPerDose, .refillThreshold: return true
+        case .name: return false
+        case .dosage, .frequency, .notes, .pillCount, .pillsPerDose, .refillThreshold, .durationMinutes: return true
+        case .onsetMinutes: return false
         }
     }
-    
+
     private var canMoveToNextField: Bool {
         guard let currentField = focusedField else { return false }
         switch currentField {
-        case .name, .dosage, .frequency, .pillCount, .pillsPerDose: return true
-        case .notes, .refillThreshold: return false  // Already at the last field
+        case .name, .dosage, .frequency: return true
+        case .notes: return trackPillCount
+        case .pillCount, .pillsPerDose: return trackPillCount
+        case .refillThreshold: return false
+        case .onsetMinutes: return true
+        case .durationMinutes: return false
         }
     }
-    
+
     private func moveToPreviousField() {
         guard let currentField = focusedField else { return }
         switch currentField {
-        case .name: break  // Already at the first field
+        case .name: break
         case .dosage: focusedField = .name
         case .frequency: focusedField = .dosage
-        case .notes: focusedField = .frequency
-        case .pillCount: focusedField = .frequency
+        case .notes: focusedField = trackPillCount ? .refillThreshold : .frequency
+        case .pillCount: focusedField = .notes
         case .pillsPerDose: focusedField = .pillCount
         case .refillThreshold: focusedField = .pillsPerDose
+        case .durationMinutes: focusedField = .onsetMinutes
+        case .onsetMinutes: focusedField = nil
         }
     }
     
@@ -949,10 +1003,13 @@ struct EditMedicationView: View {
         case .name: focusedField = .dosage
         case .dosage: focusedField = .frequency
         case .frequency: focusedField = trackPillCount ? .pillCount : .notes
+        case .notes:
+            focusedField = trackPillCount ? .pillCount : nil
         case .pillCount: focusedField = .pillsPerDose
         case .pillsPerDose: focusedField = .refillThreshold
         case .refillThreshold: focusedField = .notes
-        case .notes: break  // Already at the last field
+        case .onsetMinutes: focusedField = .durationMinutes
+        case .durationMinutes: focusedField = nil
         }
     }
 
@@ -971,11 +1028,15 @@ struct EditMedicationView: View {
     // Update the medication in the store
     private func updateMedication() {
         // Validate form
+        showValidationErrors = false
         validateForm()
         if !isFormValid {
             showValidationErrors = true
+            scrollTargetField = firstInvalidField()
             return
         }
+
+        scrollTargetField = nil
         
         // Use custom unit if "Custom" is selected
         let finalDosageUnit = dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
@@ -1024,15 +1085,135 @@ struct EditMedicationView: View {
     }
     
     private func validateForm() {
-        nameError = nil
-        dosageError = nil
-        
-        if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            nameError = "Medication name is required"
+        validateField(.name, value: name)
+        validateField(.dosage, value: dosage)
+        validateField(.frequency, value: frequency)
+        _ = validateInventoryFields()
+        _ = validateADHDFields()
+    }
+
+    private var inventoryFieldsValid: Bool {
+        let trimmedPillCount = pillCountString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPillsPerDose = pillsPerDoseString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedRefillThreshold = refillThresholdString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pillCountValue = Int(trimmedPillCount) ?? 0
+        let pillsPerDoseValue = Int(trimmedPillsPerDose) ?? 0
+        let refillThresholdValue = Int(trimmedRefillThreshold) ?? 0
+        let pillCountValid = !trimmedPillCount.isEmpty && pillCountValue > 0
+        let pillsPerDoseValid = !trimmedPillsPerDose.isEmpty && pillsPerDoseValue > 0
+        let refillThresholdValid = !trimmedRefillThreshold.isEmpty && refillThresholdValue > 0
+        return pillCountValid && pillsPerDoseValid && refillThresholdValid
+    }
+
+    private var adhdFieldsValid: Bool {
+        let trimmedOnset = onsetMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDuration = durationMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let onsetValid = !trimmedOnset.isEmpty && (Int(trimmedOnset) ?? 0) > 0
+        let durationValid = !trimmedDuration.isEmpty && (Int(trimmedDuration) ?? 0) > 0
+        return onsetValid && durationValid
+    }
+
+    private func validateField(_ field: Field?, value: String) {
+        guard let field = field else { return }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        switch field {
+        case .name:
+            nameError = trimmed.isEmpty ? "Medication name is required" : nil
+        case .dosage:
+            dosageError = trimmed.isEmpty ? "Dosage is required" : nil
+        case .frequency:
+            frequencyError = trimmed.isEmpty ? "Frequency is required" : nil
+        case .pillCount:
+            if trackPillCount && userSettings.isPremiumUser {
+                if trimmed.isEmpty {
+                    pillCountError = "Total pills is required"
+                } else if let count = Int(trimmed), count > 0 {
+                    pillCountError = nil
+                } else {
+                    pillCountError = "Enter a valid number"
+                }
+            } else {
+                pillCountError = nil
+            }
+        case .pillsPerDose:
+            if !trackPillCount {
+                pillsPerDoseError = nil
+                break
+            }
+            if trimmed.isEmpty {
+                pillsPerDoseError = "Pills per dose is required"
+            } else if let count = Int(trimmed), count > 0 {
+                pillsPerDoseError = nil
+            } else {
+                pillsPerDoseError = "Enter a valid number"
+            }
+        case .refillThreshold:
+            if trackPillCount && userSettings.isPremiumUser {
+                if trimmed.isEmpty {
+                    refillThresholdError = "Refill reminder is required"
+                } else if let days = Int(trimmed), days > 0 {
+                    refillThresholdError = nil
+                } else {
+                    refillThresholdError = "Enter a valid number"
+                }
+            } else {
+                refillThresholdError = nil
+            }
+        case .onsetMinutes:
+            if !(isADHDMedication && medicationType == .stimulant) {
+                onsetMinutesError = nil
+                break
+            }
+            if trimmed.isEmpty {
+                onsetMinutesError = "Onset time is required"
+            } else if let minutes = Int(trimmed), minutes > 0 {
+                onsetMinutesError = nil
+            } else {
+                onsetMinutesError = "Enter a valid number"
+            }
+        case .durationMinutes:
+            if !(isADHDMedication && medicationType == .stimulant) {
+                durationMinutesError = nil
+                break
+            }
+            if trimmed.isEmpty {
+                durationMinutesError = "Wear-off time is required"
+            } else if let minutes = Int(trimmed), minutes > 0 {
+                durationMinutesError = nil
+            } else {
+                durationMinutesError = "Enter a valid number"
+            }
+        default:
+            break
         }
-        
-        if dosage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            dosageError = "Dosage is required"
+    }
+
+    private func validateInventoryFields() -> Bool {
+        guard trackPillCount && userSettings.isPremiumUser else {
+            pillCountError = nil
+            pillsPerDoseError = nil
+            refillThresholdError = nil
+            return true
         }
+
+        validateField(.pillCount, value: pillCountString)
+        validateField(.pillsPerDose, value: pillsPerDoseString)
+        validateField(.refillThreshold, value: refillThresholdString)
+
+        return pillCountError == nil && pillsPerDoseError == nil && refillThresholdError == nil
+    }
+
+    private func validateADHDFields() -> Bool {
+        guard isADHDMedication && medicationType == .stimulant else {
+            onsetMinutesError = nil
+            durationMinutesError = nil
+            return true
+        }
+
+        validateField(.onsetMinutes, value: onsetMinutesString)
+        validateField(.durationMinutes, value: durationMinutesString)
+
+        return onsetMinutesError == nil && durationMinutesError == nil
     }
 } 

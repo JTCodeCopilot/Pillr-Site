@@ -34,7 +34,7 @@ struct PremiumUpgradeView: View {
                                     .frame(width: 100, height: 100)
                                     .shadow(color: Color(hex: "#ffffff").opacity(0.4), radius: 12, x: 0, y: 5)
                                 
-                                Image(systemName: "brain.head.profile")
+                                Image(systemName: "hourglass")
                                     .font(.system(size: 44, weight: .bold))
                                     .foregroundColor(.white)
                             }
@@ -69,7 +69,7 @@ struct PremiumUpgradeView: View {
                             )
                             
                             PremiumFeature(
-                                icon: "brain.head.profile",
+                                icon: "hourglass",
                                 title: "AI Interaction Analysis",
                                 description: "Check for potential medication interactions",
                                 iconColor: Color(hex: "#D4AF37")

@@ -88,8 +88,6 @@ class NotificationManager: ObservableObject {
             }
             // Schedule a one-time follow up 30 minutes later
             scheduleOneTimeFollowUp(for: medication, after: 30, originalID: notificationID, baseInterval: interval)
-            // Schedule stimulant phase notifications relative to this one-time reminder
-            scheduleOneTimeStimulantPhaseNotifications(for: medication, originalID: notificationID, baseInterval: interval)
             return notificationID
         }
         
@@ -113,8 +111,6 @@ class NotificationManager: ObservableObject {
         if UserSettings.shared.isPremiumUser {
             scheduleFollowUpNotification(for: medication, after: 30, originalID: notificationID)
         }
-        // Schedule stimulant phase notifications for repeating reminder
-        scheduleRepeatingStimulantPhaseNotifications(for: medication, originalID: notificationID, doseTime: medication.timeToTake)
         return notificationID
     }
     
@@ -210,8 +206,6 @@ class NotificationManager: ObservableObject {
             scheduleFollowUpNotification(for: medication, time: time, index: index, after: 30, originalID: notificationID)
         }
         
-        // Schedule stimulant phase notifications for this dose time
-        scheduleRepeatingStimulantPhaseNotifications(for: medication, originalID: notificationID, doseTime: time)
         
         return notificationID
     }
@@ -437,152 +431,79 @@ class NotificationManager: ObservableObject {
     }
     
     // MARK: - Stimulant phase notifications
-    
+
     private func shouldScheduleStimulantTiming(for medication: Medication) -> Bool {
         return medication.hasStimulantTiming
     }
-    
-    // One-time (non-repeating) stimulant onset / fade notifications
-    private func scheduleOneTimeStimulantPhaseNotifications(for medication: Medication, originalID: UUID, baseInterval: TimeInterval) {
+
+    func scheduleStimulantPhaseNotifications(for medication: Medication, doseTime: Date) {
         guard shouldScheduleStimulantTiming(for: medication),
               let onset = medication.onsetMinutes,
-              let duration = medication.durationMinutes else { return }
-        
+              let duration = medication.durationMinutes else {
+            return
+        }
+
         let center = UNUserNotificationCenter.current()
-        let baseID = originalID.uuidString
-        
-        // Onset notification
-        let onsetContent = UNMutableNotificationContent()
-        onsetContent.title = "Medication starting to work"
-        onsetContent.body = "\(medication.name) is likely starting to work. This can be a good time to ease into tasks or planning."
-        onsetContent.sound = UNNotificationSound.default
-        onsetContent.userInfo = [
-            "medicationID": medication.id.uuidString,
-            "phase": "onset"
-        ]
-        onsetContent.categoryIdentifier = "MEDICATION_REMINDER"
-        onsetContent.threadIdentifier = "medication-reminders"
-        
-        let onsetInterval = baseInterval + Double(onset * 60)
-        let onsetTrigger = UNTimeIntervalNotificationTrigger(timeInterval: onsetInterval, repeats: false)
-        let onsetRequest = UNNotificationRequest(identifier: "\(baseID)_onset", content: onsetContent, trigger: onsetTrigger)
-        center.add(onsetRequest) { error in
-            if let error = error {
-                print("Error scheduling stimulant onset notification: \(error.localizedDescription)")
-            }
-        }
-        
-        // Fade notification – optionally framed as a daily check-in
-        let fadeContent = UNMutableNotificationContent()
-        if medication.enableDailyCheckIn {
-            fadeContent.title = "Daily check-in for \(medication.name)"
-            fadeContent.body = "How was your focus and side effects today? Take a moment to log a quick check-in."
-        } else {
-            fadeContent.title = "Medication may wear off soon"
-            fadeContent.body = "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks."
-        }
-        fadeContent.sound = UNNotificationSound.default
-        fadeContent.userInfo = [
-            "medicationID": medication.id.uuidString,
-            "phase": "fade",
-            "isDailyCheckIn": medication.enableDailyCheckIn
-        ]
-        fadeContent.categoryIdentifier = "MEDICATION_REMINDER"
-        fadeContent.threadIdentifier = "medication-reminders"
-        
-        let fadeInterval = baseInterval + Double(duration * 60)
-        let fadeTrigger = UNTimeIntervalNotificationTrigger(timeInterval: fadeInterval, repeats: false)
-        let fadeRequest = UNNotificationRequest(identifier: "\(baseID)_fade", content: fadeContent, trigger: fadeTrigger)
-        center.add(fadeRequest) { error in
-            if let error = error {
-                print("Error scheduling stimulant fade notification: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    // Repeating daily stimulant onset / fade notifications
-    private func scheduleRepeatingStimulantPhaseNotifications(for medication: Medication, originalID: UUID, doseTime: Date) {
-        guard shouldScheduleStimulantTiming(for: medication),
-              let onset = medication.onsetMinutes,
-              let duration = medication.durationMinutes else { return }
-        
-        let calendar = Calendar.current
         let now = Date()
-        let center = UNUserNotificationCenter.current()
-        let baseID = originalID.uuidString
-        
-        // Helper to create repeating calendar trigger aligned with today/tomorrow logic
-        func triggerComponents(for date: Date) -> DateComponents {
-            let hour = calendar.component(.hour, from: date)
-            let minute = calendar.component(.minute, from: date)
-            
-            var components = DateComponents()
-            components.hour = hour
-            components.minute = minute
-            
-            let currentHour = calendar.component(.hour, from: now)
-            let currentMinute = calendar.component(.minute, from: now)
-            let hasPassedToday = (hour < currentHour || (hour == currentHour && minute <= currentMinute))
-            
-            if hasPassedToday {
-                if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) {
-                    components.day = calendar.component(.day, from: tomorrow)
-                    components.month = calendar.component(.month, from: tomorrow)
-                    components.year = calendar.component(.year, from: tomorrow)
+        let calendar = Calendar.current
+
+        func scheduleNotification(title: String, body: String, userInfo: [String: Any], identifierSuffix: String, fireDate: Date) {
+            let interval = fireDate.timeIntervalSince(now)
+            guard interval > 0 else { return }
+
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = UNNotificationSound.default
+            content.userInfo = userInfo
+            content.categoryIdentifier = "MEDICATION_REMINDER"
+            content.threadIdentifier = "medication-reminders"
+            content.badge = 1
+
+            let request = UNNotificationRequest(
+                identifier: "\(medication.id.uuidString)_\(identifierSuffix)_\(UUID().uuidString)",
+                content: content,
+                trigger: UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+            )
+
+            center.add(request) { error in
+                if let error = error {
+                    print("Error scheduling \(identifierSuffix) stimulant notification: \(error.localizedDescription)")
                 }
             }
-            
-            return components
         }
-        
-        // Onset
+
         if let onsetDate = calendar.date(byAdding: .minute, value: onset, to: doseTime) {
-            let onsetContent = UNMutableNotificationContent()
-            onsetContent.title = "Medication starting to work"
-            onsetContent.body = "\(medication.name) is likely starting to work. This can be a good time to ease into tasks or planning."
-            onsetContent.sound = UNNotificationSound.default
-            onsetContent.userInfo = [
-                "medicationID": medication.id.uuidString,
-                "phase": "onset"
-            ]
-            onsetContent.categoryIdentifier = "MEDICATION_REMINDER"
-            onsetContent.threadIdentifier = "medication-reminders"
-            
-            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents(for: onsetDate), repeats: true)
-            let request = UNNotificationRequest(identifier: "\(baseID)_onset", content: onsetContent, trigger: trigger)
-            center.add(request) { error in
-                if let error = error {
-                    print("Error scheduling repeating stimulant onset notification: \(error.localizedDescription)")
-                }
-            }
+            scheduleNotification(
+                title: "Medication starting to work",
+                body: "\(medication.name) is likely starting to work. This can be a good time to ease into tasks or planning.",
+                userInfo: [
+                    "medicationID": medication.id.uuidString,
+                    "phase": "onset"
+                ],
+                identifierSuffix: "onset",
+                fireDate: onsetDate
+            )
         }
-        
-        // Fade
+
         if let fadeDate = calendar.date(byAdding: .minute, value: duration, to: doseTime) {
-            let fadeContent = UNMutableNotificationContent()
-            if medication.enableDailyCheckIn {
-                fadeContent.title = "Daily check-in for \(medication.name)"
-                fadeContent.body = "How was your focus and side effects today? Take a moment to log a quick check-in."
-            } else {
-                fadeContent.title = "Medication may wear off soon"
-                fadeContent.body = "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks."
-            }
-            fadeContent.sound = UNNotificationSound.default
-            fadeContent.userInfo = [
-                "medicationID": medication.id.uuidString,
-                "phase": "fade",
-                "isDailyCheckIn": medication.enableDailyCheckIn
-            ]
-            fadeContent.categoryIdentifier = "MEDICATION_REMINDER"
-            fadeContent.threadIdentifier = "medication-reminders"
-            
-            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents(for: fadeDate), repeats: true)
-            let request = UNNotificationRequest(identifier: "\(baseID)_fade", content: fadeContent, trigger: trigger)
-            center.add(request) { error in
-                if let error = error {
-                    print("Error scheduling repeating stimulant fade notification: \(error.localizedDescription)")
-                }
-            }
+            let (fadeTitle, fadeBody) = medication.enableDailyCheckIn
+                ? ("Daily check-in for \(medication.name)",
+                   "How was your focus and side effects today? Take a moment to log a quick check-in.")
+                : ("Medication may wear off soon",
+                   "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks.")
+
+            scheduleNotification(
+                title: fadeTitle,
+                body: fadeBody,
+                userInfo: [
+                    "medicationID": medication.id.uuidString,
+                    "phase": "fade",
+                    "isDailyCheckIn": medication.enableDailyCheckIn
+                ],
+                identifierSuffix: "fade",
+                fireDate: fadeDate
+            )
         }
     }
 }

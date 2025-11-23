@@ -109,10 +109,6 @@ struct LogMedicationView: View {
                                     Text("Log Medication")
                                         .font(.system(size: 32, weight: .bold, design: .rounded))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
-                                    
-                                    Text("Record your dose")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                 }
                                 
                                 Spacer()
@@ -143,34 +139,21 @@ struct LogMedicationView: View {
                             }
                             
                             // Medication preview card
-                            HStack(spacing: 16) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color(hex: "#F5F5F5").opacity(0.2))
-                                        .frame(width: 60, height: 60)
-                                    
-                                    Image(systemName: medicationToLog.unitIconName)
-                                        .font(.system(size: 32))
-                                        .foregroundColor(Color(hex: "#F5F5F5"))
-                                }
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(medicationToLog.name)
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .lineLimit(2)
                                 
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(medicationToLog.name)
-                                        .font(.system(size: 22, weight: .bold))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
-                                        .lineLimit(2)
-                                    
-                                    Text("\(medicationToLog.dosage) \(medicationToLog.dosageUnit)")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#F5F5F5"))
-                                    
-                                    Text(medicationToLog.frequency)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                }
+                                Text("\(medicationToLog.dosage) \(medicationToLog.dosageUnit)")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#F5F5F5"))
                                 
-                                Spacer()
+                                Text(medicationToLog.frequency)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(20)
                             .background(
                                 RoundedRectangle(cornerRadius: 20)
@@ -210,73 +193,75 @@ struct LogMedicationView: View {
                             }
                         }
                         
-                        // Enhanced Time Section with quick options
-                        FormSection(title: "TIME TAKEN", icon: "") {
-                            VStack(alignment: .leading, spacing: 20) {
-                                // Quick time selection buttons
-                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                                    ForEach(QuickTimeOption.allCases, id: \.self) { option in
-                                        Button(action: {
-                                            HapticManager.shared.lightImpact()
-                                            selectedQuickTime = option
-                                            if option == .custom {
-                                                showingCustomTime = true
-                                            } else {
-                                                actualTimeTaken = Date().addingTimeInterval(option.timeOffset)
-                                                showingCustomTime = false
+                        // Enhanced Time Section with quick options (hidden for daily check-ins)
+                        if !isDailyCheckIn {
+                            FormSection(title: "TIME TAKEN", icon: "") {
+                                VStack(alignment: .leading, spacing: 20) {
+                                    // Quick time selection buttons
+                                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                                        ForEach(QuickTimeOption.allCases, id: \.self) { option in
+                                            Button(action: {
+                                                HapticManager.shared.lightImpact()
+                                                selectedQuickTime = option
+                                                if option == .custom {
+                                                    showingCustomTime = true
+                                                } else {
+                                                    actualTimeTaken = Date().addingTimeInterval(option.timeOffset)
+                                                    showingCustomTime = false
+                                                }
+                                            }) {
+                                                Text(option.rawValue)
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(selectedQuickTime == option ? Color(hex: "#404C42") : Color(hex: "#E8E8E0"))
+                                                    .padding(.vertical, 12)
+                                                    .padding(.horizontal, 8)
+                                                    .frame(maxWidth: .infinity)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 12)
+                                                            .fill(selectedQuickTime == option ? Color(hex: "#F5F5F5") : Color.black.opacity(0.2))
+                                                            .overlay(
+                                                                RoundedRectangle(cornerRadius: 12)
+                                                                    .stroke(selectedQuickTime == option ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                            )
+                                                    )
                                             }
-                                        }) {
-                                            Text(option.rawValue)
-                                                .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(selectedQuickTime == option ? Color(hex: "#404C42") : Color(hex: "#E8E8E0"))
-                                                .padding(.vertical, 12)
-                                                .padding(.horizontal, 8)
-                                                .frame(maxWidth: .infinity)
+                                            .buttonStyle(ScaleButtonStyle())
+                                        }
+                                    }
+                                    
+                                    // Custom time picker (shown when custom is selected)
+                                    if showingCustomTime {
+                                        VStack(alignment: .leading, spacing: 12) {
+                                            HStack {
+                                                Image(systemName: "clock.arrow.circlepath")
+                                                    .foregroundColor(Color(hex: "#F5F5F5"))
+                                                    .font(.system(size: 16))
+                                                Text("Select custom time")
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                            }
+                                            
+                                            DatePicker("", selection: $actualTimeTaken, displayedComponents: [.date, .hourAndMinute])
+                                                .datePickerStyle(.compact)
+                                                .labelsHidden()
+                                                .colorScheme(.dark)
+                                                .accentColor(Color(hex: "#F5F5F5"))
                                                 .background(
                                                     RoundedRectangle(cornerRadius: 12)
-                                                        .fill(selectedQuickTime == option ? Color(hex: "#F5F5F5") : Color.black.opacity(0.2))
-                                                        .overlay(
-                                                            RoundedRectangle(cornerRadius: 12)
-                                                                .stroke(selectedQuickTime == option ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
-                                                        )
+                                                        .fill(Color.black.opacity(0.1))
                                                 )
                                         }
-                                        .buttonStyle(ScaleButtonStyle())
+                                        .padding(16)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .fill(Color.black.opacity(0.1))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
+                                                )
+                                        )
+                                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
                                     }
-                                }
-                                
-                                // Custom time picker (shown when custom is selected)
-                                if showingCustomTime {
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        HStack {
-                                            Image(systemName: "clock.arrow.circlepath")
-                                                .foregroundColor(Color(hex: "#F5F5F5"))
-                                                .font(.system(size: 16))
-                                            Text("Select custom time")
-                                                .font(.system(size: 14, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                        }
-                                        
-                                        DatePicker("", selection: $actualTimeTaken, displayedComponents: [.date, .hourAndMinute])
-                                            .datePickerStyle(.compact)
-                                            .labelsHidden()
-                                            .colorScheme(.dark)
-                                            .accentColor(Color(hex: "#F5F5F5"))
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .fill(Color.black.opacity(0.1))
-                                            )
-                                    }
-                                    .padding(16)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.black.opacity(0.1))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
-                                            )
-                                    )
-                                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
                                 }
                             }
                         }
@@ -288,7 +273,7 @@ struct LogMedicationView: View {
                                     // Quick check-in sliders
                                     VStack(alignment: .leading, spacing: 12) {
                                         HStack {
-                                            Image(systemName: "brain.head.profile")
+                                            Image(systemName: "hourglass")
                                                 .foregroundColor(Color(hex: "#C7C7BD"))
                                                 .font(.system(size: 18))
                                             Text("How was your focus?")
@@ -519,25 +504,21 @@ struct LogMedicationView: View {
                                 HapticManager.shared.successNotification()
                                 processDoseAction(skipped: false)
                             } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 20, weight: .semibold))
-                                    Text("Log Medication")
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                                }
-                                .foregroundColor(Color(hex: "#404C42"))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 18)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(Color(hex: "#E8E8E0"))
-                                )
-                                .cornerRadius(20)
-                                .shadow(color: Color(hex: "#C7C7BD").opacity(0.3), radius: 8, x: 0, y: 4)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(Color(hex: "#C7C7BD").opacity(0.5), lineWidth: 1)
-                                )
+                                Text("Log Medication")
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundColor(Color(hex: "#404C42"))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 18)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .fill(Color(hex: "#E8E8E0"))
+                                    )
+                                    .cornerRadius(20)
+                                    .shadow(color: Color(hex: "#C7C7BD").opacity(0.3), radius: 8, x: 0, y: 4)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(Color(hex: "#C7C7BD").opacity(0.5), lineWidth: 1)
+                                    )
                             }
                             .buttonStyle(ScaleButtonStyle())
                         }
@@ -647,14 +628,15 @@ struct LogMedicationView: View {
         let sideEffectToSave = isDailyCheckIn && sideEffectSeverity > 0 ? sideEffectSeverity : nil
         
         if skipped {
-             store.skipMedication(
-                 medication: medicationToLog,
-                 actualTime: timeToUse,
-                 notes: notesToSave,
-                 reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
-                 focusRating: focusToSave,
-                 sideEffectSeverity: sideEffectToSave
-             )
+            store.skipMedication(
+                medication: medicationToLog,
+                actualTime: timeToUse,
+                notes: notesToSave,
+                reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
+                focusRating: focusToSave,
+                sideEffectSeverity: sideEffectToSave,
+                showFocusTimeline: !isDailyCheckIn
+            )
         } else {
             store.logMedicationTaken(
                 medication: medicationToLog,
@@ -663,7 +645,8 @@ struct LogMedicationView: View {
                 skipped: false,
                 reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
                 focusRating: focusToSave,
-                sideEffectSeverity: sideEffectToSave
+                sideEffectSeverity: sideEffectToSave,
+                showFocusTimeline: !isDailyCheckIn
             )
         }
         dismiss()

@@ -98,6 +98,9 @@ struct ContentView: View {
                         .tabViewStyle(.page(indexDisplayMode: .never))
                         .animation(.easeInOut(duration: 0.3), value: selectedTab)
                         .frame(maxHeight: .infinity)
+                        .onChange(of: selectedTab) { _ in
+                            HapticManager.shared.strongImpact()
+                        }
 
                         // Minimal Tab Bar - hide in preview
                         HStack {

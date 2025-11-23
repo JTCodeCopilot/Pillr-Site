@@ -200,7 +200,8 @@ class MedicationStore: ObservableObject {
         skipped: Bool = false,
         reminderIndex: Int? = nil,
         focusRating: Int? = nil,
-        sideEffectSeverity: Int? = nil
+        sideEffectSeverity: Int? = nil,
+        showFocusTimeline: Bool = true
     ) {
         let pillsConsumed = skipped ? 0 : medication.pillsPerDose
         
@@ -279,7 +280,8 @@ class MedicationStore: ObservableObject {
         resetBadgeIfNeeded()
 
         // If this is an ADHD stimulant with timing metadata and not skipped, prepare a focus timeline entry
-        if !skipped,
+        if showFocusTimeline,
+           !skipped,
            medication.hasStimulantTiming,
            let onsetMinutes = medication.onsetMinutes,
            let durationMinutes = medication.durationMinutes {
@@ -304,6 +306,8 @@ class MedicationStore: ObservableObject {
                 onsetTime: onsetTime,
                 fadeTime: fadeTime
             )
+
+            notificationManager.scheduleStimulantPhaseNotifications(for: medication, doseTime: actualTime)
         }
     }
     
@@ -353,7 +357,8 @@ class MedicationStore: ObservableObject {
         notes: String?,
         reminderIndex: Int? = nil,
         focusRating: Int? = nil,
-        sideEffectSeverity: Int? = nil
+        sideEffectSeverity: Int? = nil,
+        showFocusTimeline: Bool = true
     ) {
         logMedicationTaken(
             medication: medication,
@@ -362,7 +367,8 @@ class MedicationStore: ObservableObject {
             skipped: true,
             reminderIndex: reminderIndex,
             focusRating: focusRating,
-            sideEffectSeverity: sideEffectSeverity
+            sideEffectSeverity: sideEffectSeverity,
+            showFocusTimeline: showFocusTimeline
         )
     }
     

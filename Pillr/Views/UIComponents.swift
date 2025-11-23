@@ -331,7 +331,7 @@ struct EmptyStateView: View {
             if let actionTitle = actionTitle, let action = action {
                 Button(action: action) {
                     HStack(spacing: 10) {
-                        Image(systemName: "plus.circle.fill")
+                        Image(systemName: "plus.app")
                             .font(.system(size: 16, weight: .medium))
                         Text(actionTitle)
                             .font(.system(size: 18, weight: .semibold))
@@ -373,7 +373,7 @@ struct InteractionResultView: View {
                 
                 Spacer()
                 
-                Text(interaction.severity.rawValue)
+                Text(interaction.severity.displayName)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.black)
                     .padding(.vertical, 3)

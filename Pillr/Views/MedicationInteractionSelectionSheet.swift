@@ -235,26 +235,6 @@ struct MedicationInteractionSelectionSheet: View {
                 }
             }
             
-            // History button
-            Button(action: {
-                showingInteractionHistory = true
-            }) {
-                HStack {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .foregroundColor(Color.pillrAccent)
-                    Text("View Previous Interaction Checks")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color.pillrAccent)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.black.opacity(0.2))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.pillrAccent.opacity(0.3), lineWidth: 1)
-                )
-            }
         }
         .padding()
     }
@@ -325,12 +305,8 @@ struct MedicationInteractionSelectionSheet: View {
                         }
                     } label: {
                         VStack(spacing: 8) {
-                            HStack {
-                                Image(systemName: "arrow.left.arrow.right.circle.fill")
-                                    .font(.system(size: 18, weight: .semibold))
-                                Text(OpenAIService.shared.isPremiumUser() ? "Check Interactions" : "Check Interactions")
-                                    .font(.system(size: 18, weight: .regular, design: .rounded))
-                            }
+                            Text(OpenAIService.shared.isPremiumUser() ? "Check Interactions" : "Check Interactions")
+                                .font(.system(size: 18, weight: .regular, design: .rounded))
                             
                             if OpenAIService.shared.isPremiumUser() {
                                 Text("AI-Powered Analysis")
@@ -353,6 +329,7 @@ struct MedicationInteractionSelectionSheet: View {
                     }
                     .disabled(!canCheckInteractions)
                     .buttonStyle(ScaleButtonStyle())
+
                 }
                 .padding(.top, 24)
             }
@@ -649,9 +626,12 @@ struct MedicationInteractionSelectionSheet: View {
             return index1 < index2
         }
         
-        // Save interactions to history
-        for interaction in interactionResults {
-            InteractionStore.shared.saveInteraction(interaction)
+        if interactionResults.isEmpty {
+            saveAllClearInteraction(medications: medications)
+        } else {
+            for interaction in interactionResults {
+                InteractionStore.shared.saveInteraction(interaction)
+            }
         }
         
         await MainActor.run {
@@ -677,6 +657,25 @@ struct MedicationInteractionSelectionSheet: View {
                 HapticManager.shared.lightImpact()
             }
         }
+    }
+
+    private func saveAllClearInteraction(medications: [String]) {
+        let filteredMedications = medications.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let summary = filteredMedications.joined(separator: " + ")
+        let displayTitle = summary.isEmpty ? "Medication Check" : summary
+        let description = summary.isEmpty
+            ? "No significant interactions were found among your selected medications."
+            : "No significant interactions were found for \(summary)."
+
+        let clearInteraction = DrugInteraction(
+            drugA: displayTitle,
+            drugB: "",
+            severity: .unknown,
+            description: description,
+            recommendedAction: "Continue monitoring your medications and consult your healthcare provider if you have any questions."
+        )
+
+        InteractionStore.shared.saveInteraction(clearInteraction)
     }
 }
 
@@ -725,7 +724,7 @@ struct CompactInteractionRow: View {
                 
                 Spacer()
                 
-                Text(interaction.severity.rawValue)
+                                Text(interaction.severity.displayName)
                     .font(.system(size: 12, weight: .bold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)

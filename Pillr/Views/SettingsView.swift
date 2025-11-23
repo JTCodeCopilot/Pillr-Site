@@ -114,7 +114,7 @@ struct SettingsView: View {
     private var aiSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "brain.head.profile")
+                Image(systemName: "hourglass")
                     .font(.system(size: 20))
                     .foregroundColor(Color(hex: "#F5F7F4"))
                 Text("AI Features")
@@ -163,7 +163,7 @@ struct SettingsView: View {
                     showingPremiumUpgrade = true
                 }) {
                     HStack {
-                        Image(systemName: "brain.head.profile")
+                        Image(systemName: "hourglass")
                             .foregroundColor(Color(hex: "#E0E7DC"))
                             .frame(width: 20)
                         
@@ -197,7 +197,7 @@ struct SettingsView: View {
     private var supportLinksSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "link.circle")
+                Image(systemName: "link")
                     .font(.system(size: 20))
                     .foregroundColor(Color(hex: "#F5F7F4"))
                 Text("Support & Resources")

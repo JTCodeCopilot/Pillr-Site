@@ -42,7 +42,9 @@ struct MainTabView: View {
                 // Home / My Meds
                 MedicationsHomeView()
                     .tabItem {
-                        Label("My Meds", systemImage: "pills.fill")
+                        Image(systemName: "pill")
+                            .symbolVariant(.none) // Keep outline style even when selected
+                            .accessibilityLabel("My Meds")
                     }
                     .tag(MainTab.meds)
                 
@@ -58,23 +60,30 @@ struct MainTabView: View {
                     )
                 }
                 .tabItem {
-                    Label("Add", systemImage: "plus.circle.fill")
+                    Image(systemName: "plus.app")
+                        .symbolVariant(.none) // Use unfilled variant
+                        .accessibilityLabel("Add")
                 }
                 .tag(MainTab.add)
                 
                 // Focus timeline
                 FocusTimelineView(isModal: false)
                     .tabItem {
-                        Label("Focus", systemImage: "brain.head.profile")
+                        Image(systemName: "hourglass")
+                            .accessibilityLabel("Focus")
                     }
                     .tag(MainTab.focus)
                 
                 // Interaction history
                 InteractionHistoryView(isModal: false)
                     .tabItem {
-                        Label("Interactions", systemImage: "checkmark.circle")
+                        Image(systemName: "link")
+                            .accessibilityLabel("Interactions")
                     }
                     .tag(MainTab.interactions)
+            }
+            .onChange(of: selectedTab) { _ in
+                HapticManager.shared.strongImpact()
             }
             .accentColor(Color.pillrAccent)
         }
@@ -99,6 +108,7 @@ struct MedicationsHomeView: View {
     @EnvironmentObject var userSettings: UserSettings
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showingSettings = false
+    @State private var showingHistory = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -116,13 +126,19 @@ struct MedicationsHomeView: View {
                     .frame(height: geometry.safeAreaInsets.top + 44)
                     .ignoresSafeArea(edges: .top)
                 
-                MedicationsListView(onShowSettings: { showingSettings = true })
+                MedicationsListView(
+                    onShowSettings: { showingSettings = true },
+                    onShowHistory: { showingHistory = true }
+                )
                     .scrollContentBackground(.hidden)
                     .frame(maxHeight: .infinity)
             }
         }
         .fullScreenCover(isPresented: $showingSettings) {
             SettingsView()
+        }
+        .fullScreenCover(isPresented: $showingHistory) {
+            MedicationHistoryView(isModal: true)
         }
     }
 }

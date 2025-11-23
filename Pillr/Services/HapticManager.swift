@@ -36,32 +36,42 @@ class HapticManager {
         selectionFeedbackGenerator.prepare()
         notificationFeedbackGenerator.prepare()
     }
+
+    private func triggerStrongImpact() {
+        let generator = rigidImpactFeedbackGenerator
+        generator.prepare()
+        generator.impactOccurred()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            generator.impactOccurred()
+            generator.prepare()
+        }
+    }
+
+    func strongImpact() {
+        triggerStrongImpact()
+    }
     
     // MARK: - Impact Feedback
     
     func lightImpact() {
-        lightImpactFeedbackGenerator.impactOccurred()
-        lightImpactFeedbackGenerator.prepare()
+        triggerStrongImpact()
     }
     
     func mediumImpact() {
-        mediumImpactFeedbackGenerator.impactOccurred()
-        mediumImpactFeedbackGenerator.prepare()
+        triggerStrongImpact()
     }
     
     func heavyImpact() {
-        heavyImpactFeedbackGenerator.impactOccurred()
-        heavyImpactFeedbackGenerator.prepare()
+        triggerStrongImpact()
     }
     
     func softImpact() {
-        softImpactFeedbackGenerator.impactOccurred()
-        softImpactFeedbackGenerator.prepare()
+        triggerStrongImpact()
     }
     
     func rigidImpact() {
-        rigidImpactFeedbackGenerator.impactOccurred()
-        rigidImpactFeedbackGenerator.prepare()
+        triggerStrongImpact()
     }
     
     // MARK: - Notification Feedback
@@ -91,47 +101,19 @@ class HapticManager {
     // MARK: - Pulsed Feedback
     
     func pulseLight() {
-        // Create a pulse effect with light impacts
-        lightImpactFeedbackGenerator.impactOccurred()
-        
-        // Queue a second pulse after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.lightImpactFeedbackGenerator.impactOccurred()
-            self?.lightImpactFeedbackGenerator.prepare()
-        }
+        strongImpact()
     }
     
     func pulseMedium() {
-        // Create a pulse effect with medium impacts
-        mediumImpactFeedbackGenerator.impactOccurred()
-        
-        // Queue a second pulse after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.mediumImpactFeedbackGenerator.impactOccurred()
-            self?.mediumImpactFeedbackGenerator.prepare()
-        }
+        strongImpact()
     }
     
     func pulseRigid() {
-        // Create a strong pulse effect with rigid impacts
-        rigidImpactFeedbackGenerator.impactOccurred()
-        
-        // Queue a second pulse after a very short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
-            self?.rigidImpactFeedbackGenerator.impactOccurred()
-            self?.rigidImpactFeedbackGenerator.prepare()
-        }
+        strongImpact()
     }
     
     func pulseButton() {
-        // Optimized pulse feedback for buttons
-        softImpactFeedbackGenerator.impactOccurred()
-        
-        // Queue a second soft impact for a tactile pulse
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) { [weak self] in
-            self?.lightImpactFeedbackGenerator.impactOccurred()
-            self?.lightImpactFeedbackGenerator.prepare()
-        }
+        strongImpact()
     }
 }
 

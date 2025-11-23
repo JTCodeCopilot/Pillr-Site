@@ -55,7 +55,7 @@ struct TabBarButton: View {
 
     var body: some View {
         Button(action: {
-            HapticManager.shared.pulseButton()
+            HapticManager.shared.strongImpact()
             action()
         }) {
             VStack(spacing: 4) {
@@ -180,4 +180,3 @@ struct TabBarButton: View {
         )
     }
 } 
-

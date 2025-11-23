@@ -28,9 +28,14 @@ struct MedicationsListView: View {
     @State private var showingPremiumUpgrade = false
     @State private var showingFocusTimeline = false
     let onShowSettings: () -> Void
+    let onShowHistory: () -> Void
 
-    init(onShowSettings: @escaping () -> Void = {}) {
+    init(
+        onShowSettings: @escaping () -> Void = {},
+        onShowHistory: @escaping () -> Void = {}
+    ) {
         self.onShowSettings = onShowSettings
+        self.onShowHistory = onShowHistory
     }
     
     var body: some View {
@@ -47,7 +52,7 @@ struct MedicationsListView: View {
             isCheckingInteractions: $isCheckingInteractions,
             onCheckAllInteractions: showMedicationSelectionSheet,
             onAddMedication: handleAddMedication,
-            onShowSettings: onShowSettings,
+            onShowHistory: onShowHistory, onShowSettings: onShowSettings,
             onShowFocusTimeline: { showingFocusTimeline = true }
         )
         .sheet(item: $showingLogSheetFor) { med in
@@ -316,12 +321,13 @@ fileprivate func MedicationsListContent(
 fileprivate func MedicationsListHeader(
     store: MedicationStore,
     horizontalInsets: CGFloat,
+    onShowHistory: @escaping () -> Void,
     onShowSettings: @escaping () -> Void
 ) -> some View {
     VStack(alignment: .leading, spacing: 8) {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("My Medications")
+                Text("My Meds")
                     .font(.system(size: 36, weight: .bold))
                     .foregroundColor(Color(hex: "#F5F7F4"))
                 
@@ -332,13 +338,28 @@ fileprivate func MedicationsListHeader(
             
             Spacer()
             
-            Button(action: onShowSettings) {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
-                    .padding(10)
-                    .background(Color.black.opacity(0.25))
-                    .clipShape(Circle())
+            HStack(spacing: 10) {
+                Button(action: onShowHistory) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .frame(width: 46, height: 46)
+                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                .contentShape(Circle())
+
+                Button(action: onShowSettings) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .frame(width: 46, height: 46)
+                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                .contentShape(Circle())
             }
         }
     }
@@ -394,7 +415,7 @@ fileprivate struct FloatingActionButton: View {
                                 
                                 // Add medication button
                                 expandedActionButton(
-                                    icon: "plus.circle.fill",
+                                    icon: "plus.app",
                                     text: "Add Medication",
                                     delay: 0.05
                                 ) {
@@ -785,6 +806,7 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
     let onAddMedication: () -> Void
+    let onShowHistory: () -> Void
     let onShowSettings: () -> Void
     let onShowFocusTimeline: () -> Void
 
@@ -808,6 +830,7 @@ fileprivate struct MedicationsListMainContent: View {
                     MedicationsListHeader(
                         store: store,
                         horizontalInsets: horizontalInset,
+                        onShowHistory: onShowHistory,
                         onShowSettings: onShowSettings
                     )
 
@@ -913,6 +936,14 @@ fileprivate struct MedicationRowHeaderView: View {
         }
     }
 
+    private var notesPreview: String? {
+        guard let notes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !notes.isEmpty else {
+            return nil
+        }
+        return notes
+    }
+
     // Moved buttonProperties computed property
     private func buttonProperties() -> (iconName: String, text: String, fgColor: Color, bgColor: Color) {
         switch cycleStatus {
@@ -952,12 +983,18 @@ fileprivate struct MedicationRowHeaderView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
             
-            Text(dosageString())
+            Text(dosageAmountLine)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundColor(Color(hex: "#E0E7DC"))
+
+            if !frequencyLine.isEmpty {
+                Text(frequencyLine)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color(hex: "#E0E7DC"))
+            }
             
-            if let notes = medication.notes, !notes.isEmpty {
-                Text(notes)
+            if showDetails, let preview = notesPreview {
+                Text(preview)
                     .font(.system(size: 13))
                     .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                     .lineLimit(1)
@@ -967,11 +1004,21 @@ fileprivate struct MedicationRowHeaderView: View {
         }
     }
     
-    private func dosageString() -> String {
-        var baseString = "\(medication.dosage)"
-        // Always display the unit type regardless of what it is
-        baseString += " \(medication.dosageUnit)"
-        return "\(baseString) - \(medication.frequency)"
+    private var dosageAmountLine: String {
+        let baseDosage = medication.dosage.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedUnit = medication.dosageUnit.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if baseDosage.isEmpty {
+            return trimmedUnit
+        } else if trimmedUnit.isEmpty {
+            return baseDosage
+        }
+
+        return "\(baseDosage) \(trimmedUnit)"
+    }
+
+    private var frequencyLine: String {
+        medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     // Status and action button section (right side)
@@ -1380,47 +1427,43 @@ fileprivate struct MedicationRowDetailsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 12) {
             // Enhanced detail cards with better visual hierarchy
-            VStack(alignment: .leading, spacing: 16) {
-                detailCard(
-                    icon: "repeat.circle.fill", 
-                    label: "Frequency", 
-                    value: medication.frequency, 
-                    iconColor: Color(hex: "#D7CCC8")
-                )
-                
-                // Only show reminder time and notifications for non-"As needed" medications
-                if medication.frequency != "As needed" {
-                    detailCard(
-                        icon: "alarm.fill", 
-                        label: "Reminder Time", 
-                        value: reminderTimesString, 
-                        iconColor: Color(hex: "#FFB74D")
-                    )
-                    
-                    detailCard(
-                        icon: notificationsEnabled ? "bell.fill" : "bell.slash.fill", 
-                        label: "Notifications", 
-                        value: notificationsEnabled ? "Enabled" : "Disabled", 
-                        valueColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B"), 
-                        iconColor: notificationsEnabled ? Color(hex: "#D7CCC8") : Color(hex: "#FF6B6B")
-                    )
-                }
-                
-                if let timingSummary = stimulantTimingSummary {
-                    detailCard(
-                        icon: "brain.head.profile",
-                        label: "Focus Window",
-                        value: timingSummary,
-                        lineLimit: 2,
-                        iconColor: Color(hex: "#D7CCC8")
+            VStack(alignment: .leading, spacing: 12) {
+                let detailEntries = detailRowEntries
+                if !detailEntries.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(detailEntries, id: \.label) { entry in
+                            VStack(alignment: .leading, spacing: entry.placeValueOnNewLine ? 4 : 2) {
+                                Text("\(entry.label):")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(entry.value)
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(entry.valueColor)
+                                    .lineLimit(entry.lineLimit)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 14)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.black.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(hex: "#606A63").opacity(0.2), lineWidth: 1)
+                            )
                     )
                 }
                 
                 if let notes = medication.notes, !notes.isEmpty {
-                    HStack(alignment: .top, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .top, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("NOTES")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(Color(hex: "#C7C7BD"))
@@ -1436,8 +1479,8 @@ fileprivate struct MedicationRowDetailsView: View {
                         
                         Spacer()
                     }
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.black.opacity(0.1))
@@ -1450,7 +1493,7 @@ fileprivate struct MedicationRowDetailsView: View {
             }
 
             // Enhanced action buttons with improved styling
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Button(action: onEditTap) {
                     HStack(spacing: 10) {
                         Image(systemName: "pencil.circle.fill")
@@ -1461,8 +1504,8 @@ fileprivate struct MedicationRowDetailsView: View {
                             .foregroundColor(Color(hex: "#E8E8E0"))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
@@ -1503,8 +1546,8 @@ fileprivate struct MedicationRowDetailsView: View {
                                 .foregroundColor(Color(hex: "#FFB74D"))
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 16)
                         .background(
                             LinearGradient(
                                 gradient: Gradient(colors: [
@@ -1536,8 +1579,8 @@ fileprivate struct MedicationRowDetailsView: View {
                 }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 20)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(
             LinearGradient(
                 gradient: Gradient(colors: [
@@ -1550,53 +1593,52 @@ fileprivate struct MedicationRowDetailsView: View {
         )
     }
 
-    @ViewBuilder
-    private func detailCard(
-        icon: String, 
-        label: String, 
-        value: String, 
-        valueColor: Color = Color(hex: "#E8E8E0"), 
-        lineLimit: Int? = 1,
-        iconColor: Color = Color(hex: "#C7C7BD")
-    ) -> some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Enhanced icon with background
-            ZStack {
-                Circle()
-                    .fill(iconColor.opacity(0.15))
-                    .frame(width: 36, height: 36)
-                
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(iconColor)
-            }
-            
-            VStack(alignment: .leading, spacing: 6) {
-                Text(label)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                    .textCase(.uppercase)
-                    .tracking(0.5)
-                
-                Text(value)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(valueColor)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(lineLimit)
-            }
-            
-            Spacer()
+    private var detailRowEntries: [DetailEntry] {
+        var entries: [DetailEntry] = [
+            DetailEntry(label: "Frequency", value: medication.frequency)
+        ]
+
+        if medication.frequency != "As needed" {
+            entries.append(DetailEntry(label: "Reminder Time", value: reminderTimesString))
+            let notificationText = notificationsEnabled ? "Enabled" : "Disabled"
+            let notificationColor = notificationsEnabled ? Color(hex: "#F5F7F4") : Color(hex: "#FF9E8B")
+            entries.append(DetailEntry(label: "Notifications", value: notificationText, valueColor: notificationColor))
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.1))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#606A63").opacity(0.2), lineWidth: 1)
+
+        if let timingSummary = stimulantTimingSummary {
+            entries.append(
+                DetailEntry(
+                    label: "Focus Window",
+                    value: timingSummary,
+                    lineLimit: 2,
+                    placeValueOnNewLine: true
                 )
-        )
+            )
+        }
+
+        return entries
+    }
+
+    private struct DetailEntry {
+        let label: String
+        let value: String
+        let valueColor: Color
+        let lineLimit: Int?
+        let placeValueOnNewLine: Bool
+
+        init(
+            label: String,
+            value: String,
+            valueColor: Color = Color(hex: "#F5F7F4"),
+            lineLimit: Int? = 1,
+            placeValueOnNewLine: Bool = false
+        ) {
+            self.label = label
+            self.value = value
+            self.valueColor = valueColor
+            self.lineLimit = lineLimit
+            self.placeValueOnNewLine = placeValueOnNewLine
+        }
     }
 }
 

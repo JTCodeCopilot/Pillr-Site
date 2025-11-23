@@ -9,7 +9,6 @@ struct InteractionResultsSheetView: View {
     @State private var selectedSeverityFilter: DrugInteraction.InteractionSeverity? = nil
     @State private var showingShareSheet = false
     @State private var shareText = ""
-    @State private var showingHistoryView = false
     @State private var shareItems: [Any] = []
 
     var filteredInteractions: [DrugInteraction] {
@@ -46,24 +45,13 @@ struct InteractionResultsSheetView: View {
                         shareButton
                     }
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        isPresented = false
-                    }
-                    .foregroundColor(Color.pillrAccent)
-                }
             }
             .sheet(isPresented: $showingShareSheet) {
                 ShareSheet(activityItems: shareItems)
             }
-            .sheet(isPresented: $showingHistoryView) {
-                InteractionHistoryView()
-            }
         }
         .preferredColorScheme(.dark)
         .onAppear {
-            // Save interactions to history
             for interaction in interactions {
                 interactionStore.saveInteraction(interaction)
             }
@@ -110,31 +98,6 @@ struct InteractionResultsSheetView: View {
                     ForEach(filteredInteractions) { interaction in
                         InteractionRowView(interaction: interaction)
                     }
-                    
-                    // View History Button
-                    Button(action: {
-                        showingHistoryView = true
-                    }) {
-                        HStack {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .foregroundColor(Color.pillrAccent)
-                            Text("View Interaction History")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color.pillrAccent)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color.pillrAccent.opacity(0.7))
-                        }
-                        .padding(16)
-                        .background(Color.black.opacity(0.15))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.pillrAccent.opacity(0.3), lineWidth: 1)
-                        )
-                    }
-                    .padding(.top, 8)
                     
                     // Disclaimer
                     disclaimerView
@@ -200,7 +163,7 @@ struct InteractionResultsSheetView: View {
                 ForEach(DrugInteraction.InteractionSeverity.allCases, id: \.self) { severity in
                     if let count = severityCounts[severity], count > 0 {
                         FilterChip(
-                            title: "\(severity.rawValue) (\(count))",
+                            title: "\(severity.displayName) (\(count))",
                             isSelected: selectedSeverityFilter == severity,
                             color: Color(hex: severity.color)
                         ) {
@@ -218,7 +181,7 @@ struct InteractionResultsSheetView: View {
     private var disclaimerView: some View {
         VStack(spacing: 8) {
             HStack {
-                Image(systemName: "brain.head.profile")
+                Image(systemName: "hourglass")
                     .foregroundColor(Color.pillrAccent.opacity(0.8))
                 Text("Powered by AI")
                     .font(.caption)
@@ -258,7 +221,7 @@ struct InteractionResultsSheetView: View {
         
         for interaction in interactions {
             text += "• \(interaction.drugA) + \(interaction.drugB)\n"
-            text += "  Severity: \(interaction.severity.rawValue)\n"
+            text += "  Severity: \(interaction.severity.displayName)\n"
             text += "  \(interaction.description)\n"
             text += "  Action: \(interaction.recommendedAction)\n\n"
         }
@@ -341,7 +304,7 @@ struct InteractionRowView: View {
                 Spacer()
                 
                 // Severity badge
-                Text(interaction.severity.rawValue)
+                Text(interaction.severity.displayName)
                     .font(.caption.bold())
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)

@@ -226,7 +226,7 @@ struct FocusTimelineView: View {
     
     private var emptyState: some View {
         VStack(spacing: 16) {
-            Image(systemName: "brain.head.profile")
+            Image(systemName: "hourglass")
                 .font(.system(size: 48))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
             
@@ -574,7 +574,7 @@ struct ADHDDoseTimelineSheet: View {
 
             VStack(alignment: .leading, spacing: 22) {
                 HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "brain.head.profile")
+                    Image(systemName: "hourglass")
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(Color(hex: "#D7CCC8"))
 

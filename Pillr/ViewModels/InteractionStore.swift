@@ -236,7 +236,7 @@ class InteractionStore: ObservableObject {
             interaction.drugB.lowercased().contains(lowercasedQuery) ||
             interaction.description.lowercased().contains(lowercasedQuery) ||
             interaction.recommendedAction.lowercased().contains(lowercasedQuery) ||
-            interaction.severity.rawValue.lowercased().contains(lowercasedQuery)
+            interaction.severity.displayName.lowercased().contains(lowercasedQuery)
         }
     }
     
@@ -301,7 +301,7 @@ class InteractionStore: ObservableObject {
         
         for interaction in filteredHistory {
             text += "Interaction: \(interaction.drugA) + \(interaction.drugB)\n"
-            text += "Severity: \(interaction.severity.rawValue)\n"
+            text += "Severity: \(interaction.severity.displayName)\n"
             text += "Description: \(interaction.description)\n"
             text += "Recommendation: \(interaction.recommendedAction)\n"
             text += "Date: \(DateFormatter.localizedString(from: interaction.timestamp, dateStyle: .medium, timeStyle: .short))\n"

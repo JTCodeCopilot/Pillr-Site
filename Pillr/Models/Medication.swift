@@ -32,7 +32,7 @@ struct Medication: Identifiable, Codable, Hashable {
     var name: String
     var dosage: String // e.g., "50mg", "1 tablet"
     var dosageUnit: String = "mg" // "mg" or "ml"
-    var iconName: String = "pill.fill" // Default icon
+    var iconName: String = "pill" // Default icon
     var createdAt: Date? = Date() // When the medication was added
     
     // Computed property to get the correct icon based on dosageUnit
@@ -113,7 +113,7 @@ struct Medication: Identifiable, Codable, Hashable {
         name: String,
         dosage: String,
         dosageUnit: String = "mg",
-        iconName: String = "pill.fill",
+        iconName: String = "pill",
         createdAt: Date? = Date(),
         frequency: String,
         medicationType: MedicationType = .other,
@@ -165,7 +165,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.name = try container.decode(String.self, forKey: .name)
         self.dosage = try container.decode(String.self, forKey: .dosage)
         self.dosageUnit = try container.decodeIfPresent(String.self, forKey: .dosageUnit) ?? "mg"
-        self.iconName = try container.decodeIfPresent(String.self, forKey: .iconName) ?? "pill.fill"
+        self.iconName = try container.decodeIfPresent(String.self, forKey: .iconName) ?? "pill"
         self.createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
         self.frequency = try container.decode(String.self, forKey: .frequency)
 

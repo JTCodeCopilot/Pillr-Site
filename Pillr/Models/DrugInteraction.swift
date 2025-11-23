@@ -22,9 +22,29 @@ struct DrugInteraction: Identifiable, Codable, Hashable {
             case .moderate: return "#FFC107" // Yellow/Amber
             case .major: return "#FF9800" // Orange
             case .contraindicated: return "#F44336" // Red
-            case .unknown: return "#9E9E9E" // Gray
+        case .unknown: return "#8BC34A" // Green
             }
         }
+
+        var displayName: String {
+            switch self {
+            case .unknown: return "No interaction"
+            default: return rawValue
+            }
+        }
+    }
+
+    var displayTitle: String {
+        let trimmedA = drugA.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedB = drugB.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmedA.isEmpty && trimmedB.isEmpty {
+            return "Medication Interaction"
+        }
+        if trimmedB.isEmpty {
+            return trimmedA
+        }
+        return "\(trimmedA) + \(trimmedB)"
     }
 }
 

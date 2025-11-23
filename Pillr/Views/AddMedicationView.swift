@@ -21,7 +21,7 @@ struct AddMedicationView: View {
     @State private var name: String = ""
     @State private var dosage: String = ""
     @State private var dosageUnit: String = "mg"
-    @State private var iconName: String = "pill.fill"
+    @State private var iconName: String = "pill"
 
     // Schedule / reminders
     @State private var frequency: String = "As needed"
@@ -46,6 +46,8 @@ struct AddMedicationView: View {
     @State private var onsetMinutesString: String = ""
     @State private var durationMinutesString: String = ""
     @State private var enableDailyCheckIn: Bool = false
+    @State private var onsetMinutesError: String? = nil
+    @State private var durationMinutesError: String? = nil
 
     // AI search / premium
     @State private var showingAISearch: Bool = false
@@ -73,13 +75,36 @@ struct AddMedicationView: View {
     @State private var currentStep: AddMedicationStep = .basics
 
     enum Field: Hashable {
-        case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold
+        case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold, onsetMinutes, durationMinutes
+    }
+
+    private let standardFieldHeight: CGFloat = 52
+    private let actionButtonMinWidth: CGFloat = 58
+
+    private enum ScrollAnchor {
+        static let bottom = "AddMedicationViewBottomAnchor"
     }
 
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
     let dosageUnits = ["mg", "ml", "tablets", "capsules", "custom"]
     @State private var customUnit: String = ""
     @State private var isCustomUnitSelected: Bool = false
+
+    private var contentExpansionKey: ContentExpansionKey {
+        ContentExpansionKey(
+            step: currentStep,
+            customUnitVisible: isCustomUnitSelected,
+            frequency: frequency,
+            reminderCount: reminderTimes.count,
+            trackPillCount: trackPillCount,
+            isADHDMedication: isADHDMedication,
+            medicationType: medicationType,
+            isExtendedRelease: isExtendedRelease,
+            enableDailyCheckIn: enableDailyCheckIn,
+            needsMultipleReminders: needsMultipleReminders,
+            isOneTimeWithFollowUp: isOneTimeWithFollowUp
+        )
+    }
 
     // MARK: - Body
 
@@ -102,7 +127,12 @@ struct AddMedicationView: View {
                         stepProgressView
 
                         if currentStep != .basics {
-                            summaryCard
+                            VStack(spacing: 12) {
+                                summarySection
+                                Divider()
+                                    .frame(height: 1)
+                                    .background(Color(hex: "#C7C7BD").opacity(0.3))
+                            }
                         }
 
                         Group {
@@ -119,6 +149,7 @@ struct AddMedicationView: View {
                         }
 
                         navigationFooter
+                            .id(ScrollAnchor.bottom)
                     }
                     .padding(.horizontal, 20)
                     .frame(maxWidth: 620)
@@ -132,6 +163,9 @@ struct AddMedicationView: View {
                             scrollProxy.scrollTo(field, anchor: .center)
                         }
                     }
+                }
+                .onChange(of: contentExpansionKey) { _ in
+                    scrollToBottom(using: scrollProxy)
                 }
             }
             .onAppear {
@@ -241,7 +275,7 @@ struct AddMedicationView: View {
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
-            Text("Step \(currentStep.rawValue + 1) of \(AddMedicationStep.allCases.count) • \(stepTitle)")
+            Text("Step \(currentStep.rawValue + 1) of \(AddMedicationStep.allCases.count)")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
         }
@@ -280,41 +314,38 @@ struct AddMedicationView: View {
                         )
                         .id(Field.name)
 
-                        VStack {
-                            Spacer()
-                            Button(action: {
-                                triggerStrongHaptic()
-                                if userSettings.isPremiumUser {
-                                    showingAISearch = true
-                                } else {
-                                    showingPremiumUpgrade = true
-                                }
-                            }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "magnifyingglass")
-                                        .font(.system(size: 16, weight: .medium))
-
-                                    if !userSettings.isPremiumUser {
-                                        Image(systemName: "crown.fill")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(Color(hex: "#D4A017"))
-                                    }
-                                }
-                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 10)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.black.opacity(0.3))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
-                                        )
-                                )
+                        Button(action: {
+                            triggerStrongHaptic()
+                            if userSettings.isPremiumUser {
+                                showingAISearch = true
+                            } else {
+                                showingPremiumUpgrade = true
                             }
-                            .buttonStyle(ScaleButtonStyle())
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 16, weight: .medium))
+
+                                if !userSettings.isPremiumUser {
+                                    Image(systemName: "crown.fill")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(Color(hex: "#D4A017"))
+                                }
+                            }
+                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .padding(.horizontal, 10)
+                            .frame(minWidth: actionButtonMinWidth)
+                            .frame(height: standardFieldHeight)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.black.opacity(0.3))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                    )
+                            )
                         }
-                        .frame(height: 60)
+                        .buttonStyle(ScaleButtonStyle())
                     }
                 }
 
@@ -361,8 +392,8 @@ struct AddMedicationView: View {
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                             }
                             .padding(.horizontal, 10)
-                            .padding(.vertical, 10)
-                            .frame(minWidth: 90)
+                            .frame(minWidth: 90, minHeight: standardFieldHeight)
+                            .frame(height: standardFieldHeight)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(Color.black.opacity(0.2))
@@ -403,20 +434,40 @@ struct AddMedicationView: View {
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Color(hex: "#E8E8E0"))
 
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 6) {
+                    Menu {
                         ForEach(frequencies, id: \.self) { freq in
-                        FrequencyCard(
-                            frequency: freq,
-                            isSelected: frequency == freq,
-                            onTap: {
+                            Button(action: {
                                 frequency = freq
                                 setupReminderTimesForFrequency(freq)
                                 if enableNotification {
                                     requestNotificationPermissionIfNeeded()
                                 }
+                            }) {
+                                Text(freq)
                             }
-                        )
                         }
+                    } label: {
+                        HStack {
+                            Text(frequency)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.65)
+                            Spacer()
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: standardFieldHeight)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.black.opacity(0.2))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                )
+                        )
                     }
                 }
 
@@ -492,7 +543,7 @@ struct AddMedicationView: View {
     @ViewBuilder
     private var trackingAndADHDSection: some View {
         // ADHD timing
-        FormSection(title: "FOCUS & TIMING", icon: "brain.head.profile") {
+        FormSection(title: "FOCUS & TIMING", icon: "hourglass") {
             VStack(alignment: .leading, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Is this an ADHD medication?")
@@ -536,7 +587,9 @@ struct AddMedicationView: View {
                             title: "Starts working after (minutes)",
                             placeholder: "30",
                             text: $onsetMinutesString,
-                            field: nil,
+                            field: .onsetMinutes,
+                            isRequired: isADHDMedication && medicationType == .stimulant,
+                            errorMessage: onsetMinutesError,
                             keyboardType: .numberPad
                         )
 
@@ -544,7 +597,9 @@ struct AddMedicationView: View {
                             title: "Lasts about (minutes)",
                             placeholder: "240",
                             text: $durationMinutesString,
-                            field: nil,
+                            field: .durationMinutes,
+                            isRequired: isADHDMedication && medicationType == .stimulant,
+                            errorMessage: durationMinutesError,
                             keyboardType: .numberPad
                         )
 
@@ -578,6 +633,8 @@ struct AddMedicationView: View {
                     isExtendedRelease = false
                     onsetMinutesString = ""
                     durationMinutesString = ""
+                    onsetMinutesError = nil
+                    durationMinutesError = nil
                     enableDailyCheckIn = false
                 }
             }
@@ -588,6 +645,8 @@ struct AddMedicationView: View {
                     onsetMinutesString = ""
                     durationMinutesString = ""
                     enableDailyCheckIn = false
+                    onsetMinutesError = nil
+                    durationMinutesError = nil
                 }
             }
         }
@@ -755,13 +814,6 @@ struct AddMedicationView: View {
                 }) {
                     HStack {
                         if currentStep == .notesAndReview {
-                            if isFormValid {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.system(size: 18, weight: .semibold))
-                            } else {
-                                Image(systemName: "exclamationmark.circle.fill")
-                                    .font(.system(size: 18, weight: .semibold))
-                            }
                             Text("Add Medication")
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                         } else {
@@ -783,7 +835,6 @@ struct AddMedicationView: View {
                                 ? Color.gray.opacity(0.6)
                                 : Color(hex: "#C7C7BD")
                             )
-                            .shadow(color: Color(hex: "#C7C7BD").opacity(0.3), radius: 8, x: 0, y: 4)
                     )
                 }
                 .accessibilityLabel(currentStep == .notesAndReview ? "Add medication" : "Next step")
@@ -806,51 +857,74 @@ struct AddMedicationView: View {
 
     // MARK: - Helper Views
 
+    private var summaryAttributes: [String] {
+        var items: [String] = []
+
+        if !frequency.isEmpty {
+            items.append(frequency)
+        }
+
+        if trackPillCount && userSettings.isPremiumUser {
+            items.append("Inventory tracking")
+        }
+
+        if isADHDMedication {
+            items.append(medicationType == .stimulant ? "ADHD stimulant" : "ADHD med")
+        }
+
+        return items
+    }
+
+    @ViewBuilder
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("OVERVIEW")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .tracking(0.5)
+            summaryCard
+        }
+    }
+
     @ViewBuilder
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: iconName.isEmpty ? "pill.fill" : iconName)
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
-                    .frame(width: 36, height: 36)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name.isEmpty ? "New medication" : name)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(name.isEmpty ? "New medication" : name)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-
-                    if !dosage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        Text("\(dosage) \(dosageUnit)")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                    } else {
-                        Text("Dosage not set yet")
-                            .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                    }
+                if !dosage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text("\(dosage) \(dosageUnit)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                } else {
+                    Text("Dosage not set yet")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                 }
             }
 
-            HStack(spacing: 8) {
-                if !frequency.isEmpty {
-                    Label(frequency, systemImage: "calendar.badge.clock")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                }
+            if !summaryAttributes.isEmpty {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 150), spacing: 12)],
+                    alignment: .leading,
+                    spacing: 6
+                ) {
+                    ForEach(summaryAttributes, id: \.self) { attribute in
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
 
-                if trackPillCount && userSettings.isPremiumUser {
-                    Label("Inventory tracking", systemImage: "archivebox.fill")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                }
-
-                if isADHDMedication {
-                    Label(medicationType == .stimulant ? "ADHD stimulant" : "ADHD med", systemImage: "brain.head.profile")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                            Text(attribute)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
         }
@@ -907,7 +981,7 @@ struct AddMedicationView: View {
         errorMessage: String? = nil,
         keyboardType: UIKeyboardType = .default
     ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 if let iconName = iconName {
                     Image(systemName: iconName)
@@ -931,7 +1005,7 @@ struct AddMedicationView: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(Color(hex: "#E8E8E0"))
                 .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .frame(height: standardFieldHeight)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color.black.opacity(0.2))
@@ -953,7 +1027,7 @@ struct AddMedicationView: View {
                 .onChange(of: text.wrappedValue) { _, newValue in
                     var processedValue = newValue
 
-                    if field == .dosage {
+                    if field == .dosage || field == .onsetMinutes || field == .durationMinutes {
                         let filtered = newValue.filter { $0.isNumber }
                         if filtered != newValue {
                             processedValue = filtered
@@ -974,22 +1048,10 @@ struct AddMedicationView: View {
 
     // MARK: - Helper Functions
 
-    private var stepTitle: String {
-        switch currentStep {
-        case .basics: return "Basics"
-        case .schedule: return "Schedule & reminders"
-        case .trackingAndADHD: return "Tracking & ADHD options"
-        case .notesAndReview: return "Notes & review"
-        }
-    }
-
     private func goToNextStep() {
         switch currentStep {
         case .basics:
-            validateField(.name, value: name)
-            validateField(.dosage, value: dosage)
-            showValidationErrors = (nameError != nil || dosageError != nil)
-            guard nameError == nil, dosageError == nil else {
+            guard validateBasicsStep() else {
                 HapticManager.shared.errorNotification()
                 return
             }
@@ -1004,6 +1066,12 @@ struct AddMedicationView: View {
                 HapticManager.shared.errorNotification()
                 return
             }
+            if !validateADHDFields() {
+                showValidationErrors = true
+                HapticManager.shared.errorNotification()
+                return
+            }
+            showValidationErrors = false
             currentStep = .notesAndReview
             focusedField = nil
         case .notesAndReview:
@@ -1029,6 +1097,8 @@ struct AddMedicationView: View {
         switch field {
         case .name, .dosage: return .next
         case .pillCount, .pillsPerDose: return .next
+        case .onsetMinutes: return .next
+        case .durationMinutes: return .done
         default: return .done
         }
     }
@@ -1042,6 +1112,8 @@ struct AddMedicationView: View {
             else { focusedField = nil }
         case .pillCount: focusedField = .pillsPerDose
         case .pillsPerDose: focusedField = .refillThreshold
+        case .onsetMinutes: focusedField = .durationMinutes
+        case .durationMinutes: focusedField = nil
         default: focusedField = nil
         }
     }
@@ -1078,6 +1150,32 @@ struct AddMedicationView: View {
             } else {
                 refillThresholdError = nil
             }
+        case .onsetMinutes:
+            guard isADHDMedication && medicationType == .stimulant else {
+                onsetMinutesError = nil
+                return
+            }
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                onsetMinutesError = "Onset time is required"
+            } else if let minutes = Int(trimmed), minutes > 0 {
+                onsetMinutesError = nil
+            } else {
+                onsetMinutesError = "Enter a valid number"
+            }
+        case .durationMinutes:
+            guard isADHDMedication && medicationType == .stimulant else {
+                durationMinutesError = nil
+                return
+            }
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                durationMinutesError = "Wear-off time is required"
+            } else if let minutes = Int(trimmed), minutes > 0 {
+                durationMinutesError = nil
+            } else {
+                durationMinutesError = "Enter a valid number"
+            }
         default:
             break
         }
@@ -1086,6 +1184,10 @@ struct AddMedicationView: View {
     private func validateForm() -> Bool {
         validateField(.name, value: name)
         validateField(.dosage, value: dosage)
+        if isADHDMedication && medicationType == .stimulant {
+            validateField(.onsetMinutes, value: onsetMinutesString)
+            validateField(.durationMinutes, value: durationMinutesString)
+        }
         return isFormValid
     }
 
@@ -1100,6 +1202,30 @@ struct AddMedicationView: View {
         validateField(.refillThreshold, value: refillThresholdString)
 
         return pillCountError == nil && refillThresholdError == nil
+    }
+
+    private func validateADHDFields() -> Bool {
+        guard isADHDMedication && medicationType == .stimulant else {
+            onsetMinutesError = nil
+            durationMinutesError = nil
+            return true
+        }
+
+        validateField(.onsetMinutes, value: onsetMinutesString)
+        validateField(.durationMinutes, value: durationMinutesString)
+
+        return onsetMinutesError == nil && durationMinutesError == nil
+    }
+
+    private func validateBasicsStep() -> Bool {
+        validateField(.name, value: name)
+        validateField(.dosage, value: dosage)
+
+        let customUnitValid = dosageUnit != "custom" || !customUnit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let valid = nameError == nil && dosageError == nil && customUnitValid
+
+        showValidationErrors = !valid
+        return valid
     }
 
     private func setupKeyboardObservers() {
@@ -1118,6 +1244,12 @@ struct AddMedicationView: View {
         }
     }
 
+    private func scrollToBottom(using proxy: ScrollViewProxy) {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            proxy.scrollTo(ScrollAnchor.bottom, anchor: .bottom)
+        }
+    }
+
     private var needsMultipleReminders: Bool {
         switch frequency {
         case "Twice daily", "Three times daily":
@@ -1132,6 +1264,8 @@ struct AddMedicationView: View {
         switch currentField {
         case .name: return false
         case .dosage, .frequency, .notes, .pillCount, .pillsPerDose, .refillThreshold: return true
+        case .durationMinutes: return true
+        case .onsetMinutes: return false
         }
     }
 
@@ -1142,6 +1276,8 @@ struct AddMedicationView: View {
         case .notes: return trackPillCount
         case .pillCount, .pillsPerDose: return trackPillCount
         case .refillThreshold: return false
+        case .onsetMinutes: return true
+        case .durationMinutes: return false
         }
     }
 
@@ -1155,6 +1291,8 @@ struct AddMedicationView: View {
         case .pillCount: focusedField = .notes
         case .pillsPerDose: focusedField = .pillCount
         case .refillThreshold: focusedField = .pillsPerDose
+        case .durationMinutes: focusedField = .onsetMinutes
+        case .onsetMinutes: focusedField = nil
         }
     }
 
@@ -1170,6 +1308,8 @@ struct AddMedicationView: View {
         case .pillCount: focusedField = .pillsPerDose
         case .pillsPerDose: focusedField = .refillThreshold
         case .refillThreshold: focusedField = nil
+        case .onsetMinutes: focusedField = .durationMinutes
+        case .durationMinutes: focusedField = nil
         }
     }
 
@@ -1228,9 +1368,11 @@ struct AddMedicationView: View {
             return basicValid && pillCountValid && pillsPerDoseValid && refillThresholdValid && customUnitValid
         }
 
-        if medicationType == .stimulant {
-            let onsetValid = onsetMinutesString.isEmpty || Int(onsetMinutesString) != nil
-            let durationValid = durationMinutesString.isEmpty || Int(durationMinutesString) != nil
+        if isADHDMedication && medicationType == .stimulant {
+            let trimmedOnset = onsetMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedDuration = durationMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
+            let onsetValid = !trimmedOnset.isEmpty && (Int(trimmedOnset) ?? 0) > 0
+            let durationValid = !trimmedDuration.isEmpty && (Int(trimmedDuration) ?? 0) > 0
             return basicValid && customUnitValid && onsetValid && durationValid
         }
 
@@ -1241,7 +1383,7 @@ struct AddMedicationView: View {
         name = ""
         dosage = ""
         dosageUnit = "mg"
-        iconName = "pill.fill"
+        iconName = "pill"
         currentStep = .basics
         frequency = "As needed"
         timeToTake = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
@@ -1259,6 +1401,8 @@ struct AddMedicationView: View {
         onsetMinutesString = ""
         durationMinutesString = ""
         enableDailyCheckIn = false
+        onsetMinutesError = nil
+        durationMinutesError = nil
         showingAISearch = false
         showingPremiumUpgrade = false
         keyboardHeight = 0
@@ -1334,44 +1478,24 @@ struct AddMedicationView: View {
             }
         }
     }
+
+    private struct ContentExpansionKey: Hashable {
+        let step: AddMedicationStep
+        let customUnitVisible: Bool
+        let frequency: String
+        let reminderCount: Int
+        let trackPillCount: Bool
+        let isADHDMedication: Bool
+        let medicationType: MedicationType
+        let isExtendedRelease: Bool
+        let enableDailyCheckIn: Bool
+        let needsMultipleReminders: Bool
+        let isOneTimeWithFollowUp: Bool
+    }
+
 }
 
 // MARK: - Supporting Views
-
-struct FrequencyCard: View {
-    let frequency: String
-    let isSelected: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: {
-            onTap()
-        }) {
-            VStack(spacing: 8) {
-                Text(frequency)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(isSelected ? Color(hex: "#404C42") : Color(hex: "#E8E8E0"))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .padding(.horizontal, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color(hex: "#C7C7BD") : Color.black.opacity(0.2))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(
-                                isSelected ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.3),
-                                lineWidth: isSelected ? 2 : 1
-                            )
-                    )
-            )
-        }
-        .buttonStyle(ScaleButtonStyle(hapticStyle: .pulseRigid))
-    }
-}
 
 struct TimePickerRow: View {
     let title: String
