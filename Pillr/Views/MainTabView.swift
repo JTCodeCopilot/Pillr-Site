@@ -99,6 +99,13 @@ struct MainTabView: View {
         } message: {
             Text("Any progress you've made on this medication will be discarded.")
         }
+        .onChange(of: store.requestedMainTab) { requested in
+            guard let requested else { return }
+            selectedTab = requested
+            DispatchQueue.main.async {
+                store.requestedMainTab = nil
+            }
+        }
         .preferredColorScheme(.dark)
     }
 }

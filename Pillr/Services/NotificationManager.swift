@@ -587,11 +587,14 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 
                 // Find the medication and log it as taken
                 if let medication = MedicationStore.shared.findMedication(with: medicationID) {
+                    let reminderIndex = userInfo["reminderIndex"] as? Int
                     // Log the medication as taken (without additional check-in metadata)
                     MedicationStore.shared.logMedicationTaken(
                         medication: medication,
                         actualTime: Date(),
-                        notes: nil
+                        notes: nil,
+                        skipped: false,
+                        reminderIndex: reminderIndex
                     )
                     
                     // Provide success haptic feedback

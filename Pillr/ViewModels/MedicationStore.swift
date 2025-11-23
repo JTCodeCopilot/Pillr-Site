@@ -26,6 +26,12 @@ class MedicationStore: ObservableObject {
     /// When set (typically from a notification tap), the UI
     /// should present a daily check-in logging sheet for this medication.
     @Published var dailyCheckInMedication: Medication?
+    /// When set, the medications list should highlight / expand this medication card.
+    @Published var highlightedMedicationID: UUID?
+    /// The medication that should currently show expanded details on the My Meds list.
+    @Published var expandedMedicationID: UUID?
+    /// Allows any view to request a specific tab to show (e.g., jump back to My Meds).
+    @Published var requestedMainTab: MainTab?
     private let notificationManager = NotificationManager.shared
     private let hapticManager = HapticManager.shared
     
@@ -204,13 +210,34 @@ class MedicationStore: ObservableObject {
         showFocusTimeline: Bool = true
     ) {
         let pillsConsumed = skipped ? 0 : medication.pillsPerDose
-        
-        // Remove any existing logs for this specific medication, day, and reminder index
         let calendar = Calendar.current
-        logs.removeAll { log in
+        var previousLog: MedicationLog?
+        
+        if let existingIndex = logs.firstIndex(where: { log in
             log.medicationID == medication.id &&
             calendar.isDate(log.takenAt, inSameDayAs: actualTime) &&
-            log.reminderIndex == reminderIndex // This handles nil == nil correctly for single-dose meds
+            log.reminderIndex == reminderIndex
+        }) {
+            let existingLog = logs[existingIndex]
+            if existingLog.skipped == skipped {
+                hapticManager.warningNotification()
+                return
+            }
+            
+            previousLog = existingLog
+            logs.remove(at: existingIndex)
+        } else if reminderIndex == nil {
+            // Single-dose medications (no reminder index) can only be logged once per day
+            let alreadyLogged = logs.contains { log in
+                log.medicationID == medication.id &&
+                calendar.isDate(log.takenAt, inSameDayAs: actualTime) &&
+                log.reminderIndex == nil
+            }
+            
+            if alreadyLogged {
+                hapticManager.warningNotification()
+                return
+            }
         }
         
         let newLog = MedicationLog(
@@ -235,14 +262,21 @@ class MedicationStore: ObservableObject {
             hapticManager.warningNotification() // Optional: different haptic for skipping
         }
         
-        // If medication has a pill count, update it
-        if let index = medications.firstIndex(where: { $0.id == medication.id }), 
+        // If medication has a pill count, update it (and restore if replacing a taken log)
+        var pillCountDelta = 0
+        if !skipped {
+            pillCountDelta -= medication.pillsPerDose
+        }
+        if let previousLog, !previousLog.skipped {
+            pillCountDelta += medication.pillsPerDose
+        }
+        
+        if pillCountDelta != 0,
+           let index = medications.firstIndex(where: { $0.id == medication.id }),
            var updatedMedication = medications[index] as Medication?,
-           !skipped, // Only reduce pill count if not skipped
            var pillCount = updatedMedication.pillCount {
             
-            // Reduce pill count
-            pillCount = max(0, pillCount - (medication.pillsPerDose))
+            pillCount = max(0, pillCount + pillCountDelta)
             updatedMedication.pillCount = pillCount
             
             // Check if we need to show refill reminder

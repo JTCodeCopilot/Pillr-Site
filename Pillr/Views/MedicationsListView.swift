@@ -247,30 +247,67 @@ fileprivate func sortedMedications(_ medications: [Medication]) -> [Medication] 
 ///   medication and can become overdue.
 fileprivate func calculateEffectiveDueTime(for medication: Medication, at referenceDate: Date = Date()) -> Date {
     let calendar = Calendar.current
-
-    // Use the first reminder time if available, otherwise the legacy single time.
-    let baseTime = medication.reminderTimes.first ?? medication.timeToTake
-    let components = calendar.dateComponents([.hour, .minute], from: baseTime)
     let dayStart = calendar.startOfDay(for: referenceDate)
-
-    var scheduledForToday = calendar.date(
-        bySettingHour: components.hour ?? 8,
-        minute: components.minute ?? 0,
-        second: 0,
-        of: dayStart
-    ) ?? baseTime
-
-    // Special case: medication was added today *after* the scheduled time.
-    // We compare against the creation time rather than "now" so this rule
-    // only applies on the day it's created. On later days the medication can
-    // correctly become overdue after the scheduled time passes.
+    let reminderSources = medication.reminderTimes.isEmpty ? [medication.timeToTake] : medication.reminderTimes
+    
+    let anchoredTimes = reminderSources
+        .sorted()
+        .compactMap { reminder -> Date? in
+            let components = calendar.dateComponents([.hour, .minute], from: reminder)
+            return calendar.date(
+                bySettingHour: components.hour ?? 8,
+                minute: components.minute ?? 0,
+                second: 0,
+                of: dayStart
+            )
+        }
+    
+    var scheduledForToday: Date
+    if let upcoming = anchoredTimes.first(where: { $0 >= referenceDate }) {
+        scheduledForToday = upcoming
+    } else if let lastTime = anchoredTimes.last {
+        scheduledForToday = lastTime
+    } else {
+        scheduledForToday = referenceDate
+    }
+    
     if let creationDate = medication.createdAt,
        calendar.isDate(creationDate, inSameDayAs: referenceDate),
        scheduledForToday < creationDate {
         scheduledForToday = calendar.date(byAdding: .day, value: 1, to: scheduledForToday) ?? scheduledForToday
     }
-
+    
     return scheduledForToday
+}
+
+fileprivate func calculateDueTime(
+    for medication: Medication,
+    reminderIndex: Int,
+    referenceDate: Date = Date()
+) -> Date {
+    guard medication.reminderTimes.indices.contains(reminderIndex) else {
+        return calculateEffectiveDueTime(for: medication, at: referenceDate)
+    }
+    
+    let calendar = Calendar.current
+    let dayStart = calendar.startOfDay(for: referenceDate)
+    let reminderTime = medication.reminderTimes[reminderIndex]
+    let components = calendar.dateComponents([.hour, .minute], from: reminderTime)
+    
+    var scheduled = calendar.date(
+        bySettingHour: components.hour ?? 8,
+        minute: components.minute ?? 0,
+        second: 0,
+        of: dayStart
+    ) ?? reminderTime
+    
+    if let creationDate = medication.createdAt,
+       calendar.isDate(creationDate, inSameDayAs: referenceDate),
+       scheduled < creationDate {
+        scheduled = calendar.date(byAdding: .day, value: 1, to: scheduled) ?? scheduled
+    }
+    
+    return scheduled
 }
 
 @ViewBuilder
@@ -292,26 +329,27 @@ fileprivate func MedicationsListContent(
 ) -> some View {
     VStack(alignment: .leading, spacing: 16) {
         ForEach(sortedMedications(store.activeMedications)) { med in
-            MedicationRow(
-                medication: med,
-                onLogTap: { 
-                    HapticManager.shared.lightImpact()
-                    showingLogSheetFor.wrappedValue = med 
-                },
-                onEditTap: { 
-                    HapticManager.shared.lightImpact()
-                    selectedMedicationToEdit.wrappedValue = med 
-                },
-                onArchiveTap: {
-                    HapticManager.shared.warningNotification()
-                    medicationToArchive.wrappedValue = med
-                    showArchiveAlert.wrappedValue = true
-                }
-            )
-            .transition(.asymmetric(
-                insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
-                removal: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.95))
-            ))
+                MedicationRow(
+                    medication: med,
+                    onLogTap: { 
+                        HapticManager.shared.lightImpact()
+                        showingLogSheetFor.wrappedValue = med 
+                    },
+                    onEditTap: { 
+                        HapticManager.shared.lightImpact()
+                        selectedMedicationToEdit.wrappedValue = med 
+                    },
+                    onArchiveTap: {
+                        HapticManager.shared.warningNotification()
+                        medicationToArchive.wrappedValue = med
+                        showArchiveAlert.wrappedValue = true
+                    }
+                )
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
+                    removal: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.95))
+                ))
+                .id(med.id)
         }
     }
     .padding(.horizontal, horizontalInsets)
@@ -824,53 +862,74 @@ fileprivate struct MedicationsListMainContent: View {
             Color(hex: "#404C42")
                 .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
 
-            ScrollView {
-                let horizontalInset = horizontalInsets(for: UIScreen.main.bounds.width)
-                VStack(alignment: .leading, spacing: 28) {
-                    MedicationsListHeader(
-                        store: store,
-                        horizontalInsets: horizontalInset,
-                        onShowHistory: onShowHistory,
-                        onShowSettings: onShowSettings
-                    )
-
-                    if store.medications.isEmpty {
-                        EmptyMedicationsView(onAddMedication: onAddMedication)
-                            .padding(.horizontal, horizontalInset)
-                    } else {
-                        MedicationsListContent(
+            ScrollViewReader { proxy in
+                ScrollView {
+                    let horizontalInset = horizontalInsets(for: UIScreen.main.bounds.width)
+                    VStack(alignment: .leading, spacing: 28) {
+                        MedicationsListHeader(
                             store: store,
-                            showingAddSheet: $showingAddSheet,
-                            scrolledOffset: $scrolledOffset,
                             horizontalInsets: horizontalInset,
-                            showingLogSheetFor: $showingLogSheetFor,
-                            selectedMedicationToEdit: $selectedMedicationToEdit,
-                            medicationToArchive: $medicationToArchive,
-                            showArchiveAlert: $showArchiveAlert,
-                            showingArchivedSheet: $showingArchivedSheet,
-                            showingInteractionSheet: $showingInteractionSheet,
-                            isCheckingInteractions: $isCheckingInteractions,
-                            onCheckAllInteractions: onCheckAllInteractions,
-                            onAddMedication: onAddMedication,
-                            onShowFocusTimeline: onShowFocusTimeline
+                            onShowHistory: onShowHistory,
+                            onShowSettings: onShowSettings
                         )
 
+                        if store.medications.isEmpty {
+                            EmptyMedicationsView(onAddMedication: onAddMedication)
+                                .padding(.horizontal, horizontalInset)
+                        } else {
+                            MedicationsListContent(
+                                store: store,
+                                showingAddSheet: $showingAddSheet,
+                                scrolledOffset: $scrolledOffset,
+                                horizontalInsets: horizontalInset,
+                                showingLogSheetFor: $showingLogSheetFor,
+                                selectedMedicationToEdit: $selectedMedicationToEdit,
+                                medicationToArchive: $medicationToArchive,
+                                showArchiveAlert: $showArchiveAlert,
+                                showingArchivedSheet: $showingArchivedSheet,
+                                showingInteractionSheet: $showingInteractionSheet,
+                                isCheckingInteractions: $isCheckingInteractions,
+                                onCheckAllInteractions: onCheckAllInteractions,
+                                onAddMedication: onAddMedication,
+                                onShowFocusTimeline: onShowFocusTimeline
+                            )
+
+                        }
+                        
+                        Spacer(minLength: 60)
                     }
-                    
-                    Spacer(minLength: 60)
+                    .padding(.bottom, 50)
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear.preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: geo.frame(in: .global).minY
+                            )
+                        }
+                    )
                 }
-                .padding(.bottom, 50)
-                .background(
-                    GeometryReader { geo in
-                        Color.clear.preference(
-                            key: ScrollOffsetPreferenceKey.self,
-                            value: geo.frame(in: .global).minY
-                        )
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    scrolledOffset = -value
+                }
+                .onChange(of: store.highlightedMedicationID) { target in
+                    guard let target else { return }
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                        proxy.scrollTo(target, anchor: .top)
                     }
-                )
-            }
-            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                scrolledOffset = -value
+                    store.expandedMedicationID = target
+                    DispatchQueue.main.async {
+                        store.highlightedMedicationID = nil
+                    }
+                }
+                .onChange(of: store.expandedMedicationID) { expandedID in
+                    guard let expandedID else { return }
+                    // Scroll the expanded card into view so its details are fully visible.
+                    DispatchQueue.main.async {
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+                            proxy.scrollTo(expandedID, anchor: .top)
+                        }
+                    }
+                }
             }
         }
     }
@@ -893,13 +952,102 @@ fileprivate func commonFormatTime(_ date: Date) -> String {
 // MARK: - Button Style
 // ScaleButtonStyle is now defined in UIComponents.swift
 
+fileprivate struct DoseButtonState: Identifiable {
+    enum Status {
+        case pending
+        case taken
+        case skipped
+    }
+    
+    let index: Int
+    let status: Status
+    let scheduledTime: Date?
+    let customTitle: String?
+    
+    init(index: Int, status: Status, scheduledTime: Date?, customTitle: String? = nil) {
+        self.index = index
+        self.status = status
+        self.scheduledTime = scheduledTime
+        self.customTitle = customTitle
+    }
+    
+    var id: Int { index }
+    var title: String {
+        customTitle ?? "Dose \(index + 1)"
+    }
+    
+    var actionLabel: String {
+        switch status {
+        case .pending:
+            return "Log"
+        case .taken:
+            return "Logged"
+        case .skipped:
+            return "Skipped"
+        }
+    }
+    
+    var iconName: String {
+        switch status {
+        case .pending:
+            return "circle"
+        case .taken:
+            return "checkmark.circle.fill"
+        case .skipped:
+            return "xmark.circle.fill"
+        }
+    }
+    
+    var foregroundColor: Color {
+        switch status {
+        case .pending:
+            return Color(hex: "#F5F7F4")
+        case .taken:
+            return Color(hex: "#4A5A4A")
+        case .skipped:
+            return Color(hex: "#FFE4E6")
+        }
+    }
+    
+    var backgroundColor: Color {
+        switch status {
+        case .pending:
+            return Color.white.opacity(0.08)
+        case .taken:
+            return Color(hex: "#D7CCC8")
+        case .skipped:
+            return Color(hex: "#8C3A37")
+        }
+    }
+    
+    var formattedTime: String? {
+        guard let scheduledTime else { return nil }
+        return DoseButtonState.timeFormatter.string(from: scheduledTime)
+    }
+    
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter
+    }()
+}
+
 // New fileprivate struct for the header content of a MedicationRow
 fileprivate struct MedicationRowHeaderView: View {
     let medication: Medication
     let cycleStatus: MedicationCycleStatus
     @Binding var showDetails: Bool
     let onLogTap: () -> Void
+    let doseStates: [DoseButtonState]
+    let onDoseTap: (Int) -> Void
+    let highlightedDoseIndex: Int?
+    
+    private let timelineTimeWidth: CGFloat = 58
 
+    private var usesTimelineLayout: Bool {
+        !doseStates.isEmpty
+    }
+    
     // Moved statusDisplay computed property
     private var statusDisplay: (text: String, color: Color, show: Bool) {
         if medication.frequency == "As needed" {
@@ -959,13 +1107,27 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
-            medicationInfoSection
-            Spacer()
-            statusAndButtonSection
+        VStack(alignment: .leading, spacing: usesTimelineLayout ? 16 : 0) {
+            HStack(alignment: .top, spacing: 16) {
+                medicationInfoSection
+                Spacer()
+                VStack(alignment: .trailing, spacing: 10) {
+                    statusSection
+                    if !usesTimelineLayout {
+                        actionButton
+                    }
+                }
+            }
+            if usesTimelineLayout {
+                Rectangle()
+                    .fill(Color.white.opacity(0.12))
+                    .frame(height: 1)
+                    .padding(.top, 4)
+                multiDoseGrid
+            }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 18)
+        .padding(.vertical, usesTimelineLayout ? 24 : 18)
         .contentShape(Rectangle())
         .onTapGesture {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -974,7 +1136,6 @@ fileprivate struct MedicationRowHeaderView: View {
         }
     }
     
-    // Enhanced medication information section (left side)
     private var medicationInfoSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(medication.name)
@@ -1019,14 +1180,6 @@ fileprivate struct MedicationRowHeaderView: View {
 
     private var frequencyLine: String {
         medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    
-    // Status and action button section (right side)
-    private var statusAndButtonSection: some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            statusSection
-            actionButton
-        }
     }
     
     // Status section with chevron
@@ -1085,6 +1238,122 @@ fileprivate struct MedicationRowHeaderView: View {
         .buttonStyle(ScaleButtonStyle())
     }
     
+    private var multiDoseGrid: some View {
+        ZStack(alignment: .leading) {
+            VStack {
+                Rectangle()
+                    .fill(Color.white.opacity(0.15))
+                    .frame(width: 2)
+                    .padding(.leading, timelineTimeWidth + 29)
+                    .padding(.trailing, 8)
+                    .padding(.vertical, 4)
+                    .opacity(doseStates.isEmpty ? 0 : 1)
+            }
+            
+            VStack(spacing: 12) {
+                let primaryIndex = highlightedDoseIndex
+                ForEach(Array(doseStates.enumerated()), id: \.offset) { index, state in
+                    let isPrimary = primaryIndex != nil ? state.index == primaryIndex : false
+                    doseTimelineRow(for: state, isLast: index == doseStates.indices.last, isPrimary: isPrimary)
+                }
+            }
+        }
+    }
+    
+    private func doseTimelineRow(for state: DoseButtonState, isLast: Bool, isPrimary: Bool) -> some View {
+        let textOpacity = isPrimary ? 1.0 : 0.7
+        let buttonVerticalPadding: CGFloat = isPrimary ? 12 : 6
+        let buttonHorizontalPadding: CGFloat = isPrimary ? 18 : 12
+        let timeOpacity: Double
+        switch state.status {
+        case .pending:
+            timeOpacity = isPrimary ? 0.95 : 0.7
+        case .taken, .skipped:
+            timeOpacity = 0.5
+        }
+        let buttonCornerRadius: CGFloat = isPrimary ? 14 : 10
+        let rowCornerRadius: CGFloat = 18
+        let rowVerticalPadding: CGFloat = isPrimary ? 4 : 0
+        
+        return HStack(alignment: .top, spacing: 12) {
+            if let time = state.formattedTime {
+                Text(time)
+                    .font(.system(size: isPrimary ? 13 : 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "#D7CCC8").opacity(timeOpacity))
+                    .frame(width: timelineTimeWidth, alignment: .trailing)
+                    .padding(.top, 4)
+        } else {
+                Spacer()
+                    .frame(width: timelineTimeWidth)
+            }
+            
+            VStack(spacing: 8) {
+                Circle()
+                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 2)
+                    .background(Circle().fill(nodeFill(for: state)))
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Image(systemName: state.iconName)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(nodeIconColor(for: state))
+                    )
+            }
+            .padding(.top, 2)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text(state.title)
+                    .font(.system(size: isPrimary ? 13 : 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F7F4").opacity(textOpacity * (state.status == .pending ? 1 : 0.7)))
+
+                Button(action: {
+                    onDoseTap(state.index)
+                }) {
+                    HStack(spacing: 8) {
+                        Text(state.actionLabel)
+                            .font(.system(size: isPrimary ? 15 : 13, weight: .semibold))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: isPrimary ? 13 : 11, weight: .semibold))
+                            .opacity(isPrimary ? 0.6 : 0.4)
+                    }
+                    .foregroundColor(state.foregroundColor.opacity(state.status == .pending ? (isPrimary ? 1 : 0.9) : 0.6))
+                    .padding(.vertical, buttonVerticalPadding)
+                    .padding(.horizontal, buttonHorizontalPadding)
+                    .background(state.backgroundColor)
+                    .cornerRadius(buttonCornerRadius)
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .disabled(state.status != .pending)
+                .opacity(state.status == .pending ? 1 : 0.75)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, rowVerticalPadding)
+        .padding(.leading, 4)
+    }
+    
+    private func nodeFill(for state: DoseButtonState) -> Color {
+        switch state.status {
+        case .pending:
+            return Color(hex: "#4D5A4F")
+        case .taken:
+            return Color(hex: "#C8CCBE")
+        case .skipped:
+            return Color(hex: "#7A3330")
+        }
+    }
+    
+    private func nodeIconColor(for state: DoseButtonState) -> Color {
+        switch state.status {
+        case .pending:
+            return Color(hex: "#F5F7F4")
+        case .taken:
+            return Color(hex: "#616D5F")
+        case .skipped:
+            return Color(hex: "#FFE4E6")
+        }
+    }
+    
     // Handle button tap with appropriate haptic feedback
     private func handleButtonTap() {
         switch cycleStatus {
@@ -1107,36 +1376,129 @@ struct MedicationRow: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var store: MedicationStore
-    @State private var isPressed = false
-    @State private var showDetails = false
     
-    // Check if the medication was taken today (and not skipped)
-    private var wasTakenToday: Bool {
+    private var todaysLogsForMedication: [MedicationLog] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         
-        return store.logs.contains { log in
+        return store.logs.filter { log in
             log.medicationID == medication.id &&
-            calendar.isDate(calendar.startOfDay(for: log.takenAt), inSameDayAs: today) &&
-            !log.skipped // Ensure it was not a skipped log
+            calendar.isDate(calendar.startOfDay(for: log.takenAt), inSameDayAs: today)
         }
     }
     
-    // Check if the medication was skipped today
-    private var wasSkippedToday: Bool {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
-        return store.logs.contains { log in
-            log.medicationID == medication.id &&
-            calendar.isDate(calendar.startOfDay(for: log.takenAt), inSameDayAs: today) &&
-            log.skipped // Ensure it was a skipped log
+    private var totalDosesForToday: Int {
+        let scheduledCount = medication.reminderTimes.isEmpty ? 1 : medication.reminderTimes.count
+        return max(1, scheduledCount)
+    }
+    
+    private var completedDoseCount: Int {
+        if medication.reminderTimes.isEmpty {
+            return todaysLogsForMedication.isEmpty ? 0 : 1
         }
+        
+        var uniqueIndices = Set<Int>()
+        var unspecifiedCount = 0
+        for log in todaysLogsForMedication {
+            if let index = log.reminderIndex {
+                uniqueIndices.insert(index)
+            } else {
+                unspecifiedCount += 1
+            }
+        }
+        
+        return min(totalDosesForToday, uniqueIndices.count + unspecifiedCount)
+    }
+    
+    private var hasRemainingDoseToday: Bool {
+        if medication.frequency == "As needed" && medication.reminderTimes.isEmpty {
+            return todaysLogsForMedication.isEmpty
+        }
+        return completedDoseCount < totalDosesForToday
+    }
+    
+    private var hasTakenDoseToday: Bool {
+        todaysLogsForMedication.contains { !$0.skipped }
+    }
+    
+    private var hasSkippedDoseToday: Bool {
+        todaysLogsForMedication.contains { $0.skipped }
+    }
+    
+    private var doseButtonStates: [DoseButtonState] {
+        if medication.frequency == "As needed" && medication.reminderTimes.isEmpty {
+            let status: DoseButtonState.Status
+            if let log = todaysLogsForMedication.sorted(by: { $0.takenAt > $1.takenAt }).first {
+                status = log.skipped ? .skipped : .taken
+            } else {
+                status = .pending
+            }
+            return [
+                DoseButtonState(
+                    index: 0,
+                    status: status,
+                    scheduledTime: nil,
+                    customTitle: "As needed"
+                )
+            ]
+        }
+        
+        let scheduleTimes: [Date]
+        if medication.reminderTimes.isEmpty {
+            scheduleTimes = [medication.timeToTake]
+        } else {
+            scheduleTimes = medication.reminderTimes
+        }
+        
+        var states: [DoseButtonState] = []
+        var unassignedLogs = todaysLogsForMedication.filter { $0.reminderIndex == nil }
+        
+        for index in 0..<scheduleTimes.count {
+            let scheduledTime = scheduleTimes[index]
+            if let log = todaysLogsForMedication.first(where: { $0.reminderIndex == index }) {
+                let status: DoseButtonState.Status = log.skipped ? .skipped : .taken
+                states.append(DoseButtonState(index: index, status: status, scheduledTime: scheduledTime))
+            } else if !unassignedLogs.isEmpty {
+                let fallbackLog = unassignedLogs.removeFirst()
+                let status: DoseButtonState.Status = fallbackLog.skipped ? .skipped : .taken
+                states.append(DoseButtonState(index: index, status: status, scheduledTime: scheduledTime))
+            } else {
+                states.append(DoseButtonState(index: index, status: .pending, scheduledTime: scheduledTime))
+            }
+        }
+        
+        return states
+    }
+    
+    private var nextPendingDoseIndex: Int? {
+        doseButtonStates.first { $0.status == .pending }?.index
+    }
+    
+    private var highlightedDoseIndex: Int? {
+        if let pending = nextPendingDoseIndex {
+            return pending
+        }
+        return nil
+    }
+    
+    private func nextReminderIndexToLog() -> Int? {
+        guard !medication.reminderTimes.isEmpty else { return nil }
+        let usedIndices = Set(todaysLogsForMedication.compactMap { $0.reminderIndex })
+        for index in 0..<medication.reminderTimes.count {
+            if !usedIndices.contains(index) {
+                return index
+            }
+        }
+        return nil
     }
     
     // Helper to get the effective due time, considering the reset logic
     private var effectiveDueTime: Date {
-        calculateEffectiveDueTime(for: medication, at: Date())
+        let now = Date()
+        if let pendingIndex = nextPendingDoseIndex {
+            return calculateDueTime(for: medication, reminderIndex: pendingIndex, referenceDate: now)
+        }
+        return calculateEffectiveDueTime(for: medication, at: now)
     }
 
     // Calculates minutes to the effective due time
@@ -1146,36 +1508,57 @@ struct MedicationRow: View {
     }
     
     private var cycleStatus: MedicationCycleStatus {
-        if wasTakenToday { // Check if taken first
-            return .taken
-        } else if wasSkippedToday {
-            return .skipped
-        } else if medication.frequency == "As needed" { // Then check if it's "As needed" and not yet taken/skipped
-            return .asNeeded
-        } else {
-            let minutes = minutesToEffectiveDueTime
-            
-            if minutes < 0 {
-                // Once the daily due time has passed (but before midnight),
-                // show this as overdue rather than jumping ahead 24 hours.
-                return .overdue(minutesPast: abs(minutes))
-            } else { // Due in the future (today or later)
-                return .due(minutesRemaining: minutes)
+        if !hasRemainingDoseToday {
+            if hasTakenDoseToday {
+                return .taken
+            } else if hasSkippedDoseToday {
+                return .skipped
             }
+        }
+        
+        if medication.frequency == "As needed" { // Then check if it's "As needed" and not yet taken/skipped
+            return .asNeeded
+        }
+        
+        let minutes = minutesToEffectiveDueTime
+        
+        if minutes < 0 {
+            // Once the daily due time has passed (but before midnight),
+            // show this as overdue rather than jumping ahead 24 hours.
+            return .overdue(minutesPast: abs(minutes))
+        } else { // Due in the future (today or later)
+            return .due(minutesRemaining: minutes)
         }
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        let showsDetails = store.expandedMedicationID == medication.id
+        let detailBinding = Binding<Bool>(
+            get: { store.expandedMedicationID == medication.id },
+            set: { newValue in
+                if newValue {
+                    store.expandedMedicationID = medication.id
+                } else if store.expandedMedicationID == medication.id {
+                    store.expandedMedicationID = nil
+                }
+            }
+        )
+        
+        return VStack(spacing: 0) {
             // Use the new MedicationRowHeaderView
             MedicationRowHeaderView(
                 medication: medication,
                 cycleStatus: cycleStatus, // Pass the calculated cycleStatus
-                showDetails: $showDetails,
-                onLogTap: onLogTap
+                showDetails: detailBinding,
+                onLogTap: onLogTap,
+                doseStates: doseButtonStates,
+                onDoseTap: { doseIndex in
+                    logDose(at: doseIndex)
+                },
+                highlightedDoseIndex: highlightedDoseIndex
             )
             
-            if showDetails {
+            if showsDetails {
                 MedicationRowDetailsView(
                     medication: medication,
                     onEditTap: onEditTap,
@@ -1191,56 +1574,47 @@ struct MedicationRow: View {
         .overlay(enhancedBorderOverlay)
         .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-        .scaleEffect(isPressed ? 0.98 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(commonFormatTime(medication.timeToTake))")
         .accessibilityHint(accessibilityHintText())
         .accessibilityValue(accessibilityValueText())
         .accessibilityAction(.default) {
-            // Use pattern matching instead of the != operator
             switch cycleStatus {
             case .due(_), .overdue(_):
                 onLogTap()
             case .taken, .skipped:
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showDetails.toggle()
-                }
-            case .asNeeded: // Add .asNeeded case
+                toggleExpansion()
+            case .asNeeded:
                 onLogTap()
             }
         }
         .accessibilityAction(named: accessibilityActionName()) {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showDetails.toggle()
-            }
+            toggleExpansion()
         }
         .onTapGesture {
-            isPressed = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                isPressed = false
-            }
+            toggleExpansion()
         }
         .contextMenu {
-            // Quick Log option
-            Button {
-                HapticManager.shared.successNotification()
-                quickLogMedication(taken: true)
-            } label: {
-                Label("Log as Taken", systemImage: "checkmark.circle.fill")
+            if hasRemainingDoseToday {
+                Button {
+                    HapticManager.shared.successNotification()
+                    quickLogMedication(taken: true)
+                } label: {
+                    Label("Log as Taken", systemImage: "checkmark.circle.fill")
+                }
             }
             
-            // Quick Skip option
-            Button {
-                HapticManager.shared.warningNotification()
-                quickLogMedication(taken: false)
-            } label: {
-                Label("Mark as Skipped", systemImage: "xmark.circle.fill")
+            if hasRemainingDoseToday {
+                Button {
+                    HapticManager.shared.warningNotification()
+                    quickLogMedication(taken: false)
+                } label: {
+                    Label("Mark as Skipped", systemImage: "xmark.circle.fill")
+                }
             }
             
             Divider()
             
-            // Edit option
             Button {
                 HapticManager.shared.lightImpact()
                 onEditTap()
@@ -1248,7 +1622,6 @@ struct MedicationRow: View {
                 Label("Edit Medication", systemImage: "pencil.circle")
             }
             
-            // Archive option (if available)
             if let archiveTap = onArchiveTap {
                 Button(role: .destructive) {
                     HapticManager.shared.warningNotification()
@@ -1341,6 +1714,7 @@ struct MedicationRow: View {
     
     // Quick log medication function for context menu
     private func quickLogMedication(taken: Bool) {
+        guard hasRemainingDoseToday else { return }
         let now = Date()
         let quickLogNote = taken ? "Quick logged" : "Quick skipped"
         
@@ -1350,12 +1724,54 @@ struct MedicationRow: View {
             combinedNotes = "\(existingNotes)\n\n\(quickLogNote)"
         }
         
+        let reminderIndex = medication.reminderTimes.isEmpty ? nil : nextReminderIndexToLog()
+        
+        if medication.reminderTimes.count > 0 && reminderIndex == nil {
+            return
+        }
+        
         store.logMedicationTaken(
             medication: medication,
             actualTime: now,
             notes: combinedNotes,
-            skipped: !taken
+            skipped: !taken,
+            reminderIndex: reminderIndex
         )
+    }
+    
+    private func logDose(at index: Int) {
+        if medication.reminderTimes.isEmpty {
+            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
+            store.logMedicationTaken(
+                medication: medication,
+                actualTime: Date(),
+                notes: "Quick logged dose \(index + 1)",
+                skipped: false,
+                reminderIndex: nil
+            )
+            return
+        }
+        
+        guard medication.reminderTimes.indices.contains(index) else { return }
+        guard !todaysLogsForMedication.contains(where: { $0.reminderIndex == index }) else { return }
+        
+        store.logMedicationTaken(
+            medication: medication,
+            actualTime: Date(),
+            notes: "Quick logged dose \(index + 1)",
+            skipped: false,
+            reminderIndex: index
+        )
+    }
+    
+    private func toggleExpansion() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            if store.expandedMedicationID == medication.id {
+                store.expandedMedicationID = nil
+            } else {
+                store.expandedMedicationID = medication.id
+            }
+        }
     }
 }
 
@@ -1540,10 +1956,10 @@ fileprivate struct MedicationRowDetailsView: View {
                         HStack(spacing: 10) {
                             Image(systemName: "archivebox.fill")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(hex: "#FFB74D"))
+                                .foregroundColor(Color(hex: "#FF6B6B"))
                             Text("Archive")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color(hex: "#FFB74D"))
+                                .foregroundColor(Color(hex: "#FF6B6B"))
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -1564,8 +1980,8 @@ fileprivate struct MedicationRowDetailsView: View {
                                 .stroke(
                                     LinearGradient(
                                         gradient: Gradient(colors: [
-                                            Color(hex: "#FFB74D").opacity(0.4),
-                                            Color(hex: "#FFB74D").opacity(0.2)
+                                            Color(hex: "#FF6B6B").opacity(0.4),
+                                            Color(hex: "#FF6B6B").opacity(0.2)
                                         ]),
                                         startPoint: .top,
                                         endPoint: .bottom

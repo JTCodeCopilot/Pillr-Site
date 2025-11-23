@@ -155,6 +155,7 @@ struct MedicationRow: View {
                 }
                 .accessibilityLabel(wasTakenToday ? "\(medication.name) already taken today" : "Mark \(medication.name) as taken")
                 .accessibilityHint(wasTakenToday ? "Double tap to view log details" : "Double tap to record medication as taken")
+                .disabled(wasTakenToday)
             }
         }
         .background(Color.black.opacity(0.35))

@@ -48,6 +48,11 @@ struct InteractionHistoryView: View {
                 Color(hex: "#404C42").ignoresSafeArea()
 
                 VStack(spacing: 0) {
+                    headerView
+                        .padding(.top, 16)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 12)
+
                     if filteredInteractions.isEmpty {
                         emptyStateView
                     } else {
@@ -65,7 +70,6 @@ struct InteractionHistoryView: View {
                     }
                 }
             }
-            .navigationTitle("Interaction History")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if isModal {
@@ -156,6 +160,19 @@ struct InteractionHistoryView: View {
         }
         .frame(maxWidth: .infinity)
     }
+
+    private var headerView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Interactions")
+                .font(.system(size: 36, weight: .bold))
+                .foregroundColor(Color(hex: "#F5F7F4"))
+            
+            Text("\(filteredInteractions.count) interaction\(filteredInteractions.count == 1 ? "" : "s")")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
     
     // MARK: - Save Functions
     
@@ -240,7 +257,7 @@ struct HistoryInteractionRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Main content
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(interaction.displayTitle)
@@ -298,16 +315,16 @@ struct HistoryInteractionRow: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(16)
             
             // Expandable details
             if showingDetails {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 12) {
                     Divider()
                         .background(Color(hex: "#C7C7BD").opacity(0.2))
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 16)
                     
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Description")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(Color(hex: "#E8E8E0"))
@@ -317,26 +334,20 @@ struct HistoryInteractionRow: View {
                             .foregroundColor(Color(hex: "#C7C7BD"))
                             .lineLimit(nil)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 16)
                     
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "lightbulb.fill")
-                                .foregroundColor(.yellow.opacity(0.8))
-                                .font(.system(size: 14))
-                            
-                            Text("Recommendation")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
-                        }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Recommendation")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
                         
                         Text(interaction.recommendedAction)
                             .font(.system(size: 14))
                             .foregroundColor(Color(hex: "#C7C7BD"))
                             .lineLimit(nil)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
                 }
             }
         }
