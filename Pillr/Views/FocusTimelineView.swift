@@ -303,10 +303,10 @@ struct FocusTimelineView: View {
                                         .font(.system(size: 14, weight: .semibold))
                                 }
                                 .foregroundColor(Color(hex: "#404C42"))
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
                                 .background(Color(hex: "#D7CCC8"))
-                                .cornerRadius(16)
+                                .cornerRadius(18)
                             }
                             .buttonStyle(ScaleButtonStyle())
                             
@@ -862,8 +862,14 @@ private struct FocusSessionPlannerView: View {
     @State private var sessionLengthMinutes: Int = 60
     @State private var suggestedStart: Date? = nil
     @State private var suggestedEnd: Date? = nil
+    @State private var suggestedWindow: FocusTimelineView.FocusWindow? = nil
     
     private let lengthOptions: [Int] = [30, 45, 60, 90, 120]
+    private let howItWorksPoints: [(icon: String, title: String, detail: String)] = [
+        ("pills.fill", "Look at today's meds", "We build focus windows from the stimulant doses you have scheduled or already logged today."),
+        ("hourglass.bottomhalf.fill", "Find the freshest window", "Sessions only start when enough time remains, and never before the current moment."),
+        ("bell.badge.fill", "Remind you on time", "You'll get a reminder right as the session begins so it's easy to start.")
+    ]
     
     private var hasSuggestion: Bool {
         suggestedStart != nil && suggestedEnd != nil
@@ -882,89 +888,51 @@ private struct FocusSessionPlannerView: View {
                 )
                 .ignoresSafeArea()
                 
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Plan a focus session")
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
-                        
-                        Text("Pick how long you’d like to focus. Pillr will suggest a session during one of your stimulant focus windows.")
-                            .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                VStack(spacing: 0) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            introSection
+                            howItWorksCard
+                            sessionLengthSection
+                            suggestionSection
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
+                        .padding(.bottom, 40)
                     }
                     
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Session length")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                    VStack(spacing: 12) {
+                        Text(hasSuggestion ? "We'll remind you right when it's time to start." : "Try a shorter session or log an earlier dose to see suggestions.")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
                         
-                        HStack(spacing: 8) {
-                            ForEach(lengthOptions, id: \.self) { minutes in
-                                Button {
-                                    HapticManager.shared.lightImpact()
-                                    sessionLengthMinutes = minutes
-                                    recomputeSuggestion()
-                                } label: {
-                                    Text("\(minutes) min")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundColor(
-                                            minutes == sessionLengthMinutes
-                                            ? Color(hex: "#404C42")
-                                            : Color(hex: "#E8E8E0")
-                                        )
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .fill(
-                                                    minutes == sessionLengthMinutes
-                                                    ? Color(hex: "#D7CCC8")
-                                                    : Color.black.opacity(0.25)
-                                                )
-                                        )
-                                }
-                                .buttonStyle(ScaleButtonStyle())
+                        Button {
+                            scheduleSession()
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "bell.and.waveform.fill")
+                                    .font(.system(size: 18, weight: .semibold))
+                                Text(hasSuggestion ? "Set this reminder" : "Pick a time first")
+                                    .font(.system(size: 17, weight: .bold, design: .rounded))
                             }
-                        }
-                    }
-                    
-                    suggestionSection
-                    
-                    Spacer()
-                    
-                    Button {
-                        scheduleSession()
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "bell.and.waveform.fill")
-                                .font(.system(size: 18, weight: .semibold))
-                            Text("Schedule session reminders")
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(hex: "#6FBF73"),
-                                    Color(hex: "#66BB6A")
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
+                            .foregroundColor(Color(hex: "#404C42"))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color(hex: "#D7CCC8"))
+                            .cornerRadius(20)
+                            .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
                             )
-                        )
-                        .cornerRadius(20)
-                        .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        )
+                        }
+                        .disabled(!hasSuggestion)
+                        .opacity(hasSuggestion ? 1.0 : 0.5)
                     }
-                    .disabled(!hasSuggestion)
-                    .opacity(hasSuggestion ? 1.0 : 0.5)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(Color.black.opacity(0.25))
                 }
-                .padding(20)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -982,38 +950,160 @@ private struct FocusSessionPlannerView: View {
         .preferredColorScheme(.dark)
     }
     
+    private var introSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Plan a focus session")
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+            Text("Tell Pillr how long you want to be heads-down. We'll slot it into the next stimulant window where you're naturally primed to focus.")
+                .font(.system(size: 14))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+        }
+    }
+    
+    private var howItWorksCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("How this works")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0").opacity(0.9))
+            ForEach(howItWorksPoints, id: \.title) { point in
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: point.icon)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "#404C42"))
+                        .frame(width: 32, height: 32)
+                        .background(Color(hex: "#D7CCC8"))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(point.title)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
+                        Text(point.detail)
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var sessionLengthSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Session length")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                Spacer()
+                Text("\(sessionLengthMinutes) min focus")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(hex: "#404C42"))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(Color(hex: "#D7CCC8")))
+            }
+            Text("Shorter sessions are easier to place if you're running out of stimulant time today.")
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(lengthOptions, id: \.self) { minutes in
+                    Button {
+                        HapticManager.shared.lightImpact()
+                        sessionLengthMinutes = minutes
+                        recomputeSuggestion()
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text("\(minutes)")
+                                .font(.system(size: 18, weight: .bold))
+                            Text("min")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(
+                            minutes == sessionLengthMinutes
+                            ? Color(hex: "#404C42")
+                            : Color(hex: "#E8E8E0")
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(
+                                    minutes == sessionLengthMinutes
+                                    ? Color(hex: "#D7CCC8")
+                                    : Color.black.opacity(0.25)
+                                )
+                        )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+            }
+        }
+    }
+    
     private var suggestionSection: some View {
         Group {
             if let start = suggestedStart, let end = suggestedEnd {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 12) {
                         Image(systemName: "calendar.badge.clock")
-                            .font(.system(size: 16))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                        Text("Suggested session")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color(hex: "#404C42"))
+                            .padding(10)
+                            .background(Circle().fill(Color(hex: "#D7CCC8")))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Suggested session")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+                            Text(relativeStartDescription(for: start))
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                        }
+                        Spacer()
+                        Text("\(sessionLengthMinutes) min")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "#404C42"))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Color(hex: "#D7CCC8")))
                     }
                     
-                    Text("\(formatTime(start)) – \(formatTime(end)) today")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.95))
-                    
-                    Text("We picked a time inside one of your stimulant focus windows, starting as soon as practical.")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("\(formatTime(start)) – \(formatTime(end)) today")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F1F1E6"))
+                        if let window = suggestedWindow {
+                            Text("Fits inside your \(window.medication.name) focus window (roughly \(formatTime(window.onsetTime)) – \(formatTime(window.fadeTime))).")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                        } else {
+                            Text("We picked a time inside one of your stimulant focus windows, starting as soon as practical.")
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                        }
+                        Text("You'll get a reminder at the start, and can check it off right from the alert.")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                    }
                 }
-                .padding(14)
+                .padding(16)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 18)
                         .fill(Color.black.opacity(0.2))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 16)
+                            RoundedRectangle(cornerRadius: 18)
                                 .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
                         )
                 )
             } else {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 16))
@@ -1022,17 +1112,26 @@ private struct FocusSessionPlannerView: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(Color(hex: "#E8E8E0"))
                     }
-                    
-                    Text("We couldn’t find enough time inside today’s stimulant windows for a \(sessionLengthMinutes)-minute session. You can still schedule your own reminder from the Notifications settings.")
+                    Text("We couldn't find enough time inside today's stimulant windows for a \(sessionLengthMinutes)-minute session. Try a shorter duration or log an earlier dose if you took one ahead of schedule.")
                         .font(.system(size: 13))
                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    Divider()
+                        .background(Color.white.opacity(0.1))
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "bell")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                        Text("Need a reminder anyway? Set a custom notification from Settings > Notifications.")
+                            .font(.system(size: 13))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    }
                 }
-                .padding(14)
+                .padding(16)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 18)
                         .fill(Color.black.opacity(0.2))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 16)
+                            RoundedRectangle(cornerRadius: 18)
                                 .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
                         )
                 )
@@ -1046,9 +1145,9 @@ private struct FocusSessionPlannerView: View {
         
         var bestStart: Date? = nil
         var bestEnd: Date? = nil
+        var matchingWindow: FocusTimelineView.FocusWindow? = nil
         
         for window in windows {
-            // Start no earlier than both "now" and onset
             let candidateStart = max(now, window.onsetTime)
             let candidateEnd = candidateStart.addingTimeInterval(lengthSeconds)
             
@@ -1056,12 +1155,14 @@ private struct FocusSessionPlannerView: View {
                 if bestStart == nil || candidateStart < bestStart! {
                     bestStart = candidateStart
                     bestEnd = candidateEnd
+                    matchingWindow = window
                 }
             }
         }
         
         suggestedStart = bestStart
         suggestedEnd = bestEnd
+        suggestedWindow = matchingWindow
     }
     
     private func scheduleSession() {
@@ -1069,5 +1170,11 @@ private struct FocusSessionPlannerView: View {
         HapticManager.shared.successNotification()
         NotificationManager.shared.scheduleFocusSession(start: start, durationMinutes: sessionLengthMinutes)
         dismiss()
+    }
+    
+    private func relativeStartDescription(for start: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return formatter.localizedString(for: start, relativeTo: Date())
     }
 }

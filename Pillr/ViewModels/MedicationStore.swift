@@ -91,7 +91,8 @@ class MedicationStore: ObservableObject {
         isExtendedRelease: Bool = false,
         onsetMinutes: Int? = nil,
         durationMinutes: Int? = nil,
-        enableDailyCheckIn: Bool = false
+        enableDailyCheckIn: Bool = false,
+        dailyCheckInTime: Date? = nil
     ) -> Bool {
         // Check if user can add more medications
         let currentActiveMedications = activeMedications.count
@@ -116,6 +117,7 @@ class MedicationStore: ObservableObject {
             onsetMinutes: onsetMinutes,
             durationMinutes: durationMinutes,
             enableDailyCheckIn: enableDailyCheckIn,
+            dailyCheckInTime: enableDailyCheckIn ? dailyCheckInTime : nil,
             timeToTake: timeToTake,
             reminderTimes: reminderTimes,
             notes: notes,

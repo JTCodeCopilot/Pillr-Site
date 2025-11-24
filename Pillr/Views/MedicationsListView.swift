@@ -2032,6 +2032,23 @@ fileprivate struct MedicationRowDetailsView: View {
             )
         }
 
+        if medication.enableDailyCheckIn {
+            let checkInDescription: String
+            if let customTime = medication.dailyCheckInTime {
+                checkInDescription = "Custom: \(commonFormatTime(customTime))"
+            } else {
+                checkInDescription = "~10 min before wear-off"
+            }
+
+            entries.append(
+                DetailEntry(
+                    label: "Daily Check-in",
+                    value: checkInDescription,
+                    lineLimit: 1
+                )
+            )
+        }
+
         return entries
     }
 

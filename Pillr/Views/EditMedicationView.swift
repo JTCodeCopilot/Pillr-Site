@@ -41,6 +41,8 @@ struct EditMedicationView: View {
     @State private var onsetMinutesString: String = ""
     @State private var durationMinutesString: String = ""
     @State private var enableDailyCheckIn: Bool = false
+    @State private var useCustomDailyCheckInTime: Bool = false
+    @State private var customDailyCheckInTime: Date = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var showingPremiumUpgrade: Bool = false
     @State private var customUnit: String = ""
     @State private var isCustomUnitSelected: Bool = false
@@ -138,6 +140,9 @@ struct EditMedicationView: View {
         _isADHDMedication = State(initialValue: medication.medicationType != .other)
         _isExtendedRelease = State(initialValue: medication.isExtendedRelease)
         _enableDailyCheckIn = State(initialValue: medication.enableDailyCheckIn)
+        let defaultCheckInTime = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
+        _useCustomDailyCheckInTime = State(initialValue: medication.dailyCheckInTime != nil)
+        _customDailyCheckInTime = State(initialValue: medication.dailyCheckInTime ?? defaultCheckInTime)
         if let onset = medication.onsetMinutes {
             _onsetMinutesString = State(initialValue: "\(onset)")
         } else {
@@ -426,6 +431,31 @@ struct EditMedicationView: View {
                                                 }
                                             }
                                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                            .onChange(of: enableDailyCheckIn) { newValue in
+                                                if !newValue {
+                                                    useCustomDailyCheckInTime = false
+                                                }
+                                            }
+
+                                            if enableDailyCheckIn {
+                                                VStack(alignment: .leading, spacing: 8) {
+                                                    Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+
+                                                    Toggle(isOn: $useCustomDailyCheckInTime) {
+                                                        Text("Choose a custom check-in time")
+                                                            .font(.system(size: 14, weight: .medium))
+                                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                                    }
+                                                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+
+                                                    if useCustomDailyCheckInTime {
+                                                        TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
+                                                    }
+                                                }
+                                                .padding(.top, 4)
+                                            }
                                         }
                                         
                                         Text("These help Pillr estimate when this medication will start working and when it will wear off, so you can plan focus time and breaks.")
@@ -446,6 +476,7 @@ struct EditMedicationView: View {
                                     onsetMinutesString = ""
                                     durationMinutesString = ""
                                     enableDailyCheckIn = false
+                                    useCustomDailyCheckInTime = false
                                     onsetMinutesError = nil
                                     durationMinutesError = nil
                                 }
@@ -456,6 +487,7 @@ struct EditMedicationView: View {
                                     onsetMinutesString = ""
                                     durationMinutesString = ""
                                     enableDailyCheckIn = false
+                                    useCustomDailyCheckInTime = false
                                     onsetMinutesError = nil
                                     durationMinutesError = nil
                                 } else {
@@ -1054,11 +1086,13 @@ struct EditMedicationView: View {
             updatedMedication.onsetMinutes = Int(onsetMinutesString)
             updatedMedication.durationMinutes = Int(durationMinutesString)
             updatedMedication.enableDailyCheckIn = enableDailyCheckIn
+            updatedMedication.dailyCheckInTime = (enableDailyCheckIn && useCustomDailyCheckInTime) ? customDailyCheckInTime : nil
         } else {
             updatedMedication.isExtendedRelease = false
             updatedMedication.onsetMinutes = nil
             updatedMedication.durationMinutes = nil
             updatedMedication.enableDailyCheckIn = false
+            updatedMedication.dailyCheckInTime = nil
         }
         updatedMedication.timeToTake = timeToTake
         updatedMedication.reminderTimes = needsMultipleReminders ? reminderTimes : []

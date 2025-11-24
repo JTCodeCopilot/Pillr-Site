@@ -578,12 +578,15 @@ class NotificationManager: ObservableObject {
             )
         }
 
-        if let fadeDate = calendar.date(byAdding: .minute, value: duration, to: doseTime) {
-            let (fadeTitle, fadeBody) = medication.enableDailyCheckIn
-                ? ("Daily check-in for \(medication.name)",
-                   "How was your focus and side effects today? Take a moment to log a quick check-in.")
-                : ("Medication may wear off soon",
-                   "\(medication.name) is likely wearing off. This can be a good time for a break, snack, or lighter tasks.")
+        // Warn roughly 10 minutes before the expected fade so the user can prepare.
+        let warningOffset = duration > 10 ? duration - 10 : duration
+        if let fadeWarningDate = calendar.date(byAdding: .minute, value: warningOffset, to: doseTime) {
+            let usesAutomaticCheckIn = medication.enableDailyCheckIn && medication.dailyCheckInTime == nil
+            let (fadeTitle, fadeBody) = usesAutomaticCheckIn
+                ? ("Check in before \(medication.name) fades",
+                   "How was your focus and side effects today? Log a quick check-in before it wears off.")
+                : ("\(medication.name) about to wear off",
+                   "Effects may taper in ~10 minutes. Ease into lighter tasks or plan a break.")
 
             scheduleNotification(
                 title: fadeTitle,
@@ -591,11 +594,36 @@ class NotificationManager: ObservableObject {
                 userInfo: [
                     "medicationID": medication.id.uuidString,
                     "phase": "fade",
-                    "isDailyCheckIn": medication.enableDailyCheckIn
+                    "isDailyCheckIn": usesAutomaticCheckIn
                 ],
                 identifierSuffix: "fade",
-                fireDate: fadeDate
+                fireDate: fadeWarningDate
             )
+        }
+
+        // Custom daily check-in reminder, if provided.
+        if medication.enableDailyCheckIn,
+           let customCheckInTime = medication.dailyCheckInTime {
+            let checkInComponents = calendar.dateComponents([.hour, .minute], from: customCheckInTime)
+            if let hour = checkInComponents.hour,
+               let minute = checkInComponents.minute,
+               var fireDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: doseTime) {
+                if fireDate <= now {
+                    fireDate = calendar.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate
+                }
+
+                scheduleNotification(
+                    title: "Daily check-in for \(medication.name)",
+                    body: "Take a moment to reflect on focus and side effects today.",
+                    userInfo: [
+                        "medicationID": medication.id.uuidString,
+                        "phase": "checkin",
+                        "isDailyCheckIn": true
+                    ],
+                    identifierSuffix: "checkin",
+                    fireDate: fireDate
+                )
+            }
         }
     }
 }
@@ -721,7 +749,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 // If this is a stimulant fade notification with daily check-in enabled,
                 // surface the notes & side-effects logging sheet for this medication.
                 if let phase = userInfo["phase"] as? String,
-                   phase == "fade",
+                   (phase == "fade" || phase == "checkin"),
                    medication.enableDailyCheckIn {
                     DispatchQueue.main.async {
                         MedicationStore.shared.dailyCheckInMedication = medication
