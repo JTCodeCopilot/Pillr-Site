@@ -386,10 +386,102 @@ class NotificationManager: ObservableObject {
             cancelNotification(with: id)
         }
     }
+
+    /// Cancels any pending or delivered notifications that reference the provided medication ID.
+    /// This is used as a safety net for archived/deleted medications where we no longer want reminders firing.
+    func cancelNotifications(forMedicationID medicationID: UUID) {
+        let center = UNUserNotificationCenter.current()
+        let medicationIDString = medicationID.uuidString
+        let refillPrefix = "refill-\(medicationIDString)"
+
+        center.getPendingNotificationRequests { requests in
+            let identifiers = requests.compactMap { request -> String? in
+                if let pendingMedicationID = request.content.userInfo["medicationID"] as? String,
+                   pendingMedicationID == medicationIDString {
+                    return request.identifier
+                }
+
+                if request.identifier.hasPrefix(refillPrefix) {
+                    return request.identifier
+                }
+
+                return nil
+            }
+
+            if !identifiers.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: identifiers)
+            }
+        }
+
+        center.getDeliveredNotifications { notifications in
+            let identifiers = notifications.compactMap { notification -> String? in
+                if let deliveredMedicationID = notification.request.content.userInfo["medicationID"] as? String,
+                   deliveredMedicationID == medicationIDString {
+                    return notification.request.identifier
+                }
+
+                if notification.request.identifier.hasPrefix(refillPrefix) {
+                    return notification.request.identifier
+                }
+
+                return nil
+            }
+
+            if !identifiers.isEmpty {
+                center.removeDeliveredNotifications(withIdentifiers: identifiers)
+            }
+        }
+    }
     
     func cancelAllNotifications() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         resetApplicationBadge()
+    }
+
+    /// Removes any pending/delivered medication reminder notifications that don't belong to the provided set of active medications.
+    /// Useful on app launch to clear reminders for medications that were deleted or archived while the app was not running.
+    func purgeNotifications(excluding validMedicationIDs: Set<UUID>) {
+        let center = UNUserNotificationCenter.current()
+        let validIDStrings = Set(validMedicationIDs.map { $0.uuidString })
+        let refillPrefix = "refill-"
+
+        center.getPendingNotificationRequests { requests in
+            let identifiers = requests.compactMap { request -> String? in
+                if let medicationID = request.content.userInfo["medicationID"] as? String {
+                    return validIDStrings.contains(medicationID) ? nil : request.identifier
+                }
+
+                if request.identifier.hasPrefix(refillPrefix) {
+                    let suffix = String(request.identifier.dropFirst(refillPrefix.count))
+                    return validIDStrings.contains(suffix) ? nil : request.identifier
+                }
+
+                return nil
+            }
+
+            if !identifiers.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: identifiers)
+            }
+        }
+
+        center.getDeliveredNotifications { notifications in
+            let identifiers = notifications.compactMap { notification -> String? in
+                if let medicationID = notification.request.content.userInfo["medicationID"] as? String {
+                    return validIDStrings.contains(medicationID) ? nil : notification.request.identifier
+                }
+
+                if notification.request.identifier.hasPrefix(refillPrefix) {
+                    let suffix = String(notification.request.identifier.dropFirst(refillPrefix.count))
+                    return validIDStrings.contains(suffix) ? nil : notification.request.identifier
+                }
+
+                return nil
+            }
+
+            if !identifiers.isEmpty {
+                center.removeDeliveredNotifications(withIdentifiers: identifiers)
+            }
+        }
     }
     
     // Function to reset the application badge to zero

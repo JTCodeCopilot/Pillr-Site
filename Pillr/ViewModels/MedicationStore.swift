@@ -185,6 +185,7 @@ class MedicationStore: ObservableObject {
             } else {
                 updatedMedication.notificationID = nil
                 updatedMedication.notificationIDs = []
+                notificationManager.cancelNotifications(forMedicationID: updatedMedication.id)
             }
             
             // Update medication name in existing logs if it changed
@@ -287,6 +288,10 @@ class MedicationStore: ObservableObject {
                 content.title = "Medication Refill Reminder"
                 content.body = "Your supply of \(updatedMedication.name) is running low. Only \(pillCount) left."
                 content.sound = UNNotificationSound.default
+                content.userInfo = [
+                    "medicationID": updatedMedication.id.uuidString,
+                    "notificationType": "refill"
+                ]
                 
                 let request = UNNotificationRequest(
                     identifier: "refill-\(updatedMedication.id)",
@@ -432,13 +437,17 @@ class MedicationStore: ObservableObject {
     func deleteMedication(at offsets: IndexSet) {
         // Cancel notifications for the medications being deleted
         for index in offsets {
-            if let notificationID = medications[index].notificationID {
+            let medication = medications[index]
+
+            if let notificationID = medication.notificationID {
                 notificationManager.cancelNotification(with: notificationID)
             }
             
-            if !medications[index].notificationIDs.isEmpty {
-                notificationManager.cancelMultipleNotifications(ids: medications[index].notificationIDs)
+            if !medication.notificationIDs.isEmpty {
+                notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
             }
+
+            notificationManager.cancelNotifications(forMedicationID: medication.id)
         }
         
         medications.remove(atOffsets: offsets)
@@ -525,6 +534,9 @@ class MedicationStore: ObservableObject {
         if let savedMedications = UserDefaults.standard.data(forKey: medicationsKey) {
             if let decodedMedications = try? JSONDecoder().decode([Medication].self, from: savedMedications) {
                 self.medications = decodedMedications
+
+                let activeMedicationIDs = Set(decodedMedications.filter { !$0.isArchived }.map { $0.id })
+                notificationManager.purgeNotifications(excluding: activeMedicationIDs)
                 
                 // Reschedule notifications on app launch (in case app was terminated)
                 for (index, medication) in medications.enumerated() {
@@ -555,6 +567,7 @@ class MedicationStore: ObservableObject {
                         // Clear notification IDs for archived medications
                         updatedMedication.notificationID = nil
                         updatedMedication.notificationIDs = []
+                        notificationManager.cancelNotifications(forMedicationID: updatedMedication.id)
                     }
                     
                     medications[index] = updatedMedication
@@ -660,6 +673,8 @@ class MedicationStore: ObservableObject {
                 notificationManager.cancelMultipleNotifications(ids: updatedMedication.notificationIDs)
                 updatedMedication.notificationIDs = []
             }
+
+            notificationManager.cancelNotifications(forMedicationID: updatedMedication.id)
             
             updatedMedication.isArchived = true
             medications[index] = updatedMedication
