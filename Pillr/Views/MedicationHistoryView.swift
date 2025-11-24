@@ -217,14 +217,6 @@ struct MedicationHistoryView: View {
                         Text(dayLabel(for: date))
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(Color(hex: "#E8E8E0"))
-                        
-                        Text(relativeDayLabel(for: date))
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color.white.opacity(0.05))
-                            .cornerRadius(10)
                     }
                     
                     VStack(spacing: 12) {
@@ -251,12 +243,6 @@ struct MedicationHistoryView: View {
         } else {
             return MedicationHistoryView.dayFormatter.string(from: date)
         }
-    }
-    
-    private func relativeDayLabel(for date: Date) -> String {
-        let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: date)
-        return relativeFormatter.localizedString(for: startOfDay, relativeTo: Date())
     }
     
     private func medication(for log: MedicationLog) -> Medication? {

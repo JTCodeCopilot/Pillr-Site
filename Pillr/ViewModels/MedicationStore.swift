@@ -210,7 +210,8 @@ class MedicationStore: ObservableObject {
         reminderIndex: Int? = nil,
         focusRating: Int? = nil,
         sideEffectSeverity: Int? = nil,
-        showFocusTimeline: Bool = true
+        showFocusTimeline: Bool = true,
+        isDailyCheckIn: Bool = false
     ) {
         let pillsConsumed = skipped ? 0 : medication.pillsPerDose
         let calendar = Calendar.current
@@ -223,7 +224,16 @@ class MedicationStore: ObservableObject {
         }) {
             let existingLog = logs[existingIndex]
             if existingLog.skipped == skipped {
-                hapticManager.warningNotification()
+                if isDailyCheckIn {
+                    applyDailyCheckInUpdates(
+                        at: existingIndex,
+                        notes: notes,
+                        focusRating: focusRating,
+                        sideEffectSeverity: sideEffectSeverity
+                    )
+                } else {
+                    hapticManager.warningNotification()
+                }
                 return
             }
             
@@ -512,6 +522,45 @@ class MedicationStore: ObservableObject {
         }
     }
     
+    private func applyDailyCheckInUpdates(
+        at index: Int,
+        notes: String?,
+        focusRating: Int?,
+        sideEffectSeverity: Int?
+    ) {
+        var logEntry = logs[index]
+        if let mergedNotes = mergeNotes(existing: logEntry.notes, with: notes) {
+            logEntry.notes = mergedNotes
+        }
+        if let focusRating {
+            logEntry.focusRating = focusRating
+        }
+        if let sideEffectSeverity {
+            logEntry.sideEffectSeverity = sideEffectSeverity
+        }
+        logs[index] = logEntry
+        saveLogs()
+        hapticManager.successNotification()
+    }
+
+    private func mergeNotes(existing: String?, with newNotes: String?) -> String? {
+        let trimmedExisting = existing?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedNew = newNotes?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let trimmedExisting, !trimmedExisting.isEmpty {
+            if let trimmedNew, !trimmedNew.isEmpty {
+                return "\(trimmedExisting)\n\n\(trimmedNew)"
+            }
+            return trimmedExisting
+        }
+
+        if let trimmedNew, !trimmedNew.isEmpty {
+            return trimmedNew
+        }
+
+        return nil
+    }
+
     // Helper function to update medication names in existing logs
     private func updateMedicationNameInLogs(medicationID: UUID, newName: String) {
         for index in logs.indices {

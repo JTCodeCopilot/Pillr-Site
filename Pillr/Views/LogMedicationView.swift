@@ -472,34 +472,6 @@ struct LogMedicationView: View {
                         
                         // Enhanced Action Buttons
                         VStack(spacing: 16) {
-                            if medicationToLog.frequency != "As needed" {
-                                Button {
-                                    HapticManager.shared.warningNotification()
-                                    processDoseAction(skipped: true)
-                                } label: {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.system(size: 20, weight: .semibold))
-                                        Text("Mark as Skipped")
-                                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    }
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 18)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(Color(hex: "#FF8A65"))
-                                    )
-                                    .cornerRadius(20)
-                                    .shadow(color: Color(hex: "#FF8A65").opacity(0.4), radius: 12, x: 0, y: 6)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                    )
-                                }
-                                .buttonStyle(ScaleButtonStyle())
-                            }
-
                             Button {
                                 HapticManager.shared.successNotification()
                                 processDoseAction(skipped: false)
@@ -646,7 +618,8 @@ struct LogMedicationView: View {
                 reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
                 focusRating: focusToSave,
                 sideEffectSeverity: sideEffectToSave,
-                showFocusTimeline: !isDailyCheckIn
+                showFocusTimeline: !isDailyCheckIn,
+                isDailyCheckIn: isDailyCheckIn
             )
         }
         dismiss()
