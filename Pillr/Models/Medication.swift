@@ -35,6 +35,21 @@ struct Medication: Identifiable, Codable, Hashable {
     var iconName: String = "pill" // Default icon
     var createdAt: Date? = Date() // When the medication was added
     
+    var dosageWithUnit: String {
+        let amount = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
+        let unit = dosageUnit.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if amount.isEmpty {
+            return unit
+        }
+
+        if unit.isEmpty || dosageAlreadyIncludesUnit(amount: amount, unit: unit) {
+            return amount
+        }
+
+        return "\(amount) \(unit)"
+    }
+    
     // Computed property to get the correct icon based on dosageUnit
     var unitIconName: String {
         switch dosageUnit {
@@ -50,6 +65,26 @@ struct Medication: Identifiable, Codable, Hashable {
             // For custom units
             return "text.cursor"
         }
+    }
+
+    private func dosageAlreadyIncludesUnit(amount: String, unit: String) -> Bool {
+        guard !amount.isEmpty, !unit.isEmpty else { return false }
+
+        let normalizedAmount = amount.lowercased()
+        let normalizedUnit = unit.lowercased()
+
+        if normalizedAmount.contains(normalizedUnit) {
+            return true
+        }
+
+        if normalizedUnit.hasSuffix("s") {
+            let singularUnit = String(normalizedUnit.dropLast())
+            if !singularUnit.isEmpty, normalizedAmount.contains(singularUnit) {
+                return true
+            }
+        }
+
+        return false
     }
     
     var frequency: String // e.g., "Once daily", "Twice daily"

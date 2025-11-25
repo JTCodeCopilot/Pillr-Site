@@ -5,7 +5,6 @@ struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
     @ObservedObject private var storeManager = StoreManager.shared
     @State private var showingPremiumUpgrade = false
-    @State private var showingInteractionHistory = false
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -16,8 +15,6 @@ struct SettingsView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        appSettingsSection
-
                         aiSettingsSection
 
                         supportLinksSection
@@ -50,73 +47,16 @@ struct SettingsView: View {
             PremiumUpgradeView()
                 .environmentObject(StoreManager.shared)
         }
-        .sheet(isPresented: $showingInteractionHistory) {
-            InteractionHistoryView()
-        }
         .task {
             // Update purchased products and load products when the view appears
             await storeManager.loadProducts()
             await storeManager.updatePurchasedProducts()
         }
     }
-    
-    // Computed property for App Settings section
-    private var appSettingsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
-                Text("App Settings")
-                    .font(.headline)
-                    .foregroundColor(Color(hex: "#F5F7F4"))
-                Spacer()
-            }
-            Divider()
-                .background(Color(hex: "#E0E7DC").opacity(0.15))
-            
-            // Interaction History
-            Button(action: {
-                showingInteractionHistory = true
-            }) {
-                HStack {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .foregroundColor(Color(hex: "#E0E7DC"))
-                        .frame(width: 20)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Interaction History")
-                            .foregroundColor(Color(hex: "#F5F7F4"))
-                            .font(.system(size: 16, weight: .medium))
-                        
-                        Text("View and manage your interaction checks")
-                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
-                            .font(.system(size: 14))
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.6))
-                        .font(.system(size: 14))
-                }
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(PlainButtonStyle())
-
-        }
-        .padding()
-        .settingsCardStyle()
-        .padding(.horizontal)
-    }
-    
     // Computed property for AI Settings section
     private var aiSettingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "hourglass")
-                    .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
                 Text("AI Features")
                     .font(.headline)
                     .foregroundColor(Color(hex: "#F5F7F4"))
@@ -131,7 +71,7 @@ struct SettingsView: View {
                 // Non-tappable premium status display
                 HStack {
                     Image(systemName: "crown.fill")
-                        .foregroundColor(Color(hex: "#D4A017"))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
                         .frame(width: 20)
                     
                     VStack(alignment: .leading, spacing: 2) {
@@ -197,9 +137,6 @@ struct SettingsView: View {
     private var supportLinksSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "link")
-                    .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
                 Text("Support & Resources")
                     .font(.headline)
                     .foregroundColor(Color(hex: "#F5F7F4"))

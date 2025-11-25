@@ -9,6 +9,9 @@ struct MedicationHistoryView: View {
     @State private var includeSkipped = true
     @State private var shareItems: [Any] = []
     @State private var showingShareSheet = false
+    @State private var selectedStartDate: Date = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+    @State private var selectedEndDate: Date = Date()
+    @State private var showingDateRangePopover = false
     
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -22,12 +25,25 @@ struct MedicationHistoryView: View {
         formatter.dateStyle = .none
         return formatter
     }()
-    
+
+    private static let rangeDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
+
     private let relativeFormatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
         formatter.dateTimeStyle = .named
         return formatter
     }()
+    
+    private let presetDays = [7, 14, 21, 30]
+    private let presetColumns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
     
     init(isModal: Bool = false) {
         self.isModal = isModal
@@ -39,10 +55,17 @@ struct MedicationHistoryView: View {
     }
     
     private var filteredLogs: [MedicationLog] {
-        store.logs.filter { log in
+        let start = min(selectedStartDate, selectedEndDate)
+        let end = max(selectedStartDate, selectedEndDate)
+        let calendar = Calendar.current
+        let rangeStart = calendar.startOfDay(for: start)
+        let rangeEnd = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: end) ?? calendar.startOfDay(for: end).addingTimeInterval(86399)
+
+        return store.logs.filter { log in
             let matchesMedication = selectedMedication == "All" || log.medicationName == selectedMedication
             let matchesSkipFilter = includeSkipped || !log.skipped
-            return matchesMedication && matchesSkipFilter
+            let inRange = log.takenAt >= rangeStart && log.takenAt <= rangeEnd
+            return matchesMedication && matchesSkipFilter && inRange
         }
         .sorted { $0.takenAt > $1.takenAt }
     }
@@ -57,25 +80,43 @@ struct MedicationHistoryView: View {
         }
     }
     
-    private var takenCount: Int {
-        store.logs.filter { !$0.skipped }.count
+    private var rangeTakenCount: Int {
+        filteredLogs.filter { !$0.skipped }.count
     }
     
-    private var adherenceRate: String {
-        let total = store.logs.count
+    private var rangeAdherenceRate: String {
+        let total = filteredLogs.count
         guard total > 0 else { return "—" }
-        let rate = Int((Double(takenCount) / Double(total)) * 100)
+        let rate = Int((Double(rangeTakenCount) / Double(total)) * 100)
         return "\(rate)%"
     }
     
-    private var lastSevenDays: Int {
+    private var rangeDaysDisplayed: Int {
         let calendar = Calendar.current
-        guard let start = calendar.date(byAdding: .day, value: -7, to: Date()) else { return 0 }
-        return store.logs.filter { $0.takenAt >= start && !$0.skipped }.count
+        let start = calendar.startOfDay(for: min(selectedStartDate, selectedEndDate))
+        let end = calendar.startOfDay(for: max(selectedStartDate, selectedEndDate))
+        let components = calendar.dateComponents([.day], from: start, to: end)
+        return (components.day ?? 0) + 1
     }
-    
-    private var notesCount: Int {
-        store.logs.filter { ($0.notes?.isEmpty == false) }.count
+
+    private var rangeNotesCount: Int {
+        filteredLogs.filter { ($0.notes?.isEmpty == false) }.count
+    }
+
+    private var dateRangeLabel: String {
+        let start = min(selectedStartDate, selectedEndDate)
+        let formatter = MedicationHistoryView.dayFormatter
+        return formatter.string(from: start)
+    }
+
+    private var dateRangeEndLabel: String {
+        let start = min(selectedStartDate, selectedEndDate)
+        let end = max(selectedStartDate, selectedEndDate)
+        if Calendar.current.isDate(start, inSameDayAs: end) {
+            return "\(rangeDaysDisplayed) day\(rangeDaysDisplayed == 1 ? "" : "s")"
+        } else {
+            return MedicationHistoryView.dayFormatter.string(from: end)
+        }
     }
     
     var body: some View {
@@ -119,6 +160,9 @@ struct MedicationHistoryView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
+                    toolbarIncludeSkippedControl
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button {
                             exportHistoryAsCSV()
@@ -144,6 +188,16 @@ struct MedicationHistoryView: View {
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showingShareSheet) {
             ShareSheet(activityItems: shareItems)
+        }
+        .onChange(of: selectedStartDate) { newValue in
+            if selectedEndDate < newValue {
+                selectedEndDate = newValue
+            }
+        }
+        .onChange(of: selectedEndDate) { newValue in
+            if newValue < selectedStartDate {
+                selectedStartDate = newValue
+            }
         }
     }
     
@@ -184,31 +238,132 @@ struct MedicationHistoryView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(Color(hex: "#D7CCC8"))
-                .cornerRadius(12)
+                .cornerRadius(14)
             }
-            
+            .fixedSize()
+
+            Spacer()
+
             Button {
+                showingDateRangePopover = true
+            } label: {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(dateRangeLabel)
+                            .font(.system(size: 14, weight: .semibold))
+                            .lineLimit(1)
+                        Text(dateRangeEndLabel)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(hex: "#404C42"))
+                        .opacity(0.7)
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+                .background(Color(hex: "#D7CCC8"))
+                .cornerRadius(18)
+            }
+            .frame(maxWidth: .infinity)
+            .buttonStyle(.plain)
+            .popover(isPresented: $showingDateRangePopover, attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) {
+                dateRangePopoverContent
+                    .padding(12)
+            }
+        }
+    }
+
+    private var dateRangePopoverContent: some View {
+        GlassContainer(spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(spacing: 20) {
+                    datePickerRow(label: "From", selection: $selectedStartDate) {
+                        DatePicker("", selection: $selectedStartDate, in: ...selectedEndDate, displayedComponents: .date)
+                            .labelsHidden()
+                            .datePickerStyle(.compact)
+                            .tint(Color(hex: "#E8E8E0"))
+                    }
+                    datePickerRow(label: "To", selection: $selectedEndDate) {
+                        DatePicker("", selection: $selectedEndDate, in: selectedStartDate...Date(), displayedComponents: .date)
+                            .labelsHidden()
+                            .datePickerStyle(.compact)
+                            .tint(Color(hex: "#E8E8E0"))
+                    }
+                }
+
+                Divider()
+                    .background(Color.white.opacity(0.2))
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Quick ranges")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+
+                    LazyVGrid(columns: presetColumns, spacing: 12) {
+                        ForEach(presetDays, id: \.self) { days in
+                            Button {
+                                applyPreset(days: days)
+                            } label: {
+                                Text("Last \(days) days")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#5AC5FF"))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(Color.white.opacity(0.03))
+                                    .cornerRadius(10)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                Button("Done") {
+                    showingDateRangePopover = false
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+                .frame(maxWidth: .infinity)
+            }
+            .padding(26)
+            .frame(maxWidth: .infinity, minHeight: 420)
+        }
+        .frame(minWidth: 320, maxWidth: 380)
+    }
+
+    @ViewBuilder
+    private func datePickerRow<Picker: View>(label: String, selection: Binding<Date>, @ViewBuilder picker: () -> Picker) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD"))
+
+            Text(Self.rangeDateFormatter.string(from: selection.wrappedValue))
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            picker()
+        }
+    }
+
+    @ViewBuilder
+    private var toolbarIncludeSkippedControl: some View {
+        Menu {
+            Button(includeSkipped ? "Hide skipped medication" : "Show skipped medication") {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     includeSkipped.toggle()
                 }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: includeSkipped ? "checkmark.circle.fill" : "slash.circle")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text(includeSkipped ? "Include skipped" : "Hide skipped")
-                        .font(.system(size: 13, weight: .semibold))
-                }
-                .foregroundColor(Color(hex: "#C7C7BD"))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color.white.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-                .cornerRadius(12)
             }
-            .buttonStyle(ScaleButtonStyle())
+        } label: {
+            Image(systemName: includeSkipped ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(includeSkipped ? Color(hex: "#C7C7BD") : Color.white.opacity(0.7))
+                .accessibilityLabel(includeSkipped ? "Exclude skipped doses" : "Include skipped doses")
         }
     }
     
@@ -217,19 +372,19 @@ struct MedicationHistoryView: View {
             HStack(spacing: 14) {
                 HistoryStatCard(
                     title: "Logged doses",
-                    value: "\(takenCount)",
-                    detail: adherenceRate == "—" ? "Start logging to track adherence" : "Adherence \(adherenceRate)"
+                    value: "\(rangeTakenCount)",
+                    detail: rangeAdherenceRate == "—" ? "Select a range to track adherence" : "Adherence \(rangeAdherenceRate)"
                 )
                 
                 HistoryStatCard(
-                    title: "Last 7 days",
-                    value: "\(lastSevenDays)",
-                    detail: "Completed doses"
+                    title: "Range span",
+                    value: "\(rangeDaysDisplayed)",
+                    detail: "Days shown"
                 )
                 
                 HistoryStatCard(
                     title: "Saved notes",
-                    value: "\(notesCount)",
+                    value: "\(rangeNotesCount)",
                     detail: "With side effects or focus"
                 )
             }
@@ -275,6 +430,21 @@ struct MedicationHistoryView: View {
     private func medication(for log: MedicationLog) -> Medication? {
         store.medications.first { $0.id == log.medicationID }
     }
+
+    private func applyPreset(days: Int) {
+        let now = Date()
+        selectedEndDate = now
+        guard days > 1 else {
+            selectedStartDate = now
+            return
+        }
+        if let start = Calendar.current.date(byAdding: .day, value: -(days - 1), to: now) {
+            selectedStartDate = start
+        } else {
+            selectedStartDate = now
+        }
+        showingDateRangePopover = false
+    }
 }
 
 private struct MedicationTimelineRow: View {
@@ -289,8 +459,8 @@ private struct MedicationTimelineRow: View {
     
     private var dosageText: String? {
         guard let medication else { return nil }
-        let dose = medication.dosage.isEmpty ? nil : medication.dosage
-        return dose
+        let text = medication.dosageWithUnit.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? nil : text
     }
     
     var body: some View {
@@ -461,7 +631,7 @@ extension MedicationHistoryView {
         
         for log in logs {
             let med = medication(for: log)
-            let dosage = [med?.dosage, med?.dosageUnit].compactMap { $0 }.joined(separator: " ")
+            let dosage = med?.dosageWithUnit ?? ""
             let cleanNotes = (log.notes ?? "").replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: ",", with: ";")
             let status = log.skipped ? "Skipped" : "Taken"
             csv += "\(dateFormatter.string(from: log.takenAt)),\(timeFormatter.string(from: log.takenAt)),\(log.medicationName),\(dosage),\(status),\(cleanNotes)\n"
@@ -590,38 +760,46 @@ extension MedicationHistoryView {
             
             func drawLogEntry(_ log: MedicationLog) {
                 let medication = medicationsByID[log.medicationID]
-                let dosageText: String
-                if let med = medication {
-                    dosageText = "\(med.dosage) \(med.dosageUnit)"
-                } else {
-                    dosageText = ""
-                }
+                let dosageText = medication?.dosageWithUnit ?? ""
                 
+                let dateString = sectionDateFormatter.string(from: log.takenAt)
                 let timeString = timeFormatter.string(from: log.takenAt)
                 var lines: [String] = []
-                if dosageText.isEmpty {
-                    lines.append("\(timeString) – \(log.medicationName)")
+                lines.append("Date: \(dateString)")
+                lines.append("Time: \(timeString)")
+                lines.append("Medication: \(log.medicationName)")
+                lines.append("Amount: \(dosageText.isEmpty ? "—" : dosageText)")
+                
+                let pillsText: String
+                if log.skipped {
+                    pillsText = "Skipped"
+                } else if let pills = log.pillsConsumed, pills > 0 {
+                    pillsText = pills == 1 ? "1 pill" : "\(pills) pills"
                 } else {
-                    lines.append("\(timeString) – \(log.medicationName) (\(dosageText))")
+                    pillsText = "Not recorded"
                 }
+                lines.append("Pills Taken: \(pillsText)")
                 
-                var statusLine = "Status: " + (log.skipped ? "Skipped" : "Taken")
-                if let pills = log.pillsConsumed, pills > 0 {
-                    statusLine += " · \(pills) pill\(pills == 1 ? "" : "s")"
+                let noteParts = splitNotesAndSideEffects(for: log)
+                if let notesText = noteParts.notes {
+                    lines.append("Notes: \(notesText)")
                 }
-                if let reminder = log.reminderIndex {
-                    statusLine += " · Reminder \(reminder + 1)"
+                if let checkInText = noteParts.checkInNotes {
+                    if noteParts.notes != nil {
+                        lines.append("---")
+                    }
+                    lines.append("Check-in Notes: \(checkInText)")
                 }
-                lines.append(statusLine)
-                
-                if let focus = log.focusRating {
-                    lines.append("Focus rating: \(focus)/5")
-                }
+
                 if let sideEffects = log.sideEffectSeverity {
-                    lines.append("Side effects: \(sideEffects)/5")
+                    lines.append("Side Effects Rating: \(sideEffects)/5")
                 }
-                if let notes = log.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
-                    lines.append("Notes: \(notes)")
+                if let focus = log.focusRating {
+                    lines.append("Focus Rating: \(focus)/5")
+                }
+                
+                if let sideEffectsText = noteParts.sideEffects {
+                    lines.append("Side Effects: \(sideEffectsText)")
                 }
                 
                 let entryAttributed = NSAttributedString(string: lines.joined(separator: "\n"), attributes: bodyAttributes)
@@ -690,6 +868,39 @@ extension MedicationHistoryView {
             context: nil
         )
         return ceil(bounds.height)
+    }
+    
+    private func splitNotesAndSideEffects(for log: MedicationLog) -> (notes: String?, checkInNotes: String?, sideEffects: String?) {
+        guard var raw = log.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return (nil, nil, nil)
+        }
+        var sideEffectsPart: String?
+        if let range = raw.range(of: "Side effects:", options: [.caseInsensitive]) {
+            let after = raw[range.upperBound...]
+            sideEffectsPart = after.trimmingCharacters(in: .whitespacesAndNewlines)
+            raw = String(raw[..<range.lowerBound])
+        }
+        let paragraphs = raw
+            .components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        var generalNote: String?
+        var checkInNote: String?
+        if paragraphs.count > 1 {
+            generalNote = paragraphs.first
+            checkInNote = paragraphs.dropFirst().joined(separator: "\n\n")
+        } else if let first = paragraphs.first {
+            if log.focusRating != nil || log.sideEffectSeverity != nil {
+                checkInNote = first
+            } else {
+                generalNote = first
+            }
+        }
+        return (
+            generalNote?.isEmpty == true ? nil : generalNote,
+            checkInNote?.isEmpty == true ? nil : checkInNote,
+            sideEffectsPart?.isEmpty == true ? nil : sideEffectsPart
+        )
     }
 }
 

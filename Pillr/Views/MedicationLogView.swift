@@ -729,31 +729,44 @@ struct MedicationLogView: View {
                     dosageText = ""
                 }
                 
+                let dateString = sectionDateFormatter.string(from: log.takenAt)
                 let timeString = timeFormatter.string(from: log.takenAt)
                 var lines: [String] = []
-                if dosageText.isEmpty {
-                    lines.append("\(timeString) – \(log.medicationName)")
+                lines.append("Date: \(dateString)")
+                lines.append("Time: \(timeString)")
+                lines.append("Medication: \(log.medicationName)")
+                lines.append("Amount: \(dosageText.isEmpty ? "—" : dosageText)")
+                
+                let pillsText: String
+                if log.skipped {
+                    pillsText = "Skipped"
+                } else if let pills = log.pillsConsumed, pills > 0 {
+                    pillsText = pills == 1 ? "1 pill" : "\(pills) pills"
                 } else {
-                    lines.append("\(timeString) – \(log.medicationName) (\(dosageText))")
+                    pillsText = "Not recorded"
+                }
+                lines.append("Pills Taken: \(pillsText)")
+                
+                let noteParts = splitNotesAndSideEffects(for: log)
+                if let notesText = noteParts.notes {
+                    lines.append("Notes: \(notesText)")
+                }
+                if let checkInText = noteParts.checkInNotes {
+                    if noteParts.notes != nil {
+                        lines.append("---")
+                    }
+                    lines.append("Check-in Notes: \(checkInText)")
                 }
                 
-                var statusLine = "Status: " + (log.skipped ? "Skipped" : "Taken")
-                if let pills = log.pillsConsumed, pills > 0 {
-                    statusLine += " · \(pills) pill\(pills == 1 ? "" : "s")"
-                }
-                if let reminder = log.reminderIndex {
-                    statusLine += " · Reminder \(reminder + 1)"
-                }
-                lines.append(statusLine)
-                
-                if let focus = log.focusRating {
-                    lines.append("Focus rating: \(focus)/5")
-                }
                 if let sideEffects = log.sideEffectSeverity {
-                    lines.append("Side effects: \(sideEffects)/5")
+                    lines.append("Side Effects Rating: \(sideEffects)/5")
                 }
-                if let notes = log.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
-                    lines.append("Notes: \(notes)")
+                if let focus = log.focusRating {
+                    lines.append("Focus Rating: \(focus)/5")
+                }
+                
+                if let sideEffectsText = noteParts.sideEffects {
+                    lines.append("Side Effects: \(sideEffectsText)")
                 }
                 
                 let entryAttributed = NSAttributedString(string: lines.joined(separator: "\n"), attributes: bodyAttributes)
@@ -842,6 +855,39 @@ struct MedicationLogView: View {
             context: nil
         )
         return ceil(bounds.height)
+    }
+    
+    private func splitNotesAndSideEffects(for log: MedicationLog) -> (notes: String?, checkInNotes: String?, sideEffects: String?) {
+        guard var raw = log.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return (nil, nil, nil)
+        }
+        var sideEffectsPart: String?
+        if let range = raw.range(of: "Side effects:", options: [.caseInsensitive]) {
+            let after = raw[range.upperBound...]
+            sideEffectsPart = after.trimmingCharacters(in: .whitespacesAndNewlines)
+            raw = String(raw[..<range.lowerBound])
+        }
+        let paragraphs = raw
+            .components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        var generalNote: String?
+        var checkInNote: String?
+        if paragraphs.count > 1 {
+            generalNote = paragraphs.first
+            checkInNote = paragraphs.dropFirst().joined(separator: "\n\n")
+        } else if let first = paragraphs.first {
+            if log.focusRating != nil || log.sideEffectSeverity != nil {
+                checkInNote = first
+            } else {
+                generalNote = first
+            }
+        }
+        return (
+            generalNote?.isEmpty == true ? nil : generalNote,
+            checkInNote?.isEmpty == true ? nil : checkInNote,
+            sideEffectsPart?.isEmpty == true ? nil : sideEffectsPart
+        )
     }
 } // <-- Added closing brace for var body here
 
