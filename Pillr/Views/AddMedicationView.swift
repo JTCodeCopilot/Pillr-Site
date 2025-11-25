@@ -46,6 +46,7 @@ struct AddMedicationView: View {
     @State private var onsetMinutesString: String = ""
     @State private var durationMinutesString: String = ""
     @State private var enableDailyCheckIn: Bool = false
+    @State private var enableStimulantPhaseNotifications: Bool = false
     @State private var useCustomDailyCheckInTime: Bool = false
     @State private var customDailyCheckInTime: Date = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var onsetMinutesError: String? = nil
@@ -545,108 +546,139 @@ struct AddMedicationView: View {
 
     @ViewBuilder
     private var trackingAndADHDSection: some View {
-        // ADHD timing
-        FormSection(title: "FOCUS & TIMING", icon: "hourglass") {
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Is this an ADHD medication?")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-
-                    Picker("ADHD medication", selection: $isADHDMedication) {
-                        Text("Yes").tag(true)
-                        Text("No").tag(false)
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                if isADHDMedication {
+        VStack(spacing: 16) {
+            FormSection(title: "FOCUS & TIMING", icon: "hourglass") {
+                VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("What kind of ADHD medication?")
-                            .font(.system(size: 14, weight: .medium))
+                        Text("Is this an ADHD medication?")
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(Color(hex: "#E8E8E0"))
 
-                        Picker("Medication type", selection: $medicationType) {
-                            Text("Stimulant").tag(MedicationType.stimulant)
-                            Text("Non-stimulant").tag(MedicationType.nonStimulant)
+                        Picker("ADHD medication", selection: $isADHDMedication) {
+                            Text("Yes").tag(true)
+                            Text("No").tag(false)
                         }
                         .pickerStyle(.segmented)
                     }
-                }
 
-                if isADHDMedication && medicationType == .stimulant {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Toggle(isOn: $isExtendedRelease) {
-                            Text("Extended-release formulation")
+                    if isADHDMedication {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("What kind of ADHD medication?")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(hex: "#E8E8E0"))
+
+                            Picker("Medication type", selection: $medicationType) {
+                                Text("Stimulant").tag(MedicationType.stimulant)
+                                Text("Non-stimulant").tag(MedicationType.nonStimulant)
+                            }
+                            .pickerStyle(.segmented)
                         }
-                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                        .onChange(of: isExtendedRelease) { _ in
-                            triggerStrongHaptic()
-                        }
+                    }
 
-                        enhancedInputField(
-                            title: "Starts working after (minutes)",
-                            placeholder: "30",
-                            text: $onsetMinutesString,
-                            field: .onsetMinutes,
-                            isRequired: isADHDMedication && medicationType == .stimulant,
-                            errorMessage: onsetMinutesError,
-                            keyboardType: .numberPad
-                        )
-
-                        enhancedInputField(
-                            title: "Lasts about (minutes)",
-                            placeholder: "240",
-                            text: $durationMinutesString,
-                            field: .durationMinutes,
-                            isRequired: isADHDMedication && medicationType == .stimulant,
-                            errorMessage: durationMinutesError,
-                            keyboardType: .numberPad
-                        )
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Toggle(isOn: $enableDailyCheckIn) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Daily check-in")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
-                                    Text("At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication.")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                }
+                    if isADHDMedication && medicationType == .stimulant {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Toggle(isOn: $isExtendedRelease) {
+                                Text("Extended-release formulation")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#E8E8E0"))
                             }
                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                            .onChange(of: enableDailyCheckIn) { newValue in
+                            .onChange(of: isExtendedRelease) { _ in
                                 triggerStrongHaptic()
-                                if !newValue {
-                                    useCustomDailyCheckInTime = false
-                                }
                             }
 
-                            if enableDailyCheckIn {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                            VStack(alignment: .leading, spacing: 4) {
+                                Toggle(isOn: $enableStimulantPhaseNotifications) {
+                                    Text("Turn on focus window")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                }
+                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                .onChange(of: enableStimulantPhaseNotifications) { enabled in
+                                    if !enabled {
+                                        onsetMinutesString = ""
+                                        durationMinutesString = ""
+                                        onsetMinutesError = nil
+                                        durationMinutesError = nil
+                                        enableDailyCheckIn = false
+                                        useCustomDailyCheckInTime = false
+                                    }
+                                }
 
-                                    Toggle(isOn: $useCustomDailyCheckInTime) {
-                                        Text("Choose a custom check-in time")
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                Text("Send alerts when the medication starts working and 10 minutes before it wears off.")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .padding(.leading, 6)
+                            }
+
+                            if enableStimulantPhaseNotifications {
+                                enhancedInputField(
+                                    title: "Starts working after (minutes)",
+                                    placeholder: "30",
+                                    text: $onsetMinutesString,
+                                    field: .onsetMinutes,
+                                    isRequired: true,
+                                    errorMessage: onsetMinutesError,
+                                    keyboardType: .numberPad
+                                )
+
+                                enhancedInputField(
+                                    title: "Lasts about (minutes)",
+                                    placeholder: "240",
+                                    text: $durationMinutesString,
+                                    field: .durationMinutes,
+                                    isRequired: true,
+                                    errorMessage: durationMinutesError,
+                                    keyboardType: .numberPad
+                                )
+
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Toggle(isOn: $enableDailyCheckIn) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Daily check-in")
+                                                .font(.system(size: 15, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                            Text("At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication.")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        }
                                     }
                                     .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                                    .onChange(of: useCustomDailyCheckInTime) { _ in
+                                    .onChange(of: enableDailyCheckIn) { newValue in
                                         triggerStrongHaptic()
+                                        if !newValue {
+                                            useCustomDailyCheckInTime = false
+                                        }
                                     }
 
-                                    if useCustomDailyCheckInTime {
-                                        TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
+                                    if enableDailyCheckIn {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+
+                                            Toggle(isOn: $useCustomDailyCheckInTime) {
+                                                Text("Choose a custom check-in time")
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                            }
+                                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                            .onChange(of: useCustomDailyCheckInTime) { _ in
+                                                triggerStrongHaptic()
+                                            }
+
+                                            if useCustomDailyCheckInTime {
+                                                TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
+                                            }
+                                        }
+                                        .padding(.top, 4)
                                     }
                                 }
-                                .padding(.top, 4)
                             }
+
+                            Text("These help Pillr estimate when this medication will start working and when it will wear off, so you can plan focus time and breaks.")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                         }
                     }
                 }
@@ -666,6 +698,7 @@ struct AddMedicationView: View {
                     durationMinutesError = nil
                     enableDailyCheckIn = false
                     useCustomDailyCheckInTime = false
+                    enableStimulantPhaseNotifications = false
                 }
             }
             .onChange(of: medicationType) { newType in
@@ -678,90 +711,92 @@ struct AddMedicationView: View {
                     onsetMinutesError = nil
                     durationMinutesError = nil
                     useCustomDailyCheckInTime = false
+                    enableStimulantPhaseNotifications = false
+                } else {
+                    _ = validateADHDFields()
                 }
             }
-        }
 
-        // Inventory
-        FormSection(title: "INVENTORY", icon: "archivebox.fill") {
-            VStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Toggle(isOn: $trackPillCount.animation(.easeInOut)) {
-                        VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Track Pill Count")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
-                        if !userSettings.isPremiumUser {
-                            Button(action: {
-                                triggerStrongHaptic()
-                                showingPremiumUpgrade = true
-                            }) {
-                                Text("PREMIUM")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Color(hex: "#D4A017"))
-                                    .cornerRadius(4)
+            FormSection(title: "INVENTORY", icon: "archivebox.fill") {
+                VStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle(isOn: $trackPillCount.animation(.easeInOut)) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text("Track Pill Count")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                    if !userSettings.isPremiumUser {
+                                        Button(action: {
+                                            triggerStrongHaptic()
+                                            showingPremiumUpgrade = true
+                                        }) {
+                                            Text("PREMIUM")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(Color(hex: "#D4A017"))
+                                                .cornerRadius(4)
+                                        }
+                                    }
+                                }
+                                Text(userSettings.isPremiumUser ?
+                                     "Get refill reminders and track usage" :
+                                        "Inventory tracking requires premium subscription")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            }
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                        .disabled(!userSettings.isPremiumUser)
+                        .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
+                        .onChange(of: trackPillCount) { newValue in
+                            triggerStrongHaptic()
+                            if !newValue {
+                                pillCountError = nil
+                                refillThresholdError = nil
                             }
                         }
                     }
-                            Text(userSettings.isPremiumUser ?
-                                 "Get refill reminders and track usage" :
-                                    "Inventory tracking requires premium subscription")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                        }
-                    }
-                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                    .disabled(!userSettings.isPremiumUser)
-                    .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
-                    .onChange(of: trackPillCount) { newValue in
-                        triggerStrongHaptic()
-                        if !newValue {
-                            pillCountError = nil
-                            refillThresholdError = nil
-                        }
-                    }
-                }
 
-                if trackPillCount {
-                    VStack(spacing: 12) {
-                        HStack(spacing: 10) {
+                    if trackPillCount {
+                        VStack(spacing: 12) {
+                            HStack(spacing: 10) {
+                                enhancedInputField(
+                                    title: "Total Pills",
+                                    placeholder: "30",
+                                    text: $pillCountString,
+                                    field: .pillCount,
+                                    isRequired: true,
+                                    errorMessage: pillCountError,
+                                    keyboardType: .numberPad
+                                )
+                                .id(Field.pillCount)
+
+                                enhancedInputField(
+                                    title: "Per Dose",
+                                    placeholder: "1",
+                                    text: $pillsPerDoseString,
+                                    field: .pillsPerDose,
+                                    keyboardType: .numberPad
+                                )
+                                .id(Field.pillsPerDose)
+                            }
+
                             enhancedInputField(
-                                title: "Total Pills",
-                                placeholder: "30",
-                                text: $pillCountString,
-                                field: .pillCount,
+                                title: "Refill Reminder",
+                                placeholder: "5",
+                                text: $refillThresholdString,
+                                field: .refillThreshold,
                                 isRequired: true,
-                                errorMessage: pillCountError,
+                                errorMessage: refillThresholdError,
                                 keyboardType: .numberPad
                             )
-                            .id(Field.pillCount)
-
-                            enhancedInputField(
-                                title: "Per Dose",
-                                placeholder: "1",
-                                text: $pillsPerDoseString,
-                                field: .pillsPerDose,
-                                keyboardType: .numberPad
-                            )
-                            .id(Field.pillsPerDose)
+                            .id(Field.refillThreshold)
                         }
-
-                        enhancedInputField(
-                            title: "Refill Reminder",
-                            placeholder: "5",
-                            text: $refillThresholdString,
-                            field: .refillThreshold,
-                            isRequired: true,
-                            errorMessage: refillThresholdError,
-                            keyboardType: .numberPad
-                        )
-                        .id(Field.refillThreshold)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
         }
@@ -1182,7 +1217,7 @@ struct AddMedicationView: View {
                 refillThresholdError = nil
             }
         case .onsetMinutes:
-            guard isADHDMedication && medicationType == .stimulant else {
+            guard isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications else {
                 onsetMinutesError = nil
                 return
             }
@@ -1195,7 +1230,7 @@ struct AddMedicationView: View {
                 onsetMinutesError = "Enter a valid number"
             }
         case .durationMinutes:
-            guard isADHDMedication && medicationType == .stimulant else {
+            guard isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications else {
                 durationMinutesError = nil
                 return
             }
@@ -1215,7 +1250,7 @@ struct AddMedicationView: View {
     private func validateForm() -> Bool {
         validateField(.name, value: name)
         validateField(.dosage, value: dosage)
-        if isADHDMedication && medicationType == .stimulant {
+        if isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications {
             validateField(.onsetMinutes, value: onsetMinutesString)
             validateField(.durationMinutes, value: durationMinutesString)
         }
@@ -1236,7 +1271,7 @@ struct AddMedicationView: View {
     }
 
     private func validateADHDFields() -> Bool {
-        guard isADHDMedication && medicationType == .stimulant else {
+        guard isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications else {
             onsetMinutesError = nil
             durationMinutesError = nil
             return true
@@ -1399,7 +1434,7 @@ struct AddMedicationView: View {
             return basicValid && pillCountValid && pillsPerDoseValid && refillThresholdValid && customUnitValid
         }
 
-        if isADHDMedication && medicationType == .stimulant {
+        if isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications {
             let trimmedOnset = onsetMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedDuration = durationMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
             let onsetValid = !trimmedOnset.isEmpty && (Int(trimmedOnset) ?? 0) > 0
@@ -1432,6 +1467,7 @@ struct AddMedicationView: View {
         onsetMinutesString = ""
         durationMinutesString = ""
         enableDailyCheckIn = false
+        enableStimulantPhaseNotifications = false
         useCustomDailyCheckInTime = false
         customDailyCheckInTime = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
         onsetMinutesError = nil
@@ -1457,9 +1493,10 @@ struct AddMedicationView: View {
 
         let finalDosageUnit = dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
 
-        let onsetMinutes = medicationType == .stimulant ? Int(onsetMinutesString) : nil
-        let durationMinutes = medicationType == .stimulant ? Int(durationMinutesString) : nil
-        let shouldEnableDailyCheckIn = isADHDMedication && medicationType == .stimulant && enableDailyCheckIn
+        let hasFocusWindow = isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications
+        let onsetMinutes = hasFocusWindow ? Int(onsetMinutesString) : nil
+        let durationMinutes = hasFocusWindow ? Int(durationMinutesString) : nil
+        let shouldEnableDailyCheckIn = hasFocusWindow && enableDailyCheckIn
         let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && useCustomDailyCheckInTime) ? customDailyCheckInTime : nil
 
         let success = store.addMedication(
@@ -1484,6 +1521,7 @@ struct AddMedicationView: View {
             onsetMinutes: onsetMinutes,
             durationMinutes: durationMinutes,
             enableDailyCheckIn: shouldEnableDailyCheckIn,
+            enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
             dailyCheckInTime: selectedDailyCheckInTime
         )
 

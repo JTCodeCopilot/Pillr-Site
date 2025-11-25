@@ -92,6 +92,7 @@ class MedicationStore: ObservableObject {
         onsetMinutes: Int? = nil,
         durationMinutes: Int? = nil,
         enableDailyCheckIn: Bool = false,
+        enableStimulantPhaseNotifications: Bool = false,
         dailyCheckInTime: Date? = nil
     ) -> Bool {
         // Check if user can add more medications
@@ -117,6 +118,7 @@ class MedicationStore: ObservableObject {
             onsetMinutes: onsetMinutes,
             durationMinutes: durationMinutes,
             enableDailyCheckIn: enableDailyCheckIn,
+            enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
             dailyCheckInTime: enableDailyCheckIn ? dailyCheckInTime : nil,
             timeToTake: timeToTake,
             reminderTimes: reminderTimes,
@@ -334,6 +336,7 @@ class MedicationStore: ObservableObject {
         if showFocusTimeline,
            !skipped,
            medication.hasStimulantTiming,
+           medication.enableStimulantPhaseNotifications,
            let onsetMinutes = medication.onsetMinutes,
            let durationMinutes = medication.durationMinutes {
 

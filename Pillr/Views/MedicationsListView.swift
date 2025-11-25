@@ -1819,6 +1819,7 @@ fileprivate struct MedicationRowDetailsView: View {
     
     private var stimulantTimingSummary: String? {
         guard medication.hasStimulantTiming,
+              medication.enableStimulantPhaseNotifications,
               let onset = medication.onsetMinutes,
               let duration = medication.durationMinutes else { return nil }
         

@@ -104,6 +104,8 @@ struct Medication: Identifiable, Codable, Hashable {
     /// When enabled for ADHD stimulants, Pillr will prompt
     /// a daily check-in around the time the medication wears off.
     var enableDailyCheckIn: Bool = false
+    /// When enabled, Pillr will surface the start/wear-off reminders that drive focus windows.
+    var enableStimulantPhaseNotifications: Bool = false
     /// Optional custom time-of-day for the check-in reminder.
     var dailyCheckInTime: Date? = nil
     
@@ -144,6 +146,7 @@ struct Medication: Identifiable, Codable, Hashable {
         case isSkipped
         case isOneTimeWithFollowUp
         case isArchived
+        case enableStimulantPhaseNotifications
     }
 
     init(
@@ -159,6 +162,7 @@ struct Medication: Identifiable, Codable, Hashable {
         onsetMinutes: Int? = nil,
         durationMinutes: Int? = nil,
         enableDailyCheckIn: Bool = false,
+        enableStimulantPhaseNotifications: Bool = false,
         dailyCheckInTime: Date? = nil,
         timeToTake: Date,
         reminderTimes: [Date] = [],
@@ -184,6 +188,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.onsetMinutes = onsetMinutes
         self.durationMinutes = durationMinutes
         self.enableDailyCheckIn = enableDailyCheckIn
+        self.enableStimulantPhaseNotifications = enableStimulantPhaseNotifications
         self.dailyCheckInTime = dailyCheckInTime
         self.timeToTake = timeToTake
         self.reminderTimes = reminderTimes
@@ -215,6 +220,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.onsetMinutes = try container.decodeIfPresent(Int.self, forKey: .onsetMinutes)
         self.durationMinutes = try container.decodeIfPresent(Int.self, forKey: .durationMinutes)
         self.enableDailyCheckIn = try container.decodeIfPresent(Bool.self, forKey: .enableDailyCheckIn) ?? false
+        self.enableStimulantPhaseNotifications = try container.decodeIfPresent(Bool.self, forKey: .enableStimulantPhaseNotifications) ?? false
         self.dailyCheckInTime = try container.decodeIfPresent(Date.self, forKey: .dailyCheckInTime)
 
         self.timeToTake = try container.decode(Date.self, forKey: .timeToTake)
@@ -244,6 +250,7 @@ struct Medication: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(onsetMinutes, forKey: .onsetMinutes)
         try container.encodeIfPresent(durationMinutes, forKey: .durationMinutes)
         try container.encode(enableDailyCheckIn, forKey: .enableDailyCheckIn)
+        try container.encode(enableStimulantPhaseNotifications, forKey: .enableStimulantPhaseNotifications)
         try container.encodeIfPresent(dailyCheckInTime, forKey: .dailyCheckInTime)
         try container.encode(timeToTake, forKey: .timeToTake)
         try container.encode(reminderTimes, forKey: .reminderTimes)

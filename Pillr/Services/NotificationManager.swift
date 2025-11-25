@@ -9,6 +9,18 @@ import Foundation
 import UserNotifications
 import SwiftUI
 
+fileprivate struct NotificationCategoryIdentifier {
+    static let medicationReminder = "MEDICATION_REMINDER"
+    static let stimulantReminder = "STIMULANT_PHASE_REMINDER"
+    static let focusSessionReminder = "FOCUS_SESSION_REMINDER"
+}
+
+fileprivate struct NotificationActionIdentifier {
+    static let takeNow = "TAKE_ACTION"
+    static let remindLater = "REMIND_LATER"
+    static let dismiss = "DISMISS_NOTIFICATION"
+}
+
 class NotificationManager: ObservableObject {
     static let shared = NotificationManager()
     
@@ -19,27 +31,51 @@ class NotificationManager: ObservableObject {
     private func setupNotificationActions() {
         // Define the actions
         let takeAction = UNNotificationAction(
-            identifier: "TAKE_ACTION",
+            identifier: NotificationActionIdentifier.takeNow,
             title: "Take Now",
             options: .foreground
         )
         
         let remindAction = UNNotificationAction(
-            identifier: "REMIND_LATER",
+            identifier: NotificationActionIdentifier.remindLater,
             title: "Remind in 5 minutes",
             options: .foreground
         )
         
-        // Define the medication reminder category (group of actions)
-        let category = UNNotificationCategory(
-            identifier: "MEDICATION_REMINDER",
-            actions: [takeAction, remindAction],
-            intentIdentifiers: [],
-            options: []
+        let dismissAction = UNNotificationAction(
+            identifier: NotificationActionIdentifier.dismiss,
+            title: "Dismiss",
+            options: .destructive
         )
         
-        // Register categories (we may add more later)
-        UNUserNotificationCenter.current().setNotificationCategories([category])
+        // Define the medication reminder category (group of actions)
+        let medicationCategory = UNNotificationCategory(
+            identifier: NotificationCategoryIdentifier.medicationReminder,
+            actions: [takeAction, remindAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+
+        let stimulantCategory = UNNotificationCategory(
+            identifier: NotificationCategoryIdentifier.stimulantReminder,
+            actions: [dismissAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+
+        let focusCategory = UNNotificationCategory(
+            identifier: NotificationCategoryIdentifier.focusSessionReminder,
+            actions: [dismissAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+        
+        // Register all relevant notification categories
+        UNUserNotificationCenter.current().setNotificationCategories([
+            medicationCategory,
+            stimulantCategory,
+            focusCategory
+        ])
     }
     
     // Legacy support for single notification
@@ -54,7 +90,7 @@ class NotificationManager: ObservableObject {
         content.body = "It's time to take \(medication.name) (\(medication.dosage))"
         content.sound = UNNotificationSound.default
         content.userInfo = ["medicationID": medication.id.uuidString]
-        content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
         
@@ -157,7 +193,7 @@ class NotificationManager: ObservableObject {
             "medicationID": medication.id.uuidString,
             "reminderIndex": index
         ]
-        content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
         
         // Set the notification icon badge
@@ -240,7 +276,7 @@ class NotificationManager: ObservableObject {
             "originalNotificationID": originalID.uuidString,
             "reminderIndex": index
         ]
-        content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
         
@@ -291,7 +327,7 @@ class NotificationManager: ObservableObject {
         content.body = "It's time to take \(medication.name) (\(medication.dosage))"
         content.sound = UNNotificationSound.default
         content.userInfo = ["medicationID": medication.id.uuidString]
-        content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
         
@@ -321,6 +357,7 @@ class NotificationManager: ObservableObject {
         startContent.title = "Focus session starting"
         startContent.body = "Use this window for your most important tasks."
         startContent.sound = UNNotificationSound.default
+        startContent.categoryIdentifier = NotificationCategoryIdentifier.focusSessionReminder
         startContent.threadIdentifier = "focus-session"
         
         let startComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: start)
@@ -339,6 +376,7 @@ class NotificationManager: ObservableObject {
             midContent.title = "Halfway through your focus session"
             midContent.body = "Quick stretch, sip of water, or refocus if needed."
             midContent.sound = UNNotificationSound.default
+            midContent.categoryIdentifier = NotificationCategoryIdentifier.focusSessionReminder
             midContent.threadIdentifier = "focus-session"
             
             let midComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: midDate)
@@ -357,6 +395,7 @@ class NotificationManager: ObservableObject {
         endContent.title = "Focus session ending"
         endContent.body = "Time to wrap up or switch to lighter tasks."
         endContent.sound = UNNotificationSound.default
+        endContent.categoryIdentifier = NotificationCategoryIdentifier.focusSessionReminder
         endContent.threadIdentifier = "focus-session"
         
         let endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: endDate)
@@ -505,7 +544,7 @@ class NotificationManager: ObservableObject {
             "originalNotificationID": originalID.uuidString,
             "reminderIndex": 0
         ]
-        content.categoryIdentifier = "MEDICATION_REMINDER"
+        content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
         
@@ -525,7 +564,7 @@ class NotificationManager: ObservableObject {
     // MARK: - Stimulant phase notifications
 
     private func shouldScheduleStimulantTiming(for medication: Medication) -> Bool {
-        return medication.hasStimulantTiming
+        return medication.hasStimulantTiming && medication.enableStimulantPhaseNotifications
     }
 
     func scheduleStimulantPhaseNotifications(for medication: Medication, doseTime: Date) {
@@ -548,7 +587,7 @@ class NotificationManager: ObservableObject {
             content.body = body
             content.sound = UNNotificationSound.default
             content.userInfo = userInfo
-            content.categoryIdentifier = "MEDICATION_REMINDER"
+            content.categoryIdentifier = NotificationCategoryIdentifier.stimulantReminder
             content.threadIdentifier = "medication-reminders"
             content.badge = 1
 
@@ -679,9 +718,13 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     // Called when a notification is delivered to a foreground app
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         
-        // Check if the notification is a medication reminder
-        if notification.request.content.categoryIdentifier == "MEDICATION_REMINDER" {
-            // Check if it's a follow-up reminder
+        let hapticCategories: Set<String> = [
+            NotificationCategoryIdentifier.medicationReminder,
+            NotificationCategoryIdentifier.stimulantReminder,
+            NotificationCategoryIdentifier.focusSessionReminder
+        ]
+
+        if hapticCategories.contains(notification.request.content.categoryIdentifier) {
             if let isFollowUp = notification.request.content.userInfo["isFollowUp"] as? Bool, isFollowUp {
                 NotificationFeedbackManager.shared.triggerReminderHaptic()
             } else {
@@ -700,7 +743,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         
         // Handle different notification actions
         switch response.actionIdentifier {
-        case "TAKE_ACTION":
+        case NotificationActionIdentifier.takeNow:
             // User tapped "Take Now" - log the medication as taken
             if let medicationIDString = userInfo["medicationID"] as? String,
                let medicationID = UUID(uuidString: medicationIDString) {
@@ -725,7 +768,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 }
             }
             
-        case "REMIND_LATER":
+        case NotificationActionIdentifier.remindLater:
             // User tapped "Remind Later" - schedule a reminder in 5 minutes
             if let medicationIDString = userInfo["medicationID"] as? String,
                let medicationID = UUID(uuidString: medicationIDString) {
@@ -739,6 +782,11 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                     HapticManager.shared.lightImpact()
                 }
             }
+            
+        case NotificationActionIdentifier.dismiss:
+            NotificationManager.shared.resetApplicationBadge()
+            completionHandler()
+            return
             
         default:
             // User tapped the notification itself.

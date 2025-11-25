@@ -272,14 +272,9 @@ struct LogMedicationView: View {
                                 VStack(alignment: .leading, spacing: 20) {
                                     // Quick check-in sliders
                                     VStack(alignment: .leading, spacing: 12) {
-                                        HStack {
-                                            Image(systemName: "hourglass")
-                                                .foregroundColor(Color(hex: "#C7C7BD"))
-                                                .font(.system(size: 18))
-                                            Text("How was your focus?")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                        }
+                                        Text("How was your focus?")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
                                         
                                         RatingControl(
                                             title: "Focus",
@@ -288,14 +283,9 @@ struct LogMedicationView: View {
                                             highLabel: "Very focused"
                                         )
                                         
-                                        HStack {
-                                            Image(systemName: "waveform.path.ecg")
-                                                .foregroundColor(Color(hex: "#FFB74D"))
-                                                .font(.system(size: 18))
-                                            Text("How strong were side effects?")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                        }
+                                        Text("How strong were side effects?")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
                                         
                                         RatingControl(
                                             title: "Side effects",
@@ -307,14 +297,9 @@ struct LogMedicationView: View {
                                     
                                     // Side effects quick selection
                                     VStack(alignment: .leading, spacing: 12) {
-                                        HStack {
-                                            Image(systemName: "exclamationmark.triangle.fill")
-                                                .foregroundColor(Color(hex: "#FFB74D"))
-                                                .font(.system(size: 18))
-                                            Text("Any side effects? (optional)")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                        }
+                                        Text("Any side effects? (optional)")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
                                         
                                         if !sideEffectTags.isEmpty {
                                             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
