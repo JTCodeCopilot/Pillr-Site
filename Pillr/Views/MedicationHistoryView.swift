@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct MedicationHistoryView: View {
     @EnvironmentObject var store: MedicationStore
@@ -6,6 +7,8 @@ struct MedicationHistoryView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedMedication: String = "All"
     @State private var includeSkipped = true
+    @State private var shareItems: [Any] = []
+    @State private var showingShareSheet = false
     
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -115,9 +118,33 @@ struct MedicationHistoryView: View {
                         .foregroundColor(Color(hex: "#C7C7BD"))
                     }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button {
+                            exportHistoryAsCSV()
+                        } label: {
+                            Label("Export CSV", systemImage: "doc.text")
+                        }
+                        
+                        Button {
+                            exportHistoryAsPDF()
+                        } label: {
+                            Label("Export PDF", systemImage: "doc.richtext")
+                        }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                    }
+                    .disabled(filteredLogs.isEmpty)
+                    .accessibilityLabel("Export history")
+                }
             }
         }
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $showingShareSheet) {
+            ShareSheet(activityItems: shareItems)
+        }
     }
     
     private var headerSection: some View {
@@ -404,6 +431,265 @@ private struct HistoryChip: View {
         .background(tint.opacity(0.9))
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+    }
+}
+
+// MARK: - Export Helpers
+
+extension MedicationHistoryView {
+    private func exportHistoryAsCSV() {
+        guard let url = createCSVFile() else { return }
+        shareItems = [url]
+        showingShareSheet = true
+    }
+    
+    private func exportHistoryAsPDF() {
+        guard let url = createPDFFile() else { return }
+        shareItems = [url]
+        showingShareSheet = true
+    }
+    
+    private func createCSVFile() -> URL? {
+        let logs = filteredLogs
+        guard !logs.isEmpty else { return nil }
+        
+        var csv = "Date,Time,Medication,Dosage,Status,Notes\n"
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        
+        for log in logs {
+            let med = medication(for: log)
+            let dosage = [med?.dosage, med?.dosageUnit].compactMap { $0 }.joined(separator: " ")
+            let cleanNotes = (log.notes ?? "").replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: ",", with: ";")
+            let status = log.skipped ? "Skipped" : "Taken"
+            csv += "\(dateFormatter.string(from: log.takenAt)),\(timeFormatter.string(from: log.takenAt)),\(log.medicationName),\(dosage),\(status),\(cleanNotes)\n"
+        }
+        
+        let fileName = "MedicationHistory_\(DateFormatter.fileNameFormatter.string(from: Date())).csv"
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try csv.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            print("Error writing CSV file: \(error)")
+            return nil
+        }
+    }
+    
+    private func createPDFFile() -> URL? {
+        let logs = filteredLogs
+        guard !logs.isEmpty else { return nil }
+        
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: logs) { calendar.startOfDay(for: $0.takenAt) }
+        let sortedDates = grouped.keys.sorted(by: >)
+        let medicationsByID = Dictionary(uniqueKeysWithValues: store.medications.map { ($0.id, $0) })
+        
+        let sectionDateFormatter = DateFormatter()
+        sectionDateFormatter.dateStyle = .long
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        let coverageFormatter = DateFormatter()
+        coverageFormatter.dateStyle = .medium
+        let exportedOnFormatter = DateFormatter()
+        exportedOnFormatter.dateStyle = .long
+        exportedOnFormatter.timeStyle = .short
+        
+        let coverageText: String
+        if let earliest = logs.last?.takenAt, let latest = logs.first?.takenAt {
+            coverageText = "Covers \(coverageFormatter.string(from: earliest)) – \(coverageFormatter.string(from: latest))"
+        } else {
+            coverageText = "Generated on \(coverageFormatter.string(from: Date()))"
+        }
+        
+        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
+        let margin: CGFloat = 36
+        let contentWidth = pageRect.width - (margin * 2)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        
+        let titleAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 24, weight: .bold),
+            .foregroundColor: UIColor.black
+        ]
+        let subtitleAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 14, weight: .medium),
+            .foregroundColor: UIColor.darkGray
+        ]
+        let dateBadgeAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 14, weight: .semibold),
+            .foregroundColor: UIColor.black
+        ]
+        let bodyAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 12, weight: .regular),
+            .foregroundColor: UIColor.darkGray
+        ]
+        
+        let pdfData = renderer.pdfData { context in
+            var currentY = margin
+            
+            func drawHeader() {
+                let title = NSAttributedString(string: "Medication History Report", attributes: titleAttributes)
+                let titleHeight = height(for: title, width: contentWidth)
+                title.draw(in: CGRect(x: margin, y: currentY, width: contentWidth, height: titleHeight))
+                currentY += titleHeight + 2
+                
+                let subtitle = NSAttributedString(string: coverageText, attributes: subtitleAttributes)
+                let subtitleHeight = height(for: subtitle, width: contentWidth)
+                subtitle.draw(in: CGRect(x: margin, y: currentY, width: contentWidth, height: subtitleHeight))
+                currentY += subtitleHeight + 12
+                
+                context.cgContext.setStrokeColor(UIColor(white: 0.85, alpha: 1).cgColor)
+                context.cgContext.setLineWidth(0.5)
+                context.cgContext.move(to: CGPoint(x: margin, y: currentY))
+                context.cgContext.addLine(to: CGPoint(x: pageRect.width - margin, y: currentY))
+                context.cgContext.strokePath()
+                currentY += 18
+            }
+            
+            func beginPage() {
+                context.beginPage()
+                currentY = margin
+                drawHeader()
+            }
+            
+            func ensureSpace(for blockHeight: CGFloat) {
+                if currentY + blockHeight > pageRect.height - margin {
+                    beginPage()
+                }
+            }
+            
+            func drawSummaryCard() {
+                let takenCount = logs.filter { !$0.skipped }.count
+                let skippedCount = logs.filter { $0.skipped }.count
+                let uniqueMedications = Set(logs.map { $0.medicationName }).count
+                let summaryText = """
+                Entries logged: \(logs.count)
+                Doses taken: \(takenCount)
+                Doses skipped: \(skippedCount)
+                Medications tracked: \(uniqueMedications)
+                Exported on: \(exportedOnFormatter.string(from: Date()))
+                """
+                let summaryAttributed = NSAttributedString(string: summaryText, attributes: bodyAttributes)
+                let textHeight = height(for: summaryAttributed, width: contentWidth - 40)
+                let cardHeight = textHeight + 28
+                ensureSpace(for: cardHeight)
+                
+                let cardRect = CGRect(x: margin, y: currentY, width: contentWidth, height: cardHeight)
+                let cardPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 14)
+                UIColor(white: 0.98, alpha: 1).setFill()
+                cardPath.fill()
+                UIColor(white: 0.85, alpha: 1).setStroke()
+                cardPath.lineWidth = 0.6
+                cardPath.stroke()
+                
+                summaryAttributed.draw(in: cardRect.insetBy(dx: 20, dy: 14))
+                currentY += cardHeight + 24
+            }
+            
+            func drawLogEntry(_ log: MedicationLog) {
+                let medication = medicationsByID[log.medicationID]
+                let dosageText: String
+                if let med = medication {
+                    dosageText = "\(med.dosage) \(med.dosageUnit)"
+                } else {
+                    dosageText = ""
+                }
+                
+                let timeString = timeFormatter.string(from: log.takenAt)
+                var lines: [String] = []
+                if dosageText.isEmpty {
+                    lines.append("\(timeString) – \(log.medicationName)")
+                } else {
+                    lines.append("\(timeString) – \(log.medicationName) (\(dosageText))")
+                }
+                
+                var statusLine = "Status: " + (log.skipped ? "Skipped" : "Taken")
+                if let pills = log.pillsConsumed, pills > 0 {
+                    statusLine += " · \(pills) pill\(pills == 1 ? "" : "s")"
+                }
+                if let reminder = log.reminderIndex {
+                    statusLine += " · Reminder \(reminder + 1)"
+                }
+                lines.append(statusLine)
+                
+                if let focus = log.focusRating {
+                    lines.append("Focus rating: \(focus)/5")
+                }
+                if let sideEffects = log.sideEffectSeverity {
+                    lines.append("Side effects: \(sideEffects)/5")
+                }
+                if let notes = log.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
+                    lines.append("Notes: \(notes)")
+                }
+                
+                let entryAttributed = NSAttributedString(string: lines.joined(separator: "\n"), attributes: bodyAttributes)
+                let textHeight = height(for: entryAttributed, width: contentWidth - 24)
+                let cardHeight = textHeight + 22
+                ensureSpace(for: cardHeight)
+                
+                let cardRect = CGRect(x: margin, y: currentY, width: contentWidth, height: cardHeight)
+                let entryPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 12)
+                UIColor(white: 0.99, alpha: 1).setFill()
+                entryPath.fill()
+                UIColor(white: 0.88, alpha: 1).setStroke()
+                entryPath.lineWidth = 0.6
+                entryPath.stroke()
+                
+                entryAttributed.draw(in: cardRect.insetBy(dx: 12, dy: 11))
+                currentY += cardHeight + 10
+            }
+            
+            func drawDateSection(for date: Date) {
+                let dateString = sectionDateFormatter.string(from: date)
+                let attributedDate = NSAttributedString(string: dateString, attributes: dateBadgeAttributes)
+                let badgeHeight: CGFloat = 28
+                let textRect = attributedDate.boundingRect(
+                    with: CGSize(width: contentWidth, height: CGFloat.greatestFiniteMagnitude),
+                    options: [.usesLineFragmentOrigin, .usesFontLeading],
+                    context: nil
+                )
+                let calculatedWidth = min(textRect.width + 24, contentWidth)
+                ensureSpace(for: badgeHeight + 8)
+                let badgeRect = CGRect(x: margin, y: currentY, width: calculatedWidth, height: badgeHeight)
+                let badgePath = UIBezierPath(roundedRect: badgeRect, cornerRadius: 8)
+                UIColor(red: 0.92, green: 0.95, blue: 0.93, alpha: 1).setFill()
+                badgePath.fill()
+                attributedDate.draw(in: badgeRect.insetBy(dx: 12, dy: 6))
+                currentY += badgeHeight + 6
+                
+                for log in (grouped[date] ?? []).sorted(by: { $0.takenAt > $1.takenAt }) {
+                    drawLogEntry(log)
+                }
+                currentY += 6
+            }
+            
+            beginPage()
+            drawSummaryCard()
+            for date in sortedDates {
+                drawDateSection(for: date)
+            }
+        }
+        
+        let fileName = "MedicationHistory_Full_\(DateFormatter.fileNameFormatter.string(from: Date())).pdf"
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try pdfData.write(to: fileURL, options: .atomic)
+            return fileURL
+        } catch {
+            print("Error writing PDF file: \(error)")
+            return nil
+        }
+    }
+    
+    private func height(for attributedString: NSAttributedString, width: CGFloat) -> CGFloat {
+        let bounds = attributedString.boundingRect(
+            with: CGSize(width: width, height: CGFloat.greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            context: nil
+        )
+        return ceil(bounds.height)
     }
 }
 

@@ -1716,13 +1716,6 @@ struct MedicationRow: View {
     private func quickLogMedication(taken: Bool) {
         guard hasRemainingDoseToday else { return }
         let now = Date()
-        let quickLogNote = taken ? "Quick logged" : "Quick skipped"
-        
-        // Preserve existing medication notes by combining them with the quick log note
-        var combinedNotes = quickLogNote
-        if let existingNotes = medication.notes, !existingNotes.isEmpty {
-            combinedNotes = "\(existingNotes)\n\n\(quickLogNote)"
-        }
         
         let reminderIndex = medication.reminderTimes.isEmpty ? nil : nextReminderIndexToLog()
         
@@ -1733,7 +1726,7 @@ struct MedicationRow: View {
         store.logMedicationTaken(
             medication: medication,
             actualTime: now,
-            notes: combinedNotes,
+            notes: nil,
             skipped: !taken,
             reminderIndex: reminderIndex
         )
@@ -1745,7 +1738,7 @@ struct MedicationRow: View {
             store.logMedicationTaken(
                 medication: medication,
                 actualTime: Date(),
-                notes: "Quick logged dose \(index + 1)",
+                notes: nil,
                 skipped: false,
                 reminderIndex: nil
             )
@@ -1758,7 +1751,7 @@ struct MedicationRow: View {
         store.logMedicationTaken(
             medication: medication,
             actualTime: Date(),
-            notes: "Quick logged dose \(index + 1)",
+            notes: nil,
             skipped: false,
             reminderIndex: index
         )
