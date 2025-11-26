@@ -574,38 +574,11 @@ class NotificationManager: ObservableObject {
             return
         }
 
-        let center = UNUserNotificationCenter.current()
-        let now = Date()
         let calendar = Calendar.current
-
-        func scheduleNotification(title: String, body: String, userInfo: [String: Any], identifierSuffix: String, fireDate: Date) {
-            let interval = fireDate.timeIntervalSince(now)
-            guard interval > 0 else { return }
-
-            let content = UNMutableNotificationContent()
-            content.title = title
-            content.body = body
-            content.sound = UNNotificationSound.default
-            content.userInfo = userInfo
-            content.categoryIdentifier = NotificationCategoryIdentifier.stimulantReminder
-            content.threadIdentifier = "medication-reminders"
-            content.badge = 1
-
-            let request = UNNotificationRequest(
-                identifier: "\(medication.id.uuidString)_\(identifierSuffix)_\(UUID().uuidString)",
-                content: content,
-                trigger: UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-            )
-
-            center.add(request) { error in
-                if let error = error {
-                    print("Error scheduling \(identifierSuffix) stimulant notification: \(error.localizedDescription)")
-                }
-            }
-        }
 
         if let onsetDate = calendar.date(byAdding: .minute, value: onset, to: doseTime) {
             scheduleNotification(
+                for: medication,
                 title: "Medication starting to work",
                 body: "\(medication.name) is likely starting to work. This can be a good time to ease into tasks or planning.",
                 userInfo: [
@@ -628,6 +601,7 @@ class NotificationManager: ObservableObject {
                    "Effects may taper in ~10 minutes. Ease into lighter tasks or plan a break.")
 
             scheduleNotification(
+                for: medication,
                 title: fadeTitle,
                 body: fadeBody,
                 userInfo: [
@@ -640,30 +614,78 @@ class NotificationManager: ObservableObject {
             )
         }
 
-        // Custom daily check-in reminder, if provided.
-        if medication.enableDailyCheckIn,
-           let customCheckInTime = medication.dailyCheckInTime {
-            let checkInComponents = calendar.dateComponents([.hour, .minute], from: customCheckInTime)
-            if let hour = checkInComponents.hour,
-               let minute = checkInComponents.minute,
-               var fireDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: doseTime) {
-                if fireDate <= now {
-                    fireDate = calendar.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate
-                }
+    }
 
-                scheduleNotification(
-                    title: "Daily check-in for \(medication.name)",
-                    body: "Take a moment to reflect on focus and side effects today.",
-                    userInfo: [
-                        "medicationID": medication.id.uuidString,
-                        "phase": "checkin",
-                        "isDailyCheckIn": true
-                    ],
-                    identifierSuffix: "checkin",
-                    fireDate: fireDate
-                )
+    private func scheduleNotification(
+        for medication: Medication,
+        title: String,
+        body: String,
+        userInfo: [String: Any],
+        identifierSuffix: String,
+        fireDate: Date,
+        category: String = NotificationCategoryIdentifier.stimulantReminder
+    ) {
+        let interval = fireDate.timeIntervalSinceNow
+        guard interval > 0 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = UNNotificationSound.default
+        content.userInfo = userInfo
+        content.categoryIdentifier = category
+        content.threadIdentifier = "medication-reminders"
+        content.badge = 1
+
+        let request = UNNotificationRequest(
+            identifier: "\(medication.id.uuidString)_\(identifierSuffix)_\(UUID().uuidString)",
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling \(identifierSuffix) notification: \(error.localizedDescription)")
             }
         }
+    }
+
+    func scheduleDailyCheckInReminder(for medication: Medication, referenceDate: Date) {
+        guard medication.enableDailyCheckIn,
+              let customCheckInTime = medication.dailyCheckInTime else {
+            return
+        }
+
+        let calendar = Calendar.current
+        let now = Date()
+        let checkInComponents = calendar.dateComponents([.hour, .minute], from: customCheckInTime)
+
+        guard let hour = checkInComponents.hour,
+              let minute = checkInComponents.minute,
+              var fireDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: referenceDate) else {
+            return
+        }
+
+        if fireDate <= now {
+            fireDate = calendar.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate
+        }
+
+        let noteBody = medication.medicationType == .stimulant
+            ? "Take a moment to reflect on focus and side effects today."
+            : "Add a quick note about how this medication felt today."
+
+        scheduleNotification(
+            for: medication,
+            title: "Daily check-in for \(medication.name)",
+            body: noteBody,
+            userInfo: [
+                "medicationID": medication.id.uuidString,
+                "phase": "checkin",
+                "isDailyCheckIn": true
+            ],
+            identifierSuffix: "checkin",
+            fireDate: fireDate
+        )
     }
 }
 

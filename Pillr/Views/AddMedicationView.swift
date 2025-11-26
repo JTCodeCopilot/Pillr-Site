@@ -605,10 +605,11 @@ struct AddMedicationView: View {
                                     }
                                 }
 
-                                Text("Send alerts when the medication starts working and 10 minutes before it wears off.")
+                                Text("Use these times to map your focus sessions. Pillr uses the start and wear-off windows to help you plan when you’ll be at your sharpest and when to ease into breaks.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                     .padding(.leading, 6)
+                                    .padding(.top, 4)
                             }
 
                             if enableStimulantPhaseNotifications {
@@ -675,10 +676,39 @@ struct AddMedicationView: View {
                                     }
                                 }
                             }
+                        }
+                    }
 
-                            Text("These help Pillr estimate when this medication will start working and when it will wear off, so you can plan focus time and breaks.")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    if medicationType != .stimulant {
+                        FormSection(title: "DAILY CHECK-IN", icon: "calendar.badge.clock") {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Toggle(isOn: $enableDailyCheckIn) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Daily wellness check-in")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                        Text("Pick a time for a gentle reminder to jot anything you'd like to remember about this medication.")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    }
+                                }
+                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                .onChange(of: enableDailyCheckIn) { newValue in
+                                    triggerStrongHaptic()
+                                    if newValue {
+                                        useCustomDailyCheckInTime = true
+                                    }
+                                }
+
+                                if enableDailyCheckIn {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Choose when you'd like to reflect each day.")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                        TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -696,9 +726,10 @@ struct AddMedicationView: View {
                     durationMinutesString = ""
                     onsetMinutesError = nil
                     durationMinutesError = nil
-                    enableDailyCheckIn = false
-                    useCustomDailyCheckInTime = false
                     enableStimulantPhaseNotifications = false
+                    if enableDailyCheckIn {
+                        useCustomDailyCheckInTime = true
+                    }
                 }
             }
             .onChange(of: medicationType) { newType in
@@ -707,11 +738,12 @@ struct AddMedicationView: View {
                     isExtendedRelease = false
                     onsetMinutesString = ""
                     durationMinutesString = ""
-                    enableDailyCheckIn = false
                     onsetMinutesError = nil
                     durationMinutesError = nil
-                    useCustomDailyCheckInTime = false
                     enableStimulantPhaseNotifications = false
+                    if enableDailyCheckIn {
+                        useCustomDailyCheckInTime = true
+                    }
                 } else {
                     _ = validateADHDFields()
                 }
@@ -1494,10 +1526,12 @@ struct AddMedicationView: View {
         let finalDosageUnit = dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
 
         let hasFocusWindow = isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications
+        let supportsGeneralCheckIn = medicationType != .stimulant
         let onsetMinutes = hasFocusWindow ? Int(onsetMinutesString) : nil
         let durationMinutes = hasFocusWindow ? Int(durationMinutesString) : nil
-        let shouldEnableDailyCheckIn = hasFocusWindow && enableDailyCheckIn
-        let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && useCustomDailyCheckInTime) ? customDailyCheckInTime : nil
+        let shouldEnableDailyCheckIn = enableDailyCheckIn && (hasFocusWindow || supportsGeneralCheckIn)
+        let shouldUseCustomCheckInTime = supportsGeneralCheckIn || useCustomDailyCheckInTime
+        let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && shouldUseCustomCheckInTime) ? customDailyCheckInTime : nil
 
         let success = store.addMedication(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),

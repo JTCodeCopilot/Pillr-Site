@@ -2028,10 +2028,16 @@ fileprivate struct MedicationRowDetailsView: View {
 
         if medication.enableDailyCheckIn {
             let checkInDescription: String
-            if let customTime = medication.dailyCheckInTime {
-                checkInDescription = "Custom: \(commonFormatTime(customTime))"
+            if medication.medicationType == .stimulant {
+                if let customTime = medication.dailyCheckInTime {
+                    checkInDescription = "Custom: \(commonFormatTime(customTime))"
+                } else {
+                    checkInDescription = "~10 min before wear-off"
+                }
+            } else if let customTime = medication.dailyCheckInTime {
+                checkInDescription = "Wellness: \(commonFormatTime(customTime))"
             } else {
-                checkInDescription = "~10 min before wear-off"
+                checkInDescription = "Daily reflection reminder"
             }
 
             entries.append(

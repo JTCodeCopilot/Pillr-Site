@@ -363,6 +363,10 @@ class MedicationStore: ObservableObject {
 
             notificationManager.scheduleStimulantPhaseNotifications(for: medication, doseTime: actualTime)
         }
+        
+        if !skipped && !isDailyCheckIn {
+            notificationManager.scheduleDailyCheckInReminder(for: medication, referenceDate: actualTime)
+        }
     }
     
     // Helper method to check if badge should be reset
