@@ -287,7 +287,7 @@ struct EditMedicationView: View {
                             VStack(spacing: 16) {
                                 // Frequency picker with better visual design
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("How often?")
+                                    Text("How Often You’ll Take It")
                                         .font(.system(size: 16, weight: .semibold))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                     let frequencyHasError = showValidationErrors && frequencyError != nil
@@ -365,7 +365,7 @@ struct EditMedicationView: View {
                         FormSection(title: "FOCUS & TIMING") {
                             VStack(alignment: .leading, spacing: 16) {
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("Is this an ADHD medication?")
+                                    Text("Is This an ADHD Medication?")
                                         .font(.system(size: 16, weight: .semibold))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                     

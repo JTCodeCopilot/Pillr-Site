@@ -434,7 +434,7 @@ struct AddMedicationView: View {
             VStack(spacing: 12) {
                 // Frequency picker
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("How often?")
+                    Text("How Often You’ll Take It")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Color(hex: "#E8E8E0"))
 
@@ -551,7 +551,7 @@ struct AddMedicationView: View {
         FormSection(title: nil, icon: "hourglass") {
             VStack(alignment: .leading, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Is this an ADHD medication?")
+                    Text("Is This an ADHD Medication?")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Color(hex: "#E8E8E0"))
 
@@ -961,24 +961,6 @@ struct AddMedicationView: View {
 
     // MARK: - Helper Views
 
-    private var summaryAttributes: [String] {
-        var items: [String] = []
-
-        if !frequency.isEmpty {
-            items.append(frequency)
-        }
-
-        if trackPillCount && userSettings.isPremiumUser {
-            items.append("Inventory tracking")
-        }
-
-        if isADHDMedication {
-            items.append(medicationType == .stimulant ? "ADHD stimulant" : "ADHD med")
-        }
-
-        return items
-    }
-
     @ViewBuilder
     private var summarySection: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -990,47 +972,53 @@ struct AddMedicationView: View {
         }
     }
 
-    @ViewBuilder
     private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(name.isEmpty ? "New medication" : name)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDosage = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayUnit = dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+        let trimmedFrequency = frequency.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPillCount = pillCountString.trimmingCharacters(in: .whitespacesAndNewlines)
 
-                if !dosage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text("\(dosage) \(dosageUnit)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                } else {
-                    Text("Dosage not set yet")
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                }
+        let adhdDescription: String? = {
+            guard isADHDMedication else { return nil }
+            if medicationType == .stimulant {
+                return isExtendedRelease ? "Yes (Stimulant, XR)" : "Yes (Stimulant)"
+            } else {
+                return "Yes"
+            }
+        }()
+
+        let pillInventoryValue: String = {
+            guard trackPillCount && userSettings.isPremiumUser else { return "No" }
+            return trimmedPillCount.isEmpty ? "Yes (total not set)" : "Yes (\(trimmedPillCount) total)"
+        }()
+
+        return VStack(alignment: .leading, spacing: 14) {
+            summaryRow(
+                title: "Medication name",
+                value: trimmedName.isEmpty ? "Not set" : trimmedName
+            )
+
+            summaryRow(
+                title: "Amount",
+                value: trimmedDosage.isEmpty ? "Not set" : "\(trimmedDosage) \(displayUnit)"
+            )
+
+            summaryRow(
+                title: "Notifications",
+                value: trimmedFrequency.isEmpty ? "Not set" : trimmedFrequency
+            )
+
+            if let adhdDescription {
+                summaryRow(title: "ADHD medication", value: adhdDescription)
             }
 
-            if !summaryAttributes.isEmpty {
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 150), spacing: 12)],
-                    alignment: .leading,
-                    spacing: 6
-                ) {
-                    ForEach(summaryAttributes, id: \.self) { attribute in
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
+            summaryRow(
+                title: "Daily check-in",
+                value: enableDailyCheckIn ? "Yes" : "No"
+            )
 
-                            Text(attribute)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-            }
+            summaryRow(title: "Pill inventory", value: pillInventoryValue)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1042,6 +1030,17 @@ struct AddMedicationView: View {
                         .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
                 )
         )
+    }
+
+    private func summaryRow(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+            Text(value)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+        }
     }
 
     @ViewBuilder
