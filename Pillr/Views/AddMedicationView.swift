@@ -592,6 +592,7 @@ struct AddMedicationView: View {
                                     Text("Turn on focus window")
                                         .font(.system(size: 15, weight: .semibold))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
+                                        .padding(.trailing, 12)
                                 }
                                 .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                                 .onChange(of: enableStimulantPhaseNotifications) { enabled in
@@ -609,7 +610,6 @@ struct AddMedicationView: View {
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                     .padding(.leading, 6)
-                                    .padding(.top, 4)
                             }
 
                             if enableStimulantPhaseNotifications {
@@ -643,6 +643,7 @@ struct AddMedicationView: View {
                                                 .font(.system(size: 12))
                                                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                         }
+                                        .padding(.trailing, 12)
                                     }
                                     .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                                     .onChange(of: enableDailyCheckIn) { newValue in
