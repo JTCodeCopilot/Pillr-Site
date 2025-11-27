@@ -578,16 +578,6 @@ struct AddMedicationView: View {
 
                 if isADHDMedication && medicationType == .stimulant {
                     VStack(alignment: .leading, spacing: 10) {
-                        Toggle(isOn: $isExtendedRelease) {
-                            Text("Extended-release formulation")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                        .onChange(of: isExtendedRelease) { _ in
-                            triggerStrongHaptic()
-                        }
-
                         VStack(alignment: .leading, spacing: 4) {
                             Toggle(isOn: $enableStimulantPhaseNotifications) {
                                 Text("Turn on focus window")
@@ -722,7 +712,9 @@ struct AddMedicationView: View {
     @ViewBuilder
     private var trackingAndADHDSection: some View {
         VStack(spacing: 16) {
-            if medicationType != .stimulant {
+            let shouldShowStandaloneDailyCheckIn = medicationType != .stimulant || !enableStimulantPhaseNotifications
+
+            if shouldShowStandaloneDailyCheckIn {
                 FormSection(title: "DAILY CHECK-IN", icon: "calendar.badge.clock") {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle(isOn: $enableDailyCheckIn) {
@@ -984,7 +976,7 @@ struct AddMedicationView: View {
             if medicationType == .stimulant {
                 return isExtendedRelease ? "Yes (Stimulant, XR)" : "Yes (Stimulant)"
             } else {
-                return "Yes"
+                return "Yes (Non-stimulant)"
             }
         }()
 
@@ -1033,13 +1025,14 @@ struct AddMedicationView: View {
     }
 
     private func summaryRow(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
             Text(value)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(Color(hex: "#E8E8E0"))
+            Spacer()
         }
     }
 
@@ -1051,14 +1044,6 @@ struct AddMedicationView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             let _ = icon
-            if let title = title, !title.isEmpty {
-                HStack {
-                    Text(title)
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                        .tracking(0.5)
-                }
-            }
 
             VStack(alignment: .leading, spacing: 12) {
                 content()
@@ -1066,7 +1051,7 @@ struct AddMedicationView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.black.opacity(0.15))
+                    .fill(Color.clear)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
