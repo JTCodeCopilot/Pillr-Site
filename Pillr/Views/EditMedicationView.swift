@@ -392,13 +392,6 @@ struct EditMedicationView: View {
                                 
                                 if isADHDMedication && medicationType == .stimulant {
                                     VStack(alignment: .leading, spacing: 12) {
-                                        Toggle(isOn: $isExtendedRelease) {
-                                            Text("Extended-release formulation")
-                                                .font(.system(size: 15, weight: .medium))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                        }
-                                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-
                                         VStack(alignment: .leading, spacing: 4) {
                                             Toggle(isOn: $enableStimulantPhaseNotifications) {
                                                 Text("Turn on focus window")
