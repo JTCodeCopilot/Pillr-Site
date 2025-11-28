@@ -18,6 +18,12 @@ struct MedicationHistoryView: View {
         formatter.dateFormat = "EEEE, MMM d"
         return formatter
     }()
+
+    private static let compactDayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d"
+        return formatter
+    }()
     
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -108,6 +114,17 @@ struct MedicationHistoryView: View {
         let end = max(selectedStartDate, selectedEndDate)
         let formatter = MedicationHistoryView.dayFormatter
         return "From \(formatter.string(from: start)) to \(formatter.string(from: end))"
+    }
+
+    private var compactDateRangeLabel: String {
+        let start = min(selectedStartDate, selectedEndDate)
+        let end = max(selectedStartDate, selectedEndDate)
+        let formatter = MedicationHistoryView.compactDayFormatter
+        return "\(formatter.string(from: start)) – \(formatter.string(from: end))"
+    }
+
+    private var dateRangeSummaryText: String {
+        rangeDaysDisplayed == 1 ? "Single day selected" : "\(rangeDaysDisplayed) days selected"
     }
     
     var body: some View {
@@ -203,77 +220,212 @@ struct MedicationHistoryView: View {
         }
     }
     
+    private var dateRangeFullScreen: some View {
+        NavigationStack {
+            ZStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "#3D463F"),
+                        Color(hex: "#2E352F")
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                VStack {
+                    dateRangePopoverContent
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
+                    Spacer(minLength: 12)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        showingDateRangePopover = false
+                    }
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+    
     private var dateRangePopoverContent: some View {
-        GlassContainer(spacing: 20) {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(spacing: 20) {
-                    datePickerRow(label: "From", selection: $selectedStartDate) {
+        GlassContainer(spacing: 18) {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Choose a date range")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                }
+
+                VStack(spacing: 12) {
+                    dateSelectionCard(
+                        label: "From",
+                        selectionText: MedicationHistoryView.rangeDateFormatter.string(from: selectedStartDate)
+                    ) {
                         DatePicker("", selection: $selectedStartDate, in: ...selectedEndDate, displayedComponents: .date)
                             .labelsHidden()
-                            .datePickerStyle(.compact)
+                            .datePickerStyle(.wheel)
                             .tint(Color(hex: "#E8E8E0"))
+                            .scaleEffect(y: 0.8, anchor: .center)
+                            .frame(height: 120)
                     }
-                    datePickerRow(label: "To", selection: $selectedEndDate) {
+
+                    dateSelectionCard(
+                        label: "To",
+                        selectionText: MedicationHistoryView.rangeDateFormatter.string(from: selectedEndDate)
+                    ) {
                         DatePicker("", selection: $selectedEndDate, in: selectedStartDate...Date(), displayedComponents: .date)
                             .labelsHidden()
-                            .datePickerStyle(.compact)
+                            .datePickerStyle(.wheel)
                             .tint(Color(hex: "#E8E8E0"))
+                            .scaleEffect(y: 0.8, anchor: .center)
+                            .frame(height: 120)
                     }
                 }
+
+                HStack(spacing: 10) {
+                    Label("\(rangeDaysDisplayed) days selected", systemImage: "calendar.badge.clock")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                    Spacer()
+                    Text("\(rangeTakenCount) logged • \(rangeNotesCount) notes")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                }
+                .padding(.horizontal, 6)
 
                 Divider()
-                    .background(Color.white.opacity(0.2))
+                    .overlay(Color.white.opacity(0.12))
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Quick ranges")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                quickRangeMenu
 
-                    LazyVGrid(columns: presetColumns, spacing: 12) {
-                        ForEach(presetDays, id: \.self) { days in
-                            Button {
-                                applyPreset(days: days)
-                            } label: {
-                                Text("Last \(days) days")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#5AC5FF"))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(Color.white.opacity(0.03))
-                                    .cornerRadius(10)
-                            }
-                        }
-                    }
-                }
+                Spacer(minLength: 4)
 
-                Spacer(minLength: 8)
-
-                Button("Done") {
+                Button {
                     showingDateRangePopover = false
+                } label: {
+                    Text("Done")
+                        .frame(maxWidth: .infinity)
                 }
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
-                .frame(maxWidth: .infinity)
+                .buttonStyle(PrimaryButtonStyle())
             }
-            .padding(26)
-            .frame(maxWidth: .infinity, minHeight: 420)
+            .padding(20)
+            .frame(maxWidth: .infinity)
         }
-        .frame(minWidth: 320, maxWidth: 380)
+        .frame(minWidth: 320, maxWidth: 420)
     }
 
     @ViewBuilder
-    private func datePickerRow<Picker: View>(label: String, selection: Binding<Date>, @ViewBuilder picker: () -> Picker) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD"))
-
-            Text(Self.rangeDateFormatter.string(from: selection.wrappedValue))
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+    private func dateSelectionCard<Picker: View>(
+        label: String,
+        selectionText: String,
+        @ViewBuilder picker: () -> Picker
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label.uppercased())
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                Text(selectionText)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+            }
+            .padding(.horizontal, 4)
 
             picker()
+                .frame(maxWidth: .infinity)
         }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 0.8)
+                )
+        )
+    }
+
+    private var quickRangeMenu: some View {
+        Menu {
+            ForEach(presetDays, id: \.self) { days in
+                Button {
+                    applyPreset(days: days)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Last \(days) days")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text(presetSubtitle(for: days))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        if presetIsActive(days) {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Quick ranges")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                    Text("Jump to a recent window")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                }
+                Spacer()
+                HStack(spacing: 6) {
+                    Text(activePresetLabel ?? "Custom")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(hex: "#7FE3FF"))
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                }
+            }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.white.opacity(0.03))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 0.6)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var activePresetLabel: String? {
+        guard Calendar.current.isDateInToday(selectedEndDate) else { return nil }
+        if let match = presetDays.first(where: { presetIsActive($0) }) {
+            return "Last \(match) days"
+        }
+        return nil
+    }
+
+    private func presetIsActive(_ days: Int) -> Bool {
+        guard Calendar.current.isDateInToday(selectedEndDate) else { return false }
+        return rangeDaysDisplayed == days
+    }
+
+    private func presetSubtitle(for days: Int) -> String {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let start = calendar.date(byAdding: .day, value: -(days - 1), to: today) else {
+            return ""
+        }
+        return "\(MedicationHistoryView.rangeDateFormatter.string(from: start)) – \(MedicationHistoryView.rangeDateFormatter.string(from: today))"
     }
 
     @ViewBuilder
@@ -293,62 +445,61 @@ struct MedicationHistoryView: View {
     }
     
     private var statsSection: some View {
-        GlassContainer(spacing: 14) {
-            HStack(spacing: 14) {
-                HistoryControlCard(title: "Filter") {
-                    Menu {
-                        ForEach(medicationFilters, id: \.self) { name in
-                            Button {
-                                selectedMedication = name
-                            } label: {
-                                Label(name, systemImage: name == selectedMedication ? "checkmark" : "pills")
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "slider.horizontal.3")
-                                .font(.system(size: 16, weight: .semibold))
-                            Text(selectedMedication)
-                                .font(.system(size: 15, weight: .semibold))
-                                .lineLimit(1)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 13, weight: .bold))
-                                .opacity(0.8)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-                    }
-                    .buttonStyle(.plain)
-                }
-                .frame(width: 90)
+        GlassContainer(spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Refine history")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
 
-                HistoryControlCard(title: "Date Range") {
-                    Button {
-                        showingDateRangePopover = true
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text(dateRangeLabel)
-                                .font(.system(size: 15, weight: .semibold))
-                                .multilineTextAlignment(.leading)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 13, weight: .bold))
-                                .opacity(0.8)
-                        }
-                        .padding(.vertical, 10)
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 14) {
+                        filterControl
+                        dateRangeControl
                     }
-                    .buttonStyle(.plain)
-                    .popover(isPresented: $showingDateRangePopover, attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) {
-                        dateRangePopoverContent
-                            .padding(12)
+
+                    VStack(spacing: 14) {
+                        filterControl
+                        dateRangeControl
                     }
                 }
-                .frame(minWidth: 160)
-                .layoutPriority(1)
-
             }
+        }
+    }
+
+    private var filterControl: some View {
+        Menu {
+            ForEach(medicationFilters, id: \.self) { name in
+                Button {
+                    selectedMedication = name
+                } label: {
+                    Label(name, systemImage: name == selectedMedication ? "checkmark" : "pills")
+                }
+            }
+        } label: {
+            HistoryControlButton(
+                icon: "slider.horizontal.3",
+                title: "Filter",
+                value: selectedMedication,
+                detail: selectedMedication == "All" ? "All medications" : "Only \(selectedMedication)"
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var dateRangeControl: some View {
+        Button {
+            showingDateRangePopover = true
+        } label: {
+            HistoryControlButton(
+                icon: "calendar",
+                title: "Date range",
+                value: compactDateRangeLabel,
+                detail: dateRangeSummaryText
+            )
+        }
+        .buttonStyle(.plain)
+        .fullScreenCover(isPresented: $showingDateRangePopover) {
+            dateRangeFullScreen
         }
     }
     
@@ -865,35 +1016,65 @@ extension MedicationHistoryView {
     }
 }
 
-private struct HistoryControlCard<Content: View>: View {
+private struct HistoryControlButton: View {
+    let icon: String
     let title: String
-    let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
+    let value: String
+    let detail: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title.uppercased())
-                .font(.system(size: 11, weight: .semibold))
-                .kerning(0.5)
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .frame(width: 36, height: 36)
+                .foregroundColor(Color(hex: "#E8E8E0"))
+                .background(
+                    Circle()
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                        )
+                )
 
-            content
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title.uppercased())
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    .kerning(0.6)
+
+                Text(value)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .lineLimit(1)
+
+                if let detail {
+                    Text(detail)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.down")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(Color(hex: "#C7C7BD"))
+                .opacity(0.9)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(0.06))
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.05))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(Color.white.opacity(0.08), lineWidth: 1)
                 )
         )
+        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
