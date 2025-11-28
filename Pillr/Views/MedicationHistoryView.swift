@@ -105,18 +105,9 @@ struct MedicationHistoryView: View {
 
     private var dateRangeLabel: String {
         let start = min(selectedStartDate, selectedEndDate)
-        let formatter = MedicationHistoryView.dayFormatter
-        return formatter.string(from: start)
-    }
-
-    private var dateRangeEndLabel: String {
-        let start = min(selectedStartDate, selectedEndDate)
         let end = max(selectedStartDate, selectedEndDate)
-        if Calendar.current.isDate(start, inSameDayAs: end) {
-            return "\(rangeDaysDisplayed) day\(rangeDaysDisplayed == 1 ? "" : "s")"
-        } else {
-            return MedicationHistoryView.dayFormatter.string(from: end)
-        }
+        let formatter = MedicationHistoryView.dayFormatter
+        return "From \(formatter.string(from: start)) to \(formatter.string(from: end))"
     }
     
     var body: some View {
@@ -135,7 +126,6 @@ struct MedicationHistoryView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
                         headerSection
-                        filtersSection
                         statsSection
                         
                         if groupedLogs.isEmpty {
@@ -207,77 +197,12 @@ struct MedicationHistoryView: View {
                 .font(.system(size: 30, weight: .bold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
             
-            Text("Review your past doses, notes, and streaks in one place.")
-                .font(.system(size: 14))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+            Text("Logged doses: \(rangeTakenCount)  •  Adherence: \(rangeAdherenceRate)")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.95))
         }
     }
     
-    private var filtersSection: some View {
-        HStack(spacing: 12) {
-            Menu {
-                ForEach(medicationFilters, id: \.self) { name in
-                    Button {
-                        selectedMedication = name
-                    } label: {
-                        Label(name, systemImage: name == selectedMedication ? "checkmark" : "pills")
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text(selectedMedication)
-                        .font(.system(size: 14, weight: .semibold))
-                        .lineLimit(1)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .bold))
-                        .opacity(0.8)
-                }
-                .foregroundColor(Color(hex: "#404C42"))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color(hex: "#D7CCC8"))
-                .cornerRadius(14)
-            }
-            .fixedSize()
-
-            Spacer()
-
-            Button {
-                showingDateRangePopover = true
-            } label: {
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(dateRangeLabel)
-                            .font(.system(size: 14, weight: .semibold))
-                            .lineLimit(1)
-                        Text(dateRangeEndLabel)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                            .lineLimit(1)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: "#404C42"))
-                        .opacity(0.7)
-                }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 14)
-                .background(Color(hex: "#D7CCC8"))
-                .cornerRadius(18)
-            }
-            .frame(maxWidth: .infinity)
-            .buttonStyle(.plain)
-            .popover(isPresented: $showingDateRangePopover, attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) {
-                dateRangePopoverContent
-                    .padding(12)
-            }
-        }
-    }
-
     private var dateRangePopoverContent: some View {
         GlassContainer(spacing: 20) {
             VStack(alignment: .leading, spacing: 24) {
@@ -370,23 +295,59 @@ struct MedicationHistoryView: View {
     private var statsSection: some View {
         GlassContainer(spacing: 14) {
             HStack(spacing: 14) {
-                HistoryStatCard(
-                    title: "Logged doses",
-                    value: "\(rangeTakenCount)",
-                    detail: rangeAdherenceRate == "—" ? "Select a range to track adherence" : "Adherence \(rangeAdherenceRate)"
-                )
-                
-                HistoryStatCard(
-                    title: "Range span",
-                    value: "\(rangeDaysDisplayed)",
-                    detail: "Days shown"
-                )
-                
-                HistoryStatCard(
-                    title: "Saved notes",
-                    value: "\(rangeNotesCount)",
-                    detail: "With side effects or focus"
-                )
+                HistoryControlCard(title: "Filter") {
+                    Menu {
+                        ForEach(medicationFilters, id: \.self) { name in
+                            Button {
+                                selectedMedication = name
+                            } label: {
+                                Label(name, systemImage: name == selectedMedication ? "checkmark" : "pills")
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text(selectedMedication)
+                                .font(.system(size: 15, weight: .semibold))
+                                .lineLimit(1)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 13, weight: .bold))
+                                .opacity(0.8)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(width: 90)
+
+                HistoryControlCard(title: "Date Range") {
+                    Button {
+                        showingDateRangePopover = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text(dateRangeLabel)
+                                .font(.system(size: 15, weight: .semibold))
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 13, weight: .bold))
+                                .opacity(0.8)
+                        }
+                        .padding(.vertical, 10)
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                    }
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $showingDateRangePopover, attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) {
+                        dateRangePopoverContent
+                            .padding(12)
+                    }
+                }
+                .frame(minWidth: 160)
+                .layoutPriority(1)
+
             }
         }
     }
@@ -904,25 +865,23 @@ extension MedicationHistoryView {
     }
 }
 
-private struct HistoryStatCard: View {
+private struct HistoryControlCard<Content: View>: View {
     let title: String
-    let value: String
-    let detail: String
-    
+    let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(title.uppercased())
                 .font(.system(size: 11, weight: .semibold))
                 .kerning(0.5)
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-            
-            Text(value)
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
-            
-            Text(detail)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+
+            content
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
