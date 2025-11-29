@@ -71,6 +71,8 @@ struct EditMedicationView: View {
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
     let dosageUnits = ["mg", "ml", "tablets", "capsules", "custom"]
     private let standardFieldHeight: CGFloat = 52
+    private let formSectionBackgroundColor = Color.white.opacity(0.06)
+    private let timePickerHeight: CGFloat = 140
     
     // Computed properties
     private var needsMultipleReminders: Bool {
@@ -172,13 +174,14 @@ struct EditMedicationView: View {
             
             ScrollViewReader { scrollProxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 24) {
+                    LazyVStack(alignment: .leading, spacing: 20) {
                         // Enhanced Header with progress indicator
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Text("Edit Medication")
                                     .font(.system(size: 28, weight: .bold, design: .rounded))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .padding(.top, -4)
                                 
                                 Spacer()
                                 
@@ -194,12 +197,18 @@ struct EditMedicationView: View {
                             
                             Text("Update your medication details")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .padding(.bottom, 12)
                         }
-                        .padding(.top, 20)
+                        .padding(.top, 32)
                         
                         // Enhanced Basic Information Section
-                        FormSection(title: "MEDICATION INFO") {
+                        FormSection(
+                            title: "MEDICATION INFO",
+                            cornerRadius: 20,
+                            verticalPadding: 14,
+                            includeTopDivider: true
+                        ) {
                             VStack(spacing: 16) {
                                 enhancedInputField(
                                     title: "Medication Name", 
@@ -212,7 +221,7 @@ struct EditMedicationView: View {
                                 .id(Field.name)
                                 
                                 // Dosage and Unit in a row
-                                HStack(spacing: 12) {
+                                HStack(alignment: .top, spacing: 24) {
                                     enhancedInputField(
                                         title: "Dosage", 
                                         placeholder: dosageUnit == "ml" ? "10" : "50", 
@@ -247,24 +256,21 @@ struct EditMedicationView: View {
                                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                                     .lineLimit(1)
                                                     .minimumScaleFactor(0.8)
-                                                Spacer()
                                             }
                                             .padding(.horizontal, 12)
                                             .padding(.vertical, 12)
-                                            .frame(minWidth: 90)
                                             .background(
-                                                RoundedRectangle(cornerRadius: 12)
+                                                RoundedRectangle(cornerRadius: 10)
                                                     .fill(Color.black.opacity(0.2))
                                                     .overlay(
-                                                        RoundedRectangle(cornerRadius: 12)
+                                                        RoundedRectangle(cornerRadius: 10)
                                                             .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
                                                     )
                                             )
                                         }
-                                        .buttonStyle(ScaleButtonStyle())
-                                    }
-                                    .frame(minWidth: 110)
+                                    .buttonStyle(ScaleButtonStyle())
                                 }
+                            }
 
                                 // Add custom unit text field if needed - now moved under the dosage row
                                 if isCustomUnitSelected {
@@ -283,7 +289,12 @@ struct EditMedicationView: View {
                         }
                         
                         // Enhanced Schedule Section
-                        FormSection(title: "SCHEDULE") {
+                        FormSection(
+                            title: "SCHEDULE",
+                            cornerRadius: 20,
+                            verticalPadding: 14,
+                            includeTopDivider: true
+                        ) {
                             VStack(spacing: 16) {
                                 // Frequency picker with better visual design
                                 VStack(alignment: .leading, spacing: 8) {
@@ -338,18 +349,26 @@ struct EditMedicationView: View {
                                 }
                                 .id(Field.frequency)
                                 
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.08))
+                                    .frame(height: 1)
+                                    .padding(.vertical, 4)
+                                
                                 // Time pickers with enhanced design
                                 if needsMultipleReminders {
                                     VStack(alignment: .leading, spacing: 12) {
                                         Text("Reminder Times")
                                             .font(.system(size: 16, weight: .semibold))
                                             .foregroundColor(Color(hex: "#E8E8E0"))
+                                            .padding(.bottom, 6)
                                        
                                         ForEach(0..<reminderTimes.count, id: \.self) { index in
                                             TimePickerRow(
                                                 title: "Dose \(index + 1)",
-                                                time: $reminderTimes[index]
+                                                time: $reminderTimes[index],
+                                                titleOpacity: 0.7
                                             )
+                                            .padding(.top, index == 0 ? 0 : 16)
                                         }
                                     }
                                 } else if frequency != "As needed" {
@@ -439,51 +458,55 @@ struct EditMedicationView: View {
                                                 keyboardType: .numberPad
                                             )
                                             .id(Field.durationMinutes)
-
-                                            VStack(alignment: .leading, spacing: 6) {
-                                                Toggle(isOn: $enableDailyCheckIn) {
-                                                    VStack(alignment: .leading, spacing: 4) {
-                                                        Text("Daily check-in")
-                                                            .font(.system(size: 15, weight: .semibold))
-                                                            .foregroundColor(Color(hex: "#E8E8E0"))
-                                                        Text("At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication.")
-                                                            .font(.system(size: 12))
-                                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                                    }
-                                                }
-                                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                                                .onChange(of: enableDailyCheckIn) { newValue in
-                                                    if !newValue {
-                                                        useCustomDailyCheckInTime = false
-                                                    }
-                                                }
-
-                                                if enableDailyCheckIn {
-                                                    VStack(alignment: .leading, spacing: 8) {
-                                                        Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
-                                                            .font(.system(size: 12))
-                                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
-
-                                                        Toggle(isOn: $useCustomDailyCheckInTime) {
-                                                            Text("Choose a custom check-in time")
-                                                                .font(.system(size: 14, weight: .medium))
-                                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                                        }
-                                                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-
-                                                        if useCustomDailyCheckInTime {
-                                                            TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
-                                                        }
-                                                    }
-                                                    .padding(.top, 4)
-                                                }
-                                            }
                                         }
                                     }
                                 }
                             }
             
-            if medicationType != .stimulant {
+            if medicationType == .stimulant {
+                if enableStimulantPhaseNotifications {
+                    FormSection(title: "DAILY CHECK-IN") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Toggle(isOn: $enableDailyCheckIn) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Daily check-in")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                    Text("At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                }
+                            }
+                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                            .onChange(of: enableDailyCheckIn) { newValue in
+                                if !newValue {
+                                    useCustomDailyCheckInTime = false
+                                }
+                            }
+
+                            if enableDailyCheckIn {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+
+                                    Toggle(isOn: $useCustomDailyCheckInTime) {
+                                        Text("Choose a custom check-in time")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                    }
+                                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+
+                                    if useCustomDailyCheckInTime {
+                                        TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
+                                    }
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                    }
+                }
+            } else {
                 FormSection(title: "DAILY CHECK-IN") {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle(isOn: $enableDailyCheckIn) {
@@ -502,7 +525,7 @@ struct EditMedicationView: View {
                                 useCustomDailyCheckInTime = true
                             }
                         }
-                        
+
                         if enableDailyCheckIn {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Choose a time for your check-in.")
@@ -840,46 +863,69 @@ struct EditMedicationView: View {
     
     // MARK: - Helper Views
     
-    @ViewBuilder
-    private func FormSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                .tracking(0.5)
-
+    private func FormSection<Content: View>(
+        title: String,
+        cornerRadius: CGFloat = 20,
+        verticalPadding: CGFloat = 14,
+        includeTopDivider: Bool = true,
+        backgroundColor: Color? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        let resolvedBackground = backgroundColor ?? formSectionBackgroundColor
+        return VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 16) {
+                if includeTopDivider {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(height: 1)
+                        .padding(.bottom, 10)
+                }
                 content()
             }
-            .padding(20)
+            .padding(.vertical, verticalPadding)
+            .padding(.horizontal, 20)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.black.opacity(0.15))
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(resolvedBackground)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: cornerRadius)
                             .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
                     )
             )
         }
+        .padding(.horizontal, 2)
     }
     
     @ViewBuilder
-    private func TimePickerRow(title: String, time: Binding<Date>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private func TimePickerRow(
+        title: String,
+        time: Binding<Date>,
+        titleOpacity: Double = 1.0
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color(hex: "#E8E8E0").opacity(titleOpacity))
             
             DatePicker("", selection: time, displayedComponents: .hourAndMinute)
                 .datePickerStyle(.wheel)
                 .labelsHidden()
                 .colorScheme(.dark)
                 .accentColor(Color(hex: "#C7C7BD"))
+                .frame(height: timePickerHeight)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.black.opacity(0.1))
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(Color.black.opacity(0.25))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
                 )
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     @ViewBuilder
@@ -911,14 +957,14 @@ struct EditMedicationView: View {
                 .keyboardType(keyboardType)
                 .focused($focusedField, equals: field)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(hex: "#E8E8E0"))
-                .padding(.horizontal, 16)
+                .foregroundColor(Color.white)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 12)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 10)
                         .fill(Color.black.opacity(0.2))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: 10)
                                 .stroke(
                                     focusedField == field
                                     ? Color(hex: "#C7C7BD")
