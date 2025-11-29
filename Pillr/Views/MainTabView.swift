@@ -51,7 +51,7 @@ struct MainTabView: View {
                 // Add medication
                 NavigationView {
                     AddMedicationView(
-                        onAdd: {
+                        onFinish: {
                             // After saving, return to My Meds tab
                             hasUnsavedAddFlow = false
                             selectedTab = .meds

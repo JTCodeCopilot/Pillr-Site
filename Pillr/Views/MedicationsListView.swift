@@ -61,14 +61,17 @@ struct MedicationsListView: View {
         }
         .sheet(item: $selectedMedicationToEdit) { med in
             NavigationView {
-                EditMedicationView(medication: med, onUpdate: {})
-                    .environmentObject(store)
-                    .navigationBarTitleDisplayMode(.inline)
+                AddMedicationView(
+                    medicationToEdit: med,
+                    onFinish: { selectedMedicationToEdit = nil }
+                )
+                .environmentObject(store)
+                .environmentObject(userSettings)
             }
         }
         .sheet(isPresented: $showingAddSheet) {
             NavigationView {
-                AddMedicationView(onAdd: { showingAddSheet = false })
+                AddMedicationView(onFinish: { showingAddSheet = false })
                     .environmentObject(store)
                     .environmentObject(userSettings)
             }
@@ -1043,6 +1046,7 @@ fileprivate struct MedicationRowHeaderView: View {
     let highlightedDoseIndex: Int?
     
     private let timelineTimeWidth: CGFloat = 58
+    private let logButtonMinWidth: CGFloat = 96
 
     private var usesTimelineLayout: Bool {
         !doseStates.isEmpty
@@ -1144,14 +1148,14 @@ fileprivate struct MedicationRowHeaderView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
             
-            Text(dosageAmountLine)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(hex: "#E0E7DC"))
-
-            if !frequencyLine.isEmpty {
-                Text(frequencyLine)
+            if !dosageFrequencyLine.isEmpty {
+                Text(dosageFrequencyLine)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(Color(hex: "#E0E7DC"))
+            }
+
+            if statusDisplay.show {
+                statusBadge
             }
             
             if showDetails, let preview = notesPreview {
@@ -1178,30 +1182,21 @@ fileprivate struct MedicationRowHeaderView: View {
         return "\(baseDosage) \(trimmedUnit)"
     }
 
-    private var frequencyLine: String {
-        medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines)
+    private var dosageFrequencyLine: String {
+        let frequency = medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines)
+        if dosageAmountLine.isEmpty {
+            return frequency
+        } else if frequency.isEmpty {
+            return dosageAmountLine
+        } else {
+            return "\(dosageAmountLine) • \(frequency)"
+        }
     }
     
     // Status section with chevron
     private var statusSection: some View {
-        let currentStatusDisplay = statusDisplay
-        
-        return Group {
-            if currentStatusDisplay.show {
-                HStack(spacing: 4) {
-                    Text(currentStatusDisplay.text)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(currentStatusDisplay.color)
-                    chevronIcon
-                }
-            } else {
-                HStack {
-                    Spacer()
-                    chevronIcon
-                        .padding(.vertical, 7)
-                }
-            }
-        }
+        chevronIcon
+            .padding(.vertical, 7)
     }
     
     // Chevron icon
@@ -1209,6 +1204,20 @@ fileprivate struct MedicationRowHeaderView: View {
         Image(systemName: showDetails ? "chevron.up" : "chevron.down")
             .font(.system(size: 13))
             .foregroundColor(Color(hex: "#E0E7DC").opacity(0.7))
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        let display = statusDisplay
+        if display.show {
+            Text(display.text)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(display.color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
+                .background(display.color.opacity(0.2))
+                .clipShape(Capsule())
+        }
     }
     
     // Enhanced action button
@@ -1239,97 +1248,68 @@ fileprivate struct MedicationRowHeaderView: View {
     }
     
     private var multiDoseGrid: some View {
-        ZStack(alignment: .leading) {
-            VStack {
-                Rectangle()
-                    .fill(Color.white.opacity(0.15))
-                    .frame(width: 2)
-                    .padding(.leading, timelineTimeWidth + 29)
-                    .padding(.trailing, 8)
-                    .padding(.vertical, 4)
-                    .opacity(doseStates.isEmpty ? 0 : 1)
-            }
-            
-            VStack(spacing: 12) {
-                let primaryIndex = highlightedDoseIndex
-                ForEach(Array(doseStates.enumerated()), id: \.offset) { index, state in
-                    let isPrimary = primaryIndex != nil ? state.index == primaryIndex : false
-                    doseTimelineRow(for: state, isLast: index == doseStates.indices.last, isPrimary: isPrimary)
+        VStack(spacing: 0) {
+            let primaryIndex = highlightedDoseIndex
+            ForEach(Array(doseStates.enumerated()), id: \.offset) { index, state in
+                let isPrimary = primaryIndex != nil ? state.index == primaryIndex : false
+                doseCardRow(for: state, isPrimary: isPrimary)
+                    .padding(.vertical, 12)
+                if index < doseStates.count - 1 {
+                    Rectangle()
+                        .fill(Color(hex: "#D0D5D8").opacity(0.08))
+                        .frame(height: 1)
+                        .padding(.top, 12)
+                        .padding(.bottom, 12)
                 }
             }
         }
+        .padding(.top, 2)
     }
-    
-    private func doseTimelineRow(for state: DoseButtonState, isLast: Bool, isPrimary: Bool) -> some View {
-        let textOpacity = isPrimary ? 1.0 : 0.7
-        let buttonVerticalPadding: CGFloat = isPrimary ? 12 : 6
-        let buttonHorizontalPadding: CGFloat = isPrimary ? 18 : 12
-        let timeOpacity: Double
-        switch state.status {
-        case .pending:
-            timeOpacity = isPrimary ? 0.95 : 0.7
-        case .taken, .skipped:
-            timeOpacity = 0.5
-        }
-        let buttonCornerRadius: CGFloat = isPrimary ? 14 : 10
-        let rowCornerRadius: CGFloat = 18
-        let rowVerticalPadding: CGFloat = isPrimary ? 4 : 0
-        
-        return HStack(alignment: .top, spacing: 12) {
-            if let time = state.formattedTime {
-                Text(time)
-                    .font(.system(size: isPrimary ? 13 : 12, weight: .semibold))
-                    .foregroundColor(Color(hex: "#D7CCC8").opacity(timeOpacity))
-                    .frame(width: timelineTimeWidth, alignment: .trailing)
-                    .padding(.top, 4)
-        } else {
-                Spacer()
-                    .frame(width: timelineTimeWidth)
-            }
-            
-            VStack(spacing: 8) {
-                Circle()
-                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 2)
-                    .background(Circle().fill(nodeFill(for: state)))
-                    .frame(width: 28, height: 28)
-                    .overlay(
-                        Image(systemName: state.iconName)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(nodeIconColor(for: state))
-                    )
-            }
-            .padding(.top, 2)
-            
-            VStack(alignment: .leading, spacing: 6) {
-                Text(state.title)
-                    .font(.system(size: isPrimary ? 13 : 12, weight: .semibold))
-                    .foregroundColor(Color(hex: "#F5F7F4").opacity(textOpacity * (state.status == .pending ? 1 : 0.7)))
 
-                Button(action: {
-                    onDoseTap(state.index)
-                }) {
-                    HStack(spacing: 8) {
-                        Text(state.actionLabel)
-                            .font(.system(size: isPrimary ? 15 : 13, weight: .semibold))
-                        Spacer()
+    private func doseCardRow(for state: DoseButtonState, isPrimary: Bool) -> some View {
+        let displayText = state.formattedTime ?? state.title
+        return HStack(spacing: 12) {
+            // Action button
+            Button(action: {
+                onDoseTap(state.index)
+            }) {
+                HStack(spacing: 6) {
+                    Text(state.actionLabel)
+                        .font(.system(size: 14, weight: .medium))
+                    if state.status == .pending {
                         Image(systemName: "chevron.right")
-                            .font(.system(size: isPrimary ? 13 : 11, weight: .semibold))
-                            .opacity(isPrimary ? 0.6 : 0.4)
+                            .font(.system(size: 10, weight: .bold))
                     }
-                    .foregroundColor(state.foregroundColor.opacity(state.status == .pending ? (isPrimary ? 1 : 0.9) : 0.6))
-                    .padding(.vertical, buttonVerticalPadding)
-                    .padding(.horizontal, buttonHorizontalPadding)
-                    .background(state.backgroundColor)
-                    .cornerRadius(buttonCornerRadius)
                 }
-                .buttonStyle(ScaleButtonStyle())
-                .disabled(state.status != .pending)
-                .opacity(state.status == .pending ? 1 : 0.75)
+                .foregroundColor(Color.white.opacity(state.status == .pending ? 1 : 0.85))
+                .padding(.vertical, 10)
+                .padding(.horizontal, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 0.9)
+                        )
+                )
+                .frame(minWidth: logButtonMinWidth, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(ScaleButtonStyle())
+            .disabled(state.status != .pending)
+            
+            Spacer()
+            
+            // Time only (or fallback label if no time)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(displayText)
+                    .font(.system(.body, design: .default).weight(.semibold))
+                    .foregroundColor(Color(hex: "#F5F7F4").opacity(state.status == .pending ? 1 : 0.7))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(width: timelineTimeWidth, alignment: .trailing)
         }
-        .padding(.vertical, rowVerticalPadding)
-        .padding(.leading, 4)
+        .padding(.horizontal, 2)
     }
     
     private func nodeFill(for state: DoseButtonState) -> Color {
@@ -1842,33 +1822,26 @@ fileprivate struct MedicationRowDetailsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 let detailEntries = detailRowEntries
                 if !detailEntries.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 14) {
                         ForEach(detailEntries, id: \.label) { entry in
-                            VStack(alignment: .leading, spacing: entry.placeValueOnNewLine ? 4 : 2) {
+                            VStack(alignment: .leading, spacing: entry.placeValueOnNewLine ? 6 : 4) {
                                 Text("\(entry.label):")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 Text(entry.value)
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(entry.valueColor)
                                     .lineLimit(entry.lineLimit)
+                                    .lineSpacing(3)
                                     .multilineTextAlignment(.leading)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
                     }
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 14)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.black.opacity(0.1))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(hex: "#606A63").opacity(0.2), lineWidth: 1)
-                            )
-                    )
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 
                 if let notes = medication.notes, !notes.isEmpty {
@@ -1905,17 +1878,14 @@ fileprivate struct MedicationRowDetailsView: View {
             // Enhanced action buttons with improved styling
             HStack(spacing: 8) {
                 Button(action: onEditTap) {
-                    HStack(spacing: 10) {
-                        Image(systemName: "pencil.circle.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                    HStack(spacing: 12) {
                         Text("Edit")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(Color(hex: "#E8E8E0"))
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 14)
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
@@ -1947,17 +1917,14 @@ fileprivate struct MedicationRowDetailsView: View {
 
                 if let archiveTap = onArchiveTap {
                     Button(action: archiveTap) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "archivebox.fill")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(hex: "#FF6B6B"))
+                        HStack(spacing: 12) {
                             Text("Archive")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(Color(hex: "#FF6B6B"))
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, 14)
                         .background(
                             LinearGradient(
                                 gradient: Gradient(colors: [
@@ -1974,8 +1941,8 @@ fileprivate struct MedicationRowDetailsView: View {
                                 .stroke(
                                     LinearGradient(
                                         gradient: Gradient(colors: [
-                                            Color(hex: "#FF6B6B").opacity(0.4),
-                                            Color(hex: "#FF6B6B").opacity(0.2)
+                                            Color(hex: "#FF6B6B").opacity(0.6),
+                                            Color(hex: "#FF6B6B").opacity(0.35)
                                         ]),
                                         startPoint: .top,
                                         endPoint: .bottom

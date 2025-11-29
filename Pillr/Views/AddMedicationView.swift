@@ -14,7 +14,8 @@ struct AddMedicationView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
-    var onAdd: () -> Void
+    var medicationToEdit: Medication? = nil
+    var onFinish: () -> Void
     var onProgressStateChange: (Bool) -> Void = { _ in }
 
     // Core fields
@@ -76,6 +77,7 @@ struct AddMedicationView: View {
     }
 
     @State private var currentStep: AddMedicationStep = .basics
+    @State private var hasInitializedForm = false
 
     enum Field: Hashable {
         case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold, onsetMinutes, durationMinutes
@@ -92,6 +94,10 @@ struct AddMedicationView: View {
     let dosageUnits = ["mg", "ml", "tablets", "capsules", "custom"]
     @State private var customUnit: String = ""
     @State private var isCustomUnitSelected: Bool = false
+
+    private var isEditing: Bool {
+        medicationToEdit != nil
+    }
 
     private var contentExpansionKey: ContentExpansionKey {
             ContentExpansionKey(
@@ -173,12 +179,17 @@ struct AddMedicationView: View {
                 }
             }
             .onAppear {
-                // Always start from a fresh form and step 1
-                resetForm()
                 setupKeyboardObservers()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    focusedField = .name
+                guard !hasInitializedForm else { return }
+                if let medication = medicationToEdit {
+                    populateForm(with: medication)
+                } else {
+                    resetForm()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        focusedField = .name
+                    }
                 }
+                hasInitializedForm = true
             }
             .onChange(of: currentStep) { newStep in
                 onProgressStateChange(newStep != .basics)
@@ -275,7 +286,7 @@ struct AddMedicationView: View {
     @ViewBuilder
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Add Medication")
+            Text(isEditing ? "Edit Medication" : "Add Medication")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
@@ -910,7 +921,7 @@ struct AddMedicationView: View {
                 }) {
                     HStack {
                         if currentStep == .notesAndReview {
-                            Text("Add Medication")
+                            Text(isEditing ? "Save Changes" : "Add Medication")
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                         } else {
                             Text("Next")
@@ -933,7 +944,7 @@ struct AddMedicationView: View {
                             )
                     )
                 }
-                .accessibilityLabel(currentStep == .notesAndReview ? "Add medication" : "Next step")
+                .accessibilityLabel(currentStep == .notesAndReview ? (isEditing ? "Save changes" : "Add medication") : "Next step")
             }
 
             if currentStep == .notesAndReview && showValidationErrors && !isFormValid {
@@ -1341,12 +1352,7 @@ struct AddMedicationView: View {
     }
 
     private var needsMultipleReminders: Bool {
-        switch frequency {
-        case "Twice daily", "Three times daily":
-            return true
-        default:
-            return false
-        }
+        requiresMultipleReminders(for: frequency)
     }
 
     private var canMoveToPreviousField: Bool {
@@ -1407,21 +1413,35 @@ struct AddMedicationView: View {
         HapticManager.shared.pulseRigid()
     }
 
-    private func setupReminderTimesForFrequency(_ frequency: String) {
-        let calendar = Calendar.current
+    private func requiresMultipleReminders(for frequency: String) -> Bool {
+        return frequency == "Twice daily" || frequency == "Three times daily"
+    }
 
+    private func defaultReminderTimes(for frequency: String) -> [Date] {
+        let calendar = Calendar.current
         switch frequency {
         case "Twice daily":
             let morningTime = calendar.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
             let eveningTime = calendar.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
-            reminderTimes = [morningTime, eveningTime]
-            enableNotification = true
-
+            return [morningTime, eveningTime]
         case "Three times daily":
             let morningTime = calendar.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
             let middayTime = calendar.date(bySettingHour: 14, minute: 0, second: 0, of: Date()) ?? Date()
             let eveningTime = calendar.date(bySettingHour: 20, minute: 0, second: 0, of: Date()) ?? Date()
-            reminderTimes = [morningTime, middayTime, eveningTime]
+            return [morningTime, middayTime, eveningTime]
+        default:
+            return []
+        }
+    }
+
+    private func setupReminderTimesForFrequency(_ frequency: String) {
+        switch frequency {
+        case "Twice daily":
+            reminderTimes = defaultReminderTimes(for: frequency)
+            enableNotification = true
+
+        case "Three times daily":
+            reminderTimes = defaultReminderTimes(for: frequency)
             enableNotification = true
 
         case "As needed":
@@ -1509,6 +1529,56 @@ struct AddMedicationView: View {
         isCustomUnitSelected = false
         onProgressStateChange(false)
     }
+    
+    private func populateForm(with medication: Medication) {
+        let standardUnits = ["mg", "ml", "tablets", "capsules"]
+        name = medication.name
+        dosage = medication.dosage
+        if standardUnits.contains(medication.dosageUnit) {
+            dosageUnit = medication.dosageUnit
+            customUnit = ""
+            isCustomUnitSelected = false
+        } else {
+            dosageUnit = "custom"
+            customUnit = medication.dosageUnit
+            isCustomUnitSelected = true
+        }
+        iconName = medication.iconName
+        currentStep = .basics
+        frequency = medication.frequency
+        timeToTake = medication.timeToTake
+        reminderTimes = medication.reminderTimes
+        if reminderTimes.isEmpty && requiresMultipleReminders(for: frequency) {
+            reminderTimes = defaultReminderTimes(for: frequency)
+        }
+        notes = medication.notes ?? ""
+        enableNotification = (medication.notificationID != nil || !medication.notificationIDs.isEmpty)
+        pillCountString = medication.pillCount.map { "\($0)" } ?? ""
+        pillsPerDoseString = "\(medication.pillsPerDose)"
+        refillThresholdString = medication.refillThreshold.map { "\($0)" } ?? ""
+        trackPillCount = medication.pillCount != nil
+        isOneTimeWithFollowUp = medication.isOneTimeWithFollowUp
+        medicationType = medication.medicationType
+        isADHDMedication = medication.medicationType != .other
+        isExtendedRelease = medication.isExtendedRelease
+        enableStimulantPhaseNotifications = medication.enableStimulantPhaseNotifications
+        onsetMinutesString = medication.onsetMinutes.map { "\($0)" } ?? ""
+        durationMinutesString = medication.durationMinutes.map { "\($0)" } ?? ""
+        enableDailyCheckIn = medication.enableDailyCheckIn
+        let defaultCheckInTime = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
+        customDailyCheckInTime = medication.dailyCheckInTime ?? defaultCheckInTime
+        useCustomDailyCheckInTime = medication.dailyCheckInTime != nil
+        showValidationErrors = false
+        nameError = nil
+        dosageError = nil
+        pillCountError = nil
+        refillThresholdError = nil
+        onsetMinutesError = nil
+        durationMinutesError = nil
+        focusedField = nil
+        keyboardHeight = 0
+        onProgressStateChange(false)
+    }
 
     private func saveMedication() {
         let pillCount = trackPillCount ? Int(pillCountString) : nil
@@ -1525,34 +1595,86 @@ struct AddMedicationView: View {
         let shouldUseCustomCheckInTime = supportsGeneralCheckIn || useCustomDailyCheckInTime
         let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && shouldUseCustomCheckInTime) ? customDailyCheckInTime : nil
 
-        let success = store.addMedication(
-            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-            dosage: dosage.trimmingCharacters(in: .whitespacesAndNewlines),
-            dosageUnit: finalDosageUnit,
-            iconName: iconName,
-            frequency: frequency,
-            timeToTake: timeToTake,
-            reminderTimes: (needsMultipleReminders && !isOneTimeWithFollowUp) ? reminderTimes : [],
-            notes: {
-                let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
-                return trimmedNotes.isEmpty ? nil : trimmedNotes
-            }(),
-            enableNotification: enableNotification,
-            pillCount: pillCount,
-            pillsPerDose: pillsPerDose,
-            refillThreshold: refillThreshold,
-            isOneTimeWithFollowUp: isOneTimeWithFollowUp,
-            medicationType: medicationType,
-            isExtendedRelease: isExtendedRelease,
-            onsetMinutes: onsetMinutes,
-            durationMinutes: durationMinutes,
-            enableDailyCheckIn: shouldEnableDailyCheckIn,
-            enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
-            dailyCheckInTime: selectedDailyCheckInTime
-        )
+        if var medication = medicationToEdit {
+            var updatedMedication = medication
+            updatedMedication.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            updatedMedication.dosage = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
+            updatedMedication.dosageUnit = finalDosageUnit
+            updatedMedication.iconName = iconName
+            updatedMedication.frequency = frequency
+            updatedMedication.timeToTake = timeToTake
+            updatedMedication.reminderTimes = (needsMultipleReminders && !isOneTimeWithFollowUp) ? reminderTimes : []
+            let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            updatedMedication.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
+            updatedMedication.isOneTimeWithFollowUp = isOneTimeWithFollowUp
 
-        if success {
-            onAdd()
+            if medicationType == .stimulant {
+                updatedMedication.medicationType = medicationType
+                updatedMedication.isExtendedRelease = isExtendedRelease
+                if hasFocusWindow {
+                    updatedMedication.onsetMinutes = onsetMinutes
+                    updatedMedication.durationMinutes = durationMinutes
+                    updatedMedication.enableDailyCheckIn = enableDailyCheckIn
+                    updatedMedication.dailyCheckInTime = (enableDailyCheckIn && useCustomDailyCheckInTime) ? customDailyCheckInTime : nil
+                } else {
+                    updatedMedication.onsetMinutes = nil
+                    updatedMedication.durationMinutes = nil
+                    updatedMedication.enableDailyCheckIn = false
+                    updatedMedication.dailyCheckInTime = nil
+                }
+                updatedMedication.enableStimulantPhaseNotifications = enableStimulantPhaseNotifications
+            } else {
+                updatedMedication.medicationType = medicationType
+                updatedMedication.isExtendedRelease = false
+                updatedMedication.onsetMinutes = nil
+                updatedMedication.durationMinutes = nil
+                updatedMedication.enableDailyCheckIn = enableDailyCheckIn
+                updatedMedication.dailyCheckInTime = enableDailyCheckIn ? customDailyCheckInTime : nil
+                updatedMedication.enableStimulantPhaseNotifications = false
+            }
+
+            if trackPillCount {
+                updatedMedication.pillCount = Int(pillCountString) ?? 0
+                updatedMedication.pillsPerDose = Int(pillsPerDoseString) ?? 1
+                updatedMedication.refillThreshold = refillThresholdString.isEmpty ? nil : Int(refillThresholdString)
+            } else {
+                updatedMedication.pillCount = nil
+                updatedMedication.pillsPerDose = 1
+                updatedMedication.refillThreshold = nil
+            }
+
+            store.updateMedication(updatedMedication, enableNotification: enableNotification && frequency != "As needed")
+            onFinish()
+        } else {
+            let success = store.addMedication(
+                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                dosage: dosage.trimmingCharacters(in: .whitespacesAndNewlines),
+                dosageUnit: finalDosageUnit,
+                iconName: iconName,
+                frequency: frequency,
+                timeToTake: timeToTake,
+                reminderTimes: (needsMultipleReminders && !isOneTimeWithFollowUp) ? reminderTimes : [],
+                notes: {
+                    let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return trimmedNotes.isEmpty ? nil : trimmedNotes
+                }(),
+                enableNotification: enableNotification,
+                pillCount: pillCount,
+                pillsPerDose: pillsPerDose,
+                refillThreshold: refillThreshold,
+                isOneTimeWithFollowUp: isOneTimeWithFollowUp,
+                medicationType: medicationType,
+                isExtendedRelease: isExtendedRelease,
+                onsetMinutes: onsetMinutes,
+                durationMinutes: durationMinutes,
+                enableDailyCheckIn: shouldEnableDailyCheckIn,
+                enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
+                dailyCheckInTime: selectedDailyCheckInTime
+            )
+
+            if success {
+                onFinish()
+            }
         }
     }
 

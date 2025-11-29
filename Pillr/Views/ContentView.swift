@@ -250,7 +250,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingAddMedicationSheet) {
             NavigationView {
-                AddMedicationView(onAdd: { showingAddMedicationSheet = false })
+                AddMedicationView(onFinish: { showingAddMedicationSheet = false })
                     .environmentObject(store)
                     .environmentObject(userSettings)
             }
