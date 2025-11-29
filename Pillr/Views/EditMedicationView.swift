@@ -761,35 +761,16 @@ struct EditMedicationView: View {
                                     .foregroundColor(.red)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            Button {
+                            NavigationActionButton(
+                                title: "Update Medication",
+                                icon: "checkmark",
+                                variant: .primary,
+                                isDisabled: !isFormValid
+                            ) {
                                 HapticManager.shared.mediumImpact()
                                 updateMedication()
-                            } label: {
-                                HStack {
-                                    Text("Update Medication")
-                                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                                }
-                                .foregroundColor(isFormValid ? Color(hex: "#404C42") : Color.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: isFormValid ? [
-                                            Color(hex: "#E8E8E0"),
-                                            Color(hex: "#D0D0C8")
-                                        ] : [
-                                            Color.gray.opacity(0.6),
-                                            Color.gray.opacity(0.4)
-                                        ]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                                .cornerRadius(16)
-                                .shadow(color: isFormValid ? Color.black.opacity(0.15) : Color.clear, radius: 8, x: 0, y: 4)
                             }
-                            .disabled(!isFormValid)
-                            .buttonStyle(ScaleButtonStyle())
+                            .accessibilityLabel("Update medication")
                         }
                         .padding(.vertical, 10)
                         .padding(.bottom, keyboardHeight > 0 ? keyboardHeight + 20 : 40)

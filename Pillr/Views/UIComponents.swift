@@ -572,7 +572,99 @@ struct GlassHapticButton: View {
                     .stroke(Color(hex: "#D8B4F8").opacity(0.12), lineWidth: 0.8)
             )
         }
-        .buttonStyle(HapticButtonStyle(style: style))
+            .buttonStyle(HapticButtonStyle(style: style))
+    }
+}
+
+struct NavigationActionButton: View {
+    enum Variant {
+        case primary
+        case secondary
+    }
+
+    let title: String
+    let icon: String?
+    let variant: Variant
+    let isDisabled: Bool
+    let forceFullWidth: Bool
+    let action: () -> Void
+
+    init(
+        title: String,
+        icon: String? = nil,
+        variant: Variant,
+        isDisabled: Bool,
+        forceFullWidth: Bool = false,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.icon = icon
+        self.variant = variant
+        self.isDisabled = isDisabled
+        self.forceFullWidth = forceFullWidth
+        self.action = action
+    }
+
+    private var primaryGradient: LinearGradient {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color(hex: "#F5F7F4"),
+                Color(hex: "#DCD8CF")
+            ]),
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    private var secondaryBackground: Color {
+        Color.black.opacity(0.25)
+    }
+
+    private var primaryForeground: Color {
+        Color(hex: "#404C42")
+    }
+
+    private var secondaryForeground: Color {
+        Color(hex: "#F5F7F4")
+    }
+
+    private var fillStyle: AnyShapeStyle {
+        variant == .primary
+            ? AnyShapeStyle(primaryGradient)
+            : AnyShapeStyle(secondaryBackground)
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: icon == nil ? 0 : 8) {
+                if let iconName = icon {
+                    Image(systemName: iconName)
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                Text(title)
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+            }
+            .frame(maxWidth: variant == .primary || forceFullWidth ? .infinity : nil)
+            .padding(.vertical, 14)
+            .padding(.horizontal, variant == .primary ? 24 : 18)
+            .background(
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(fillStyle)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 22)
+                    .stroke(
+                        variant == .primary
+                            ? Color.white.opacity(0.08)
+                            : Color(hex: "#C7C7BD").opacity(0.35),
+                        lineWidth: 1
+                    )
+            )
+        }
+        .disabled(isDisabled)
+        .foregroundColor(variant == .primary ? primaryForeground : secondaryForeground)
+        .opacity(isDisabled ? 0.65 : 1)
+        .buttonStyle(ScaleButtonStyle())
     }
 }
 

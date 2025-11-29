@@ -79,6 +79,7 @@ struct AddMedicationView: View {
 
     @State private var currentStep: AddMedicationStep = .basics
     @State private var hasInitializedForm = false
+    @State private var stepAnimationDirection: StepTransitionDirection = .forward
 
     enum Field: Hashable {
         case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold, onsetMinutes, durationMinutes
@@ -89,6 +90,27 @@ struct AddMedicationView: View {
 
     private enum ScrollAnchor {
         static let bottom = "AddMedicationViewBottomAnchor"
+    }
+
+    private enum StepTransitionDirection {
+        case forward
+        case backward
+    }
+
+    private var stepTransition: AnyTransition {
+        let insertion: AnyTransition
+        let removal: AnyTransition
+
+        switch stepAnimationDirection {
+        case .forward:
+            insertion = .move(edge: .trailing).combined(with: .opacity)
+            removal = .move(edge: .leading).combined(with: .opacity)
+        case .backward:
+            insertion = .move(edge: .leading).combined(with: .opacity)
+            removal = .move(edge: .trailing).combined(with: .opacity)
+        }
+
+        return .asymmetric(insertion: insertion, removal: removal)
     }
 
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
@@ -144,20 +166,16 @@ struct AddMedicationView: View {
                                     .frame(height: 1)
                                     .background(Color(hex: "#C7C7BD").opacity(0.3))
                             }
+                            .transition(
+                                .asymmetric(
+                                    insertion: .opacity.combined(with: .move(edge: .top)),
+                                    removal: .opacity
+                                )
+                            )
+                            .zIndex(1)
                         }
 
-                        Group {
-                            switch currentStep {
-                            case .basics:
-                                basicsSection
-                            case .schedule:
-                                scheduleSection
-                            case .trackingAndADHD:
-                                trackingAndADHDSection
-                            case .notesAndReview:
-                                notesAndReviewSection
-                            }
-                        }
+                        animatedStepSections
 
                         navigationFooter
                             .id(ScrollAnchor.bottom)
@@ -320,6 +338,27 @@ struct AddMedicationView: View {
         .frame(maxWidth: .infinity)
         .padding(.top, 4)
         .padding(.bottom, 2)
+    }
+
+    @ViewBuilder
+    private var animatedStepSections: some View {
+        Group {
+            switch currentStep {
+            case .basics:
+                basicsSection
+                    .transition(stepTransition)
+            case .schedule:
+                scheduleSection
+                    .transition(stepTransition)
+            case .trackingAndADHD:
+                trackingAndADHDSection
+                    .transition(stepTransition)
+            case .notesAndReview:
+                notesAndReviewSection
+                    .transition(stepTransition)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .top)
     }
 
     @ViewBuilder
@@ -893,94 +932,74 @@ struct AddMedicationView: View {
     @ViewBuilder
     private var navigationFooter: some View {
         VStack(spacing: 12) {
-            HStack {
-                if currentStep != .basics {
-                    Button(action: {
+            if currentStep == .basics {
+                NavigationActionButton(
+                    title: "Next",
+                    icon: nil,
+                    variant: .primary,
+                    isDisabled: false
+                ) {
+                    triggerStrongHaptic()
+                    goToNextStep()
+                }
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel("Next step")
+            } else {
+                HStack(spacing: 12) {
+                    NavigationActionButton(
+                        title: "Back",
+                        icon: "chevron.left",
+                        variant: .secondary,
+                        isDisabled: false,
+                        forceFullWidth: true
+                    ) {
                         triggerStrongHaptic()
                         goToPreviousStep()
-                    }) {
-                        HStack {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.black.opacity(0.2))
-                        )
                     }
+                    .frame(maxWidth: .infinity)
+
+                    NavigationActionButton(
+                        title: currentStep == .notesAndReview ? (isEditing ? "Save Changes" : "Add Medication") : "Next",
+                        icon: currentStep == .notesAndReview ? "checkmark" : nil,
+                        variant: .primary,
+                        isDisabled: currentStep == .notesAndReview && !isFormValid
+                    ) {
+                        triggerStrongHaptic()
+                        if currentStep == .notesAndReview {
+                            if validateForm() {
+                                saveMedication()
+                            } else {
+                                showValidationErrors = true
+                                HapticManager.shared.errorNotification()
+                            }
+                        } else {
+                            goToNextStep()
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel(currentStep == .notesAndReview ? (isEditing ? "Save changes" : "Add medication") : "Next step")
                 }
+            }
 
-                Spacer()
-
-                Button(action: {
-                    triggerStrongHaptic()
-                    if currentStep == .notesAndReview {
+            if isEditing && currentStep != .notesAndReview {
+                NavigationActionButton(
+                    title: "Save changes",
+                    icon: "square.and.arrow.down",
+                    variant: .primary,
+                    isDisabled: !isFormValid
+                ) {
+                    HapticManager.shared.mediumImpact()
                         if validateForm() {
                             saveMedication()
                         } else {
                             showValidationErrors = true
                             HapticManager.shared.errorNotification()
+                            transition(to: .notesAndReview, direction: .forward)
                         }
-                    } else {
-                        goToNextStep()
-                    }
-                }) {
-                    HStack {
-                        if currentStep == .notesAndReview {
-                            Text(isEditing ? "Save Changes" : "Add Medication")
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
-                        } else {
-                            Text("Next")
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                        }
-                    }
-                    .foregroundColor(
-                        currentStep == .notesAndReview && !isFormValid
-                        ? Color.white
-                        : Color(hex: "#404C42")
-                    )
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(
-                                currentStep == .notesAndReview && !isFormValid
-                                ? Color.gray.opacity(0.6)
-                                : Color(hex: "#C7C7BD")
-                            )
-                    )
                 }
-                .accessibilityLabel(currentStep == .notesAndReview ? (isEditing ? "Save changes" : "Add medication") : "Next step")
-            }
-            if isEditing && currentStep != .notesAndReview {
-                Button {
-                    HapticManager.shared.mediumImpact()
-                    if validateForm() {
-                        saveMedication()
-                    } else {
-                        showValidationErrors = true
-                        HapticManager.shared.errorNotification()
-                        // Jump to review so the user sees the validation banner
-                        currentStep = .notesAndReview
-                    }
-                } label: {
-                    Text("Save changes")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "#404C42"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(hex: "#C7C7BD"))
-                        )
-                }
-                .buttonStyle(ScaleButtonStyle())
                 .accessibilityLabel("Save changes")
             }
+
             if currentStep == .notesAndReview && showValidationErrors && !isFormValid {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -1190,10 +1209,16 @@ struct AddMedicationView: View {
                 HapticManager.shared.errorNotification()
                 return
             }
-            currentStep = .schedule
+            transition(to: .schedule, direction: .forward)
             focusedField = nil
         case .schedule:
-            currentStep = .trackingAndADHD
+            guard validateADHDFields() else {
+                showValidationErrors = true
+                HapticManager.shared.errorNotification()
+                return
+            }
+            showValidationErrors = false
+            transition(to: .trackingAndADHD, direction: .forward)
             focusedField = nil
         case .trackingAndADHD:
             if !validateInventoryFields() {
@@ -1207,7 +1232,7 @@ struct AddMedicationView: View {
                 return
             }
             showValidationErrors = false
-            currentStep = .notesAndReview
+            transition(to: .notesAndReview, direction: .forward)
             focusedField = nil
         case .notesAndReview:
             break
@@ -1219,13 +1244,20 @@ struct AddMedicationView: View {
         case .basics:
             break
         case .schedule:
-            currentStep = .basics
+            transition(to: .basics, direction: .backward)
         case .trackingAndADHD:
-            currentStep = .schedule
+            transition(to: .schedule, direction: .backward)
         case .notesAndReview:
-            currentStep = .trackingAndADHD
+            transition(to: .trackingAndADHD, direction: .backward)
         }
         focusedField = nil
+    }
+
+    private func transition(to step: AddMedicationStep, direction: StepTransitionDirection) {
+        withAnimation(.easeInOut(duration: 0.35)) {
+            stepAnimationDirection = direction
+            currentStep = step
+        }
     }
 
     private func getSubmitLabel(for field: Field?) -> SubmitLabel {
@@ -1808,4 +1840,3 @@ extension View {
         }
     }
 }
-
