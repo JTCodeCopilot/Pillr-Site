@@ -17,6 +17,7 @@ struct AddMedicationView: View {
     var medicationToEdit: Medication? = nil
     var onFinish: () -> Void
     var onProgressStateChange: (Bool) -> Void = { _ in }
+    var resetTrigger: UUID? = nil
 
     // Core fields
     @State private var name: String = ""
@@ -193,6 +194,15 @@ struct AddMedicationView: View {
             }
             .onChange(of: currentStep) { newStep in
                 onProgressStateChange(newStep != .basics)
+            }
+            .onChange(of: resetTrigger) { _, _ in
+                // When an external reset is requested (e.g., user tapped Discard),
+                // clear all fields only for the add flow (not when editing).
+                if medicationToEdit == nil {
+                    resetForm()
+                    // Keep hasInitializedForm true so we don't re-run onAppear logic.
+                    hasInitializedForm = true
+                }
             }
         }
         .preferredColorScheme(.dark)
@@ -946,7 +956,31 @@ struct AddMedicationView: View {
                 }
                 .accessibilityLabel(currentStep == .notesAndReview ? (isEditing ? "Save changes" : "Add medication") : "Next step")
             }
-
+            if isEditing && currentStep != .notesAndReview {
+                Button {
+                    HapticManager.shared.mediumImpact()
+                    if validateForm() {
+                        saveMedication()
+                    } else {
+                        showValidationErrors = true
+                        HapticManager.shared.errorNotification()
+                        // Jump to review so the user sees the validation banner
+                        currentStep = .notesAndReview
+                    }
+                } label: {
+                    Text("Save changes")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "#404C42"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(hex: "#C7C7BD"))
+                        )
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .accessibilityLabel("Save changes")
+            }
             if currentStep == .notesAndReview && showValidationErrors && !isFormValid {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -1774,3 +1808,4 @@ extension View {
         }
     }
 }
+

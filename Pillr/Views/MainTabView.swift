@@ -16,6 +16,7 @@ struct MainTabView: View {
     @State private var hasUnsavedAddFlow = false
     @State private var pendingTabSelection: MainTab?
     @State private var showDiscardAlert = false
+    @State private var addFormResetToken = UUID()
     
     private var tabSelection: Binding<MainTab> {
         Binding(
@@ -55,8 +56,11 @@ struct MainTabView: View {
                             // After saving, return to My Meds tab
                             hasUnsavedAddFlow = false
                             selectedTab = .meds
+                            // Ensure a fresh form next time
+                            addFormResetToken = UUID()
                         },
-                        onProgressStateChange: { hasUnsavedAddFlow = $0 }
+                        onProgressStateChange: { hasUnsavedAddFlow = $0 },
+                        resetTrigger: addFormResetToken
                     )
                 }
                 .tabItem {
@@ -90,6 +94,8 @@ struct MainTabView: View {
         .alert("Discard medication?", isPresented: $showDiscardAlert) {
             Button("Discard", role: .destructive) {
                 hasUnsavedAddFlow = false
+                // Force the AddMedicationView to reset its form the next time it's shown
+                addFormResetToken = UUID()
                 selectedTab = pendingTabSelection ?? .meds
                 pendingTabSelection = nil
             }
