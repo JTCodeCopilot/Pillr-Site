@@ -59,7 +59,7 @@ struct MedicationsListView: View {
             LogMedicationView(medicationToLog: med)
                 .environmentObject(store)
         }
-        .sheet(item: $selectedMedicationToEdit) { med in
+        .fullScreenCover(item: $selectedMedicationToEdit) { med in
             NavigationView {
                 AddMedicationView(
                     medicationToEdit: med,
