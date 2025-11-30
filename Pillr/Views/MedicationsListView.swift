@@ -1058,6 +1058,7 @@ fileprivate struct MedicationRowHeaderView: View {
     let doseStates: [DoseButtonState]
     let onDoseTap: (Int) -> Void
     let highlightedDoseIndex: Int?
+    let compactLayout: Bool
     
     @State private var awaitingActionConfirmation = false
     @State private var actionConfirmationWorkItem: DispatchWorkItem?
@@ -1069,7 +1070,25 @@ fileprivate struct MedicationRowHeaderView: View {
     private let confirmationDuration: TimeInterval = 2.5
 
     private var usesTimelineLayout: Bool {
-        !doseStates.isEmpty
+        !doseStates.isEmpty && !compactLayout
+    }
+
+    private var horizontalPadding: CGFloat {
+        compactLayout ? 16 : 20
+    }
+
+    private var verticalPadding: CGFloat {
+        if compactLayout {
+            return 12
+        }
+        return usesTimelineLayout ? 24 : 18
+    }
+
+    private var stackSpacing: CGFloat {
+        if usesTimelineLayout {
+            return 16
+        }
+        return compactLayout ? 8 : 0
     }
     
     // Moved statusDisplay computed property
@@ -1117,10 +1136,14 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     // Moved buttonProperties computed property
+    private var takenButtonLabel: String {
+        doseStates.count > 1 ? "All Taken" : "Taken"
+    }
+
     private func buttonProperties() -> (iconName: String, text: String, fgColor: Color, bgColor: Color) {
         switch cycleStatus {
         case .taken:
-            return (iconName: "checkmark.circle.fill", text: "Taken", fgColor: Color(hex: "#4A5A4A"), bgColor: Color(hex: "#D7CCC8"))
+            return (iconName: "checkmark.circle.fill", text: takenButtonLabel, fgColor: Color(hex: "#4A5A4A"), bgColor: Color(hex: "#D7CCC8"))
         case .skipped:
             return (iconName: "xmark.circle.fill", text: "Skipped", fgColor: Color(hex: "#C62828"), bgColor: Color(hex: "#FFCDD2"))
         case .overdue(_), .due(_):
@@ -1156,7 +1179,7 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: usesTimelineLayout ? 16 : 0) {
+        VStack(alignment: .leading, spacing: stackSpacing) {
             HStack(alignment: .top, spacing: 16) {
                 medicationInfoSection
                 Spacer()
@@ -1175,8 +1198,8 @@ fileprivate struct MedicationRowHeaderView: View {
                 multiDoseGrid
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, usesTimelineLayout ? 24 : 18)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
         .contentShape(Rectangle())
         .onTapGesture {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -1471,7 +1494,9 @@ fileprivate struct MedicationRowHeaderView: View {
 
         if confirmingDoseIndex == state.index {
             resetDoseConfirmation()
-            onDoseTap(state.index)
+            withAnimation(.interactiveSpring(response: 0.45, dampingFraction: 0.75)) {
+                onDoseTap(state.index)
+            }
         } else {
             startDoseConfirmation(for: state.index)
         }
@@ -1700,7 +1725,8 @@ struct MedicationRow: View {
                 onDoseTap: { doseIndex in
                     logDose(at: doseIndex)
                 },
-                highlightedDoseIndex: highlightedDoseIndex
+                highlightedDoseIndex: highlightedDoseIndex,
+                compactLayout: isLoggedStatus
             )
             
             if showsDetails {
@@ -1720,8 +1746,18 @@ struct MedicationRow: View {
             Group {
                 if isLoggedStatus {
                     Rectangle()
-                        .fill(Color(hex: "#7CA982").opacity(0.2))
-                        .frame(width: 3)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(stops: [
+                                    .init(color: Color(hex: "#7CA982").opacity(0.35), location: 0),
+                                    .init(color: Color(hex: "#7CA982").opacity(0.18), location: 0.5),
+                                    .init(color: Color(hex: "#7CA982").opacity(0.05), location: 1)
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: 6)
                         .frame(maxHeight: .infinity)
                         .padding(.vertical, 6)
                 }
@@ -1731,6 +1767,7 @@ struct MedicationRow: View {
         .overlay(enhancedBorderOverlay)
         .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .animation(.interactiveSpring(response: 0.42, dampingFraction: 0.72, blendDuration: 0.25), value: isLoggedStatus)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(commonFormatTime(medication.timeToTake))")
         .accessibilityHint(accessibilityHintText())

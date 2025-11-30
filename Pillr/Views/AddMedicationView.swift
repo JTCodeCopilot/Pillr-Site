@@ -68,6 +68,7 @@ struct AddMedicationView: View {
     @State private var dosageError: String? = nil
     @State private var pillCountError: String? = nil
     @State private var refillThresholdError: String? = nil
+    @State private var frequencyError: String? = nil
 
     // Multi-step flow
     enum AddMedicationStep: Int, CaseIterable {
@@ -103,11 +104,11 @@ struct AddMedicationView: View {
 
         switch stepAnimationDirection {
         case .forward:
-            insertion = .move(edge: .trailing).combined(with: .opacity)
-            removal = .move(edge: .leading).combined(with: .opacity)
+            insertion = .move(edge: .trailing)
+            removal = .move(edge: .leading)
         case .backward:
-            insertion = .move(edge: .leading).combined(with: .opacity)
-            removal = .move(edge: .trailing).combined(with: .opacity)
+            insertion = .move(edge: .leading)
+            removal = .move(edge: .trailing)
         }
 
         return .asymmetric(insertion: insertion, removal: removal)
@@ -342,7 +343,7 @@ struct AddMedicationView: View {
 
     @ViewBuilder
     private var animatedStepSections: some View {
-        Group {
+        ZStack(alignment: .top) {
             switch currentStep {
             case .basics:
                 basicsSection
@@ -359,6 +360,17 @@ struct AddMedicationView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .top)
+        .clipped()
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "#404C42"),
+                    Color(hex: "#3A443D")
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     @ViewBuilder
@@ -473,27 +485,21 @@ struct AddMedicationView: View {
                 }
 
                 if isCustomUnitSelected {
-                enhancedInputField(
-                    title: "Custom Unit Type",
-                    placeholder: "e.g. drops, sprays",
-                    text: $customUnit,
-                    field: nil,
-                    iconName: nil,
-                    isRequired: true,
-                    errorMessage: customUnit.isEmpty && showValidationErrors ? "Custom unit type is required" : nil
-                )
+                    enhancedInputField(
+                        title: "Custom Unit Type",
+                        placeholder: "e.g. drops, sprays",
+                        text: $customUnit,
+                        field: nil,
+                        iconName: nil,
+                        isRequired: true,
+                        errorMessage: customUnit.isEmpty && showValidationErrors ? "Custom unit type is required" : nil
+                    )
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-            }
-        }
-    }
 
-    @ViewBuilder
-    private var scheduleSection: some View {
-        FormSection(title: "SCHEDULE", icon: "calendar.badge.clock") {
-            VStack(spacing: 12) {
-                // Frequency picker
                 VStack(alignment: .leading, spacing: 6) {
+                    let frequencyHasError = showValidationErrors && frequencyError != nil
+
                     Text("How Often You’ll Take It")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Color(hex: "#E8E8E0"))
@@ -529,20 +535,31 @@ struct AddMedicationView: View {
                                 .fill(Color.black.opacity(0.2))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                        .stroke(
+                                            frequencyHasError ? Color.red : Color(hex: "#C7C7BD").opacity(0.3),
+                                            lineWidth: frequencyHasError ? 2 : 1
+                                        )
                                 )
                         )
                     }
+                    .onChange(of: frequency) { newValue in
+                        validateField(.frequency, value: newValue)
+                    }
+
+                    if frequencyHasError {
+                        Text(frequencyError ?? "")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.red)
+                    }
                 }
 
-                // Time pickers
                 if needsMultipleReminders {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Reminder Times")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Reminder Times")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
 
-                            ForEach(0..<reminderTimes.count, id: \.self) { index in
+                        ForEach(0..<reminderTimes.count, id: \.self) { index in
                             TimePickerRow(
                                 title: "Dose \(index + 1)",
                                 time: $reminderTimes[index]
@@ -555,89 +572,96 @@ struct AddMedicationView: View {
                         time: $timeToTake
                     )
                 }
-            }
-        }
 
-        if frequency != "As needed" {
-            FormSection(title: "NOTIFICATIONS", icon: "bell.fill") {
-                VStack(spacing: 12) {
-                    if needsMultipleReminders || frequency == "Once daily" {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Toggle(isOn: $isOneTimeWithFollowUp.animation(.easeInOut)) {
-                                VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text("One-time with Follow-up")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                if !userSettings.isPremiumUser {
-                                    Button(action: {
+                if frequency != "As needed" {
+                    FormSection(title: "NOTIFICATIONS", icon: "bell.fill") {
+                        VStack(spacing: 12) {
+                            if needsMultipleReminders || frequency == "Once daily" {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Toggle(isOn: $isOneTimeWithFollowUp.animation(.easeInOut)) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            HStack {
+                                                Text("One-time with Follow-up")
+                                                    .font(.system(size: 15, weight: .semibold))
+                                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                                if !userSettings.isPremiumUser {
+                                                    Button(action: {
+                                                        triggerStrongHaptic()
+                                                        showingPremiumUpgrade = true
+                                                    }) {
+                                                        Text("PREMIUM")
+                                                            .font(.system(size: 10, weight: .bold))
+                                                            .foregroundColor(.white)
+                                                            .padding(.horizontal, 6)
+                                                            .padding(.vertical, 2)
+                                                            .background(Color(hex: "#D4A017"))
+                                                            .cornerRadius(4)
+                                                    }
+                                                }
+                                            }
+                                            Text(userSettings.isPremiumUser ?
+                                                 "Single reminder + 30-min follow-up if not taken" :
+                                                    "Follow-up reminders require premium subscription")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                        }
+                                    }
+                                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                    .disabled(!userSettings.isPremiumUser)
+                                    .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
+                                    .onChange(of: isOneTimeWithFollowUp) { _ in
                                         triggerStrongHaptic()
-                                        showingPremiumUpgrade = true
-                                    }) {
-                                        Text("PREMIUM")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Color(hex: "#D4A017"))
-                                            .cornerRadius(4)
                                     }
                                 }
-                            }
-                                    Text(userSettings.isPremiumUser ?
-                                         "Single reminder + 30-min follow-up if not taken" :
-                                            "Follow-up reminders require premium subscription")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                                }
-                            }
-                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                            .disabled(!userSettings.isPremiumUser)
-                            .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
-                            .onChange(of: isOneTimeWithFollowUp) { _ in
-                                triggerStrongHaptic()
                             }
                         }
                     }
                 }
             }
         }
+    }
 
+    @ViewBuilder
+    private var scheduleSection: some View {
         focusAndTimingSection
     }
 
     @ViewBuilder
     private var focusAndTimingSection: some View {
-        FormSection(title: nil, icon: "hourglass") {
-            VStack(alignment: .leading, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Is This an ADHD Medication?")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-
-                    Picker("ADHD medication", selection: $isADHDMedication) {
-                        Text("Yes").tag(true)
-                        Text("No").tag(false)
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                if isADHDMedication {
+        VStack(spacing: 16) {
+            FormSection(title: nil, icon: "hourglass") {
+                VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("What kind of ADHD medication?")
-                            .font(.system(size: 14, weight: .medium))
+                        Text("Is This an ADHD Medication?")
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(Color(hex: "#E8E8E0"))
 
-                        Picker("Medication type", selection: $medicationType) {
-                            Text("Stimulant").tag(MedicationType.stimulant)
-                            Text("Non-stimulant").tag(MedicationType.nonStimulant)
+                        Picker("ADHD medication", selection: $isADHDMedication) {
+                            Text("Yes").tag(true)
+                            Text("No").tag(false)
                         }
                         .pickerStyle(.segmented)
                     }
-                }
 
-                if isADHDMedication && medicationType == .stimulant {
-                    VStack(alignment: .leading, spacing: 10) {
+                    if isADHDMedication {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("What kind of ADHD medication?")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+
+                            Picker("Medication type", selection: $medicationType) {
+                                Text("Stimulant").tag(MedicationType.stimulant)
+                                Text("Non-stimulant").tag(MedicationType.nonStimulant)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                    }
+                }
+            }
+
+            if isADHDMedication && medicationType == .stimulant {
+                FormSection(title: "FOCUS WINDOW", icon: "hourglass") {
+                    VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
                             Toggle(isOn: $enableStimulantPhaseNotifications) {
                                 Text("Turn on focus window")
@@ -683,49 +707,53 @@ struct AddMedicationView: View {
                                 errorMessage: durationMinutesError,
                                 keyboardType: .numberPad
                             )
+                        }
+                    }
+                }
 
-                            VStack(alignment: .leading, spacing: 6) {
-                                Toggle(isOn: $enableDailyCheckIn) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Daily check-in")
-                                            .font(.system(size: 15, weight: .semibold))
+                if enableStimulantPhaseNotifications {
+                    FormSection(title: "DAILY CHECK-IN", icon: "calendar.badge.clock") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Toggle(isOn: $enableDailyCheckIn) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Daily check-in")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                    Text("At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                }
+                                .padding(.trailing, 12)
+                            }
+                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                            .onChange(of: enableDailyCheckIn) { newValue in
+                                triggerStrongHaptic()
+                                if !newValue {
+                                    useCustomDailyCheckInTime = false
+                                }
+                            }
+
+                            if enableDailyCheckIn {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+
+                                    Toggle(isOn: $useCustomDailyCheckInTime) {
+                                        Text("Choose a custom check-in time")
+                                            .font(.system(size: 14, weight: .medium))
                                             .foregroundColor(Color(hex: "#E8E8E0"))
-                                        Text("At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication.")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                     }
-                                    .padding(.trailing, 12)
-                                }
-                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                                .onChange(of: enableDailyCheckIn) { newValue in
-                                    triggerStrongHaptic()
-                                    if !newValue {
-                                        useCustomDailyCheckInTime = false
+                                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                    .onChange(of: useCustomDailyCheckInTime) { _ in
+                                        triggerStrongHaptic()
+                                    }
+
+                                    if useCustomDailyCheckInTime {
+                                        TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
                                     }
                                 }
-
-                                if enableDailyCheckIn {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
-
-                                        Toggle(isOn: $useCustomDailyCheckInTime) {
-                                            Text("Choose a custom check-in time")
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                        }
-                                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                                        .onChange(of: useCustomDailyCheckInTime) { _ in
-                                            triggerStrongHaptic()
-                                        }
-
-                                        if useCustomDailyCheckInTime {
-                                            TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
-                                        }
-                                    }
-                                    .padding(.top, 4)
-                                }
+                                .padding(.top, 4)
                             }
                         }
                     }
@@ -960,7 +988,7 @@ struct AddMedicationView: View {
 
                     NavigationActionButton(
                         title: currentStep == .notesAndReview ? (isEditing ? "Save Changes" : "Add Medication") : "Next",
-                        icon: currentStep == .notesAndReview ? "checkmark" : nil,
+                        icon: nil,
                         variant: .primary,
                         isDisabled: currentStep == .notesAndReview && !isFormValid
                     ) {
@@ -984,7 +1012,7 @@ struct AddMedicationView: View {
             if isEditing && currentStep != .notesAndReview {
                 NavigationActionButton(
                     title: "Save changes",
-                    icon: "square.and.arrow.down",
+                    icon: nil,
                     variant: .primary,
                     isDisabled: !isFormValid
                 ) {
@@ -1254,7 +1282,7 @@ struct AddMedicationView: View {
     }
 
     private func transition(to step: AddMedicationStep, direction: StepTransitionDirection) {
-        withAnimation(.easeInOut(duration: 0.35)) {
+        withAnimation(.interactiveSpring(response: 0.45, dampingFraction: 0.75, blendDuration: 0)) {
             stepAnimationDirection = direction
             currentStep = step
         }
@@ -1291,6 +1319,9 @@ struct AddMedicationView: View {
             nameError = value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Medication name is required" : nil
         case .dosage:
             dosageError = value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Dosage is required" : nil
+        case .frequency:
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            frequencyError = trimmed.isEmpty ? "Frequency is required" : nil
         case .pillCount:
             if trackPillCount && userSettings.isPremiumUser {
                 let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
