@@ -853,6 +853,70 @@ fileprivate struct MedicationsListMainContent: View {
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    private var todayTakenLogs: [MedicationLog] {
+        let calendar = Calendar.current
+        return store.logs
+            .filter { log in
+                !log.skipped &&
+                calendar.isDate(log.takenAt, inSameDayAs: Date())
+            }
+            .sorted { $0.takenAt > $1.takenAt }
+    }
+
+    private var takenTodayOverview: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Taken Today")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+
+                Spacer()
+
+                Text("\(todayTakenLogs.count) logged")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(todayTakenLogs) { log in
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(log.medicationName)
+                                .font(.system(size: 14, weight: .semibold))
+                                .lineLimit(1)
+                                .foregroundColor(Color(hex: "#F5F7F4"))
+
+                            Text(DateFormatter.takenTodayTimeFormatter.string(from: log.takenAt))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(hex: "#404C42"))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                )
+                        )
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color(hex: "#5B695D"))
+                .shadow(color: Color.black.opacity(0.4), radius: 40, x: 0, y: 6)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color(hex: "#E0E7DC").opacity(0.15), lineWidth: 1.2)
+        )
+        .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
+    }
+
     private func horizontalInsets(for width: CGFloat) -> CGFloat {
         if horizontalSizeClass == .regular && width > 768 {
             return max((width - 650) / 2, 16)
@@ -875,6 +939,11 @@ fileprivate struct MedicationsListMainContent: View {
                             onShowHistory: onShowHistory,
                             onShowSettings: onShowSettings
                         )
+
+                        if !todayTakenLogs.isEmpty {
+                            takenTodayOverview
+                                .padding(.horizontal, horizontalInset)
+                        }
 
                         if store.medications.isEmpty {
                             EmptyMedicationsView(onAddMedication: onAddMedication)
@@ -987,7 +1056,7 @@ fileprivate struct DoseButtonState: Identifiable {
         case .pending:
             return "Log"
         case .taken:
-            return "Logged"
+            return "Taken"
         case .skipped:
             return "Skipped"
         }
@@ -1033,7 +1102,7 @@ fileprivate struct DoseButtonState: Identifiable {
 
     var loggedTimeLabel: String? {
         guard let actualTime else { return nil }
-        return "Logged at \(DoseButtonState.loggedTimeFormatter.string(from: actualTime))"
+        return "Taken at \(DoseButtonState.loggedTimeFormatter.string(from: actualTime))"
     }
     
     private static let timeFormatter: DateFormatter = {
@@ -1090,6 +1159,19 @@ fileprivate struct MedicationRowHeaderView: View {
         }
         return compactLayout ? 8 : 0
     }
+
+    private var headerIsLoggedStatus: Bool {
+        switch cycleStatus {
+        case .taken, .skipped:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private var headerTitleOpacity: Double {
+        headerIsLoggedStatus ? 0.9 : 1.0
+    }
     
     // Moved statusDisplay computed property
     private var statusDisplay: (text: String, color: Color, show: Bool) {
@@ -1143,13 +1225,31 @@ fileprivate struct MedicationRowHeaderView: View {
     private func buttonProperties() -> (iconName: String, text: String, fgColor: Color, bgColor: Color) {
         switch cycleStatus {
         case .taken:
-            return (iconName: "checkmark.circle.fill", text: takenButtonLabel, fgColor: Color(hex: "#4A5A4A"), bgColor: Color(hex: "#D7CCC8"))
+            return (iconName: "checkmark.circle.fill", text: takenButtonLabel, fgColor: Color(hex: "#4A5A4A"), bgColor: Color(hex: "#D7CCC8").opacity(0.92))
         case .skipped:
             return (iconName: "xmark.circle.fill", text: "Skipped", fgColor: Color(hex: "#C62828"), bgColor: Color(hex: "#FFCDD2"))
         case .overdue(_), .due(_):
             return (iconName: "circle", text: "Take Now", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
         case .asNeeded: // Add .asNeeded case
             return (iconName: "circle", text: "Take Now", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
+        }
+    }
+
+    private var actionButtonStrokeOpacity: Double {
+        switch cycleStatus {
+        case .taken, .skipped:
+            return 0.12
+        default:
+            return 0.26
+        }
+    }
+
+    private var actionButtonHorizontalPadding: CGFloat {
+        switch cycleStatus {
+        case .taken, .skipped:
+            return 18
+        default:
+            return 22
         }
     }
 
@@ -1212,7 +1312,7 @@ fileprivate struct MedicationRowHeaderView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(medication.name)
                 .font(.system(size: 19, weight: .bold))
-                .foregroundColor(Color(hex: "#F5F7F4"))
+                .foregroundColor(Color(hex: "#F5F7F4").opacity(headerTitleOpacity))
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
             
@@ -1306,7 +1406,7 @@ fileprivate struct MedicationRowHeaderView: View {
                     .foregroundColor(appearance.fgColor)
             }
             .padding(.vertical, 12)
-            .padding(.horizontal, 18)
+            .padding(.horizontal, actionButtonHorizontalPadding)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(appearance.bgColor)
@@ -1351,6 +1451,7 @@ fileprivate struct MedicationRowHeaderView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(hex: "#8DA78F"))
+                        .opacity(0.85)
 
                     Text(loggedText)
                         .font(.system(.body, weight: .semibold))
@@ -1362,6 +1463,10 @@ fileprivate struct MedicationRowHeaderView: View {
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color.white.opacity(0.02))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.6), lineWidth: 1)
                 )
             } else {
                 // Action button
@@ -1381,6 +1486,7 @@ fileprivate struct MedicationRowHeaderView: View {
                         if !isConfirmingDose, state.status == .pending {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 10, weight: .bold))
+                                .opacity(0.95)
                         }
                     }
                     .foregroundColor(isConfirmingDose ? confirmForegroundColor : defaultForeground)
@@ -1391,7 +1497,7 @@ fileprivate struct MedicationRowHeaderView: View {
                             .fill(isConfirmingDose ? confirmBackgroundColor : Color.white.opacity(0.08))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.2), lineWidth: 0.9)
+                                    .stroke(Color.white.opacity(actionButtonStrokeOpacity), lineWidth: 0.9)
                             )
                     )
                     .frame(minWidth: logButtonMinWidth, alignment: .leading)
@@ -1701,6 +1807,43 @@ struct MedicationRow: View {
         }
     }
 
+    private var cardBackgroundColor: Color {
+        let baseColor = Color(hex: "#5B695D")
+        return isLoggedStatus ? baseColor.opacity(1.0) : baseColor.opacity(0.92)
+    }
+
+    private var innerStrokeColor: Color {
+        isLoggedStatus ? Color.white.opacity(0.08) : Color.clear
+    }
+
+    private var innerStrokeWidth: CGFloat {
+        isLoggedStatus ? 1 : 0
+    }
+
+    private var cardPrimaryShadowOpacity: Double {
+        isLoggedStatus ? 0.18 : 0.25
+    }
+
+    private var cardPrimaryShadowRadius: CGFloat {
+        isLoggedStatus ? 10 : 12
+    }
+
+    private var cardPrimaryShadowYOffset: CGFloat {
+        isLoggedStatus ? 4 : 6
+    }
+
+    private var cardSecondaryShadowOpacity: Double {
+        isLoggedStatus ? 0.08 : 0.1
+    }
+
+    private var cardSecondaryShadowRadius: CGFloat {
+        isLoggedStatus ? 3 : 4
+    }
+
+    private var cardSecondaryShadowYOffset: CGFloat {
+        isLoggedStatus ? 1 : 2
+    }
+
     var body: some View {
         let showsDetails = store.expandedMedicationID == medication.id
         let detailBinding = Binding<Bool>(
@@ -1726,7 +1869,7 @@ struct MedicationRow: View {
                     logDose(at: doseIndex)
                 },
                 highlightedDoseIndex: highlightedDoseIndex,
-                compactLayout: isLoggedStatus
+                compactLayout: false
             )
             
             if showsDetails {
@@ -1739,7 +1882,7 @@ struct MedicationRow: View {
             }
         }
         .background(
-            Color(hex: "#5B695D")
+            cardBackgroundColor
         )
         .cornerRadius(14)
         .overlay(
@@ -1764,9 +1907,13 @@ struct MedicationRow: View {
             },
             alignment: .leading
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(innerStrokeColor, lineWidth: innerStrokeWidth)
+        )
         .overlay(enhancedBorderOverlay)
-        .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(cardPrimaryShadowOpacity), radius: cardPrimaryShadowRadius, x: 0, y: cardPrimaryShadowYOffset)
+        .shadow(color: Color.black.opacity(cardSecondaryShadowOpacity), radius: cardSecondaryShadowRadius, x: 0, y: cardSecondaryShadowYOffset)
         .animation(.interactiveSpring(response: 0.42, dampingFraction: 0.72, blendDuration: 0.25), value: isLoggedStatus)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(commonFormatTime(medication.timeToTake))")
@@ -2261,4 +2408,13 @@ extension ShapeStyle {
     func anyShapeStyle() -> AnyShapeStyle {
         return AnyShapeStyle(self)
     }
+}
+
+extension DateFormatter {
+    static let takenTodayTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter
+    }()
 }
