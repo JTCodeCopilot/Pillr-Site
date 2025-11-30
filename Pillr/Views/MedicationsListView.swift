@@ -967,11 +967,14 @@ fileprivate struct DoseButtonState: Identifiable {
     let scheduledTime: Date?
     let customTitle: String?
     
-    init(index: Int, status: Status, scheduledTime: Date?, customTitle: String? = nil) {
+    let actualTime: Date?
+
+    init(index: Int, status: Status, scheduledTime: Date?, customTitle: String? = nil, actualTime: Date? = nil) {
         self.index = index
         self.status = status
         self.scheduledTime = scheduledTime
         self.customTitle = customTitle
+        self.actualTime = actualTime
     }
     
     var id: Int { index }
@@ -1027,8 +1030,19 @@ fileprivate struct DoseButtonState: Identifiable {
         guard let scheduledTime else { return nil }
         return DoseButtonState.timeFormatter.string(from: scheduledTime)
     }
+
+    var loggedTimeLabel: String? {
+        guard let actualTime else { return nil }
+        return "Logged at \(DoseButtonState.loggedTimeFormatter.string(from: actualTime))"
+    }
     
     private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
+    private static let loggedTimeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter
@@ -1045,8 +1059,14 @@ fileprivate struct MedicationRowHeaderView: View {
     let onDoseTap: (Int) -> Void
     let highlightedDoseIndex: Int?
     
+    @State private var awaitingActionConfirmation = false
+    @State private var actionConfirmationWorkItem: DispatchWorkItem?
+    @State private var confirmingDoseIndex: Int?
+    @State private var doseConfirmationWorkItem: DispatchWorkItem?
+
     private let timelineTimeWidth: CGFloat = 58
     private let logButtonMinWidth: CGFloat = 96
+    private let confirmationDuration: TimeInterval = 2.5
 
     private var usesTimelineLayout: Bool {
         !doseStates.isEmpty
@@ -1108,6 +1128,31 @@ fileprivate struct MedicationRowHeaderView: View {
         case .asNeeded: // Add .asNeeded case
             return (iconName: "circle", text: "Take Now", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
         }
+    }
+
+    private var requiresActionConfirmation: Bool {
+        switch cycleStatus {
+        case .due, .overdue, .asNeeded:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private var isActionConfirmationActive: Bool {
+        awaitingActionConfirmation && requiresActionConfirmation
+    }
+
+    private var confirmForegroundColor: Color {
+        Color(hex: "#F5F7F4")
+    }
+
+    private var confirmBackgroundColor: Color {
+        Color(hex: "#FF6B6B")
+    }
+
+    private var actionConfirmationAppearance: (iconName: String, text: String, fgColor: Color, bgColor: Color) {
+        (iconName: "hand.tap.fill", text: "Tap to confirm", fgColor: confirmForegroundColor, bgColor: confirmBackgroundColor)
     }
 
     var body: some View {
@@ -1223,28 +1268,34 @@ fileprivate struct MedicationRowHeaderView: View {
     // Enhanced action button
     private var actionButton: some View {
         let properties = buttonProperties()
-        
+        let appearance = isActionConfirmationActive ? actionConfirmationAppearance : properties
+
         return Button(action: {
-            handleButtonTap()
+            handleActionButtonTap()
         }) {
             HStack(spacing: 8) {
-                Image(systemName: properties.iconName)
+                Image(systemName: appearance.iconName)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(properties.fgColor)
+                    .foregroundColor(appearance.fgColor)
                 
-                Text(properties.text)
+                Text(appearance.text)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(properties.fgColor)
+                    .foregroundColor(appearance.fgColor)
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 18)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(properties.bgColor)
+                    .fill(appearance.bgColor)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
             )
         }
         .buttonStyle(ScaleButtonStyle())
+        .onChange(of: cycleStatus) { _ in
+            if !requiresActionConfirmation {
+                resetActionConfirmation()
+            }
+        }
     }
     
     private var multiDoseGrid: some View {
@@ -1268,48 +1319,85 @@ fileprivate struct MedicationRowHeaderView: View {
 
     private func doseCardRow(for state: DoseButtonState, isPrimary: Bool) -> some View {
         let displayText = state.formattedTime ?? state.title
+        let isConfirmingDose = isDoseConfirming(state.index)
+        let defaultForeground = Color.white.opacity(state.status == .pending ? 1 : 0.85)
+
         return HStack(spacing: 12) {
-            // Action button
-            Button(action: {
-                onDoseTap(state.index)
-            }) {
+            if state.status == .taken, let loggedText = state.loggedTimeLabel {
                 HStack(spacing: 6) {
-                    Text(state.actionLabel)
-                        .font(.system(size: 14, weight: .medium))
-                    if state.status == .pending {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .bold))
-                    }
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "#8DA78F"))
+
+                    Text(loggedText)
+                        .font(.system(.body, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                 }
-                .foregroundColor(Color.white.opacity(state.status == .pending ? 1 : 0.85))
                 .padding(.vertical, 10)
                 .padding(.horizontal, 16)
+                .frame(minWidth: logButtonMinWidth, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white.opacity(0.08))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.2), lineWidth: 0.9)
-                        )
+                        .fill(Color.white.opacity(0.02))
                 )
-                .frame(minWidth: logButtonMinWidth, alignment: .leading)
+            } else {
+                // Action button
+                Button(action: {
+                    handleDoseButtonTap(for: state)
+                }) {
+                    HStack(spacing: 6) {
+                        if isConfirmingDose {
+                            Image(systemName: "hand.tap.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(confirmForegroundColor)
+                        }
+
+                        Text(isConfirmingDose ? "Tap to confirm" : state.actionLabel)
+                            .font(.system(size: 14, weight: .medium))
+
+                        if !isConfirmingDose, state.status == .pending {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                    }
+                    .foregroundColor(isConfirmingDose ? confirmForegroundColor : defaultForeground)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(isConfirmingDose ? confirmBackgroundColor : Color.white.opacity(0.08))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 0.9)
+                            )
+                    )
+                    .frame(minWidth: logButtonMinWidth, alignment: .leading)
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .disabled(state.status != .pending)
             }
-            .buttonStyle(ScaleButtonStyle())
-            .disabled(state.status != .pending)
-            
+
             Spacer()
-            
-            // Time only (or fallback label if no time)
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(displayText)
-                    .font(.system(.body, design: .default).weight(.semibold))
-                    .foregroundColor(Color(hex: "#F5F7F4").opacity(state.status == .pending ? 1 : 0.7))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+
+            if shouldShowDoseLabel(for: state) {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(displayText)
+                        .font(.system(.body, design: .default).weight(.semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4").opacity(state.status == .pending ? 1 : 0.7))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .frame(width: timelineTimeWidth, alignment: .trailing)
             }
-            .frame(width: timelineTimeWidth, alignment: .trailing)
         }
         .padding(.horizontal, 2)
+    }
+
+    private func shouldShowDoseLabel(for state: DoseButtonState) -> Bool {
+        guard medication.frequency != "As needed" else {
+            return state.scheduledTime != nil
+        }
+        return true
     }
     
     private func nodeFill(for state: DoseButtonState) -> Color {
@@ -1345,6 +1433,72 @@ fileprivate struct MedicationRowHeaderView: View {
             HapticManager.shared.lightImpact()
         }
         onLogTap()
+    }
+
+    private func handleActionButtonTap() {
+        guard requiresActionConfirmation else {
+            handleButtonTap()
+            return
+        }
+
+        if isActionConfirmationActive {
+            resetActionConfirmation()
+            handleButtonTap()
+        } else {
+            startActionConfirmation()
+        }
+    }
+
+    private func startActionConfirmation() {
+        awaitingActionConfirmation = true
+        actionConfirmationWorkItem?.cancel()
+        let workItem = DispatchWorkItem {
+            awaitingActionConfirmation = false
+            actionConfirmationWorkItem = nil
+        }
+        actionConfirmationWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + confirmationDuration, execute: workItem)
+    }
+
+    private func resetActionConfirmation() {
+        awaitingActionConfirmation = false
+        actionConfirmationWorkItem?.cancel()
+        actionConfirmationWorkItem = nil
+    }
+
+    private func handleDoseButtonTap(for state: DoseButtonState) {
+        guard state.status == .pending else { return }
+
+        if confirmingDoseIndex == state.index {
+            resetDoseConfirmation()
+            onDoseTap(state.index)
+        } else {
+            startDoseConfirmation(for: state.index)
+        }
+    }
+
+    private func startDoseConfirmation(for index: Int) {
+        confirmingDoseIndex = index
+        doseConfirmationWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem {
+            if confirmingDoseIndex == index {
+                confirmingDoseIndex = nil
+            }
+            doseConfirmationWorkItem = nil
+        }
+        doseConfirmationWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + confirmationDuration, execute: workItem)
+    }
+
+    private func resetDoseConfirmation() {
+        confirmingDoseIndex = nil
+        doseConfirmationWorkItem?.cancel()
+        doseConfirmationWorkItem = nil
+    }
+
+    private func isDoseConfirming(_ index: Int) -> Bool {
+        confirmingDoseIndex == index
     }
 }
 
@@ -1407,8 +1561,9 @@ struct MedicationRow: View {
     
     private var doseButtonStates: [DoseButtonState] {
         if medication.frequency == "As needed" && medication.reminderTimes.isEmpty {
+            let log = todaysLogsForMedication.sorted(by: { $0.takenAt > $1.takenAt }).first
             let status: DoseButtonState.Status
-            if let log = todaysLogsForMedication.sorted(by: { $0.takenAt > $1.takenAt }).first {
+            if let log = log {
                 status = log.skipped ? .skipped : .taken
             } else {
                 status = .pending
@@ -1418,7 +1573,8 @@ struct MedicationRow: View {
                     index: 0,
                     status: status,
                     scheduledTime: nil,
-                    customTitle: "As needed"
+                    customTitle: "As needed",
+                    actualTime: log?.takenAt
                 )
             ]
         }
@@ -1437,11 +1593,11 @@ struct MedicationRow: View {
             let scheduledTime = scheduleTimes[index]
             if let log = todaysLogsForMedication.first(where: { $0.reminderIndex == index }) {
                 let status: DoseButtonState.Status = log.skipped ? .skipped : .taken
-                states.append(DoseButtonState(index: index, status: status, scheduledTime: scheduledTime))
+                states.append(DoseButtonState(index: index, status: status, scheduledTime: scheduledTime, actualTime: log.takenAt))
             } else if !unassignedLogs.isEmpty {
                 let fallbackLog = unassignedLogs.removeFirst()
                 let status: DoseButtonState.Status = fallbackLog.skipped ? .skipped : .taken
-                states.append(DoseButtonState(index: index, status: status, scheduledTime: scheduledTime))
+                states.append(DoseButtonState(index: index, status: status, scheduledTime: scheduledTime, actualTime: fallbackLog.takenAt))
             } else {
                 states.append(DoseButtonState(index: index, status: .pending, scheduledTime: scheduledTime))
             }
@@ -1511,6 +1667,15 @@ struct MedicationRow: View {
         }
     }
 
+    private var isLoggedStatus: Bool {
+        switch cycleStatus {
+        case .taken, .skipped:
+            return true
+        default:
+            return false
+        }
+    }
+
     var body: some View {
         let showsDetails = store.expandedMedicationID == medication.id
         let detailBinding = Binding<Bool>(
@@ -1551,6 +1716,18 @@ struct MedicationRow: View {
             Color(hex: "#5B695D")
         )
         .cornerRadius(14)
+        .overlay(
+            Group {
+                if isLoggedStatus {
+                    Rectangle()
+                        .fill(Color(hex: "#7CA982").opacity(0.2))
+                        .frame(width: 3)
+                        .frame(maxHeight: .infinity)
+                        .padding(.vertical, 6)
+                }
+            },
+            alignment: .leading
+        )
         .overlay(enhancedBorderOverlay)
         .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
