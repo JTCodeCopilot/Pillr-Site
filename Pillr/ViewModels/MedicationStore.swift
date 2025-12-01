@@ -23,6 +23,12 @@ class MedicationStore: ObservableObject {
     @Published var medications: [Medication] = []
     @Published var logs: [MedicationLog] = []
     @Published var recentADHDDoseTimeline: ADHDDoseTimelineEntry?
+    @Published var focusSession: FocusSession? {
+        didSet {
+            guard !isPreviewMode else { return }
+            persistFocusSession()
+        }
+    }
     /// When set (typically from a notification tap), the UI
     /// should present a daily check-in logging sheet for this medication.
     @Published var dailyCheckInMedication: Medication?
@@ -50,6 +56,7 @@ class MedicationStore: ObservableObject {
     // Data is only removed when the app is completely uninstalled from the device
     private let medicationsKey = "medicationsData"
     private let logsKey = "medicationLogsData"
+    private let focusSessionKey = "focusSessionData"
     private let isPreviewMode: Bool
 
     // Computed properties for active and archived medications
@@ -65,6 +72,7 @@ class MedicationStore: ObservableObject {
         if !isPreview {
             loadMedications()
             loadLogs()
+            loadFocusSession()
         }
     }
     
@@ -658,6 +666,57 @@ class MedicationStore: ObservableObject {
             UserDefaults.standard.set(encoded, forKey: logsKey)
         }
     }
+    
+    // MARK: - Focus session management
+    
+    func planFocusSession(start: Date, durationMinutes: Int) {
+        focusSession = FocusSession(startDate: start, durationMinutes: durationMinutes)
+        notificationManager.scheduleFocusSession(start: start, durationMinutes: durationMinutes)
+    }
+    
+    func cancelFocusSession() {
+        focusSession = nil
+    }
+    
+    func refreshFocusSessionIfNeeded(referenceDate: Date = Date()) {
+        guard let session = focusSession else { return }
+        if session.isExpired(relativeTo: referenceDate) {
+            focusSession = nil
+        }
+    }
+    
+    private func loadFocusSession() {
+        guard let savedSession = UserDefaults.standard.data(forKey: focusSessionKey) else {
+            focusSession = nil
+            return
+        }
+        
+        if let decodedSession = try? JSONDecoder().decode(FocusSession.self, from: savedSession),
+           !decodedSession.isExpired() {
+            focusSession = decodedSession
+        } else {
+            focusSession = nil
+            UserDefaults.standard.removeObject(forKey: focusSessionKey)
+        }
+    }
+    
+    private func persistFocusSession() {
+        guard !isPreviewMode else { return }
+        
+        if let session = focusSession {
+            guard !session.isExpired() else {
+                UserDefaults.standard.removeObject(forKey: focusSessionKey)
+                return
+            }
+            
+            if let encoded = try? JSONEncoder().encode(session) {
+                UserDefaults.standard.set(encoded, forKey: focusSessionKey)
+            }
+        } else {
+            UserDefaults.standard.removeObject(forKey: focusSessionKey)
+        }
+    }
+    
     
     // Made public to support previews
     func addSampleData() {

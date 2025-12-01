@@ -1005,13 +1005,13 @@ fileprivate struct MedicationCabinetSheet: View {
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(Color(hex: "#F5F7F4"))
                             .padding(.top, 12)
-                        Text("These medications are either taken as needed or currently have no active daily reminders.")
+                        Text("The cabinet keeps medications that are taken as needed or don't currently have reminders, so they stay out of your daily queue.")
                             .font(.system(size: 15))
                             .foregroundColor(Color(hex: "#E0E7DC").opacity(0.85))
                             .fixedSize(horizontal: false, vertical: true)
 
                         if medications.isEmpty {
-                            Text("You're all caught up! Add reminders or mark medications as daily to bring them back to the main list.")
+                            Text("Once you schedule a reminder or mark a medication as daily, it will move back into your main list. Until then, everything you store here stays tucked away for when you need it.")
                                 .font(.system(size: 16))
                                 .foregroundColor(Color(hex: "#E0E7DC"))
                                 .padding()
