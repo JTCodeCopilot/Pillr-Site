@@ -9,13 +9,7 @@ struct MedicationRow: View {
     
     // Check if the medication was taken today
     private var wasTakenToday: Bool {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
-        return store.logs.contains { log in
-            log.medicationID == medication.id &&
-            calendar.isDate(calendar.startOfDay(for: log.takenAt), inSameDayAs: today)
-        }
+        wasMedicationTakenToday(medication, logs: store.logs)
     }
     
     // Get next due time status

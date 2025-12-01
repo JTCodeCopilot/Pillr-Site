@@ -27,6 +27,7 @@ struct MedicationsListView: View {
     @State private var showingInteractionResultSheet = false
     @State private var showingPremiumUpgrade = false
     @State private var showingFocusTimeline = false
+    @State private var showingCabinetSheet = false
     let onShowSettings: () -> Void
     let onShowHistory: () -> Void
 
@@ -36,6 +37,14 @@ struct MedicationsListView: View {
     ) {
         self.onShowSettings = onShowSettings
         self.onShowHistory = onShowHistory
+    }
+
+    private var reminderMedications: [Medication] {
+        store.activeMedications.filter { shouldDisplayOnMainList($0, logs: store.logs) }
+    }
+    
+    private var cabinetMedications: [Medication] {
+        store.activeMedications.filter { !shouldDisplayOnMainList($0, logs: store.logs) }
     }
     
     var body: some View {
@@ -52,8 +61,12 @@ struct MedicationsListView: View {
             isCheckingInteractions: $isCheckingInteractions,
             onCheckAllInteractions: showMedicationSelectionSheet,
             onAddMedication: handleAddMedication,
-            onShowHistory: onShowHistory, onShowSettings: onShowSettings,
-            onShowFocusTimeline: { showingFocusTimeline = true }
+            onShowHistory: onShowHistory,
+            onShowSettings: onShowSettings,
+            onShowFocusTimeline: { showingFocusTimeline = true },
+            displayedMedications: reminderMedications,
+            cabinetMedications: cabinetMedications,
+            onShowCabinet: { showingCabinetSheet = true }
         )
         .sheet(item: $showingLogSheetFor) { med in
             LogMedicationView(medicationToLog: med)
@@ -117,6 +130,14 @@ struct MedicationsListView: View {
             FocusTimelineView()
                 .environmentObject(store)
         }
+        .sheet(isPresented: $showingCabinetSheet) {
+            MedicationCabinetSheet(
+                medications: cabinetMedications,
+                logs: store.logs,
+                onLogMedication: { presentLogSheet(for: $0) },
+                onEditMedication: { presentEditSheet(for: $0) }
+            )
+        }
         .sheet(item: $store.dailyCheckInMedication, onDismiss: {
             store.dailyCheckInMedication = nil
         }) { med in
@@ -168,6 +189,20 @@ struct MedicationsListView: View {
         isCheckingInteractions = false
         showingInteractionResultSheet = true
     }
+    
+    private func presentLogSheet(for medication: Medication) {
+        showingCabinetSheet = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            showingLogSheetFor = medication
+        }
+    }
+    
+    private func presentEditSheet(for medication: Medication) {
+        showingCabinetSheet = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            selectedMedicationToEdit = medication
+        }
+    }
 }
 
 // MARK: - Subviews
@@ -186,51 +221,128 @@ fileprivate func EmptyMedicationsView(onAddMedication: @escaping () -> Void) -> 
     .accessibilityHint("Double tap to add your first medication")
 }
 
+@ViewBuilder
+fileprivate func NoActiveRemindersView(
+    onOpenCabinet: @escaping () -> Void,
+    hiddenCount: Int
+) -> some View {
+    VStack(spacing: 16) {
+        Image(systemName: "cabinet.fill")
+            .font(.system(size: 42))
+            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+            .padding(.top, 10)
+        Text("No active reminders")
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundColor(Color(hex: "#F5F7F4"))
+        Text(hiddenCount > 0 ? "You have \(hiddenCount) medication\(hiddenCount == 1 ? "" : "s") stored in your cabinet." : "Add reminder times to see medications here.")
+            .font(.system(size: 15))
+            .multilineTextAlignment(.center)
+            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.85))
+            .padding(.horizontal)
+        Button(action: onOpenCabinet) {
+            Text("Open Cabinet")
+                .font(.system(size: 16, weight: .semibold))
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(hex: "#E0E7DC"))
+                )
+                .foregroundColor(Color(hex: "#2F352F"))
+        }
+        .buttonStyle(ScaleButtonStyle())
+        .padding(.bottom, 10)
+    }
+    .frame(maxWidth: .infinity)
+    .padding(24)
+    .background(
+        RoundedRectangle(cornerRadius: 20)
+            .fill(Color(hex: "#5B695D"))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+    )
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("No medications with active reminders. Open the cabinet to view stored medications.")
+}
+
 // Helper function to sort medications by priority (overdue first, then by due time)
-fileprivate func sortedMedications(_ medications: [Medication]) -> [Medication] {
+fileprivate func sortedMedications(_ medications: [Medication], logs: [MedicationLog]) -> [Medication] {
     let calendar = Calendar.current
     let now = Date()
-    
-    return medications.sorted { med1, med2 in
-        // Helper function to get medication status
-        func getMedicationStatus(_ medication: Medication) -> (isOverdue: Bool, isAsNeeded: Bool, effectiveDueTime: Date) {
-            let isAsNeeded = (medication.frequency == "As needed")
-            let effectiveDueTime = calculateEffectiveDueTime(for: medication, at: now)
-            // Overdue means: the due time for *today* has passed but we're still on that same day.
-            let isOverdue = !isAsNeeded &&
-                effectiveDueTime < now &&
-                calendar.isDate(effectiveDueTime, inSameDayAs: now)
-            return (isOverdue, isAsNeeded, effectiveDueTime)
-        }
-        
-        let status1 = getMedicationStatus(med1)
-        let status2 = getMedicationStatus(med2)
-        
-        // Priority order:
-        // 1. Overdue medications first
-        if status1.isOverdue && !status2.isOverdue {
-            return true
-        }
-        if !status1.isOverdue && status2.isOverdue {
-            return false
-        }
-        
-        // 2. If both are overdue or both are not overdue, sort by due time
-        if status1.isOverdue == status2.isOverdue {
-            // 3. "As needed" medications go to the end
-            if status1.isAsNeeded && !status2.isAsNeeded {
-                return false
-            }
-            if !status1.isAsNeeded && status2.isAsNeeded {
-                return true
-            }
-            
-            // 4. Sort by effective due time
-            return status1.effectiveDueTime < status2.effectiveDueTime
-        }
-        
-        return false
+    let logsByMedication = Dictionary(grouping: logs, by: { $0.medicationID })
+
+    struct MedicationSortInfo {
+        let medication: Medication
+        let dueTime: Date
+        let isOverdue: Bool
+        let wasTakenToday: Bool
+        let overdueDuration: TimeInterval
+        let lastLogDate: Date?
     }
+
+    let metadata = medications.map { medication -> MedicationSortInfo in
+        let medLogs = logsByMedication[medication.id] ?? []
+        let dueTime = calculateEffectiveDueTime(for: medication, at: now)
+        let wasTakenToday = medLogs.contains { log in
+            calendar.isDate(log.takenAt, inSameDayAs: now)
+        }
+        let isOverdue = !wasTakenToday &&
+            dueTime < now &&
+            calendar.isDate(dueTime, inSameDayAs: now)
+        let overdueDuration = isOverdue ? now.timeIntervalSince(dueTime) : 0
+        let lastLogDate = medLogs
+            .max(by: { $0.takenAt < $1.takenAt })?
+            .takenAt
+
+        return MedicationSortInfo(
+            medication: medication,
+            dueTime: dueTime,
+            isOverdue: isOverdue,
+            wasTakenToday: wasTakenToday,
+            overdueDuration: overdueDuration,
+            lastLogDate: lastLogDate
+        )
+    }
+
+    enum MedicationPriority: Int {
+        case overdue = 0
+        case pending = 1
+        case logged = 2
+    }
+
+    func priority(for info: MedicationSortInfo) -> MedicationPriority {
+        if info.isOverdue {
+            return .overdue
+        }
+        return info.wasTakenToday ? .logged : .pending
+    }
+
+    let sortedMetadata = metadata.sorted { info1, info2 in
+        let priority1 = priority(for: info1)
+        let priority2 = priority(for: info2)
+
+        if priority1 != priority2 {
+            return priority1.rawValue < priority2.rawValue
+        }
+
+        switch priority1 {
+        case .overdue:
+            return info1.overdueDuration > info2.overdueDuration
+        case .pending:
+            return info1.dueTime < info2.dueTime
+        case .logged:
+            let lastTaken1 = info1.lastLogDate ?? info1.dueTime
+            let lastTaken2 = info2.lastLogDate ?? info2.dueTime
+            if lastTaken1 != lastTaken2 {
+                return lastTaken1 > lastTaken2
+            }
+            return info1.medication.name < info2.medication.name
+        }
+    }
+
+    return sortedMetadata.map { $0.medication }
 }
 
 /// Calculate the effective daily due time for a medication, anchored to the
@@ -328,10 +440,11 @@ fileprivate func MedicationsListContent(
     isCheckingInteractions: Binding<Bool>,
     onCheckAllInteractions: @escaping () async -> Void,
     onAddMedication: @escaping () -> Void,
-    onShowFocusTimeline: @escaping () -> Void
+    onShowFocusTimeline: @escaping () -> Void,
+    medications: [Medication]
 ) -> some View {
     VStack(alignment: .leading, spacing: 16) {
-        ForEach(sortedMedications(store.activeMedications)) { med in
+        ForEach(sortedMedications(medications, logs: store.logs)) { med in
                 MedicationRow(
                     medication: med,
                     onLogTap: { 
@@ -363,7 +476,9 @@ fileprivate func MedicationsListHeader(
     store: MedicationStore,
     horizontalInsets: CGFloat,
     onShowHistory: @escaping () -> Void,
-    onShowSettings: @escaping () -> Void
+    onShowSettings: @escaping () -> Void,
+    onShowCabinet: @escaping () -> Void,
+    cabinetCount: Int
 ) -> some View {
     VStack(alignment: .leading, spacing: 8) {
         HStack(alignment: .top) {
@@ -385,6 +500,28 @@ fileprivate func MedicationsListHeader(
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(Color(hex: "#F5F7F4"))
                         .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .frame(width: 46, height: 46)
+                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                .contentShape(Circle())
+
+                Button(action: onShowCabinet) {
+                    Image(systemName: "cabinet.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .frame(width: 24, height: 24)
+                        .overlay(alignment: .topTrailing) {
+                            if cabinetCount > 0 {
+                                Text("\(cabinetCount)")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(Color(hex: "#2F352F"))
+                                    .padding(4)
+                                    .background(Color(hex: "#F5F7F4"))
+                                    .clipShape(Circle())
+                                    .offset(x: 8, y: -8)
+                            }
+                        }
                 }
                 .buttonStyle(.plain)
                 .frame(width: 46, height: 46)
@@ -834,6 +971,174 @@ func ArchivedMedicationCard(
     )
 }
 
+fileprivate struct MedicationCabinetSheet: View {
+    let medications: [Medication]
+    let logs: [MedicationLog]
+    let onLogMedication: (Medication) -> Void
+    let onEditMedication: (Medication) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private var asNeededMedications: [Medication] {
+        medications.filter { $0.frequency == "As needed" }
+    }
+    
+    private var inactiveReminderMedications: [Medication] {
+        medications.filter { $0.frequency != "As needed" }
+    }
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "#404C42"),
+                        Color(hex: "#3A443D")
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        Text("Medication Cabinet")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(Color(hex: "#F5F7F4"))
+                            .padding(.top, 12)
+                        Text("These medications are either taken as needed or currently have no active daily reminders.")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.85))
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        if medications.isEmpty {
+                            Text("You're all caught up! Add reminders or mark medications as daily to bring them back to the main list.")
+                                .font(.system(size: 16))
+                                .foregroundColor(Color(hex: "#E0E7DC"))
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 18)
+                                        .fill(Color(hex: "#5B695D"))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 18)
+                                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                        )
+                                )
+                        } else {
+            if !asNeededMedications.isEmpty {
+                cabinetSection(title: "As needed", medications: asNeededMedications)
+            }
+            
+            if !inactiveReminderMedications.isEmpty {
+                cabinetSection(title: "No daily reminders", medications: inactiveReminderMedications)
+            }
+        }
+
+        Spacer(minLength: 20)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 30)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Done") { dismiss() }
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func cabinetSection(title: String, medications: [Medication]) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(Color(hex: "#E0E7DC"))
+
+        ForEach(sortedMedications(medications, logs: logs)) { medication in
+                CabinetMedicationRow(
+                    medication: medication,
+                    onLogTap: { onLogMedication(medication) },
+                    onEditTap: { onEditMedication(medication) }
+                )
+            }
+        }
+    }
+}
+
+fileprivate struct CabinetMedicationRow: View {
+    let medication: Medication
+    let onLogTap: () -> Void
+    let onEditTap: () -> Void
+
+    private var detailSubtitle: String {
+        if medication.frequency == "As needed" {
+            return "Take when you need it"
+        }
+        return "No reminder scheduled"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(medication.name)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .lineLimit(1)
+                Text("\(medication.dosage) \(medication.dosageUnit) • \(medication.frequency)")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                    .lineLimit(1)
+                Text(detailSubtitle)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+            }
+
+            HStack(spacing: 12) {
+                Button(action: onLogTap) {
+                    HStack {
+                        Text("Log")
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color(hex: "#2F352F"))
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(hex: "#E0E7DC"))
+                    )
+                }
+                .buttonStyle(ScaleButtonStyle())
+
+                Button(action: onEditTap) {
+                    HStack {
+                        Text("Edit")
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E0E7DC"))
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(hex: "#E0E7DC").opacity(0.4), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(ScaleButtonStyle())
+            }
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(hex: "#4C584F"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+        )
+    }
+}
+
 fileprivate struct MedicationsListMainContent: View {
     @ObservedObject var store: MedicationStore
     @Binding var showingAddSheet: Bool
@@ -850,72 +1155,11 @@ fileprivate struct MedicationsListMainContent: View {
     let onShowHistory: () -> Void
     let onShowSettings: () -> Void
     let onShowFocusTimeline: () -> Void
+    let displayedMedications: [Medication]
+    let cabinetMedications: [Medication]
+    let onShowCabinet: () -> Void
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
-    private var todayTakenLogs: [MedicationLog] {
-        let calendar = Calendar.current
-        return store.logs
-            .filter { log in
-                !log.skipped &&
-                calendar.isDate(log.takenAt, inSameDayAs: Date())
-            }
-            .sorted { $0.takenAt > $1.takenAt }
-    }
-
-    private var takenTodayOverview: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Taken Today")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
-
-                Spacer()
-
-                Text("\(todayTakenLogs.count) logged")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(todayTakenLogs) { log in
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(log.medicationName)
-                                .font(.system(size: 14, weight: .semibold))
-                                .lineLimit(1)
-                                .foregroundColor(Color(hex: "#F5F7F4"))
-
-                            Text(DateFormatter.takenTodayTimeFormatter.string(from: log.takenAt))
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                        }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(hex: "#404C42"))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                )
-                        )
-                    }
-                }
-            }
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color(hex: "#5B695D"))
-                .shadow(color: Color.black.opacity(0.4), radius: 40, x: 0, y: 6)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color(hex: "#E0E7DC").opacity(0.15), lineWidth: 1.2)
-        )
-        .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
-    }
 
     private func horizontalInsets(for width: CGFloat) -> CGFloat {
         if horizontalSizeClass == .regular && width > 768 {
@@ -937,17 +1181,20 @@ fileprivate struct MedicationsListMainContent: View {
                             store: store,
                             horizontalInsets: horizontalInset,
                             onShowHistory: onShowHistory,
-                            onShowSettings: onShowSettings
+                            onShowSettings: onShowSettings,
+                            onShowCabinet: onShowCabinet,
+                            cabinetCount: cabinetMedications.count
                         )
 
-                        if !todayTakenLogs.isEmpty {
-                            takenTodayOverview
-                                .padding(.horizontal, horizontalInset)
-                        }
-
-                        if store.medications.isEmpty {
+                        if store.activeMedications.isEmpty {
                             EmptyMedicationsView(onAddMedication: onAddMedication)
                                 .padding(.horizontal, horizontalInset)
+                        } else if displayedMedications.isEmpty {
+                            NoActiveRemindersView(
+                                onOpenCabinet: onShowCabinet,
+                                hiddenCount: cabinetMedications.count
+                            )
+                            .padding(.horizontal, horizontalInset)
                         } else {
                             MedicationsListContent(
                                 store: store,
@@ -963,7 +1210,8 @@ fileprivate struct MedicationsListMainContent: View {
                                 isCheckingInteractions: $isCheckingInteractions,
                                 onCheckAllInteractions: onCheckAllInteractions,
                                 onAddMedication: onAddMedication,
-                                onShowFocusTimeline: onShowFocusTimeline
+                                onShowFocusTimeline: onShowFocusTimeline,
+                                medications: displayedMedications
                             )
 
                         }
@@ -1019,6 +1267,29 @@ fileprivate func commonFormatTime(_ date: Date) -> String {
     let formatter = DateFormatter()
     formatter.timeStyle = .short
     return formatter.string(from: date)
+}
+
+fileprivate func shouldDisplayOnMainList(_ medication: Medication, logs: [MedicationLog]) -> Bool {
+    if medication.frequency == "As needed" {
+        let calendar = Calendar.current
+        return logs.contains { log in
+            log.medicationID == medication.id &&
+            calendar.isDate(log.takenAt, inSameDayAs: Date())
+        }
+    }
+    return medicationHasActiveReminder(medication)
+}
+
+fileprivate func medicationHasActiveReminder(_ medication: Medication) -> Bool {
+    medication.notificationID != nil || !medication.notificationIDs.isEmpty
+}
+
+fileprivate func wasMedicationTakenToday(_ medication: Medication, logs: [MedicationLog]) -> Bool {
+    let calendar = Calendar.current
+    return logs.contains { log in
+        log.medicationID == medication.id &&
+        calendar.isDate(log.takenAt, inSameDayAs: Date())
+    }
 }
 
 // MARK: - Button Style
@@ -1170,7 +1441,14 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     private var headerTitleOpacity: Double {
-        headerIsLoggedStatus ? 0.9 : 1.0
+        if cycleStatus == .taken {
+            return 0.55
+        }
+        return headerIsLoggedStatus ? 0.9 : 1.0
+    }
+
+    private var detailTextOpacity: Double {
+        cycleStatus == .taken ? 0.45 : 1.0
     }
     
     // Moved statusDisplay computed property
@@ -1225,7 +1503,12 @@ fileprivate struct MedicationRowHeaderView: View {
     private func buttonProperties() -> (iconName: String, text: String, fgColor: Color, bgColor: Color) {
         switch cycleStatus {
         case .taken:
-            return (iconName: "checkmark.circle.fill", text: takenButtonLabel, fgColor: Color(hex: "#4A5A4A"), bgColor: Color(hex: "#D7CCC8").opacity(0.92))
+            return (
+                iconName: "checkmark.circle.fill",
+                text: takenButtonLabel,
+                fgColor: Color(hex: "#D9DDD7"),
+                bgColor: Color(hex: "#52594F").opacity(0.6)
+            )
         case .skipped:
             return (iconName: "xmark.circle.fill", text: "Skipped", fgColor: Color(hex: "#C62828"), bgColor: Color(hex: "#FFCDD2"))
         case .overdue(_), .due(_):
@@ -1255,7 +1538,7 @@ fileprivate struct MedicationRowHeaderView: View {
 
     private var requiresActionConfirmation: Bool {
         switch cycleStatus {
-        case .due, .overdue, .asNeeded:
+        case .due, .asNeeded:
             return true
         default:
             return false
@@ -1319,7 +1602,7 @@ fileprivate struct MedicationRowHeaderView: View {
             if !dosageFrequencyLine.isEmpty {
                 Text(dosageFrequencyLine)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "#E0E7DC"))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(detailTextOpacity))
             }
 
             if statusDisplay.show {
@@ -1329,7 +1612,7 @@ fileprivate struct MedicationRowHeaderView: View {
             if showDetails, let preview = notesPreview {
                 Text(preview)
                     .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9 * detailTextOpacity))
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .padding(.top, 2)
@@ -1447,26 +1730,21 @@ fileprivate struct MedicationRowHeaderView: View {
 
         return HStack(spacing: 12) {
             if state.status == .taken, let loggedText = state.loggedTimeLabel {
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "#8DA78F"))
-                        .opacity(0.85)
-
+                HStack(spacing: 0) {
                     Text(loggedText)
                         .font(.system(.body, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                 }
                 .padding(.vertical, 10)
                 .padding(.horizontal, 16)
                 .frame(minWidth: logButtonMinWidth, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white.opacity(0.02))
+                        .fill(Color.white.opacity(0.005))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.6), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 0.6)
                 )
             } else {
                 // Action button
@@ -1806,42 +2084,101 @@ struct MedicationRow: View {
             return false
         }
     }
+    
+    private var isOverdueStatus: Bool {
+        if case .overdue = cycleStatus {
+            return true
+        }
+        return false
+    }
+
+    private var takenCardColor: Color {
+        Color(hex: "#A0A69B")
+    }
 
     private var cardBackgroundColor: Color {
         let baseColor = Color(hex: "#5B695D")
+        if isTakenStatus {
+            return takenCardColor.opacity(0.65)
+        }
         return isLoggedStatus ? baseColor.opacity(1.0) : baseColor.opacity(0.92)
     }
 
     private var innerStrokeColor: Color {
-        isLoggedStatus ? Color.white.opacity(0.08) : Color.clear
+        switch cycleStatus {
+        case .taken:
+            return Color.white.opacity(0.01)
+        case .skipped:
+            return Color.white.opacity(0.08)
+        default:
+            return .clear
+        }
     }
 
     private var innerStrokeWidth: CGFloat {
-        isLoggedStatus ? 1 : 0
+        switch cycleStatus {
+        case .taken:
+            return 0.3
+        case .skipped:
+            return 1
+        default:
+            return 0
+        }
     }
 
     private var cardPrimaryShadowOpacity: Double {
-        isLoggedStatus ? 0.18 : 0.25
+        if isTakenStatus {
+            return 0.015
+        }
+        return isLoggedStatus ? 0.18 : 0.25
     }
 
     private var cardPrimaryShadowRadius: CGFloat {
-        isLoggedStatus ? 10 : 12
+        if isTakenStatus {
+            return 2
+        }
+        return isLoggedStatus ? 10 : 12
     }
 
     private var cardPrimaryShadowYOffset: CGFloat {
-        isLoggedStatus ? 4 : 6
+        if isTakenStatus {
+            return 0.5
+        }
+        return isLoggedStatus ? 4 : 6
     }
 
     private var cardSecondaryShadowOpacity: Double {
-        isLoggedStatus ? 0.08 : 0.1
+        if isTakenStatus {
+            return 0
+        }
+        return isLoggedStatus ? 0.08 : 0.1
     }
 
     private var cardSecondaryShadowRadius: CGFloat {
-        isLoggedStatus ? 3 : 4
+        if isTakenStatus {
+            return 0
+        }
+        return isLoggedStatus ? 3 : 4
     }
 
     private var cardSecondaryShadowYOffset: CGFloat {
-        isLoggedStatus ? 1 : 2
+        if isTakenStatus {
+            return 0
+        }
+        return isLoggedStatus ? 1 : 2
+    }
+
+    private var isTakenStatus: Bool {
+        cycleStatus == .taken
+    }
+
+    private var skippedIndicatorColor: Color {
+        Color(hex: "#FF6B6B")
+    }
+
+    private var leadingIndicatorConfig: (color: Color, width: CGFloat)? {
+        guard case .skipped = cycleStatus else { return nil }
+        return (skippedIndicatorColor, 4)
     }
 
     var body: some View {
@@ -1885,30 +2222,17 @@ struct MedicationRow: View {
             cardBackgroundColor
         )
         .cornerRadius(14)
+        .overlay(alignment: .leading) {
+            if let config = leadingIndicatorConfig {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(config.color)
+                    .mask(
+                        LeadingStripeMask(width: config.width, cornerRadius: 14)
+                    )
+            }
+        }
         .overlay(
-            Group {
-                if isLoggedStatus {
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(stops: [
-                                    .init(color: Color(hex: "#7CA982").opacity(0.35), location: 0),
-                                    .init(color: Color(hex: "#7CA982").opacity(0.18), location: 0.5),
-                                    .init(color: Color(hex: "#7CA982").opacity(0.05), location: 1)
-                                ]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: 6)
-                        .frame(maxHeight: .infinity)
-                        .padding(.vertical, 6)
-                }
-            },
-            alignment: .leading
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(innerStrokeColor, lineWidth: innerStrokeWidth)
         )
         .overlay(enhancedBorderOverlay)
@@ -1980,8 +2304,8 @@ struct MedicationRow: View {
         
         switch cycleStatus {
         case .taken:
-            borderColor = Color(hex: "#D7CCC8")
-            borderWidth = 2.0
+            borderColor = Color(hex: "#D7CCC8").opacity(0.35)
+            borderWidth = 0.6
         case .skipped:
             borderColor = Color(hex: "#FF6B6B")
             borderWidth = 2.0
@@ -1997,7 +2321,7 @@ struct MedicationRow: View {
             borderWidth = 0.0
         }
         
-        return RoundedRectangle(cornerRadius: 14)
+        return RoundedRectangle(cornerRadius: 14, style: .continuous)
             .stroke(
                 LinearGradient(
                     gradient: Gradient(colors: [
@@ -2009,6 +2333,48 @@ struct MedicationRow: View {
                 ),
                 lineWidth: borderWidth
             )
+    }
+
+    private struct LeadingStripeMask: Shape {
+        var width: CGFloat
+        var cornerRadius: CGFloat
+
+        func path(in rect: CGRect) -> Path {
+            let stripeWidth = min(width, rect.width)
+            let radius = min(cornerRadius, rect.height / 2, stripeWidth / 2)
+            let stripeRect = CGRect(x: rect.minX, y: rect.minY, width: stripeWidth, height: rect.height)
+
+            var path = Path()
+            let topLeft = CGPoint(x: stripeRect.minX, y: stripeRect.minY)
+            let topRight = CGPoint(x: stripeRect.maxX, y: stripeRect.minY)
+            let bottomRight = CGPoint(x: stripeRect.maxX, y: stripeRect.maxY)
+            let bottomLeft = CGPoint(x: stripeRect.minX, y: stripeRect.maxY)
+
+            path.move(to: CGPoint(x: topLeft.x, y: topLeft.y + radius))
+            path.addArc(
+                center: CGPoint(x: topLeft.x + radius, y: topLeft.y + radius),
+                radius: radius,
+                startAngle: Angle(degrees: 180),
+                endAngle: Angle(degrees: 270),
+                clockwise: false
+            )
+
+            path.addLine(to: topRight)
+            path.addLine(to: bottomRight)
+
+            path.addArc(
+                center: CGPoint(x: bottomLeft.x + radius, y: bottomLeft.y - radius),
+                radius: radius,
+                startAngle: Angle(degrees: 90),
+                endAngle: Angle(degrees: 180),
+                clockwise: false
+            )
+
+            path.addLine(to: CGPoint(x: bottomLeft.x, y: bottomLeft.y - radius))
+            path.closeSubpath()
+
+            return path
+        }
     }
 
     // Helper for accessibility hint text
