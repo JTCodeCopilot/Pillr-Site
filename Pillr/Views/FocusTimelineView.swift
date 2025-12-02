@@ -445,14 +445,6 @@ private struct FocusWindowRow: View {
                 }
                 
                 Spacer()
-                
-                Text("\(group.windows.count) \(group.windows.count == 1 ? "dose" : "doses")")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(Color(hex: "#404C42"))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color(hex: "#D7CCC8"))
-                    .cornerRadius(12)
             }
             
             ForEach(Array(group.windows.enumerated()), id: \.element.id) { index, window in
@@ -461,7 +453,7 @@ private struct FocusWindowRow: View {
                 
                 if index > 0 {
                     Divider()
-                        .background(Color.white.opacity(0.08))
+                        .background(Color.white.opacity(0.18))
                 }
                 
                 VStack(alignment: .leading, spacing: 12) {
@@ -500,6 +492,7 @@ private struct FocusWindowRow: View {
                         infoRow(title: "Kicks in", value: formatTime(window.onsetTime))
                         infoRow(title: "Fades", value: formatTime(window.fadeTime))
                     }
+                    .padding(.top, 6)
                 }
             }
         }
@@ -528,14 +521,40 @@ private struct FocusWindowRow: View {
     }
     
     private func infoRow(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-            Text(value)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+        let parts = value.split(separator: " ")
+        let timeComponent = parts.first.map(String.init) ?? value
+        let meridiemComponent = parts.count > 1 ? String(parts.last!).lowercased() : ""
+        
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                .tracking(0.6)
+            
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(timeComponent)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(Color(hex: "#F8F8F1"))
+                
+                if !meridiemComponent.isEmpty {
+                    Text(meridiemComponent)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0").opacity(0.8))
+                        .padding(.leading, 2)
+                }
+            }
         }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+        )
     }
     
     private func statusSubtitle(
