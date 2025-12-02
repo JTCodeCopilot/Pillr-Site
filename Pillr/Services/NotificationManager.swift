@@ -12,7 +12,6 @@ import SwiftUI
 fileprivate struct NotificationCategoryIdentifier {
     static let medicationReminder = "MEDICATION_REMINDER"
     static let stimulantReminder = "STIMULANT_PHASE_REMINDER"
-    static let focusSessionReminder = "FOCUS_SESSION_REMINDER"
 }
 
 fileprivate struct NotificationActionIdentifier {
@@ -63,18 +62,10 @@ class NotificationManager: ObservableObject {
             options: [.customDismissAction]
         )
 
-        let focusCategory = UNNotificationCategory(
-            identifier: NotificationCategoryIdentifier.focusSessionReminder,
-            actions: [dismissAction],
-            intentIdentifiers: [],
-            options: [.customDismissAction]
-        )
-        
         // Register all relevant notification categories
         UNUserNotificationCenter.current().setNotificationCategories([
             medicationCategory,
-            stimulantCategory,
-            focusCategory
+            stimulantCategory
         ])
     }
     
@@ -342,68 +333,6 @@ class NotificationManager: ObservableObject {
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Error scheduling one-time reminder: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    // MARK: - Focus session helpers
-    
-    func scheduleFocusSession(start: Date, durationMinutes: Int) {
-        let center = UNUserNotificationCenter.current()
-        let calendar = Calendar.current
-        
-        // Start notification
-        let startContent = UNMutableNotificationContent()
-        startContent.title = "Focus session starting"
-        startContent.body = "Use this window for your most important tasks."
-        startContent.sound = UNNotificationSound.default
-        startContent.categoryIdentifier = NotificationCategoryIdentifier.focusSessionReminder
-        startContent.threadIdentifier = "focus-session"
-        
-        let startComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: start)
-        let startTrigger = UNCalendarNotificationTrigger(dateMatching: startComponents, repeats: false)
-        let startRequest = UNNotificationRequest(identifier: UUID().uuidString, content: startContent, trigger: startTrigger)
-        center.add(startRequest) { error in
-            if let error = error {
-                print("Error scheduling focus session start: \(error.localizedDescription)")
-            }
-        }
-        
-        // Mid-session gentle check-in (if long enough)
-        if durationMinutes >= 40 {
-            let midDate = start.addingTimeInterval(TimeInterval((durationMinutes / 2) * 60))
-            let midContent = UNMutableNotificationContent()
-            midContent.title = "Halfway through your focus session"
-            midContent.body = "Quick stretch, sip of water, or refocus if needed."
-            midContent.sound = UNNotificationSound.default
-            midContent.categoryIdentifier = NotificationCategoryIdentifier.focusSessionReminder
-            midContent.threadIdentifier = "focus-session"
-            
-            let midComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: midDate)
-            let midTrigger = UNCalendarNotificationTrigger(dateMatching: midComponents, repeats: false)
-            let midRequest = UNNotificationRequest(identifier: UUID().uuidString, content: midContent, trigger: midTrigger)
-            center.add(midRequest) { error in
-                if let error = error {
-                    print("Error scheduling focus session mid-point: \(error.localizedDescription)")
-                }
-            }
-        }
-        
-        // End notification
-        let endDate = start.addingTimeInterval(TimeInterval(durationMinutes * 60))
-        let endContent = UNMutableNotificationContent()
-        endContent.title = "Focus session ending"
-        endContent.body = "Time to wrap up or switch to lighter tasks."
-        endContent.sound = UNNotificationSound.default
-        endContent.categoryIdentifier = NotificationCategoryIdentifier.focusSessionReminder
-        endContent.threadIdentifier = "focus-session"
-        
-        let endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: endDate)
-        let endTrigger = UNCalendarNotificationTrigger(dateMatching: endComponents, repeats: false)
-        let endRequest = UNNotificationRequest(identifier: UUID().uuidString, content: endContent, trigger: endTrigger)
-        center.add(endRequest) { error in
-            if let error = error {
-                print("Error scheduling focus session end: \(error.localizedDescription)")
             }
         }
     }
@@ -742,8 +671,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         
         let hapticCategories: Set<String> = [
             NotificationCategoryIdentifier.medicationReminder,
-            NotificationCategoryIdentifier.stimulantReminder,
-            NotificationCategoryIdentifier.focusSessionReminder
+            NotificationCategoryIdentifier.stimulantReminder
         ]
 
         if hapticCategories.contains(notification.request.content.categoryIdentifier) {

@@ -1421,6 +1421,9 @@ fileprivate struct MedicationRowHeaderView: View {
         if compactLayout {
             return 12
         }
+        if allDosesLogged {
+            return usesTimelineLayout ? 16 : 14
+        }
         return usesTimelineLayout ? 24 : 18
     }
 
@@ -1449,6 +1452,15 @@ fileprivate struct MedicationRowHeaderView: View {
 
     private var detailTextOpacity: Double {
         cycleStatus == .taken ? 0.45 : 1.0
+    }
+
+    private var allDosesLogged: Bool {
+        guard !doseStates.isEmpty else { return false }
+        return doseStates.allSatisfy { $0.status != .pending }
+    }
+
+    private var doseRowVerticalPadding: CGFloat {
+        allDosesLogged ? 8 : 12
     }
     
     // Moved statusDisplay computed property
@@ -1710,13 +1722,13 @@ fileprivate struct MedicationRowHeaderView: View {
             ForEach(Array(doseStates.enumerated()), id: \.offset) { index, state in
                 let isPrimary = primaryIndex != nil ? state.index == primaryIndex : false
                 doseCardRow(for: state, isPrimary: isPrimary)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, doseRowVerticalPadding)
                 if index < doseStates.count - 1 {
                     Rectangle()
                         .fill(Color(hex: "#D0D5D8").opacity(0.08))
                         .frame(height: 1)
-                        .padding(.top, 12)
-                        .padding(.bottom, 12)
+                        .padding(.top, doseRowVerticalPadding)
+                        .padding(.bottom, doseRowVerticalPadding)
                 }
             }
         }
