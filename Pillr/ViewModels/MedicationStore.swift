@@ -28,6 +28,8 @@ class MedicationStore: ObservableObject {
     @Published var dailyCheckInMedication: Medication?
     /// When set, the medications list should highlight / expand this medication card.
     @Published var highlightedMedicationID: UUID?
+    /// When a medication reminder notification is tapped, this ID gets a quick glow treatment.
+    @Published var notificationHighlightMedicationID: UUID?
     /// The medication that should currently show expanded details on the My Meds list.
     @Published var expandedMedicationID: UUID?
     /// Allows any view to request a specific tab to show (e.g., jump back to My Meds).
@@ -217,12 +219,26 @@ class MedicationStore: ObservableObject {
     ) {
         let pillsConsumed = skipped ? 0 : medication.pillsPerDose
         let calendar = Calendar.current
+        let resolvedReminderIndex = reminderIndex ?? inferReminderIndexIfNeeded(for: medication, actualTime: actualTime)
         var previousLog: MedicationLog?
         
         if let existingIndex = logs.firstIndex(where: { log in
-            log.medicationID == medication.id &&
-            calendar.isDate(log.takenAt, inSameDayAs: actualTime) &&
-            log.reminderIndex == reminderIndex
+            guard log.medicationID == medication.id,
+                  calendar.isDate(log.takenAt, inSameDayAs: actualTime) else {
+                return false
+            }
+            
+            if let resolvedReminderIndex {
+                if log.reminderIndex == resolvedReminderIndex {
+                    return true
+                }
+                if log.reminderIndex == nil && medication.reminderTimes.count <= 1 {
+                    return true
+                }
+                return false
+            } else {
+                return log.reminderIndex == nil
+            }
         }) {
             let existingLog = logs[existingIndex]
             if existingLog.skipped == skipped {
@@ -241,7 +257,7 @@ class MedicationStore: ObservableObject {
             
             previousLog = existingLog
             logs.remove(at: existingIndex)
-        } else if reminderIndex == nil {
+        } else if resolvedReminderIndex == nil {
             // Single-dose medications (no reminder index) can only be logged once per day
             let alreadyLogged = logs.contains { log in
                 log.medicationID == medication.id &&
@@ -262,7 +278,7 @@ class MedicationStore: ObservableObject {
             notes: notes,
             skipped: skipped,
             pillsConsumed: pillsConsumed,
-            reminderIndex: reminderIndex,
+            reminderIndex: resolvedReminderIndex,
             focusRating: focusRating,
             sideEffectSeverity: sideEffectSeverity
         )
@@ -321,13 +337,25 @@ class MedicationStore: ObservableObject {
         }
         
         // Cancel the specific notification that triggered this log
-        if let specificIndex = reminderIndex, !medication.notificationIDs.isEmpty, specificIndex < medication.notificationIDs.count {
+        if let specificIndex = resolvedReminderIndex,
+           !medication.notificationIDs.isEmpty,
+           specificIndex < medication.notificationIDs.count {
             // Cancel the specific notification if we know which one
             notificationManager.cancelNotification(with: medication.notificationIDs[specificIndex])
         } else if let notificationID = medication.notificationID {
             // Legacy support - cancel the single notification
             notificationManager.cancelNotification(with: notificationID)
         }
+
+        let identifiersToKeep = preservedReminderIdentifiers(
+            for: medication,
+            excludingReminderIndex: resolvedReminderIndex,
+            excludeSingleReminder: resolvedReminderIndex == nil
+        )
+        notificationManager.removeUntrackedMedicationReminders(
+            for: medication.id,
+            preservingIdentifiers: identifiersToKeep
+        )
         
         // Reset application badge if no more pending medications for today
         resetBadgeIfNeeded()
@@ -350,7 +378,7 @@ class MedicationStore: ObservableObject {
             let scheduledTime = scheduledTimeForToday(
                 medication: medication,
                 actualTime: actualTime,
-                reminderIndex: reminderIndex
+                reminderIndex: resolvedReminderIndex
             )
 
             recentADHDDoseTimeline = ADHDDoseTimelineEntry(
@@ -476,6 +504,73 @@ class MedicationStore: ObservableObject {
     func deleteLog(at offsets: IndexSet) {
         logs.remove(atOffsets: offsets)
         saveLogs()
+    }
+
+    private func preservedReminderIdentifiers(
+        for medication: Medication,
+        excludingReminderIndex excludedIndex: Int?,
+        excludeSingleReminder: Bool
+    ) -> Set<String> {
+        var identifiers: Set<String> = []
+
+        if !excludeSingleReminder, let singleID = medication.notificationID?.uuidString {
+            identifiers.insert(singleID)
+            identifiers.insert("\(singleID)_followup")
+        }
+
+        if !medication.notificationIDs.isEmpty {
+            for (index, uuid) in medication.notificationIDs.enumerated() {
+                if let excludedIndex, excludedIndex == index { continue }
+                let idString = uuid.uuidString
+                identifiers.insert(idString)
+                identifiers.insert("\(idString)_followup")
+            }
+        }
+
+        return identifiers
+    }
+
+    private func inferReminderIndexIfNeeded(
+        for medication: Medication,
+        actualTime: Date
+    ) -> Int? {
+        guard !medication.reminderTimes.isEmpty else { return nil }
+
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: actualTime)
+
+        let todaysTimes: [(index: Int, time: Date)] = medication.reminderTimes.enumerated().compactMap { index, reminder in
+            let components = calendar.dateComponents([.hour, .minute], from: reminder)
+            guard let date = calendar.date(
+                bySettingHour: components.hour ?? 8,
+                minute: components.minute ?? 0,
+                second: 0,
+                of: dayStart
+            ) else {
+                return nil
+            }
+            return (index, date)
+        }
+
+        guard !todaysTimes.isEmpty else { return nil }
+
+        let todaysLogs = logs.filter {
+            $0.medicationID == medication.id &&
+            calendar.isDate($0.takenAt, inSameDayAs: actualTime)
+        }
+
+        var takenIndices = Set(todaysLogs.compactMap { $0.reminderIndex })
+        if medication.reminderTimes.count <= 1,
+           todaysLogs.contains(where: { $0.reminderIndex == nil }) {
+            takenIndices.insert(0)
+        }
+
+        let available = todaysTimes.filter { !takenIndices.contains($0.index) }
+        let candidates = available.isEmpty ? todaysTimes : available
+
+        return candidates.min(by: { lhs, rhs in
+            abs(lhs.time.timeIntervalSince(actualTime)) < abs(rhs.time.timeIntervalSince(actualTime))
+        })?.index
     }
 
     private func scheduledTimeForToday(

@@ -10,6 +10,7 @@ import SwiftUI
 struct MedicationsListView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showingLogSheetFor: Medication?
     @State private var selectedMedicationToEdit: Medication?
     @State private var showingAddSheet = false
@@ -28,6 +29,8 @@ struct MedicationsListView: View {
     @State private var showingPremiumUpgrade = false
     @State private var showingFocusTimeline = false
     @State private var showingCabinetSheet = false
+    @State private var referenceDate = Date()
+    private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
     let onShowSettings: () -> Void
     let onShowHistory: () -> Void
 
@@ -40,11 +43,15 @@ struct MedicationsListView: View {
     }
 
     private var reminderMedications: [Medication] {
-        store.activeMedications.filter { shouldDisplayOnMainList($0, logs: store.logs) }
+        store.activeMedications.filter {
+            shouldDisplayOnMainList($0, logs: store.logs, referenceDate: referenceDate)
+        }
     }
     
     private var cabinetMedications: [Medication] {
-        store.activeMedications.filter { !shouldDisplayOnMainList($0, logs: store.logs) }
+        store.activeMedications.filter {
+            !shouldDisplayOnMainList($0, logs: store.logs, referenceDate: referenceDate)
+        }
     }
     
     var body: some View {
@@ -66,7 +73,8 @@ struct MedicationsListView: View {
             onShowFocusTimeline: { showingFocusTimeline = true },
             displayedMedications: reminderMedications,
             cabinetMedications: cabinetMedications,
-            onShowCabinet: { showingCabinetSheet = true }
+            onShowCabinet: { showingCabinetSheet = true },
+            referenceDate: referenceDate
         )
         .sheet(item: $showingLogSheetFor) { med in
             LogMedicationView(medicationToLog: med)
@@ -134,6 +142,7 @@ struct MedicationsListView: View {
             MedicationCabinetSheet(
                 medications: cabinetMedications,
                 logs: store.logs,
+                referenceDate: referenceDate,
                 onLogMedication: { presentLogSheet(for: $0) },
                 onEditMedication: { presentEditSheet(for: $0) }
             )
@@ -151,10 +160,29 @@ struct MedicationsListView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
+        .onReceive(referenceTimer) { output in
+            guard scenePhase == .active else { return }
+            referenceDate = output
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+            refreshReferenceDate(resetBadge: false)
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                refreshReferenceDate(resetBadge: true)
+            }
+        }
     }
     
     private func showMedicationSelectionSheet() async {
         showingMedicationSelectionSheet = true
+    }
+
+    private func refreshReferenceDate(resetBadge: Bool) {
+        referenceDate = Date()
+        if resetBadge {
+            store.checkAndResetBadge()
+        }
     }
     
     private func handleAddMedication() {
@@ -268,9 +296,13 @@ fileprivate func NoActiveRemindersView(
 }
 
 // Helper function to sort medications by priority (overdue first, then by due time)
-fileprivate func sortedMedications(_ medications: [Medication], logs: [MedicationLog]) -> [Medication] {
+fileprivate func sortedMedications(
+    _ medications: [Medication],
+    logs: [MedicationLog],
+    referenceDate: Date
+) -> [Medication] {
     let calendar = Calendar.current
-    let now = Date()
+    let now = referenceDate
     let logsByMedication = Dictionary(grouping: logs, by: { $0.medicationID })
 
     struct MedicationSortInfo {
@@ -441,12 +473,14 @@ fileprivate func MedicationsListContent(
     onCheckAllInteractions: @escaping () async -> Void,
     onAddMedication: @escaping () -> Void,
     onShowFocusTimeline: @escaping () -> Void,
-    medications: [Medication]
+    medications: [Medication],
+    referenceDate: Date
 ) -> some View {
     VStack(alignment: .leading, spacing: 16) {
-        ForEach(sortedMedications(medications, logs: store.logs)) { med in
+        ForEach(sortedMedications(medications, logs: store.logs, referenceDate: referenceDate)) { med in
                 MedicationRow(
                     medication: med,
+                    referenceDate: referenceDate,
                     onLogTap: { 
                         HapticManager.shared.lightImpact()
                         showingLogSheetFor.wrappedValue = med 
@@ -974,6 +1008,7 @@ func ArchivedMedicationCard(
 fileprivate struct MedicationCabinetSheet: View {
     let medications: [Medication]
     let logs: [MedicationLog]
+    let referenceDate: Date
     let onLogMedication: (Medication) -> Void
     let onEditMedication: (Medication) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -1056,7 +1091,7 @@ fileprivate struct MedicationCabinetSheet: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(Color(hex: "#E0E7DC"))
 
-        ForEach(sortedMedications(medications, logs: logs)) { medication in
+        ForEach(sortedMedications(medications, logs: logs, referenceDate: referenceDate)) { medication in
                 CabinetMedicationRow(
                     medication: medication,
                     onLogTap: { onLogMedication(medication) },
@@ -1158,6 +1193,7 @@ fileprivate struct MedicationsListMainContent: View {
     let displayedMedications: [Medication]
     let cabinetMedications: [Medication]
     let onShowCabinet: () -> Void
+    let referenceDate: Date
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -1211,7 +1247,8 @@ fileprivate struct MedicationsListMainContent: View {
                                 onCheckAllInteractions: onCheckAllInteractions,
                                 onAddMedication: onAddMedication,
                                 onShowFocusTimeline: onShowFocusTimeline,
-                                medications: displayedMedications
+                                medications: displayedMedications,
+                                referenceDate: referenceDate
                             )
 
                         }
@@ -1236,7 +1273,9 @@ fileprivate struct MedicationsListMainContent: View {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
                         proxy.scrollTo(target, anchor: .top)
                     }
-                    store.expandedMedicationID = target
+                    if store.notificationHighlightMedicationID != target {
+                        store.expandedMedicationID = target
+                    }
                     DispatchQueue.main.async {
                         store.highlightedMedicationID = nil
                     }
@@ -1269,12 +1308,16 @@ fileprivate func commonFormatTime(_ date: Date) -> String {
     return formatter.string(from: date)
 }
 
-fileprivate func shouldDisplayOnMainList(_ medication: Medication, logs: [MedicationLog]) -> Bool {
+fileprivate func shouldDisplayOnMainList(
+    _ medication: Medication,
+    logs: [MedicationLog],
+    referenceDate: Date
+) -> Bool {
     if medication.frequency == "As needed" {
         let calendar = Calendar.current
         return logs.contains { log in
             log.medicationID == medication.id &&
-            calendar.isDate(log.takenAt, inSameDayAs: Date())
+            calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
         }
     }
     return medicationHasActiveReminder(medication)
@@ -1284,11 +1327,15 @@ fileprivate func medicationHasActiveReminder(_ medication: Medication) -> Bool {
     medication.notificationID != nil || !medication.notificationIDs.isEmpty
 }
 
-fileprivate func wasMedicationTakenToday(_ medication: Medication, logs: [MedicationLog]) -> Bool {
+fileprivate func wasMedicationTakenToday(
+    _ medication: Medication,
+    logs: [MedicationLog],
+    referenceDate: Date
+) -> Bool {
     let calendar = Calendar.current
     return logs.contains { log in
         log.medicationID == medication.id &&
-        calendar.isDate(log.takenAt, inSameDayAs: Date())
+        calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
     }
 }
 
@@ -1507,6 +1554,64 @@ fileprivate struct MedicationRowHeaderView: View {
         return notes
     }
 
+    private struct DoseBadgeItem: Identifiable {
+        let id: Int
+        let text: String
+    }
+
+    private var takenDoseBadges: [DoseBadgeItem] {
+        guard compactLayout else { return [] }
+        let showDoseLabel = doseStates.count > 1
+        var badges: [DoseBadgeItem] = []
+
+        for state in doseStates {
+            guard state.status == .taken, let actualTime = state.actualTime else { continue }
+            let timeText = Self.badgeTimeFormatter.string(from: actualTime)
+            let prefix: String? = showDoseLabel
+                ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
+                : nil
+            let label: String
+            if let prefix {
+                label = "\(prefix) • \(timeText)"
+            } else {
+                label = timeText
+            }
+            badges.append(DoseBadgeItem(id: state.index, text: label))
+        }
+
+        return badges
+    }
+
+    @ViewBuilder
+    private var takenDoseBadgesView: some View {
+        let badges = takenDoseBadges
+        if !badges.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(badges) { badge in
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                        Text(badge.text)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F5F7F4"))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Capsule())
+                }
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private static let badgeTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
     // Moved buttonProperties computed property
     private var takenButtonLabel: String {
         doseStates.count > 1 ? "All Taken" : "Taken"
@@ -1580,7 +1685,7 @@ fileprivate struct MedicationRowHeaderView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
                     statusSection
-                    if !usesTimelineLayout {
+                    if !usesTimelineLayout && !compactLayout {
                         actionButton
                     }
                 }
@@ -1619,6 +1724,10 @@ fileprivate struct MedicationRowHeaderView: View {
 
             if statusDisplay.show {
                 statusBadge
+            }
+
+            if compactLayout {
+                takenDoseBadgesView
             }
             
             if showDetails, let preview = notesPreview {
@@ -1925,20 +2034,22 @@ fileprivate struct MedicationRowHeaderView: View {
 
 struct MedicationRow: View {
     let medication: Medication
+    let referenceDate: Date
     let onLogTap: () -> Void
     let onEditTap: () -> Void
     let onArchiveTap: (() -> Void)? // Optional for archived meds
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var store: MedicationStore
+    @State private var isNotificationGlowActive = false
+    @State private var notificationGlowResetWorkItem: DispatchWorkItem?
+    private let notificationGlowDuration: TimeInterval = 2.0
     
     private var todaysLogsForMedication: [MedicationLog] {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        
         return store.logs.filter { log in
             log.medicationID == medication.id &&
-            calendar.isDate(calendar.startOfDay(for: log.takenAt), inSameDayAs: today)
+            calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
         }
     }
     
@@ -2051,7 +2162,7 @@ struct MedicationRow: View {
     
     // Helper to get the effective due time, considering the reset logic
     private var effectiveDueTime: Date {
-        let now = Date()
+        let now = referenceDate
         if let pendingIndex = nextPendingDoseIndex {
             return calculateDueTime(for: medication, reminderIndex: pendingIndex, referenceDate: now)
         }
@@ -2060,7 +2171,7 @@ struct MedicationRow: View {
 
     // Calculates minutes to the effective due time
     private var minutesToEffectiveDueTime: Int {
-        let now = Date()
+        let now = referenceDate
         return Calendar.current.dateComponents([.minute], from: now, to: effectiveDueTime).minute ?? 0
     }
     
@@ -2218,7 +2329,7 @@ struct MedicationRow: View {
                     logDose(at: doseIndex)
                 },
                 highlightedDoseIndex: highlightedDoseIndex,
-                compactLayout: false
+                compactLayout: isTakenStatus
             )
             
             if showsDetails {
@@ -2243,6 +2354,7 @@ struct MedicationRow: View {
                     )
             }
         }
+        .overlay(notificationGlowOverlay)
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(innerStrokeColor, lineWidth: innerStrokeWidth)
@@ -2308,6 +2420,27 @@ struct MedicationRow: View {
                 }
             }
         }
+        .onAppear {
+            handleNotificationHighlightChange(store.notificationHighlightMedicationID)
+        }
+        .onChange(of: store.notificationHighlightMedicationID) { newValue in
+            handleNotificationHighlightChange(newValue)
+        }
+        .onDisappear {
+            notificationGlowResetWorkItem?.cancel()
+            isNotificationGlowActive = false
+        }
+    }
+    
+    private var notificationGlowOverlay: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .stroke(Color(hex: "#F6FFE0").opacity(isNotificationGlowActive ? 0.95 : 0), lineWidth: isNotificationGlowActive ? 2.5 : 0)
+            .shadow(color: Color(hex: "#DFFFC0").opacity(isNotificationGlowActive ? 0.9 : 0), radius: isNotificationGlowActive ? 18 : 0)
+            .blur(radius: isNotificationGlowActive ? 0.5 : 0)
+            .padding(-6)
+            .blendMode(.screen)
+            .allowsHitTesting(false)
+            .animation(.easeInOut(duration: 0.35), value: isNotificationGlowActive)
     }
     
     // Enhanced border overlay with better visual feedback
@@ -2386,6 +2519,34 @@ struct MedicationRow: View {
             path.closeSubpath()
 
             return path
+        }
+    }
+
+    private func handleNotificationHighlightChange(_ newValue: UUID?) {
+        guard newValue == medication.id else { return }
+        triggerNotificationGlow()
+        clearNotificationHighlightIfNeeded()
+    }
+
+    private func triggerNotificationGlow() {
+        notificationGlowResetWorkItem?.cancel()
+        withAnimation(.easeInOut(duration: 0.35)) {
+            isNotificationGlowActive = true
+        }
+        let workItem = DispatchWorkItem {
+            withAnimation(.easeInOut(duration: 0.4)) {
+                isNotificationGlowActive = false
+            }
+        }
+        notificationGlowResetWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + notificationGlowDuration, execute: workItem)
+    }
+
+    private func clearNotificationHighlightIfNeeded() {
+        DispatchQueue.main.async {
+            if store.notificationHighlightMedicationID == medication.id {
+                store.notificationHighlightMedicationID = nil
+            }
         }
     }
 

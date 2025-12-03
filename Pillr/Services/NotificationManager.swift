@@ -101,12 +101,6 @@ class NotificationManager: ObservableObject {
         dateComponents.hour = hour
         dateComponents.minute = minute
         
-        // Check if the reminder time has already passed for today
-        let now = Date()
-        let currentHour = calendar.component(.hour, from: now)
-        let currentMinute = calendar.component(.minute, from: now)
-        let timeHasPassed = (hour < currentHour || (hour == currentHour && minute <= currentMinute))
-        
         if medication.isOneTimeWithFollowUp {
             // Schedule a one-time notification
             let now = Date()
@@ -124,14 +118,6 @@ class NotificationManager: ObservableObject {
             // Schedule a one-time follow up 30 minutes later
             scheduleOneTimeFollowUp(for: medication, after: 30, originalID: notificationID, baseInterval: interval)
             return notificationID
-        }
-        
-        // If regular notification and time has passed for today, set it to start tomorrow
-        if timeHasPassed {
-            // Set to start tomorrow
-            dateComponents.day = calendar.component(.day, from: calendar.date(byAdding: .day, value: 1, to: now)!)
-            dateComponents.month = calendar.component(.month, from: calendar.date(byAdding: .day, value: 1, to: now)!)
-            dateComponents.year = calendar.component(.year, from: calendar.date(byAdding: .day, value: 1, to: now)!)
         }
         
         // Default: schedule repeating notification
@@ -209,20 +195,6 @@ class NotificationManager: ObservableObject {
         dateComponents.hour = hour
         dateComponents.minute = minute
         
-        // Check if the reminder time is earlier than the current time on the same day
-        let now = Date()
-        let currentHour = calendar.component(.hour, from: now)
-        let currentMinute = calendar.component(.minute, from: now)
-        
-        // If it's a new medication and the reminder time has already passed for today,
-        // we want to start notifications from tomorrow (by setting the day component)
-        if (hour < currentHour || (hour == currentHour && minute <= currentMinute)) {
-            // Set to start tomorrow
-            dateComponents.day = calendar.component(.day, from: calendar.date(byAdding: .day, value: 1, to: now)!)
-            dateComponents.month = calendar.component(.month, from: calendar.date(byAdding: .day, value: 1, to: now)!)
-            dateComponents.year = calendar.component(.year, from: calendar.date(byAdding: .day, value: 1, to: now)!)
-        }
-        
         // Create the trigger
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         
@@ -291,22 +263,6 @@ class NotificationManager: ObservableObject {
             dateComponents.hour = followUpHour
             dateComponents.minute = followUpMinute
             
-            // Check if the original reminder time has already passed for today
-            let now = Date()
-            let hour = calendar.component(.hour, from: time)
-            let minute = calendar.component(.minute, from: time)
-            let currentHour = calendar.component(.hour, from: now)
-            let currentMinute = calendar.component(.minute, from: now)
-            
-            // If the original reminder has already passed for today, 
-            // schedule the follow-up to start tomorrow as well
-            if (hour < currentHour || (hour == currentHour && minute <= currentMinute)) {
-                // Set to start tomorrow
-                dateComponents.day = calendar.component(.day, from: calendar.date(byAdding: .day, value: 1, to: now)!)
-                dateComponents.month = calendar.component(.month, from: calendar.date(byAdding: .day, value: 1, to: now)!)
-                dateComponents.year = calendar.component(.year, from: calendar.date(byAdding: .day, value: 1, to: now)!)
-            }
-            
             let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
             
             // Create a unique ID for the follow-up by adding a suffix
@@ -363,6 +319,49 @@ class NotificationManager: ObservableObject {
     func cancelMultipleNotifications(ids: [UUID]) {
         for id in ids {
             cancelNotification(with: id)
+        }
+    }
+
+    /// Removes any medication reminder notifications for a specific medication that do not match
+    /// the provided identifiers. This lets us clear ad-hoc reminders (e.g., snoozes) without
+    /// touching the primary scheduled reminders that belong to the medication.
+    func removeUntrackedMedicationReminders(
+        for medicationID: UUID,
+        preservingIdentifiers identifiersToKeep: Set<String>
+    ) {
+        let center = UNUserNotificationCenter.current()
+        let medicationIDString = medicationID.uuidString
+
+        center.getPendingNotificationRequests { requests in
+            let identifiers = requests.compactMap { request -> String? in
+                guard let pendingMedicationID = request.content.userInfo["medicationID"] as? String,
+                      pendingMedicationID == medicationIDString,
+                      request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder else {
+                    return nil
+                }
+
+                return identifiersToKeep.contains(request.identifier) ? nil : request.identifier
+            }
+
+            if !identifiers.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: identifiers)
+            }
+        }
+
+        center.getDeliveredNotifications { notifications in
+            let identifiers = notifications.compactMap { notification -> String? in
+                guard let deliveredMedicationID = notification.request.content.userInfo["medicationID"] as? String,
+                      deliveredMedicationID == medicationIDString,
+                      notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder else {
+                    return nil
+                }
+
+                return identifiersToKeep.contains(notification.request.identifier) ? nil : notification.request.identifier
+            }
+
+            if !identifiers.isEmpty {
+                center.removeDeliveredNotifications(withIdentifiers: identifiers)
+            }
         }
     }
 
@@ -755,6 +754,14 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             if let medicationIDString = userInfo["medicationID"] as? String,
                let medicationID = UUID(uuidString: medicationIDString),
                let medication = MedicationStore.shared.findMedication(with: medicationID) {
+
+                if response.notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder {
+                    DispatchQueue.main.async {
+                        MedicationStore.shared.highlightedMedicationID = medication.id
+                        MedicationStore.shared.notificationHighlightMedicationID = medication.id
+                        MedicationStore.shared.requestedMainTab = .meds
+                    }
+                }
                 
                 // If this is a stimulant fade notification with daily check-in enabled,
                 // surface the notes & side-effects logging sheet for this medication.
