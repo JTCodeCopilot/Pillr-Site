@@ -1778,21 +1778,37 @@ struct AddMedicationView: View {
     private func requestNotificationPermissionIfNeeded() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             if settings.authorizationStatus == .notDetermined {
-                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
-                    if granted {
-                        DispatchQueue.main.async {
-                            self.enableNotification = true
-                        }
-                    } else {
-                        DispatchQueue.main.async {
-                            self.enableNotification = false
-                        }
-                    }
-                }
+                requestNotificationAuthorization()
             } else if settings.authorizationStatus == .denied {
                 DispatchQueue.main.async {
                     self.enableNotification = false
                 }
+            } else if settings.authorizationStatus == .authorized {
+                var needsTimeSensitiveUpgrade = false
+                if #available(iOS 15.0, *) {
+                    needsTimeSensitiveUpgrade = settings.timeSensitiveSetting != .enabled
+                }
+                if needsTimeSensitiveUpgrade {
+                    requestNotificationAuthorization()
+                } else {
+                    DispatchQueue.main.async {
+                        self.enableNotification = true
+                    }
+                }
+            }
+        }
+    }
+
+    private func requestNotificationAuthorization() {
+        let authorizationOptions: UNAuthorizationOptions
+        if #available(iOS 15.0, *) {
+            authorizationOptions = [.alert, .badge, .sound, .timeSensitive]
+        } else {
+            authorizationOptions = [.alert, .badge, .sound]
+        }
+        UNUserNotificationCenter.current().requestAuthorization(options: authorizationOptions) { granted, _ in
+            DispatchQueue.main.async {
+                self.enableNotification = granted
             }
         }
     }

@@ -68,6 +68,13 @@ class NotificationManager: ObservableObject {
             stimulantCategory
         ])
     }
+
+    private func prioritizeMedicationReminder(_ content: UNMutableNotificationContent) {
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+            content.relevanceScore = 1.0
+        }
+    }
     
     // Legacy support for single notification
     func scheduleNotification(for medication: Medication) -> UUID {
@@ -84,6 +91,7 @@ class NotificationManager: ObservableObject {
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
+        prioritizeMedicationReminder(content)
         
         let notificationID = UUID()
         let calendar = Calendar.current
@@ -189,6 +197,7 @@ class NotificationManager: ObservableObject {
         
         // Set the notification icon badge
         content.badge = 1
+        prioritizeMedicationReminder(content)
         
         // Extract hour and minute
         let calendar = Calendar.current
@@ -270,6 +279,7 @@ class NotificationManager: ObservableObject {
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
+        prioritizeMedicationReminder(content)
         
         // Create a time-based trigger for the follow-up (30 minutes after scheduled time)
         let calendar = Calendar.current
@@ -321,6 +331,7 @@ class NotificationManager: ObservableObject {
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
+        prioritizeMedicationReminder(content)
         
         // Create a time-based trigger for one-time reminder
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(afterMinutes * 60), repeats: false)
@@ -476,7 +487,8 @@ class NotificationManager: ObservableObject {
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
-        
+        prioritizeMedicationReminder(content)
+
         // Since baseInterval already accounts for whether the original notification
         // was scheduled for today or tomorrow, we just add the follow-up delay
         let followUpInterval = baseInterval + Double(minutes * 60)
