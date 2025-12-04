@@ -1913,9 +1913,11 @@ fileprivate struct MedicationRowHeaderView: View {
                         .font(.system(.body, design: .default).weight(.semibold))
                         .foregroundColor(Color(hex: "#F5F7F4").opacity(state.status == .pending ? 1 : 0.7))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .allowsTightening(true)
+                        .minimumScaleFactor(0.85)
+                        .frame(minWidth: timelineTimeWidth, alignment: .trailing)
+                        .layoutPriority(1)
                 }
-                .frame(width: timelineTimeWidth, alignment: .trailing)
             }
         }
         .padding(.horizontal, 2)
@@ -2876,7 +2878,15 @@ fileprivate struct MedicationRowDetailsView: View {
         ]
 
         if medication.frequency != "As needed" {
-            entries.append(DetailEntry(label: "Reminder Time", value: reminderTimesString))
+            // Reminder times can be long (multiple alarms), so let them wrap instead of truncating.
+            entries.append(
+                DetailEntry(
+                    label: "Reminder Time",
+                    value: reminderTimesString,
+                    lineLimit: nil,
+                    placeValueOnNewLine: true
+                )
+            )
             let notificationText = notificationsEnabled ? "Enabled" : "Disabled"
             let notificationColor = notificationsEnabled ? Color(hex: "#F5F7F4") : Color(hex: "#FF9E8B")
             entries.append(DetailEntry(label: "Notifications", value: notificationText, valueColor: notificationColor))
