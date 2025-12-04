@@ -782,7 +782,7 @@ struct ADHDDoseTimelineSheet: View {
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(Color(hex: "#D7CCC8"))
 
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("Today's focus timeline")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(Color(hex: "#E8E8E0"))
@@ -793,7 +793,8 @@ struct ADHDDoseTimelineSheet: View {
 
                         Text("\(entry.medication.dosage) \(entry.medication.dosageUnit)")
                             .font(.system(size: 13))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                            .padding(.top, 4)
                     }
                 }
 
