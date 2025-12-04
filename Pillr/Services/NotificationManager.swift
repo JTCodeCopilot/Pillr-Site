@@ -84,8 +84,8 @@ class NotificationManager: ObservableObject {
         }
         
         let content = UNMutableNotificationContent()
-        content.title = "Time to take your medication"
-        content.body = "It's time to take \(medication.name) (\(medication.dosage))"
+        content.title = "Medication reminder"
+        content.body = "Please take \(medication.name) (\(medication.dosage)) now."
         content.sound = UNNotificationSound.default
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
@@ -166,8 +166,8 @@ class NotificationManager: ObservableObject {
         // Customize the notification based on which reminder it is
         if total > 1 {
             let doseNumber = index + 1
-            content.title = "Time for dose #\(doseNumber) of \(medication.name)"
-            content.body = "Take \(medication.pillsPerDose) \(medication.dosage) (\(formatTimeOnly(time)))"
+            content.title = "Dose #\(doseNumber) reminder: \(medication.name)"
+            content.body = "Take \(medication.pillsPerDose) \(medication.dosage) around \(formatTimeOnly(time))."
         } else {
             content.title = "Time to take your medication"
             content.body = "It's time to take \(medication.name) (\(medication.dosage))"
@@ -234,11 +234,11 @@ class NotificationManager: ObservableObject {
         
         if medication.reminderTimes.count > 1 {
             let doseNumber = index + 1
-            content.title = "Reminder: Dose #\(doseNumber) Due"
-            content.body = "Don't forget to take your \(medication.name) dose #\(doseNumber)"
+            content.title = "Dose #\(doseNumber) follow-up reminder"
+            content.body = "Please take your \(medication.name) dose #\(doseNumber) if you haven't already."
         } else {
-            content.title = "Reminder: Medication Due"
-            content.body = "Don't forget to take your \(medication.name)"
+            content.title = "Medication follow-up reminder"
+            content.body = "Take your \(medication.name) if you missed the earlier reminder."
         }
         
         content.sound = UNNotificationSound.default
