@@ -304,7 +304,7 @@ struct FocusTimelineView: View {
                             emptyState
                         }
                     }
-                    .padding(.horizontal, horizontalInsets)
+                    .padding(.horizontal, timelineHorizontalPadding)
                     .padding(.top, 16)
                     .padding(.bottom, 24)
                 }
@@ -329,6 +329,10 @@ struct FocusTimelineView: View {
             return 32
         }
         return 20
+    }
+
+    private var timelineHorizontalPadding: CGFloat {
+        horizontalInsets + 12
     }
     
     private var headerSection: some View {
@@ -561,6 +565,12 @@ private struct FocusBar: View {
     
     private let totalMinutes: CGFloat = 24 * 60
     private let hourTicks: [CGFloat] = stride(from: 0, through: 24, by: 2).map { CGFloat($0 * 60) }
+    private let hourLabelOpacity: Double = 0.7
+    private let trackCornerRadius: CGFloat = 12
+    private let trackFillOpacity: Double = 0.2
+    private let handleWidth: CGFloat = 14
+    private let handleHeight: CGFloat = 26
+    private let handleShadowRadius: CGFloat = 4
     
     private func minutesSinceMidnight(_ date: Date) -> CGFloat {
         let calendar = Calendar.current
@@ -637,7 +647,7 @@ private struct FocusBar: View {
                         if isPM(tick) || isRightMidnight {
                             Text(label(for: tick))
                                 .font(.system(size: 9, weight: isMidday ? .semibold : .regular))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(isMidday ? 0.95 : 0.8))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(hourLabelOpacity))
                                 .position(x: tickX, y: labelRowHeight / 2)
                         }
                     }
@@ -646,9 +656,9 @@ private struct FocusBar: View {
                 
                 // Bar with ticks and "now" marker
                 ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.black.opacity(0.25))
-                        .frame(height: 9)
+                RoundedRectangle(cornerRadius: trackCornerRadius, style: .continuous)
+                    .fill(Color.black.opacity(trackFillOpacity))
+                    .frame(height: 9)
                     
                     ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
                         let barStart = width * (segment.start / totalMinutes)
@@ -680,11 +690,13 @@ private struct FocusBar: View {
                     }
                     
                     if showNowMarker {
-                        Rectangle()
+                        Capsule()
                             .fill(Color.white.opacity(0.95))
-                            .frame(width: 2, height: 17)
-                            .offset(x: nowX - 1, y: -4)
-                            .shadow(color: Color.white.opacity(0.7), radius: 2, x: 0, y: 0)
+                            .frame(width: handleWidth, height: handleHeight)
+                            .offset(
+                                x: nowX - handleWidth / 2,
+                                y: -((handleHeight - barRowHeight) / 2)
+                            )
                     }
                 }
                 .frame(height: barRowHeight)
@@ -700,7 +712,7 @@ private struct FocusBar: View {
                         if !isPM(tick) || isLeftMidnight {
                             Text(label(for: tick))
                                 .font(.system(size: 9, weight: isMidday ? .semibold : .regular))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(isMidday ? 0.95 : 0.8))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(hourLabelOpacity))
                                 .position(x: tickX, y: labelRowHeight / 2)
                         }
                     }
@@ -710,11 +722,13 @@ private struct FocusBar: View {
                 HStack {
                     Text("am")
                         .font(.system(size: 9))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                        .baselineOffset(2)
                     Spacer()
                     Text("pm")
                         .font(.system(size: 9))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                        .baselineOffset(2)
                 }
             }
         }
@@ -818,7 +832,8 @@ struct ADHDDoseTimelineSheet: View {
 
                     Text(effectWindowDescription)
                         .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .padding(.top, 8)
 
                     if let shift = shiftDescription {
                         Text(shift)
@@ -855,4 +870,3 @@ struct ADHDDoseTimelineSheet: View {
         }
     }
 }
-
