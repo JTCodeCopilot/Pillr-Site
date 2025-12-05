@@ -43,15 +43,28 @@ struct MedicationsListView: View {
     }
 
     private var reminderMedications: [Medication] {
-        store.activeMedications.filter {
-            shouldDisplayOnMainList($0, logs: store.logs, referenceDate: referenceDate)
-        }
+        store.activeMedications.filter { !$0.isCabinetMedication }
     }
     
     private var cabinetMedications: [Medication] {
-        store.activeMedications.filter {
-            !shouldDisplayOnMainList($0, logs: store.logs, referenceDate: referenceDate)
+        store.activeMedications.filter { $0.isCabinetMedication }
+    }
+
+    private var cabinetLogMedications: [Medication] {
+        let calendar = Calendar.current
+        return cabinetMedications.flatMap { medication in
+            let todaysLogs = store.logs.filter { log in
+                log.medicationID == medication.id &&
+                calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
+            }
+            return todaysLogs.map { log in
+                createCabinetLogCard(from: medication, log: log)
+            }
         }
+    }
+
+    private var displayedMedications: [Medication] {
+        reminderMedications + cabinetLogMedications
     }
     
     var body: some View {
@@ -71,7 +84,7 @@ struct MedicationsListView: View {
             onShowHistory: onShowHistory,
             onShowSettings: onShowSettings,
             onShowFocusTimeline: { showingFocusTimeline = true },
-            displayedMedications: reminderMedications,
+            displayedMedications: displayedMedications,
             cabinetMedications: cabinetMedications,
             onShowCabinet: { showingCabinetSheet = true },
             referenceDate: referenceDate
@@ -304,6 +317,7 @@ fileprivate func sortedMedications(
     let calendar = Calendar.current
     let now = referenceDate
     let logsByMedication = Dictionary(grouping: logs, by: { $0.medicationID })
+    let logsByID = Dictionary(uniqueKeysWithValues: logs.map { ($0.id, $0) })
 
     struct MedicationSortInfo {
         let medication: Medication
@@ -315,8 +329,20 @@ fileprivate func sortedMedications(
     }
 
     let metadata = medications.map { medication -> MedicationSortInfo in
-        let medLogs = logsByMedication[medication.id] ?? []
-        let dueTime = calculateEffectiveDueTime(for: medication, at: now)
+        let medLogs: [MedicationLog]
+        if let entryID = medication.logEntryID {
+            medLogs = logsByID[entryID].map { [$0] } ?? []
+        } else {
+            medLogs = logsByMedication[medication.logIdentifier] ?? []
+        }
+
+        let dueTime: Date
+        if medication.logEntryID != nil, let logDate = medLogs.first?.takenAt {
+            dueTime = logDate
+        } else {
+            dueTime = calculateEffectiveDueTime(for: medication, at: now)
+        }
+
         let wasTakenToday = medLogs.contains { log in
             calendar.isDate(log.takenAt, inSameDayAs: now)
         }
@@ -481,19 +507,19 @@ fileprivate func MedicationsListContent(
                 MedicationRow(
                     medication: med,
                     referenceDate: referenceDate,
-                    onLogTap: { 
+                    onLogTap: {
                         HapticManager.shared.lightImpact()
-                        showingLogSheetFor.wrappedValue = med 
+                        showingLogSheetFor.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
                     },
-                    onEditTap: { 
+                    onEditTap: {
                         HapticManager.shared.lightImpact()
-                        selectedMedicationToEdit.wrappedValue = med 
+                        selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
                     },
-                    onArchiveTap: {
+                    onArchiveTap: med.logEntryID == nil ? {
                         HapticManager.shared.warningNotification()
-                        medicationToArchive.wrappedValue = med
+                        medicationToArchive.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
                         showArchiveAlert.wrappedValue = true
-                    }
+                    } : nil
                 )
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
@@ -1308,35 +1334,17 @@ fileprivate func commonFormatTime(_ date: Date) -> String {
     return formatter.string(from: date)
 }
 
-fileprivate func shouldDisplayOnMainList(
-    _ medication: Medication,
-    logs: [MedicationLog],
-    referenceDate: Date
-) -> Bool {
-    if medication.frequency == "As needed" {
-        let calendar = Calendar.current
-        return logs.contains { log in
-            log.medicationID == medication.id &&
-            calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
-        }
-    }
-    return medicationHasActiveReminder(medication)
-}
-
-fileprivate func medicationHasActiveReminder(_ medication: Medication) -> Bool {
-    medication.notificationID != nil || !medication.notificationIDs.isEmpty
-}
-
-fileprivate func wasMedicationTakenToday(
-    _ medication: Medication,
-    logs: [MedicationLog],
-    referenceDate: Date
-) -> Bool {
-    let calendar = Calendar.current
-    return logs.contains { log in
-        log.medicationID == medication.id &&
-        calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
-    }
+fileprivate func createCabinetLogCard(
+    from medication: Medication,
+    log: MedicationLog
+) -> Medication {
+    var clone = medication
+    clone.id = log.id
+    clone.createdAt = log.takenAt
+    clone.timeToTake = log.takenAt
+    clone.logReferenceID = medication.id
+    clone.logEntryID = log.id
+    return clone
 }
 
 // MARK: - Button Style
@@ -2049,8 +2057,14 @@ struct MedicationRow: View {
     
     private var todaysLogsForMedication: [MedicationLog] {
         let calendar = Calendar.current
+        if let logEntryID = medication.logEntryID {
+            return store.logs.filter { log in
+                log.id == logEntryID &&
+                calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
+            }
+        }
         return store.logs.filter { log in
-            log.medicationID == medication.id &&
+            log.medicationID == medication.logIdentifier &&
             calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
         }
     }

@@ -120,6 +120,16 @@ struct Medication: Identifiable, Codable, Hashable {
     var isSkipped: Bool = false // Whether to skip this medication for now
     var isOneTimeWithFollowUp: Bool = false // If true, only schedule a one-time notification and a follow up
     var isArchived: Bool = false // Whether this medication is archived
+    var logReferenceID: UUID? = nil // Tracks the original medication when this card is derived from a cabinet log
+    var logEntryID: UUID? = nil // Links the card to a specific log when present
+
+    var hasActiveReminder: Bool {
+        notificationID != nil || !notificationIDs.isEmpty
+    }
+
+    var isCabinetMedication: Bool {
+        frequency == "As needed" || !hasActiveReminder
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -146,6 +156,8 @@ struct Medication: Identifiable, Codable, Hashable {
         case isSkipped
         case isOneTimeWithFollowUp
         case isArchived
+        case logReferenceID
+        case logEntryID
         case enableStimulantPhaseNotifications
     }
 
@@ -174,7 +186,9 @@ struct Medication: Identifiable, Codable, Hashable {
         refillThreshold: Int? = nil,
         isSkipped: Bool = false,
         isOneTimeWithFollowUp: Bool = false,
-        isArchived: Bool = false
+        isArchived: Bool = false,
+        logReferenceID: UUID? = nil,
+        logEntryID: UUID? = nil
     ) {
         self.id = id
         self.name = name
@@ -201,6 +215,8 @@ struct Medication: Identifiable, Codable, Hashable {
         self.isSkipped = isSkipped
         self.isOneTimeWithFollowUp = isOneTimeWithFollowUp
         self.isArchived = isArchived
+        self.logReferenceID = logReferenceID
+        self.logEntryID = logEntryID
     }
 
     init(from decoder: Decoder) throws {
@@ -234,6 +250,8 @@ struct Medication: Identifiable, Codable, Hashable {
         self.isSkipped = try container.decodeIfPresent(Bool.self, forKey: .isSkipped) ?? false
         self.isOneTimeWithFollowUp = try container.decodeIfPresent(Bool.self, forKey: .isOneTimeWithFollowUp) ?? false
         self.isArchived = try container.decodeIfPresent(Bool.self, forKey: .isArchived) ?? false
+        self.logReferenceID = try container.decodeIfPresent(UUID.self, forKey: .logReferenceID)
+        self.logEntryID = try container.decodeIfPresent(UUID.self, forKey: .logEntryID)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -263,6 +281,14 @@ struct Medication: Identifiable, Codable, Hashable {
         try container.encode(isSkipped, forKey: .isSkipped)
         try container.encode(isOneTimeWithFollowUp, forKey: .isOneTimeWithFollowUp)
         try container.encode(isArchived, forKey: .isArchived)
+        try container.encodeIfPresent(logReferenceID, forKey: .logReferenceID)
+        try container.encodeIfPresent(logEntryID, forKey: .logEntryID)
+    }
+}
+
+extension Medication {
+    var logIdentifier: UUID {
+        logReferenceID ?? id
     }
 }
 

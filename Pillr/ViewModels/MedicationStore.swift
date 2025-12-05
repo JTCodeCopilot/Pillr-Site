@@ -222,52 +222,54 @@ class MedicationStore: ObservableObject {
         let resolvedReminderIndex = reminderIndex ?? inferReminderIndexIfNeeded(for: medication, actualTime: actualTime)
         var previousLog: MedicationLog?
         
-        if let existingIndex = logs.firstIndex(where: { log in
-            guard log.medicationID == medication.id,
-                  calendar.isDate(log.takenAt, inSameDayAs: actualTime) else {
-                return false
-            }
-            
-            if let resolvedReminderIndex {
-                if log.reminderIndex == resolvedReminderIndex {
-                    return true
+        if !medication.isCabinetMedication {
+            if let existingIndex = logs.firstIndex(where: { log in
+                guard log.medicationID == medication.id,
+                      calendar.isDate(log.takenAt, inSameDayAs: actualTime) else {
+                    return false
                 }
-                if log.reminderIndex == nil && medication.reminderTimes.count <= 1 {
-                    return true
-                }
-                return false
-            } else {
-                return log.reminderIndex == nil
-            }
-        }) {
-            let existingLog = logs[existingIndex]
-            if existingLog.skipped == skipped {
-                if isDailyCheckIn {
-                    applyDailyCheckInUpdates(
-                        at: existingIndex,
-                        notes: notes,
-                        focusRating: focusRating,
-                        sideEffectSeverity: sideEffectSeverity
-                    )
+
+                if let resolvedReminderIndex {
+                    if log.reminderIndex == resolvedReminderIndex {
+                        return true
+                    }
+                    if log.reminderIndex == nil && medication.reminderTimes.count <= 1 {
+                        return true
+                    }
+                    return false
                 } else {
-                    hapticManager.warningNotification()
+                    return log.reminderIndex == nil
                 }
-                return
-            }
-            
-            previousLog = existingLog
-            logs.remove(at: existingIndex)
-        } else if resolvedReminderIndex == nil {
-            // Single-dose medications (no reminder index) can only be logged once per day
-            let alreadyLogged = logs.contains { log in
-                log.medicationID == medication.id &&
-                calendar.isDate(log.takenAt, inSameDayAs: actualTime) &&
-                log.reminderIndex == nil
-            }
-            
-            if alreadyLogged {
-                hapticManager.warningNotification()
-                return
+            }) {
+                let existingLog = logs[existingIndex]
+                if existingLog.skipped == skipped {
+                    if isDailyCheckIn {
+                        applyDailyCheckInUpdates(
+                            at: existingIndex,
+                            notes: notes,
+                            focusRating: focusRating,
+                            sideEffectSeverity: sideEffectSeverity
+                        )
+                    } else {
+                        hapticManager.warningNotification()
+                    }
+                    return
+                }
+
+                previousLog = existingLog
+                logs.remove(at: existingIndex)
+            } else if resolvedReminderIndex == nil {
+                // Single-dose medications (no reminder index) can only be logged once per day
+                let alreadyLogged = logs.contains { log in
+                    log.medicationID == medication.id &&
+                    calendar.isDate(log.takenAt, inSameDayAs: actualTime) &&
+                    log.reminderIndex == nil
+                }
+
+                if alreadyLogged {
+                    hapticManager.warningNotification()
+                    return
+                }
             }
         }
         
