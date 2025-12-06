@@ -1594,24 +1594,36 @@ fileprivate struct MedicationRowHeaderView: View {
     private var takenDoseBadgesView: some View {
         let badges = takenDoseBadges
         if !badges.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
                 ForEach(badges) { badge in
-                    HStack(spacing: 6) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                    HStack(alignment: .center, spacing: 6) {
+                        Image(systemName: "calendar.badge.checkmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.58))
                         Text(badge.text)
                             .font(.system(.body, weight: .semibold))
                             .foregroundColor(Color(hex: "#F5F7F4"))
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 9)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(Capsule())
+                    .padding(capsulePadding)
+                    .background(
+                        Capsule()
+                            .fill(capsuleBackground)
+                            .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: 1)
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            .padding(.top, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 2)
         }
+    }
+
+    private var capsulePadding: EdgeInsets {
+        EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
+    }
+
+    private var capsuleBackground: Color {
+        Color.white.opacity(0.2)
     }
 
     private static let badgeTimeFormatter: DateFormatter = {
@@ -1688,7 +1700,7 @@ fileprivate struct MedicationRowHeaderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: stackSpacing) {
-            HStack(alignment: .top, spacing: 16) {
+            HStack(alignment: .center, spacing: 16) {
                 medicationInfoSection
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
@@ -1717,9 +1729,9 @@ fileprivate struct MedicationRowHeaderView: View {
     }
     
     private var medicationInfoSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 1) {
             Text(medication.name)
-                .font(.system(size: 19, weight: .bold))
+                .font(.system(size: 21, weight: .semibold))
                 .foregroundColor(Color(hex: "#F5F7F4").opacity(headerTitleOpacity))
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
@@ -1734,6 +1746,8 @@ fileprivate struct MedicationRowHeaderView: View {
 
             if compactLayout {
                 takenDoseBadgesView
+                    .padding(.top, 2)
+                    .padding(.bottom, 6)
             }
             
             if showDetails, let preview = notesPreview {
@@ -1769,34 +1783,40 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     private var subtitleView: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
             if !dosageAmountLine.isEmpty {
                 Text(dosageAmountLine)
             }
             if !dosageAmountLine.isEmpty && !scheduleLine.isEmpty {
                 Text("•")
                     .font(.system(size: 15, weight: .regular))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.85))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(subtitleOpacity))
             }
             if !scheduleLine.isEmpty {
                 Text(scheduleLine)
             }
         }
         .font(.system(size: 15, weight: .regular))
-        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.85))
+        .foregroundColor(Color(hex: "#E0E7DC").opacity(subtitleOpacity))
+    }
+
+    private var subtitleOpacity: Double {
+        0.95
     }
     
     // Status section with chevron
     private var statusSection: some View {
         chevronIcon
-            .padding(.vertical, 7)
+            .padding(.vertical, 3)
+            .padding(.trailing, 2)
+            .alignmentGuide(VerticalAlignment.center) { $0[VerticalAlignment.center] }
     }
     
     // Chevron icon
     private var chevronIcon: some View {
         Image(systemName: showDetails ? "chevron.up" : "chevron.down")
             .font(.system(size: 13))
-            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.7))
+            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.55))
     }
 
     @ViewBuilder
