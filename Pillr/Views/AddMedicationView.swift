@@ -1700,7 +1700,7 @@ struct AddMedicationView: View {
             updatedMedication.iconName = iconName
             updatedMedication.frequency = frequency
             updatedMedication.timeToTake = timeToTake
-            updatedMedication.reminderTimes = (needsMultipleReminders && !isOneTimeWithFollowUp) ? reminderTimes : []
+            updatedMedication.reminderTimes = needsMultipleReminders ? reminderTimes : []
             let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
             updatedMedication.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
             updatedMedication.isOneTimeWithFollowUp = isOneTimeWithFollowUp
@@ -1750,7 +1750,7 @@ struct AddMedicationView: View {
                 iconName: iconName,
                 frequency: frequency,
                 timeToTake: timeToTake,
-                reminderTimes: (needsMultipleReminders && !isOneTimeWithFollowUp) ? reminderTimes : [],
+                reminderTimes: needsMultipleReminders ? reminderTimes : [],
                 notes: {
                     let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
                     return trimmedNotes.isEmpty ? nil : trimmedNotes

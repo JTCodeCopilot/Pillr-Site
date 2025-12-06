@@ -1574,33 +1574,44 @@ fileprivate struct MedicationRowHeaderView: View {
         var badges: [DoseBadgeItem] = []
 
         for state in doseStates {
-            guard state.status == .taken, let actualTime = state.actualTime else { continue }
-            let timeText = Self.badgeTimeFormatter.string(from: actualTime)
-            let prefix: String? = showDoseLabel
-                ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
-                : nil
-            let label: String
-            if let prefix {
-                label = "\(prefix) • \(timeText)"
-            } else {
-                label = timeText
+            switch state.status {
+            case .taken:
+                if let actualTime = state.actualTime {
+                    let timeText = Self.badgeTimeFormatter.string(from: actualTime)
+                    let prefix: String? = showDoseLabel
+                        ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
+                        : nil
+                    let label = prefix != nil ? "\(prefix!) • \(timeText)" : timeText
+                    badges.append(DoseBadgeItem(id: state.index, text: label))
+                }
+
+            case .skipped:
+                let prefix: String? = showDoseLabel
+                    ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
+                    : nil
+                let label = prefix != nil ? "\(prefix!) • Skipped" : "Skipped"
+                badges.append(DoseBadgeItem(id: state.index, text: label))
+
+            case .pending:
+                continue
             }
-            badges.append(DoseBadgeItem(id: state.index, text: label))
         }
 
         return badges
     }
 
     @ViewBuilder
-    private var takenDoseBadgesView: some View {
+    private var doseBadgesView: some View {
         let badges = takenDoseBadges
         if !badges.isEmpty {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(badges) { badge in
                     HStack(alignment: .center, spacing: 6) {
-                        Image(systemName: "checkmark.app.fill")
+                        Image(systemName: badge.text.contains("Skipped") ? "xmark.app.fill" : "checkmark.app.fill")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.58))
+                            .foregroundColor(badge.text.contains("Skipped")
+                                             ? Color(hex: "#FF6B6B").opacity(0.58)
+                                             : Color(hex: "#C7C7BD").opacity(0.58))
                         Text(badge.text)
                             .font(.system(.body, weight: .semibold))
                             .foregroundColor(Color(hex: "#F5F7F4"))
@@ -1732,7 +1743,7 @@ fileprivate struct MedicationRowHeaderView: View {
             }
 
             if compactLayout {
-                takenDoseBadgesView
+                doseBadgesView
                     .padding(.top, 2)
                     .padding(.bottom, 6)
             }

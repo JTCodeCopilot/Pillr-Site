@@ -177,7 +177,11 @@ class MedicationStore: ObservableObject {
             
             // Schedule new notifications if enabled
             if enableNotification {
-                if updatedMedication.reminderTimes.isEmpty {
+                if updatedMedication.isOneTimeWithFollowUp {
+                    let newNotificationID = notificationManager.scheduleNotification(for: updatedMedication)
+                    updatedMedication.notificationID = newNotificationID
+                    updatedMedication.notificationIDs = []
+                } else if updatedMedication.reminderTimes.isEmpty {
                     // Legacy single notification
                     let newNotificationID = notificationManager.scheduleNotification(for: updatedMedication)
                     updatedMedication.notificationID = newNotificationID
