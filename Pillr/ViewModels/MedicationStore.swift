@@ -9,6 +9,7 @@
 import SwiftUI
 import Combine
 import UserNotifications
+import CloudKit
 
 struct ADHDDoseTimelineEntry: Identifiable, Equatable {
     let id = UUID()
@@ -36,6 +37,7 @@ class MedicationStore: ObservableObject {
     @Published var requestedMainTab: MainTab?
     private let notificationManager = NotificationManager.shared
     private let hapticManager = HapticManager.shared
+    private let cloudSync = CloudKitMedicationSync.shared
     
     // Shared instance for access from notification handlers
     static let shared = MedicationStore()
@@ -67,6 +69,7 @@ class MedicationStore: ObservableObject {
         if !isPreview {
             loadMedications()
             loadLogs()
+            fetchCloudData()
         }
     }
     
@@ -151,6 +154,7 @@ class MedicationStore: ObservableObject {
         
         medications.append(newMed)
         saveMedications()
+        syncMedicationWithCloud(newMed)
         return true // Successfully added medication
     }
     
@@ -207,6 +211,7 @@ class MedicationStore: ObservableObject {
             // Update in the array
             medications[index] = updatedMedication
             saveMedications()
+            syncMedicationWithCloud(updatedMedication)
         }
     }
 
@@ -341,6 +346,10 @@ class MedicationStore: ObservableObject {
             medications[index] = updatedMedication
             saveMedications()
         }
+        syncLogWithCloud(newLog)
+        if let index = medications.firstIndex(where: { $0.id == medication.id }) {
+            syncMedicationWithCloud(medications[index])
+        }
         
         // Cancel the specific notification that triggered this log
         if let specificIndex = resolvedReminderIndex,
@@ -470,6 +479,7 @@ class MedicationStore: ObservableObject {
             updatedMedication.isSkipped.toggle()
             medications[index] = updatedMedication
             saveMedications()
+            syncMedicationWithCloud(updatedMedication)
         }
     }
     
@@ -493,23 +503,28 @@ class MedicationStore: ObservableObject {
             let medication = medications[index]
 
             if let notificationID = medication.notificationID {
-                notificationManager.cancelNotification(with: notificationID)
-            }
-            
-            if !medication.notificationIDs.isEmpty {
-                notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
-            }
-
-            notificationManager.cancelNotifications(forMedicationID: medication.id)
+            notificationManager.cancelNotification(with: notificationID)
         }
+        
+        if !medication.notificationIDs.isEmpty {
+            notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
+        }
+
+        notificationManager.cancelNotifications(forMedicationID: medication.id)
+        syncDeleteMedication(medication)
+    }
         
         medications.remove(atOffsets: offsets)
         saveMedications()
     }
     
     func deleteLog(at offsets: IndexSet) {
+        let logsToRemove = offsets.compactMap { index in logs[index] }
         logs.remove(atOffsets: offsets)
         saveLogs()
+        for log in logsToRemove {
+            syncDeleteLog(log)
+        }
     }
 
     private func preservedReminderIdentifiers(
@@ -760,6 +775,166 @@ class MedicationStore: ObservableObject {
         }
     }
     
+    private func fetchCloudData() {
+        guard !isPreviewMode else { return }
+        cloudSync.fetchAllRecords { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case let .success(payload):
+                self.mergeCloudMedications(payload.medications)
+                self.mergeCloudLogs(payload.logs)
+            case let .failure(error):
+                print("CloudKit fetch failed: \(error)")
+            }
+        }
+    }
+
+    private func syncMedicationWithCloud(_ medication: Medication) {
+        guard !isPreviewMode else { return }
+        cloudSync.save(medication: medication) { [weak self] result in
+            switch result {
+            case let .success(record):
+                if let modificationDate = record.modificationDate {
+                    self?.updateCloudLastModified(for: medication.id, date: modificationDate)
+                }
+            case let .failure(error):
+                print("CloudKit medication save failed: \(error)")
+            }
+        }
+    }
+
+    private func syncLogWithCloud(_ log: MedicationLog) {
+        guard !isPreviewMode else { return }
+        guard let medication = medications.first(where: { $0.id == log.medicationID }) else { return }
+        cloudSync.save(log: log, medication: medication) { result in
+            if case let .failure(error) = result {
+                print("CloudKit log save failed: \(error)")
+            }
+        }
+    }
+
+    private func syncDeleteMedication(_ medication: Medication) {
+        guard !isPreviewMode else { return }
+        cloudSync.deleteMedication(id: medication.id) { result in
+            if case let .failure(error) = result {
+                print("CloudKit medication delete failed: \(error)")
+            }
+        }
+
+        let relatedLogs = logs.filter { $0.medicationID == medication.id }
+        for log in relatedLogs {
+            syncDeleteLog(log)
+        }
+    }
+
+    private func syncDeleteLog(_ log: MedicationLog) {
+        guard !isPreviewMode else { return }
+        cloudSync.delete(log: log) { result in
+            if case let .failure(error) = result {
+                print("CloudKit log delete failed: \(error)")
+            }
+        }
+    }
+
+    private func updateCloudLastModified(for medicationID: UUID, date: Date) {
+        guard !isPreviewMode else { return }
+        if let index = medications.firstIndex(where: { $0.id == medicationID }) {
+            var medication = medications[index]
+            medication.cloudLastModified = date
+            medications[index] = medication
+            saveMedications()
+        }
+    }
+
+    private func mergeCloudMedications(_ remote: [Medication]) {
+        guard !remote.isEmpty else { return }
+        DispatchQueue.main.async {
+            var updated = self.medications
+            var hasChanges = false
+
+            for remoteMedication in remote {
+                if let index = updated.firstIndex(where: { $0.id == remoteMedication.id }) {
+                    if self.shouldReplace(local: updated[index], with: remoteMedication) {
+                        let scheduled = self.scheduleNotificationsForCloudMedication(remoteMedication)
+                        updated[index] = scheduled
+                        hasChanges = true
+                    }
+                } else {
+                    let scheduled = self.scheduleNotificationsForCloudMedication(remoteMedication)
+                    updated.append(scheduled)
+                    hasChanges = true
+                }
+            }
+
+            if hasChanges {
+                self.medications = updated
+                self.saveMedications()
+                self.resetBadgeIfNeeded()
+            }
+        }
+    }
+
+    private func mergeCloudLogs(_ remoteLogs: [MedicationLog]) {
+        guard !remoteLogs.isEmpty else { return }
+        DispatchQueue.main.async {
+            var updated = self.logs
+            var seenIDs = Set(updated.map { $0.id })
+            var changed = false
+
+            for log in remoteLogs {
+                if !seenIDs.contains(log.id) {
+                    seenIDs.insert(log.id)
+                    updated.insert(log, at: 0)
+                    changed = true
+                }
+            }
+
+            if changed {
+                updated.sort(by: { $0.takenAt > $1.takenAt })
+                self.logs = updated
+                self.saveLogs()
+            }
+        }
+    }
+
+    private func shouldReplace(local: Medication, with remote: Medication) -> Bool {
+        guard let remoteDate = remote.cloudLastModified else {
+            return false
+        }
+
+        if let localDate = local.cloudLastModified {
+            return remoteDate > localDate
+        }
+
+        return true
+    }
+
+    private func scheduleNotificationsForCloudMedication(_ medication: Medication) -> Medication {
+        var mutable = medication
+
+        if let notificationID = mutable.notificationID {
+            notificationManager.cancelNotification(with: notificationID)
+            mutable.notificationID = nil
+        }
+
+        if !mutable.notificationIDs.isEmpty {
+            notificationManager.cancelMultipleNotifications(ids: mutable.notificationIDs)
+            mutable.notificationIDs = []
+        }
+
+        guard !mutable.isArchived else {
+            return mutable
+        }
+
+        if mutable.reminderTimes.isEmpty {
+            mutable.notificationID = notificationManager.scheduleNotification(for: mutable)
+        } else {
+            mutable.notificationIDs = notificationManager.scheduleMultipleNotifications(for: mutable)
+        }
+
+        return mutable
+    }
+
     // Made public to support previews
     func addSampleData() {
         // Morning and evening reminder times for Vitamin D
@@ -838,6 +1013,7 @@ class MedicationStore: ObservableObject {
             updatedMedication.isArchived = true
             medications[index] = updatedMedication
             saveMedications()
+            syncMedicationWithCloud(updatedMedication)
         }
     }
 
@@ -860,6 +1036,7 @@ class MedicationStore: ObservableObject {
             
             medications[index] = updatedMedication
             saveMedications()
+            syncMedicationWithCloud(updatedMedication)
         }
     }
 }

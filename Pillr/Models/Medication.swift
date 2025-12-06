@@ -34,6 +34,7 @@ struct Medication: Identifiable, Codable, Hashable {
     var dosageUnit: String = "mg" // "mg" or "ml"
     var iconName: String = "pill" // Default icon
     var createdAt: Date? = Date() // When the medication was added
+    var cloudLastModified: Date? = nil // The last time this record was synced with CloudKit
     
     var dosageWithUnit: String {
         let amount = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -159,6 +160,7 @@ struct Medication: Identifiable, Codable, Hashable {
         case logReferenceID
         case logEntryID
         case enableStimulantPhaseNotifications
+        case cloudLastModified
     }
 
     init(
@@ -188,7 +190,8 @@ struct Medication: Identifiable, Codable, Hashable {
         isOneTimeWithFollowUp: Bool = false,
         isArchived: Bool = false,
         logReferenceID: UUID? = nil,
-        logEntryID: UUID? = nil
+        logEntryID: UUID? = nil,
+        cloudLastModified: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -217,6 +220,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.isArchived = isArchived
         self.logReferenceID = logReferenceID
         self.logEntryID = logEntryID
+        self.cloudLastModified = cloudLastModified
     }
 
     init(from decoder: Decoder) throws {
@@ -252,6 +256,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.isArchived = try container.decodeIfPresent(Bool.self, forKey: .isArchived) ?? false
         self.logReferenceID = try container.decodeIfPresent(UUID.self, forKey: .logReferenceID)
         self.logEntryID = try container.decodeIfPresent(UUID.self, forKey: .logEntryID)
+        self.cloudLastModified = try container.decodeIfPresent(Date.self, forKey: .cloudLastModified)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -283,6 +288,7 @@ struct Medication: Identifiable, Codable, Hashable {
         try container.encode(isArchived, forKey: .isArchived)
         try container.encodeIfPresent(logReferenceID, forKey: .logReferenceID)
         try container.encodeIfPresent(logEntryID, forKey: .logEntryID)
+        try container.encodeIfPresent(cloudLastModified, forKey: .cloudLastModified)
     }
 }
 
