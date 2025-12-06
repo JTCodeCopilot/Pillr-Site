@@ -1598,15 +1598,15 @@ fileprivate struct MedicationRowHeaderView: View {
                 ForEach(badges) { badge in
                     HStack(spacing: 6) {
                         Image(systemName: "clock")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 10, weight: .semibold))
                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
                         Text(badge.text)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(.body, weight: .semibold))
                             .foregroundColor(Color(hex: "#F5F7F4"))
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Color.white.opacity(0.08))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 9)
+                    .background(Color.white.opacity(0.12))
                     .clipShape(Capsule())
                 }
             }
@@ -1717,17 +1717,15 @@ fileprivate struct MedicationRowHeaderView: View {
     }
     
     private var medicationInfoSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(medication.name)
                 .font(.system(size: 19, weight: .bold))
                 .foregroundColor(Color(hex: "#F5F7F4").opacity(headerTitleOpacity))
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
             
-            if !dosageFrequencyLine.isEmpty {
-                Text(dosageFrequencyLine)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(detailTextOpacity))
+            if hasSubtitle {
+                subtitleView
             }
 
             if statusDisplay.show {
@@ -1762,15 +1760,30 @@ fileprivate struct MedicationRowHeaderView: View {
         return "\(baseDosage) \(trimmedUnit)"
     }
 
-    private var dosageFrequencyLine: String {
-        let frequency = medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines)
-        if dosageAmountLine.isEmpty {
-            return frequency
-        } else if frequency.isEmpty {
-            return dosageAmountLine
-        } else {
-            return "\(dosageAmountLine) • \(frequency)"
+    private var scheduleLine: String {
+        medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var hasSubtitle: Bool {
+        !dosageAmountLine.isEmpty || !scheduleLine.isEmpty
+    }
+
+    private var subtitleView: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            if !dosageAmountLine.isEmpty {
+                Text(dosageAmountLine)
+            }
+            if !dosageAmountLine.isEmpty && !scheduleLine.isEmpty {
+                Text("•")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.85))
+            }
+            if !scheduleLine.isEmpty {
+                Text(scheduleLine)
+            }
         }
+        .font(.system(size: 15, weight: .regular))
+        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.85))
     }
     
     // Status section with chevron
@@ -2376,6 +2389,12 @@ struct MedicationRow: View {
                 .stroke(innerStrokeColor, lineWidth: innerStrokeWidth)
         )
         .overlay(enhancedBorderOverlay)
+        .overlay(alignment: .bottomTrailing) {
+            if cycleStatus == .taken {
+                loggedBadge
+                    .padding(12)
+            }
+        }
         .shadow(color: Color.black.opacity(cardPrimaryShadowOpacity), radius: cardPrimaryShadowRadius, x: 0, y: cardPrimaryShadowYOffset)
         .shadow(color: Color.black.opacity(cardSecondaryShadowOpacity), radius: cardSecondaryShadowRadius, x: 0, y: cardSecondaryShadowYOffset)
         .animation(.interactiveSpring(response: 0.42, dampingFraction: 0.72, blendDuration: 0.25), value: isLoggedStatus)
@@ -2542,6 +2561,13 @@ struct MedicationRow: View {
         guard newValue == medication.id else { return }
         triggerNotificationGlow()
         clearNotificationHighlightIfNeeded()
+    }
+
+    private var loggedBadge: some View {
+        Image(systemName: "checkmark.seal.fill")
+            .font(.system(size: 14, weight: .heavy))
+            .foregroundColor(Color.white)
+            .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 1)
     }
 
     private func triggerNotificationGlow() {

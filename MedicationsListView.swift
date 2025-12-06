@@ -51,14 +51,50 @@ struct MedicationRow: View {
         }
     }
 
+    private var cardCornerRadius: CGFloat {
+        wasTakenToday ? 20 : 12
+    }
+
+    private var cardTopPadding: CGFloat {
+        wasTakenToday ? 12 : 16
+    }
+
+    private var cardHorizontalPadding: CGFloat {
+        wasTakenToday ? 22 : 16
+    }
+
+    private var cardBackgroundColor: Color {
+        wasTakenToday ? Color.black.opacity(0.45) : Color.black.opacity(0.35)
+    }
+
+    private var cardShadowColor: Color {
+        wasTakenToday ? Color.black.opacity(0.28) : Color.black.opacity(0.15)
+    }
+
+    private var cardShadowRadius: CGFloat {
+        wasTakenToday ? 10 : 4
+    }
+
+    private var cardShadowYOffset: CGFloat {
+        wasTakenToday ? 6 : 2
+    }
+
+    private var titleFont: Font {
+        wasTakenToday ? .system(size: 20, weight: .semibold) : .system(size: 18, weight: .semibold)
+    }
+
+    private var titleColor: Color {
+        wasTakenToday ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD")
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Top section with name and time
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(medication.name)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .font(titleFont)
+                        .foregroundColor(titleColor)
                         .accessibilityAddTraits(.isHeader)
                     
                     Text("\(medication.dosage) - \(medication.frequency)")
@@ -89,8 +125,8 @@ struct MedicationRow: View {
                         .foregroundColor(Color(hex: "#C7C7BD"))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
+            .padding(.horizontal, cardHorizontalPadding)
+            .padding(.top, cardTopPadding)
             .padding(.bottom, 12)
             
             // Notes section if available
@@ -102,7 +138,7 @@ struct MedicationRow: View {
                         .lineLimit(2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, cardHorizontalPadding)
                 .padding(.bottom, 12)
                 .accessibilityLabel("Notes: \(notes)")
             }
@@ -151,17 +187,18 @@ struct MedicationRow: View {
                 .accessibilityHint(wasTakenToday ? "Double tap to view log details" : "Double tap to record medication as taken")
                 .disabled(wasTakenToday)
             }
+            .padding(.horizontal, cardHorizontalPadding)
         }
-        .background(Color.black.opacity(0.35))
-        .cornerRadius(12)
+        .background(cardBackgroundColor)
+        .cornerRadius(cardCornerRadius)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: cardCornerRadius)
                 .stroke(
                     wasTakenToday ? Color(hex: "#F5F5F5").opacity(0.3) : Color(hex: "#C7C7BD").opacity(0.1),
                     lineWidth: 1
                 )
         )
-        .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
+        .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: cardShadowYOffset)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(formatTimeAccessible(medication.timeToTake))")
         .accessibilityValue(wasTakenToday ? "Already taken today" : timeStatus)
