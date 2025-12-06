@@ -130,9 +130,9 @@ struct MedicationsListView: View {
         }
         .alert(isPresented: $showArchiveAlert) {
             Alert(
-                title: Text("Archive Medication"),
-                message: Text("Are you sure you want to archive \(medicationToArchive?.name ?? "this medication")? You can restore it later from the archive."),
-                primaryButton: .destructive(Text("Archive")) {
+                title: Text("Delete Medication"),
+                message: Text("Deleting \(medicationToArchive?.name ?? "this medication") will permanently remove it and it cannot be restored unless you enter it again."),
+                primaryButton: .destructive(Text("Delete")) {
                     if let med = medicationToArchive {
                         store.archiveMedication(med)
                     }
@@ -957,9 +957,9 @@ func ArchivedMedicationsSheet(
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Done") { 
+                Button("Done") {
                     HapticManager.shared.lightImpact()
-                    showingArchivedSheet.wrappedValue = false 
+                    showingArchivedSheet.wrappedValue = false
                 }
                 .foregroundColor(Color(hex: "#C7C7BD"))
             }
@@ -1159,7 +1159,7 @@ fileprivate struct CabinetMedicationRow: View {
             HStack(spacing: 12) {
                 Button(action: onLogTap) {
                     HStack {
-                        Text("Log")
+                        Text("Tap to log")
                     }
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(Color(hex: "#2F352F"))
@@ -1380,7 +1380,7 @@ fileprivate struct DoseButtonState: Identifiable {
     var actionLabel: String {
         switch status {
         case .pending:
-            return "Log"
+            return "Tap to log"
         case .taken:
             return "Taken"
         case .skipped:
@@ -1452,6 +1452,7 @@ fileprivate struct MedicationRowHeaderView: View {
     let onLogTap: () -> Void
     let doseStates: [DoseButtonState]
     let onDoseTap: (Int) -> Void
+    let onSkipDose: (Int) -> Void
     let highlightedDoseIndex: Int?
     let compactLayout: Bool
     
@@ -1462,7 +1463,7 @@ fileprivate struct MedicationRowHeaderView: View {
 
     private let timelineTimeWidth: CGFloat = 58
     private let logButtonMinWidth: CGFloat = 96
-    private let confirmationDuration: TimeInterval = 2.5
+    private let confirmationDuration: TimeInterval = 5.0
 
     private var usesTimelineLayout: Bool {
         !doseStates.isEmpty && !compactLayout
@@ -1597,19 +1598,13 @@ fileprivate struct MedicationRowHeaderView: View {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(badges) { badge in
                     HStack(alignment: .center, spacing: 6) {
-                        Image(systemName: "calendar.badge.checkmark")
+                        Image(systemName: "checkmark.app.fill")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.58))
                         Text(badge.text)
                             .font(.system(.body, weight: .semibold))
                             .foregroundColor(Color(hex: "#F5F7F4"))
                     }
-                    .padding(capsulePadding)
-                    .background(
-                        Capsule()
-                            .fill(capsuleBackground)
-                            .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: 1)
-                    )
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -1618,13 +1613,6 @@ fileprivate struct MedicationRowHeaderView: View {
         }
     }
 
-    private var capsulePadding: EdgeInsets {
-        EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
-    }
-
-    private var capsuleBackground: Color {
-        Color.white.opacity(0.2)
-    }
 
     private static let badgeTimeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -1687,11 +1675,11 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     private var confirmForegroundColor: Color {
-        Color(hex: "#F5F7F4")
+        Color(hex: "#424C43")
     }
 
     private var confirmBackgroundColor: Color {
-        Color(hex: "#FF6B6B")
+        Color(hex: "#D9D9D9")
     }
 
     private var actionConfirmationAppearance: (iconName: String, text: String, fgColor: Color, bgColor: Color) {
@@ -1704,7 +1692,6 @@ fileprivate struct MedicationRowHeaderView: View {
                 medicationInfoSection
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
-                    statusSection
                     if !usesTimelineLayout && !compactLayout {
                         actionButton
                     }
@@ -1804,20 +1791,6 @@ fileprivate struct MedicationRowHeaderView: View {
         0.95
     }
     
-    // Status section with chevron
-    private var statusSection: some View {
-        chevronIcon
-            .padding(.vertical, 3)
-            .padding(.trailing, 2)
-            .alignmentGuide(VerticalAlignment.center) { $0[VerticalAlignment.center] }
-    }
-    
-    // Chevron icon
-    private var chevronIcon: some View {
-        Image(systemName: showDetails ? "chevron.up" : "chevron.down")
-            .font(.system(size: 13))
-            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.55))
-    }
 
     @ViewBuilder
     private var statusBadge: some View {
@@ -1830,6 +1803,7 @@ fileprivate struct MedicationRowHeaderView: View {
                 .padding(.vertical, 2)
                 .background(display.color.opacity(0.2))
                 .clipShape(Capsule())
+                .padding(.top, 3)
         }
     }
     
@@ -1909,41 +1883,67 @@ fileprivate struct MedicationRowHeaderView: View {
                         .stroke(Color.white.opacity(0.15), lineWidth: 0.6)
                 )
             } else {
-                // Action button
-                Button(action: {
-                    handleDoseButtonTap(for: state)
-                }) {
-                    HStack(spacing: 6) {
-                        if isConfirmingDose {
-                            Image(systemName: "hand.tap.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(confirmForegroundColor)
-                        }
+                HStack(spacing: 8) {
+                    Button(action: {
+                        handleDoseButtonTap(for: state)
+                    }) {
+                        HStack(spacing: 6) {
+                            if isConfirmingDose {
+                                Image(systemName: "hand.tap.fill")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(confirmForegroundColor)
+                            }
 
-                        Text(isConfirmingDose ? "Tap to confirm" : state.actionLabel)
-                            .font(.system(size: 14, weight: .medium))
+                            Text(isConfirmingDose ? "Tap to confirm" : state.actionLabel)
+                                .font(.system(size: 14, weight: .medium))
 
-                        if !isConfirmingDose, state.status == .pending {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 10, weight: .bold))
-                                .opacity(0.95)
+                            if !isConfirmingDose, state.status == .pending {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .opacity(0.95)
+                            }
                         }
+                        .foregroundColor(isConfirmingDose ? confirmForegroundColor : defaultForeground)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(isConfirmingDose ? Color(hex: "#D9D9D9") : Color.white.opacity(0.08))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.white.opacity(actionButtonStrokeOpacity), lineWidth: 0.9)
+                                )
+                        )
+                        .frame(minWidth: logButtonMinWidth, alignment: .leading)
                     }
-                    .foregroundColor(isConfirmingDose ? confirmForegroundColor : defaultForeground)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(isConfirmingDose ? confirmBackgroundColor : Color.white.opacity(0.08))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(actionButtonStrokeOpacity), lineWidth: 0.9)
-                            )
-                    )
-                    .frame(minWidth: logButtonMinWidth, alignment: .leading)
+                    .buttonStyle(ScaleButtonStyle())
+                    .disabled(state.status != .pending)
+
+                    if isConfirmingDose {
+                        Button(action: {
+                            HapticManager.shared.warningNotification()
+                            resetDoseConfirmation()
+                            onSkipDose(state.index)
+                        }) {
+                            Text("Skip dose")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(hex: "#FF6B6B"))
+                                .frame(minWidth: 80)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(hex: "#FF6B6B").opacity(0.12))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color(hex: "#FF6B6B").opacity(0.6), lineWidth: 0.9)
+                                        )
+                                )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .disabled(state.status != .pending)
+                    }
                 }
-                .buttonStyle(ScaleButtonStyle())
-                .disabled(state.status != .pending)
             }
 
             Spacer()
@@ -2377,6 +2377,9 @@ struct MedicationRow: View {
                 onDoseTap: { doseIndex in
                     logDose(at: doseIndex)
                 },
+                onSkipDose: { doseIndex in
+                    skipDose(at: doseIndex)
+                },
                 highlightedDoseIndex: highlightedDoseIndex,
                 compactLayout: isTakenStatus
             )
@@ -2404,17 +2407,23 @@ struct MedicationRow: View {
             }
         }
         .overlay(notificationGlowOverlay)
+        .overlay(alignment: .topTrailing) {
+            Button(action: {
+                toggleExpansion()
+            }) {
+                Image(systemName: showsDetails ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.55))
+                    .padding(.top, 12)
+                    .padding(.trailing, 12)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(innerStrokeColor, lineWidth: innerStrokeWidth)
         )
         .overlay(enhancedBorderOverlay)
-        .overlay(alignment: .bottomTrailing) {
-            if cycleStatus == .taken {
-                loggedBadge
-                    .padding(12)
-            }
-        }
         .shadow(color: Color.black.opacity(cardPrimaryShadowOpacity), radius: cardPrimaryShadowRadius, x: 0, y: cardPrimaryShadowYOffset)
         .shadow(color: Color.black.opacity(cardSecondaryShadowOpacity), radius: cardSecondaryShadowRadius, x: 0, y: cardSecondaryShadowYOffset)
         .animation(.interactiveSpring(response: 0.42, dampingFraction: 0.72, blendDuration: 0.25), value: isLoggedStatus)
@@ -2439,39 +2448,19 @@ struct MedicationRow: View {
             toggleExpansion()
         }
         .contextMenu {
-            if hasRemainingDoseToday {
-                Button {
-                    HapticManager.shared.successNotification()
-                    quickLogMedication(taken: true)
-                } label: {
-                    Label("Log as Taken", systemImage: "checkmark.circle.fill")
-                }
-            }
-            
-            if hasRemainingDoseToday {
-                Button {
-                    HapticManager.shared.warningNotification()
-                    quickLogMedication(taken: false)
-                } label: {
-                    Label("Mark as Skipped", systemImage: "xmark.circle.fill")
-                }
-            }
-            
-            Divider()
-            
             Button {
                 HapticManager.shared.lightImpact()
                 onEditTap()
             } label: {
-                Label("Edit Medication", systemImage: "pencil.circle")
+                Text("Edit Medication")
             }
-            
+
             if let archiveTap = onArchiveTap {
                 Button(role: .destructive) {
                     HapticManager.shared.warningNotification()
                     archiveTap()
                 } label: {
-                    Label("Archive", systemImage: "archivebox.fill")
+                    Text("Delete")
                 }
             }
         }
@@ -2698,6 +2687,29 @@ struct MedicationRow: View {
             reminderIndex: index
         )
     }
+
+    private func skipDose(at index: Int) {
+        if medication.reminderTimes.isEmpty {
+            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
+            store.skipMedication(
+                medication: medication,
+                actualTime: Date(),
+                notes: nil,
+                reminderIndex: nil
+            )
+            return
+        }
+
+        guard medication.reminderTimes.indices.contains(index) else { return }
+        guard !todaysLogsForMedication.contains(where: { $0.reminderIndex == index }) else { return }
+
+        store.skipMedication(
+            medication: medication,
+            actualTime: Date(),
+            notes: nil,
+            reminderIndex: index
+        )
+    }
     
     private func toggleExpansion() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -2806,7 +2818,7 @@ fileprivate struct MedicationRowDetailsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 
-                if let notes = medication.notes, !notes.isEmpty {
+                if let rawNotes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !rawNotes.isEmpty {
                     HStack(alignment: .top, spacing: 10) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("NOTES")
@@ -2815,7 +2827,7 @@ fileprivate struct MedicationRowDetailsView: View {
                                 .textCase(.uppercase)
                                 .tracking(0.5)
                             
-                            Text(notes)
+                            Text(rawNotes)
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(Color(hex: "#E8E8E0"))
                                 .multilineTextAlignment(.leading)
@@ -2837,86 +2849,19 @@ fileprivate struct MedicationRowDetailsView: View {
                 }
             }
 
-            // Enhanced action buttons with improved styling
-            HStack(spacing: 8) {
-                Button(action: onEditTap) {
-                    HStack(spacing: 12) {
-                        Text("Edit")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 14)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.black.opacity(0.4),
-                                Color.black.opacity(0.3)
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .cornerRadius(16)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color(hex: "#606A63").opacity(0.4),
-                                        Color(hex: "#606A63").opacity(0.2)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 1
-                            )
-                    )
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                }
-                .buttonStyle(ScaleButtonStyle())
+            // Hint for editing or archiving via context menu with tap icon
+            VStack(spacing: 6) {
+                Image(systemName: "hand.tap.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    .frame(maxWidth: .infinity, alignment: .center)
 
-                if let archiveTap = onArchiveTap {
-                    Button(action: archiveTap) {
-                        HStack(spacing: 12) {
-                            Text("Archive")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color(hex: "#FF6B6B"))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 14)
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.black.opacity(0.4),
-                                    Color.black.opacity(0.3)
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color(hex: "#FF6B6B").opacity(0.6),
-                                            Color(hex: "#FF6B6B").opacity(0.35)
-                                        ]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    ),
-                                    lineWidth: 1
-                                )
-                        )
-                        .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                }
+                Text("Long press to edit or archive")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
+            .padding(.top, 8)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -2933,24 +2878,7 @@ fileprivate struct MedicationRowDetailsView: View {
     }
 
     private var detailRowEntries: [DetailEntry] {
-        var entries: [DetailEntry] = [
-            DetailEntry(label: "Frequency", value: medication.frequency)
-        ]
-
-        if medication.frequency != "As needed" {
-            // Reminder times can be long (multiple alarms), so let them wrap instead of truncating.
-            entries.append(
-                DetailEntry(
-                    label: "Reminder Time",
-                    value: reminderTimesString,
-                    lineLimit: nil,
-                    placeValueOnNewLine: true
-                )
-            )
-            let notificationText = notificationsEnabled ? "Enabled" : "Disabled"
-            let notificationColor = notificationsEnabled ? Color(hex: "#F5F7F4") : Color(hex: "#FF9E8B")
-            entries.append(DetailEntry(label: "Notifications", value: notificationText, valueColor: notificationColor))
-        }
+        var entries: [DetailEntry] = []
 
         if let timingSummary = stimulantTimingSummary {
             entries.append(
