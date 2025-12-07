@@ -606,8 +606,13 @@ class NotificationManager: ObservableObject {
             return
         }
 
-        if fireDate <= now {
-            fireDate = calendar.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate
+        // Keep pushing into future until the reminder falls after the current time.
+        while fireDate <= now {
+            if let nextDay = calendar.date(byAdding: .day, value: 1, to: fireDate) {
+                fireDate = nextDay
+            } else {
+                break
+            }
         }
 
         let noteBody = medication.medicationType == .stimulant

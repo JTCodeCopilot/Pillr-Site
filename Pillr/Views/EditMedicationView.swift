@@ -841,6 +841,10 @@ struct EditMedicationView: View {
 
                                 if useCustomDailyCheckInTime {
                                     TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
+                                    Text("Tip: the custom reminder only schedules after you log a dose, so pick a time you expect to reach after logging; logging after that time means today’s reminder waits until tomorrow.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
                             .padding(.top, 4)
@@ -873,6 +877,10 @@ struct EditMedicationView: View {
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                                 TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
+                                Text("Tip: the check-in only gets scheduled after logging a dose, so pick a time you expect to reach after you take it; if you log after that moment, today’s reminder shifts to tomorrow.")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                     }
