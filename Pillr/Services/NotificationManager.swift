@@ -69,6 +69,35 @@ class NotificationManager: ObservableObject {
         ])
     }
 
+    private var defaultAuthorizationOptions: UNAuthorizationOptions {
+        if #available(iOS 15.0, *) {
+            return [.alert, .badge, .sound, .timeSensitive]
+        } else {
+            return [.alert, .badge, .sound]
+        }
+    }
+
+    func requestAuthorization(options: UNAuthorizationOptions? = nil, completion: ((Bool) -> Void)? = nil) {
+        let authorizationOptions = options ?? defaultAuthorizationOptions
+        UNUserNotificationCenter.current().requestAuthorization(options: authorizationOptions) { granted, _ in
+            completion?(granted)
+        }
+    }
+
+    func requestAuthorizationIfNeeded(completion: ((Bool) -> Void)? = nil) {
+        UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
+            guard let self else { return }
+            switch settings.authorizationStatus {
+            case .notDetermined:
+                self.requestAuthorization(completion: completion)
+            case .authorized, .provisional, .ephemeral:
+                completion?(true)
+            default:
+                completion?(false)
+            }
+        }
+    }
+
     private func prioritizeMedicationReminder(_ content: UNMutableNotificationContent) {
         if #available(iOS 15.0, *) {
             content.interruptionLevel = .timeSensitive

@@ -32,7 +32,7 @@
 		<false/>
 	</dict>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>Pillr helps you stay on track with your medication schedule by sending gentle reminders when it's time to take your pills. You can customize or disable these notifications anytime in Settings.</string>
+	<string>Pillr helps you stay on track with gentle reminders when it is time to take your medication. You can adjust or turn off these notifications in Settings.</string>
 	<key>SKInAppPurchaseHistoryIncludesConsumables</key>
 	<true/>
 	<key>SKPaymentTransactionObserverUseFinishTransaction</key>

@@ -815,7 +815,9 @@ class MedicationStore: ObservableObject {
 
     private func syncDeleteMedication(_ medication: Medication) {
         guard !isPreviewMode else { return }
-        cloudSync.deleteMedication(id: medication.id) { result in
+        var deletedMedication = medication
+        deletedMedication.isDeleted = true
+        cloudSync.save(medication: deletedMedication) { result in
             if case let .failure(error) = result {
                 print("CloudKit medication delete failed: \(error)")
             }
@@ -851,8 +853,22 @@ class MedicationStore: ObservableObject {
         DispatchQueue.main.async {
             var updated = self.medications
             var hasChanges = false
+            let deletedRemoteIDs = Set(remote.filter { $0.isDeleted }.map { $0.id })
 
-            for remoteMedication in remote {
+            if !deletedRemoteIDs.isEmpty {
+                let toRemove = updated.filter { deletedRemoteIDs.contains($0.id) }
+                for medication in toRemove {
+                    self.notificationManager.cancelNotifications(forMedicationID: medication.id)
+                }
+
+                let beforeCount = updated.count
+                updated.removeAll { deletedRemoteIDs.contains($0.id) }
+                if updated.count != beforeCount {
+                    hasChanges = true
+                }
+            }
+
+            for remoteMedication in remote where !remoteMedication.isDeleted {
                 if let index = updated.firstIndex(where: { $0.id == remoteMedication.id }) {
                     if self.shouldReplace(local: updated[index], with: remoteMedication) {
                         let scheduled = self.scheduleNotificationsForCloudMedication(remoteMedication)

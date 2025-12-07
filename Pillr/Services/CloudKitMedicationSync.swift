@@ -38,6 +38,7 @@ final class CloudKitMedicationSync {
         static let isSkipped = "isSkipped"
         static let isOneTimeWithFollowUp = "isOneTimeWithFollowUp"
         static let isArchived = "isArchived"
+        static let isDeleted = "isDeleted"
         static let logReferenceID = "logReferenceID"
         static let logEntryID = "logEntryID"
         static let createdAt = "createdAt"
@@ -65,19 +66,6 @@ final class CloudKitMedicationSync {
                     completion?(.failure(error))
                 } else if let savedRecord = savedRecord {
                     completion?(.success(savedRecord))
-                }
-            }
-        }
-    }
-
-    func deleteMedication(id: UUID, completion: ((Result<Void, Error>) -> Void)? = nil) {
-        let recordID = CKRecord.ID(recordName: id.uuidString)
-        database.delete(withRecordID: recordID) { _, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    completion?(.failure(error))
-                } else {
-                    completion?(.success(()))
                 }
             }
         }
@@ -243,6 +231,7 @@ final class CloudKitMedicationSync {
         record[Field.isSkipped] = medication.isSkipped as CKRecordValue
         record[Field.isOneTimeWithFollowUp] = medication.isOneTimeWithFollowUp as CKRecordValue
         record[Field.isArchived] = medication.isArchived as CKRecordValue
+        record[Field.isDeleted] = medication.isDeleted as CKRecordValue
         if let logReferenceID = medication.logReferenceID {
             record[Field.logReferenceID] = logReferenceID.uuidString as CKRecordValue
         }
@@ -311,6 +300,7 @@ final class CloudKitMedicationSync {
         let isSkipped = record[Field.isSkipped] as? Bool ?? false
         let isOneTimeWithFollowUp = record[Field.isOneTimeWithFollowUp] as? Bool ?? false
         let isArchived = record[Field.isArchived] as? Bool ?? false
+        let isDeleted = record[Field.isDeleted] as? Bool ?? false
         let enableDailyCheckIn = record[Field.enableDailyCheckIn] as? Bool ?? false
         let enableStimulantPhaseNotifications = record[Field.enableStimulantPhaseNotifications] as? Bool ?? false
         let isExtendedRelease = record[Field.isExtendedRelease] as? Bool ?? false
@@ -359,6 +349,7 @@ final class CloudKitMedicationSync {
             isSkipped: isSkipped,
             isOneTimeWithFollowUp: isOneTimeWithFollowUp,
             isArchived: isArchived,
+            isDeleted: isDeleted,
             logReferenceID: logReferenceID,
             logEntryID: logEntryID,
             cloudLastModified: cloudLastModified

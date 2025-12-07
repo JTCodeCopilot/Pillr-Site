@@ -1,10 +1,13 @@
 import SwiftUI
 import StoreKit
+import UIKit
+import UserNotifications
 
 struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
     @ObservedObject private var storeManager = StoreManager.shared
     @State private var showingPremiumUpgrade = false
+    @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -16,6 +19,7 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         aiSettingsSection
+                        notificationSettingsSection
 
                         supportLinksSection
 
@@ -24,6 +28,9 @@ struct SettingsView: View {
                     .padding(.horizontal)
                     .padding(.top, 8)
                     .padding(.bottom, 50)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                    refreshNotificationSettings()
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -51,6 +58,7 @@ struct SettingsView: View {
             // Update purchased products and load products when the view appears
             await storeManager.loadProducts()
             await storeManager.updatePurchasedProducts()
+            refreshNotificationSettings()
         }
     }
     // Computed property for AI Settings section
@@ -131,6 +139,82 @@ struct SettingsView: View {
         .padding()
         .settingsCardStyle()
         .padding(.horizontal)
+    }
+    
+    private var notificationSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Notifications")
+                    .font(.headline)
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+                Spacer()
+            }
+
+            Divider()
+                .background(Color(hex: "#E0E7DC").opacity(0.15))
+
+            Text("Medication reminders depend on system notifications. Tap below to open the Settings app where you can enable or disable Pillr reminders.")
+                .font(.system(size: 14))
+                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("Status: \(notificationStatusLabel)")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color(hex: "#F5F7F4"))
+
+            Button(action: openAppSettings) {
+                HStack(spacing: 8) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 16))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Open iOS Settings")
+                            .foregroundColor(Color(hex: "#F5F7F4"))
+                            .font(.system(size: 16, weight: .medium))
+                        Text("Manage Pillr notification permissions")
+                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                            .font(.system(size: 14))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.6))
+                        .font(.system(size: 14))
+                }
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding()
+        .settingsCardStyle()
+        .padding(.horizontal)
+    }
+
+    private var notificationStatusLabel: String {
+        guard let status = notificationAuthorizationStatus else { return "Checking..." }
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            return "Enabled – Pillr can deliver reminders."
+        case .denied:
+            return "Disabled – open Settings to turn reminders back on."
+        case .notDetermined:
+            return "Not requested yet – reminders will arrive after you allow them."
+        @unknown default:
+            return "Unknown status"
+        }
+    }
+
+    private func refreshNotificationSettings() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                notificationAuthorizationStatus = settings.authorizationStatus
+            }
+        }
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString), UIApplication.shared.canOpenURL(url) else {
+            return
+        }
+        UIApplication.shared.open(url)
     }
     
     // Computed property for Support Links section

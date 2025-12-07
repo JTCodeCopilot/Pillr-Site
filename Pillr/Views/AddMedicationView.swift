@@ -1791,7 +1791,7 @@ struct AddMedicationView: View {
                 DispatchQueue.main.async {
                     self.enableNotification = false
                 }
-            } else if settings.authorizationStatus == .authorized {
+            } else if settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral {
                 var needsTimeSensitiveUpgrade = false
                 if #available(iOS 15.0, *) {
                     needsTimeSensitiveUpgrade = settings.timeSensitiveSetting != .enabled
@@ -1803,18 +1803,16 @@ struct AddMedicationView: View {
                         self.enableNotification = true
                     }
                 }
+            } else {
+                DispatchQueue.main.async {
+                    self.enableNotification = false
+                }
             }
         }
     }
 
     private func requestNotificationAuthorization() {
-        let authorizationOptions: UNAuthorizationOptions
-        if #available(iOS 15.0, *) {
-            authorizationOptions = [.alert, .badge, .sound, .timeSensitive]
-        } else {
-            authorizationOptions = [.alert, .badge, .sound]
-        }
-        UNUserNotificationCenter.current().requestAuthorization(options: authorizationOptions) { granted, _ in
+        NotificationManager.shared.requestAuthorization { granted in
             DispatchQueue.main.async {
                 self.enableNotification = granted
             }
