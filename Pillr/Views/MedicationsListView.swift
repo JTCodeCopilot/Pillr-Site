@@ -15,6 +15,7 @@ struct MedicationsListView: View {
     @State private var selectedMedicationToEdit: Medication?
     @State private var showingAddSheet = false
     @State private var scrolledOffset: CGFloat = 0
+    @StateObject private var healthKitManager = HealthKitManager()
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     @State private var showingArchivedSheet = false
@@ -87,6 +88,7 @@ struct MedicationsListView: View {
             displayedMedications: displayedMedications,
             cabinetMedications: cabinetMedications,
             onShowCabinet: { showingCabinetSheet = true },
+            healthKitManager: healthKitManager,
             referenceDate: referenceDate
         )
         .sheet(item: $showingLogSheetFor) { med in
@@ -183,7 +185,15 @@ struct MedicationsListView: View {
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active {
                 refreshReferenceDate(resetBadge: true)
+                Task {
+                    await healthKitManager.requestAuthorizationIfNeeded()
+                    await healthKitManager.refreshMetrics()
+                }
             }
+        }
+        .task {
+            await healthKitManager.requestAuthorizationIfNeeded()
+            await healthKitManager.refreshMetrics()
         }
     }
     
@@ -604,6 +614,155 @@ fileprivate func MedicationsListHeader(
     .padding(.leading, horizontalInsets + 8)
     .padding(.trailing, horizontalInsets)
     .padding(.top, 12)
+}
+
+fileprivate struct HealthSummaryWidget: View {
+    @ObservedObject var manager: HealthKitManager
+
+    private static let integerFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        return formatter
+    }()
+
+    private struct Metric {
+        let title: String
+        let unit: String
+        let value: String
+    }
+
+    private var metrics: [Metric] {
+        [
+            Metric(title: "Steps", unit: "steps", value: formatted(manager.dailySteps)),
+            Metric(title: "Water", unit: "mL", value: formatted(manager.waterMilliliters)),
+            Metric(title: "Active Calories", unit: "kcal", value: formatted(manager.activeCalories))
+        ]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            header
+
+            if !manager.isHealthDataAvailable {
+                Text("Apple Health is not available on this device.")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+            } else if manager.hasAnyPermission || manager.hasMetricValues {
+                metricGrid
+            } else {
+                permissionPrompt
+            }
+
+            if let error = manager.authorizationError {
+                Text(error)
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "#FFB74D"))
+                    .lineLimit(2)
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color(hex: "#404C42"))
+        )
+        .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var header: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Health Snapshot")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+                Text("Apple Health")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+            }
+        }
+    }
+
+    private var metricGrid: some View {
+        HStack(spacing: 0) {
+            ForEach(metrics.indices, id: \.self) { index in
+                metricSquare(metric: metrics[index])
+                if index < metrics.count - 1 {
+                    verticalDivider
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var permissionPrompt: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(
+                manager.hasDeniedPermission
+                    ? "Health permissions are currently denied. Open Settings to re-allow steps, exercise, water and calorie data."
+                    : "Grant access to Apple Health to surface your daily steps, exercise, water, and calories."
+            )
+            .font(.system(size: 13))
+            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+            .lineLimit(3)
+
+            Button {
+                Task {
+                    if manager.hasDeniedPermission {
+                        manager.openHealthSettings()
+                    } else {
+                        await manager.requestAuthorizationIfNeeded()
+                        await manager.refreshMetrics()
+                    }
+                }
+            } label: {
+                Text(manager.hasDeniedPermission ? "Open Health Settings" : "Connect to Health")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "#2F352F"))
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(hex: "#F5F7F4"))
+                    )
+            }
+            .buttonStyle(ScaleButtonStyle())
+        }
+    }
+
+    private func metricSquare(metric: Metric) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(metric.title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+
+            Text(metric.value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(Color(hex: "#F5F7F4"))
+
+            Text(metric.unit)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+        }
+        .frame(height: 80)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+    }
+
+    private var verticalDivider: some View {
+        Rectangle()
+            .frame(width: 1)
+            .foregroundColor(Color.white.opacity(0.15))
+            .padding(.vertical, 6)
+    }
+
+    private func formatted(_ value: Int?) -> String {
+        guard let value = value else {
+            return "--"
+        }
+        return Self.integerFormatter.string(from: NSNumber(value: value)) ?? "\(value)"
+    }
 }
 
 fileprivate struct FloatingActionButton: View {
@@ -1219,6 +1378,7 @@ fileprivate struct MedicationsListMainContent: View {
     let displayedMedications: [Medication]
     let cabinetMedications: [Medication]
     let onShowCabinet: () -> Void
+    let healthKitManager: HealthKitManager
     let referenceDate: Date
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -1247,6 +1407,9 @@ fileprivate struct MedicationsListMainContent: View {
                             onShowCabinet: onShowCabinet,
                             cabinetCount: cabinetMedications.count
                         )
+
+                        HealthSummaryWidget(manager: healthKitManager)
+                            .padding(.horizontal, horizontalInset)
 
                         if store.activeMedications.isEmpty {
                             EmptyMedicationsView(onAddMedication: onAddMedication)

@@ -877,7 +877,7 @@ struct EditMedicationView: View {
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                                 TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
-                                Text("Tip: the check-in only gets scheduled after logging a dose, so pick a time you expect to reach after you take it; if you log after that moment, today’s reminder shifts to tomorrow.")
+                                Text("If you log a medication after the check in time, the daily check in will be skipped. Log your medication before the listed time to ensure the check in is completed.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                                     .fixedSize(horizontal: false, vertical: true)
