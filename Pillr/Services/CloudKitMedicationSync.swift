@@ -71,6 +71,57 @@ final class CloudKitMedicationSync {
         }
     }
 
+    func markMedicationDeleted(_ medication: Medication, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
+        let deletedMedication = Medication(
+            id: medication.id,
+            name: medication.name,
+            dosage: medication.dosage,
+            dosageUnit: medication.dosageUnit,
+            iconName: medication.iconName,
+            createdAt: medication.createdAt,
+            frequency: medication.frequency,
+            medicationType: medication.medicationType,
+            isExtendedRelease: medication.isExtendedRelease,
+            onsetMinutes: medication.onsetMinutes,
+            durationMinutes: medication.durationMinutes,
+            enableDailyCheckIn: medication.enableDailyCheckIn,
+            enableStimulantPhaseNotifications: medication.enableStimulantPhaseNotifications,
+            dailyCheckInTime: medication.dailyCheckInTime,
+            timeToTake: medication.timeToTake,
+            reminderTimes: medication.reminderTimes,
+            notes: medication.notes,
+            notificationID: medication.notificationID,
+            notificationIDs: medication.notificationIDs,
+            pillCount: medication.pillCount,
+            pillsPerDose: medication.pillsPerDose,
+            refillThreshold: medication.refillThreshold,
+            isSkipped: medication.isSkipped,
+            isOneTimeWithFollowUp: medication.isOneTimeWithFollowUp,
+            isArchived: medication.isArchived,
+            isDeleted: true,
+            logReferenceID: medication.logReferenceID,
+            logEntryID: medication.logEntryID,
+            cloudLastModified: medication.cloudLastModified
+        )
+
+        let record = medicationRecord(from: deletedMedication)
+        record[Field.updatedAt] = Date() as CKRecordValue
+
+        let operation = CKModifyRecordsOperation(recordsToSave: [record])
+        operation.isLongLived = true
+        operation.modifyRecordsCompletionBlock = { savedRecords, _, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion?(.failure(error))
+                } else if let savedRecord = savedRecords?.first {
+                    completion?(.success(savedRecord))
+                }
+            }
+        }
+
+        database.add(operation)
+    }
+
     func save(log: MedicationLog, medication: Medication, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
         let record = medicationLogRecord(from: log, medication: medication)
         database.save(record) { savedRecord, error in
@@ -231,7 +282,7 @@ final class CloudKitMedicationSync {
         record[Field.isSkipped] = medication.isSkipped as CKRecordValue
         record[Field.isOneTimeWithFollowUp] = medication.isOneTimeWithFollowUp as CKRecordValue
         record[Field.isArchived] = medication.isArchived as CKRecordValue
-        record[Field.isDeleted] = medication.isDeleted as CKRecordValue
+        record[Field.isDeleted] = NSNumber(value: medication.isDeleted ? 1 : 0)
         if let logReferenceID = medication.logReferenceID {
             record[Field.logReferenceID] = logReferenceID.uuidString as CKRecordValue
         }
@@ -300,7 +351,14 @@ final class CloudKitMedicationSync {
         let isSkipped = record[Field.isSkipped] as? Bool ?? false
         let isOneTimeWithFollowUp = record[Field.isOneTimeWithFollowUp] as? Bool ?? false
         let isArchived = record[Field.isArchived] as? Bool ?? false
-        let isDeleted = record[Field.isDeleted] as? Bool ?? false
+        let isDeleted: Bool
+        if let number = record[Field.isDeleted] as? NSNumber {
+            isDeleted = number.boolValue
+        } else if let boolValue = record[Field.isDeleted] as? Bool {
+            isDeleted = boolValue
+        } else {
+            isDeleted = false
+        }
         let enableDailyCheckIn = record[Field.enableDailyCheckIn] as? Bool ?? false
         let enableStimulantPhaseNotifications = record[Field.enableStimulantPhaseNotifications] as? Bool ?? false
         let isExtendedRelease = record[Field.isExtendedRelease] as? Bool ?? false

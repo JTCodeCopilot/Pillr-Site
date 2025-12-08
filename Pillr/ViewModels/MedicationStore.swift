@@ -498,24 +498,32 @@ class MedicationStore: ObservableObject {
     }
 
     func deleteMedication(at offsets: IndexSet) {
-        // Cancel notifications for the medications being deleted
-        for index in offsets {
-            let medication = medications[index]
+        let medicationsToDelete = offsets.compactMap { medications.indices.contains($0) ? medications[$0] : nil }
+        for medication in medicationsToDelete {
+            prepareMedicationForDeletion(medication)
+        }
+        medications.remove(atOffsets: offsets)
+        saveMedications()
+    }
 
-            if let notificationID = medication.notificationID {
+    func deleteMedication(_ medication: Medication) {
+        guard let index = medications.firstIndex(where: { $0.id == medication.id }) else { return }
+        prepareMedicationForDeletion(medication)
+        medications.remove(at: index)
+        saveMedications()
+    }
+
+    private func prepareMedicationForDeletion(_ medication: Medication) {
+        if let notificationID = medication.notificationID {
             notificationManager.cancelNotification(with: notificationID)
         }
-        
+
         if !medication.notificationIDs.isEmpty {
             notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
         }
 
         notificationManager.cancelNotifications(forMedicationID: medication.id)
         syncDeleteMedication(medication)
-    }
-        
-        medications.remove(atOffsets: offsets)
-        saveMedications()
     }
     
     func deleteLog(at offsets: IndexSet) {
@@ -815,9 +823,7 @@ class MedicationStore: ObservableObject {
 
     private func syncDeleteMedication(_ medication: Medication) {
         guard !isPreviewMode else { return }
-        var deletedMedication = medication
-        deletedMedication.isDeleted = true
-        cloudSync.save(medication: deletedMedication) { result in
+        cloudSync.markMedicationDeleted(medication) { result in
             if case let .failure(error) = result {
                 print("CloudKit medication delete failed: \(error)")
             }

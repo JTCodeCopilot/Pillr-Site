@@ -19,8 +19,8 @@ struct MedicationsListView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     @State private var showingArchivedSheet = false
-    @State private var medicationToArchive: Medication? = nil
-    @State private var showArchiveAlert = false
+    @State private var medicationToDelete: Medication? = nil
+    @State private var showDeleteAlert = false
     @State private var showingInteractionSheet = false
     @State private var showingMedicationSelectionSheet = false
     @State private var interactionCheckError: String? = nil
@@ -75,8 +75,8 @@ struct MedicationsListView: View {
             scrolledOffset: $scrolledOffset,
             showingLogSheetFor: $showingLogSheetFor,
             selectedMedicationToEdit: $selectedMedicationToEdit,
-            medicationToArchive: $medicationToArchive,
-            showArchiveAlert: $showArchiveAlert,
+            medicationToDelete: $medicationToDelete,
+            showDeleteAlert: $showDeleteAlert,
             showingArchivedSheet: $showingArchivedSheet,
             showingInteractionSheet: $showingInteractionSheet,
             isCheckingInteractions: $isCheckingInteractions,
@@ -130,18 +130,18 @@ struct MedicationsListView: View {
                 error: interactionCheckError
             )
         }
-        .alert(isPresented: $showArchiveAlert) {
+        .alert(isPresented: $showDeleteAlert) {
             Alert(
                 title: Text("Delete Medication"),
-                message: Text("Deleting \(medicationToArchive?.name ?? "this medication") will permanently remove it and it cannot be restored unless you enter it again."),
+                message: Text("Deleting \(medicationToDelete?.name ?? "this medication") will permanently remove it and it cannot be restored unless you enter it again."),
                 primaryButton: .destructive(Text("Delete")) {
-                    if let med = medicationToArchive {
-                        store.archiveMedication(med)
+                    if let med = medicationToDelete {
+                        store.deleteMedication(med)
                     }
-                    medicationToArchive = nil
+                    medicationToDelete = nil
                 },
                 secondaryButton: .cancel {
-                    medicationToArchive = nil
+                    medicationToDelete = nil
                 }
             )
         }
@@ -501,8 +501,8 @@ fileprivate func MedicationsListContent(
     horizontalInsets: CGFloat,
     showingLogSheetFor: Binding<Medication?>,
     selectedMedicationToEdit: Binding<Medication?>,
-    medicationToArchive: Binding<Medication?>,
-    showArchiveAlert: Binding<Bool>,
+    medicationToDelete: Binding<Medication?>,
+    showDeleteAlert: Binding<Bool>,
     showingArchivedSheet: Binding<Bool>,
     showingInteractionSheet: Binding<Bool>,
     isCheckingInteractions: Binding<Bool>,
@@ -527,8 +527,13 @@ fileprivate func MedicationsListContent(
                     },
                     onArchiveTap: med.logEntryID == nil ? {
                         HapticManager.shared.warningNotification()
-                        medicationToArchive.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                        showArchiveAlert.wrappedValue = true
+                        let target = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+                        store.archiveMedication(target)
+                    } : nil,
+                    onDeleteTap: med.logEntryID == nil ? {
+                        HapticManager.shared.warningNotification()
+                        medicationToDelete.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+                        showDeleteAlert.wrappedValue = true
                     } : nil
                 )
                 .transition(.asymmetric(
@@ -1365,8 +1370,8 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var scrolledOffset: CGFloat
     @Binding var showingLogSheetFor: Medication?
     @Binding var selectedMedicationToEdit: Medication?
-    @Binding var medicationToArchive: Medication?
-    @Binding var showArchiveAlert: Bool
+    @Binding var medicationToDelete: Medication?
+    @Binding var showDeleteAlert: Bool
     @Binding var showingArchivedSheet: Bool
     @Binding var showingInteractionSheet: Bool
     @Binding var isCheckingInteractions: Bool
@@ -1428,8 +1433,8 @@ fileprivate struct MedicationsListMainContent: View {
                                 horizontalInsets: horizontalInset,
                                 showingLogSheetFor: $showingLogSheetFor,
                                 selectedMedicationToEdit: $selectedMedicationToEdit,
-                                medicationToArchive: $medicationToArchive,
-                                showArchiveAlert: $showArchiveAlert,
+                                medicationToDelete: $medicationToDelete,
+                                showDeleteAlert: $showDeleteAlert,
                                 showingArchivedSheet: $showingArchivedSheet,
                                 showingInteractionSheet: $showingInteractionSheet,
                                 isCheckingInteractions: $isCheckingInteractions,
@@ -2255,6 +2260,7 @@ struct MedicationRow: View {
     let onLogTap: () -> Void
     let onEditTap: () -> Void
     let onArchiveTap: (() -> Void)? // Optional for archived meds
+    let onDeleteTap: (() -> Void)?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var store: MedicationStore
@@ -2630,11 +2636,20 @@ struct MedicationRow: View {
             }
 
             if let archiveTap = onArchiveTap {
-                Button(role: .destructive) {
+                Button {
                     HapticManager.shared.warningNotification()
                     archiveTap()
                 } label: {
-                    Text("Delete")
+                    Text("Archive")
+                }
+            }
+
+            if let deleteTap = onDeleteTap {
+                Button(role: .destructive) {
+                    HapticManager.shared.warningNotification()
+                    deleteTap()
+                } label: {
+                    Text("Delete Medication")
                 }
             }
         }
