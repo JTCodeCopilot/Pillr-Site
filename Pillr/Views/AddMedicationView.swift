@@ -843,7 +843,7 @@ struct AddMedicationView: View {
                 }
             }
 
-            FormSection(title: "INVENTORY", icon: "archivebox.fill") {
+            FormSection(title: "INVENTORY", icon: "cube.box.fill") {
                 VStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
                         Toggle(isOn: $trackPillCount.animation(.easeInOut)) {

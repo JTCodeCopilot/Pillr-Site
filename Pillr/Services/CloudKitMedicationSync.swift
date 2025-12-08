@@ -37,7 +37,6 @@ final class CloudKitMedicationSync {
         static let refillThreshold = "refillThreshold"
         static let isSkipped = "isSkipped"
         static let isOneTimeWithFollowUp = "isOneTimeWithFollowUp"
-        static let isArchived = "isArchived"
         static let isDeleted = "isDeleted"
         static let logReferenceID = "logReferenceID"
         static let logEntryID = "logEntryID"
@@ -231,7 +230,6 @@ final class CloudKitMedicationSync {
         }
         record[Field.isSkipped] = medication.isSkipped as CKRecordValue
         record[Field.isOneTimeWithFollowUp] = medication.isOneTimeWithFollowUp as CKRecordValue
-        record[Field.isArchived] = medication.isArchived as CKRecordValue
         record[Field.isDeleted] = NSNumber(value: medication.isDeleted ? 1 : 0)
         if let logReferenceID = medication.logReferenceID {
             record[Field.logReferenceID] = logReferenceID.uuidString as CKRecordValue
@@ -300,7 +298,6 @@ final class CloudKitMedicationSync {
         let refillThreshold = record[Field.refillThreshold] as? Int
         let isSkipped = record[Field.isSkipped] as? Bool ?? false
         let isOneTimeWithFollowUp = record[Field.isOneTimeWithFollowUp] as? Bool ?? false
-        let isArchived = record[Field.isArchived] as? Bool ?? false
         let isDeleted: Bool
         if let number = record[Field.isDeleted] as? NSNumber {
             isDeleted = number.boolValue
@@ -356,7 +353,6 @@ final class CloudKitMedicationSync {
             refillThreshold: refillThreshold,
             isSkipped: isSkipped,
             isOneTimeWithFollowUp: isOneTimeWithFollowUp,
-            isArchived: isArchived,
             isDeleted: isDeleted,
             logReferenceID: logReferenceID,
             logEntryID: logEntryID,

@@ -18,7 +18,6 @@ struct MedicationsListView: View {
     @StateObject private var healthKitManager = HealthKitManager()
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
-    @State private var showingArchivedSheet = false
     @State private var medicationToDelete: Medication? = nil
     @State private var showDeleteAlert = false
     @State private var showingInteractionSheet = false
@@ -77,7 +76,6 @@ struct MedicationsListView: View {
             selectedMedicationToEdit: $selectedMedicationToEdit,
             medicationToDelete: $medicationToDelete,
             showDeleteAlert: $showDeleteAlert,
-            showingArchivedSheet: $showingArchivedSheet,
             showingInteractionSheet: $showingInteractionSheet,
             isCheckingInteractions: $isCheckingInteractions,
             onCheckAllInteractions: showMedicationSelectionSheet,
@@ -112,13 +110,6 @@ struct MedicationsListView: View {
                     .environmentObject(userSettings)
             }
         }
-        .sheet(isPresented: $showingArchivedSheet) {
-            ArchivedMedicationsSheet(
-                store: store,
-                showingArchivedSheet: $showingArchivedSheet
-            )
-        }
-
         .sheet(isPresented: $showingMedicationSelectionSheet) {
             MedicationInteractionSelectionSheet()
                 .environmentObject(store)
@@ -159,7 +150,15 @@ struct MedicationsListView: View {
                 logs: store.logs,
                 referenceDate: referenceDate,
                 onLogMedication: { presentLogSheet(for: $0) },
-                onEditMedication: { presentEditSheet(for: $0) }
+                onEditMedication: { presentEditSheet(for: $0) },
+                onDeleteMedication: { med in
+                    HapticManager.shared.warningNotification()
+                    showingCabinetSheet = false
+                    medicationToDelete = store.findMedication(with: med.id) ?? med
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        showDeleteAlert = true
+                    }
+                }
             )
         }
         .sheet(item: $store.dailyCheckInMedication, onDismiss: {
@@ -503,7 +502,6 @@ fileprivate func MedicationsListContent(
     selectedMedicationToEdit: Binding<Medication?>,
     medicationToDelete: Binding<Medication?>,
     showDeleteAlert: Binding<Bool>,
-    showingArchivedSheet: Binding<Bool>,
     showingInteractionSheet: Binding<Bool>,
     isCheckingInteractions: Binding<Bool>,
     onCheckAllInteractions: @escaping () async -> Void,
@@ -514,28 +512,23 @@ fileprivate func MedicationsListContent(
 ) -> some View {
     VStack(alignment: .leading, spacing: 16) {
         ForEach(sortedMedications(medications, logs: store.logs, referenceDate: referenceDate)) { med in
-                MedicationRow(
-                    medication: med,
-                    referenceDate: referenceDate,
-                    onLogTap: {
-                        HapticManager.shared.lightImpact()
-                        showingLogSheetFor.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                    },
-                    onEditTap: {
-                        HapticManager.shared.lightImpact()
-                        selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                    },
-                    onArchiveTap: med.logEntryID == nil ? {
-                        HapticManager.shared.warningNotification()
-                        let target = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                        store.archiveMedication(target)
-                    } : nil,
-                    onDeleteTap: med.logEntryID == nil ? {
-                        HapticManager.shared.warningNotification()
-                        medicationToDelete.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                        showDeleteAlert.wrappedValue = true
-                    } : nil
-                )
+                    MedicationRow(
+                        medication: med,
+                        referenceDate: referenceDate,
+                        onLogTap: {
+                            HapticManager.shared.lightImpact()
+                            showingLogSheetFor.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+                        },
+                        onEditTap: {
+                            HapticManager.shared.lightImpact()
+                            selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+                        },
+                        onDeleteTap: med.logEntryID == nil ? {
+                            HapticManager.shared.warningNotification()
+                            medicationToDelete.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+                            showDeleteAlert.wrappedValue = true
+                        } : nil
+                    )
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
                     removal: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.95))
@@ -772,8 +765,6 @@ fileprivate struct HealthSummaryWidget: View {
 
 fileprivate struct FloatingActionButton: View {
     @Binding var showingAddSheet: Bool
-    @Binding var showingArchivedSheet: Bool
-    let hasArchivedMedications: Bool
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
     let onAddMedication: () -> Void
@@ -804,17 +795,6 @@ fileprivate struct FloatingActionButton: View {
                         // Expanded action buttons
                         if isExpanded {
                             VStack(spacing: 12) {
-                                // Archive button (always show)
-                                expandedActionButton(
-                                    icon: "archivebox.fill",
-                                    text: "Archive",
-                                    delay: 0.1
-                                ) {
-                                    HapticManager.shared.lightImpact()
-                                    showingArchivedSheet = true
-                                    collapseMenu()
-                                }
-                                
                                 // Add medication button
                                 expandedActionButton(
                                     icon: "plus.app",
@@ -932,10 +912,15 @@ fileprivate struct FloatingActionButton: View {
         }
         .buttonStyle(EnhancedScaleButtonStyle())
         .accessibilityLabel(isExpanded ? "Close actions menu" : "Show actions menu")
-        .accessibilityHint("Double tap to \(isExpanded ? "close" : "open") the actions menu with options to add medications and view archive")
+        .accessibilityHint(actionsMenuAccessibilityHint)
         .accessibilityAddTraits(.isButton)
     }
     
+    private var actionsMenuAccessibilityHint: String {
+        let action = isExpanded ? "close" : "open"
+        return "Double tap to \(action) the actions menu with options to add medications"
+    }
+
     // MARK: - Helper Methods
     
     private func toggleMenu() {
@@ -1048,159 +1033,13 @@ struct ShakeAnimationModifier: ViewModifier {
     }
 }
 
-@ViewBuilder
-func ArchivedMedicationsSheet(
-    store: MedicationStore,
-    showingArchivedSheet: Binding<Bool>
-) -> some View {
-    NavigationView {
-        ZStack {
-            // Enhanced background with subtle gradient
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(hex: "#404C42"),
-                    Color(hex: "#3A443D")
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-            
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 24) {
-                    // Enhanced Header
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Archived Medications")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(hex: "#F5F7F4"))
-                        
-                        Text("Medications you've archived can be restored anytime")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
-                    }
-                    .padding(.top, 20)
-                    
-                    if store.archivedMedications.isEmpty {
-                        // Empty state
-                        VStack(spacing: 20) {
-                            Image(systemName: "archivebox")
-                                .font(.system(size: 50))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                            
-                            Text("No archived medications")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(hex: "#F5F7F4"))
-                            
-                            Text("Medications you archive will appear here")
-                                .font(.system(size: 16))
-                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.vertical, 40)
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        // Archived medications list
-                        VStack(alignment: .leading, spacing: 16) {
-                            ForEach(store.archivedMedications) { med in
-                                ArchivedMedicationCard(
-                                    medication: med,
-                                    onUnarchive: {
-                                        HapticManager.shared.lightImpact()
-                                        store.unarchiveMedication(med)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                    
-                    Spacer(minLength: 40)
-                }
-                .padding(.horizontal, 20)
-            }
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Done") {
-                    HapticManager.shared.lightImpact()
-                    showingArchivedSheet.wrappedValue = false
-                }
-                .foregroundColor(Color(hex: "#C7C7BD"))
-            }
-        }
-    }
-}
-
-@ViewBuilder
-func ArchivedMedicationCard(
-    medication: Medication,
-    onUnarchive: @escaping () -> Void
-) -> some View {
-    HStack(spacing: 16) {
-        // Medication icon
-        Image(systemName: "pill.circle.fill")
-            .font(.system(size: 32))
-            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-        
-        // Medication info
-        VStack(alignment: .leading, spacing: 4) {
-            Text(medication.name)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(Color(hex: "#F5F7F4"))
-                .lineLimit(1)
-            
-            Text("\(medication.dosage) \(medication.dosageUnit) - \(medication.frequency)")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(hex: "#E0E7DC"))
-                .lineLimit(1)
-            
-            if let notes = medication.notes, !notes.isEmpty {
-                Text(notes)
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-        }
-        
-        Spacer()
-        
-        // Unarchive button
-        Button(action: onUnarchive) {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.up.bin")
-                    .font(.system(size: 14, weight: .semibold))
-                Text("Restore")
-                    .font(.system(size: 14, weight: .semibold))
-            }
-            .foregroundColor(Color(hex: "#404C42"))
-            .padding(.vertical, 8)
-            .padding(.horizontal, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(hex: "#E0E7DC"))
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-            )
-        }
-        .buttonStyle(ScaleButtonStyle())
-    }
-    .padding(20)
-    .background(
-        RoundedRectangle(cornerRadius: 16)
-            .fill(Color(hex: "#5B695D"))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color(hex: "#E0E7DC").opacity(0.25), lineWidth: 1)
-            )
-    )
-}
-
 fileprivate struct MedicationCabinetSheet: View {
     let medications: [Medication]
     let logs: [MedicationLog]
     let referenceDate: Date
     let onLogMedication: (Medication) -> Void
     let onEditMedication: (Medication) -> Void
+    let onDeleteMedication: ((Medication) -> Void)?
     @Environment(\.dismiss) private var dismiss
 
     private var asNeededMedications: [Medication] {
@@ -1285,7 +1124,10 @@ fileprivate struct MedicationCabinetSheet: View {
                 CabinetMedicationRow(
                     medication: medication,
                     onLogTap: { onLogMedication(medication) },
-                    onEditTap: { onEditMedication(medication) }
+                    onEditTap: { onEditMedication(medication) },
+                    onDeleteTap: onDeleteMedication.map { action in
+                        { action(medication) }
+                    }
                 )
             }
         }
@@ -1296,12 +1138,32 @@ fileprivate struct CabinetMedicationRow: View {
     let medication: Medication
     let onLogTap: () -> Void
     let onEditTap: () -> Void
+    let onDeleteTap: (() -> Void)?
+    @State private var showDetails = false
 
     private var detailSubtitle: String {
         if medication.frequency == "As needed" {
             return "Take when you need it"
         }
         return "No reminder scheduled"
+    }
+
+    private var longPressHint: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "hand.tap.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+            Text("Long press to edit or delete")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.85))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.12))
+        )
     }
 
     var body: some View {
@@ -1351,6 +1213,11 @@ fileprivate struct CabinetMedicationRow: View {
                 }
                 .buttonStyle(ScaleButtonStyle())
             }
+
+            if showDetails {
+                longPressHint
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
         .padding(18)
         .background(
@@ -1361,6 +1228,41 @@ fileprivate struct CabinetMedicationRow: View {
                         .stroke(Color.white.opacity(0.08), lineWidth: 1)
                 )
         )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                showDetails.toggle()
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            Button(action: {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    showDetails.toggle()
+                }
+            }) {
+                Image(systemName: showDetails ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.65))
+                    .frame(width: 34, height: 34)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 12)
+            .padding(.trailing, 12)
+        }
+        .contextMenu {
+            Button {
+                onEditTap()
+            } label: {
+                Text("Edit Medication")
+            }
+            if let deleteTap = onDeleteTap {
+                Button(role: .destructive) {
+                    deleteTap()
+                } label: {
+                    Text("Delete Medication")
+                }
+            }
+        }
     }
 }
 
@@ -1372,7 +1274,6 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var selectedMedicationToEdit: Medication?
     @Binding var medicationToDelete: Medication?
     @Binding var showDeleteAlert: Bool
-    @Binding var showingArchivedSheet: Bool
     @Binding var showingInteractionSheet: Bool
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
@@ -1435,7 +1336,6 @@ fileprivate struct MedicationsListMainContent: View {
                                 selectedMedicationToEdit: $selectedMedicationToEdit,
                                 medicationToDelete: $medicationToDelete,
                                 showDeleteAlert: $showDeleteAlert,
-                                showingArchivedSheet: $showingArchivedSheet,
                                 showingInteractionSheet: $showingInteractionSheet,
                                 isCheckingInteractions: $isCheckingInteractions,
                                 onCheckAllInteractions: onCheckAllInteractions,
@@ -2259,7 +2159,6 @@ struct MedicationRow: View {
     let referenceDate: Date
     let onLogTap: () -> Void
     let onEditTap: () -> Void
-    let onArchiveTap: (() -> Void)? // Optional for archived meds
     let onDeleteTap: (() -> Void)?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
@@ -2568,7 +2467,6 @@ struct MedicationRow: View {
                 MedicationRowDetailsView(
                     medication: medication,
                     onEditTap: onEditTap,
-                    onArchiveTap: onArchiveTap
                 )
                 .padding(.top, 12)
             }
@@ -2633,15 +2531,6 @@ struct MedicationRow: View {
                 onEditTap()
             } label: {
                 Text("Edit Medication")
-            }
-
-            if let archiveTap = onArchiveTap {
-                Button {
-                    HapticManager.shared.warningNotification()
-                    archiveTap()
-                } label: {
-                    Text("Archive")
-                }
             }
 
             if let deleteTap = onDeleteTap {
@@ -2942,7 +2831,6 @@ extension MedicationCycleStatus: Equatable {
 fileprivate struct MedicationRowDetailsView: View {
     let medication: Medication
     let onEditTap: () -> Void
-    let onArchiveTap: (() -> Void)?
 
     private var baseTimeForTiming: Date {
         // Use the first reminder time if available, otherwise fall back to the primary time
@@ -3045,7 +2933,7 @@ fileprivate struct MedicationRowDetailsView: View {
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
                     .frame(maxWidth: .infinity, alignment: .center)
 
-                Text("Long press to edit or archive")
+                Text("Long press to edit or delete")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
                     .frame(maxWidth: .infinity, alignment: .center)

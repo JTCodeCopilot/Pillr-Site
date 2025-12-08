@@ -107,10 +107,6 @@ class NotificationManager: ObservableObject {
     
     // Legacy support for single notification
     func scheduleNotification(for medication: Medication) -> UUID {
-        // Don't schedule notifications for archived medications
-        if medication.isArchived {
-            return UUID() // Return dummy ID that won't be used
-        }
         
         let content = UNMutableNotificationContent()
         content.title = "Medication reminder"
@@ -166,10 +162,6 @@ class NotificationManager: ObservableObject {
     
     // New method for scheduling multiple notifications
     func scheduleMultipleNotifications(for medication: Medication) -> [UUID] {
-        // Don't schedule notifications for archived medications
-        if medication.isArchived {
-            return [] // Return empty array
-        }
         
         var notificationIDs: [UUID] = []
         
@@ -395,7 +387,7 @@ class NotificationManager: ObservableObject {
     }
 
     /// Cancels any pending or delivered notifications that reference the provided medication ID.
-    /// This is used as a safety net for archived/deleted medications where we no longer want reminders firing.
+    /// This is used as a safety net for deleted medications where we no longer want reminders firing.
     func cancelNotifications(forMedicationID medicationID: UUID) {
         let center = UNUserNotificationCenter.current()
         let medicationIDString = medicationID.uuidString
@@ -446,7 +438,7 @@ class NotificationManager: ObservableObject {
     }
 
     /// Removes any pending/delivered medication reminder notifications that don't belong to the provided set of active medications.
-    /// Useful on app launch to clear reminders for medications that were deleted or archived while the app was not running.
+    /// Useful on app launch to clear reminders for medications that were deleted while the app was not running.
     func purgeNotifications(excluding validMedicationIDs: Set<UUID>) {
         let center = UNUserNotificationCenter.current()
         let validIDStrings = Set(validMedicationIDs.map { $0.uuidString })

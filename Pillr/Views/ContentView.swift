@@ -130,7 +130,6 @@ struct ContentView: View {
     @State private var showingPopoutMenu = false
     @State private var showingLogView = false
     @State private var showingSettingsView = false
-    @State private var showingArchivedView = false
     @State private var showingInteractionAI = false
     @State private var showingMedicationSelectionSheet = false
     @State private var showingPremiumUpgrade = false
@@ -187,7 +186,6 @@ struct ContentView: View {
                         showingPopoutMenu: $showingPopoutMenu,
                         showingLogView: $showingLogView,
                         showingSettingsView: $showingSettingsView,
-                        showingArchivedView: $showingArchivedView,
                         showingMedicationSelectionSheet: $showingMedicationSelectionSheet,
                         showingAddMedicationSheet: $showingAddMedicationSheet,
                         geometry: geometry
@@ -210,23 +208,6 @@ struct ContentView: View {
         .sheet(isPresented: $showingSettingsView) {
             SettingsViewSheet(userSettings: userSettings, isPresented: $showingSettingsView)
                 .environmentObject(storeManager)
-        }
-        .sheet(isPresented: $showingArchivedView) {
-            NavigationView {
-                ArchivedMedicationsView(store: store)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button {
-                                showingArchivedView = false
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                            }
-                        }
-                    }
-            }
         }
         .sheet(isPresented: $showingMedicationSelectionSheet) {
             MedicationInteractionSelectionSheet()
@@ -329,7 +310,6 @@ struct PopoutMenuOverlay: View {
     @Binding var showingPopoutMenu: Bool
     @Binding var showingLogView: Bool
     @Binding var showingSettingsView: Bool
-    @Binding var showingArchivedView: Bool
     @Binding var showingMedicationSelectionSheet: Bool
     @Binding var showingAddMedicationSheet: Bool
     let geometry: GeometryProxy
@@ -397,22 +377,6 @@ struct PopoutMenuOverlay: View {
                             }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                                 showingLogView = true
-                            }
-                        }
-                    )
-                    
-                    // 4. Archived medications button
-                    MenuItemButton(
-                        icon: "archivebox.fill",
-                        title: "Archived Meds",
-                        delay: 0.15,
-                        animateItems: animateItems,
-                        action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                showingPopoutMenu = false
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                showingArchivedView = true
                             }
                         }
                     )
@@ -1235,78 +1199,6 @@ struct SettingsContentView: View {
         .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
         .shadow(color: Color.white.opacity(1), radius: 2, x: 0, y: 1)
         .padding(.horizontal)
-    }
-}
-
-// MARK: - Archived Medications View
-struct ArchivedMedicationsView: View {
-    @ObservedObject var store: MedicationStore
-    
-    var body: some View {
-        ZStack {
-            // Enhanced background with subtle gradient
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(hex: "#404C42"),
-                    Color(hex: "#3A443D")
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-            
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 24) {
-                    // Enhanced Header
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Archived Medications")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
-                        
-                        Text("Medications you've archived can be restored anytime")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                    }
-                    .padding(.top, 20)
-                    
-                    if store.archivedMedications.isEmpty {
-                        // Empty state
-                        VStack(spacing: 20) {
-                            Image(systemName: "archivebox")
-                                .font(.system(size: 50))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                            
-                            Text("No archived medications")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
-                            
-                            Text("Medications you archive will appear here")
-                                .font(.system(size: 16))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.vertical, 40)
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        // Archived medications list
-                        VStack(alignment: .leading, spacing: 16) {
-                            ForEach(store.archivedMedications) { med in
-                                ArchivedMedicationCard(
-                                    medication: med,
-                                    onUnarchive: {
-                                        HapticManager.shared.lightImpact()
-                                        store.unarchiveMedication(med)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                    
-                    Spacer(minLength: 40)
-                }
-                .padding(.horizontal, 20)
-            }
-        }
     }
 }
 

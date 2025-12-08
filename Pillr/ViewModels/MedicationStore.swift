@@ -56,12 +56,8 @@ class MedicationStore: ObservableObject {
     private let logsKey = "medicationLogsData"
     private let isPreviewMode: Bool
 
-    // Computed properties for active and archived medications
     var activeMedications: [Medication] {
-        medications.filter { !$0.isArchived }
-    }
-    var archivedMedications: [Medication] {
-        medications.filter { $0.isArchived }
+        medications
     }
 
     init(isPreview: Bool = false) {
@@ -132,7 +128,6 @@ class MedicationStore: ObservableObject {
             pillsPerDose: finalPillsPerDose,
             refillThreshold: finalRefillThreshold,
             isOneTimeWithFollowUp: isOneTimeWithFollowUp,
-            isArchived: false // Always add as not archived
         )
         
         // Schedule notifications only if enabled
@@ -417,8 +412,6 @@ class MedicationStore: ObservableObject {
         // Check if there are any remaining medications to be taken today
         let today = Calendar.current.startOfDay(for: Date())
         let hasPendingMedications = medications.contains { medication in
-            // Only check active medications
-            if medication.isArchived { return false }
             
             // Get today's logs for this medication
             let medicationLogs = logs.filter { log in
@@ -717,7 +710,7 @@ class MedicationStore: ObservableObject {
             if let decodedMedications = try? JSONDecoder().decode([Medication].self, from: savedMedications) {
                 self.medications = decodedMedications
 
-                let activeMedicationIDs = Set(decodedMedications.filter { !$0.isArchived }.map { $0.id })
+                let activeMedicationIDs = Set(decodedMedications.map { $0.id })
                 notificationManager.purgeNotifications(excluding: activeMedicationIDs)
                 
                 // Reschedule notifications on app launch (in case app was terminated)
@@ -729,27 +722,20 @@ class MedicationStore: ObservableObject {
                     if !medication.notificationIDs.isEmpty {
                         notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
                     }
+
+                    notificationManager.cancelNotifications(forMedicationID: medication.id)
                     
                     var updatedMedication = medication
-                    
-                    // Only schedule notifications for active (non-archived) medications
-                    if !medication.isArchived {
-                        // Reschedule based on whether it uses single or multiple notifications
-                        if !medication.reminderTimes.isEmpty {
-                            // Use multiple reminders
-                            let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
-                            updatedMedication.notificationIDs = notificationIDs
-                            updatedMedication.notificationID = nil
-                        } else if medication.notificationID != nil {
-                            // Legacy - use single reminder
-                            let notificationID = notificationManager.scheduleNotification(for: medication)
-                            updatedMedication.notificationID = notificationID
-                        }
-                    } else {
-                        // Clear notification IDs for archived medications
+                    if !medication.reminderTimes.isEmpty {
+                        let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
+                        updatedMedication.notificationIDs = notificationIDs
                         updatedMedication.notificationID = nil
+                    } else if medication.notificationID != nil {
+                        let notificationID = notificationManager.scheduleNotification(for: medication)
+                        updatedMedication.notificationID = notificationID
                         updatedMedication.notificationIDs = []
-                        notificationManager.cancelNotifications(forMedicationID: updatedMedication.id)
+                    } else {
+                        updatedMedication.notificationIDs = []
                     }
                     
                     medications[index] = updatedMedication
@@ -946,10 +932,6 @@ class MedicationStore: ObservableObject {
             mutable.notificationIDs = []
         }
 
-        guard !mutable.isArchived else {
-            return mutable
-        }
-
         if mutable.reminderTimes.isEmpty {
             mutable.notificationID = notificationManager.scheduleNotification(for: mutable)
         } else {
@@ -1016,51 +998,4 @@ class MedicationStore: ObservableObject {
         }
     }
 
-    // Archive a medication
-    func archiveMedication(_ medication: Medication) {
-        if let index = medications.firstIndex(where: { $0.id == medication.id }) {
-            var updatedMedication = medications[index]
-            
-            // Cancel notifications for archived medication
-            if let notificationID = updatedMedication.notificationID {
-                notificationManager.cancelNotification(with: notificationID)
-                updatedMedication.notificationID = nil
-            }
-            
-            if !updatedMedication.notificationIDs.isEmpty {
-                notificationManager.cancelMultipleNotifications(ids: updatedMedication.notificationIDs)
-                updatedMedication.notificationIDs = []
-            }
-
-            notificationManager.cancelNotifications(forMedicationID: updatedMedication.id)
-            
-            updatedMedication.isArchived = true
-            medications[index] = updatedMedication
-            saveMedications()
-            syncMedicationWithCloud(updatedMedication)
-        }
-    }
-
-    // Unarchive a medication
-    func unarchiveMedication(_ medication: Medication) {
-        if let index = medications.firstIndex(where: { $0.id == medication.id }) {
-            var updatedMedication = medications[index]
-            updatedMedication.isArchived = false
-            
-            // Reschedule notifications for unarchived medication
-            if updatedMedication.reminderTimes.isEmpty {
-                // Legacy single notification
-                let notificationID = notificationManager.scheduleNotification(for: updatedMedication)
-                updatedMedication.notificationID = notificationID
-            } else {
-                // Multiple notifications
-                let notificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
-                updatedMedication.notificationIDs = notificationIDs
-            }
-            
-            medications[index] = updatedMedication
-            saveMedications()
-            syncMedicationWithCloud(updatedMedication)
-        }
-    }
 }
