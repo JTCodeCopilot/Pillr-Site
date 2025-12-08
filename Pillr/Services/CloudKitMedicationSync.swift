@@ -71,56 +71,6 @@ final class CloudKitMedicationSync {
         }
     }
 
-    func markMedicationDeleted(_ medication: Medication, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
-        let deletedMedication = Medication(
-            id: medication.id,
-            name: medication.name,
-            dosage: medication.dosage,
-            dosageUnit: medication.dosageUnit,
-            iconName: medication.iconName,
-            createdAt: medication.createdAt,
-            frequency: medication.frequency,
-            medicationType: medication.medicationType,
-            isExtendedRelease: medication.isExtendedRelease,
-            onsetMinutes: medication.onsetMinutes,
-            durationMinutes: medication.durationMinutes,
-            enableDailyCheckIn: medication.enableDailyCheckIn,
-            enableStimulantPhaseNotifications: medication.enableStimulantPhaseNotifications,
-            dailyCheckInTime: medication.dailyCheckInTime,
-            timeToTake: medication.timeToTake,
-            reminderTimes: medication.reminderTimes,
-            notes: medication.notes,
-            notificationID: medication.notificationID,
-            notificationIDs: medication.notificationIDs,
-            pillCount: medication.pillCount,
-            pillsPerDose: medication.pillsPerDose,
-            refillThreshold: medication.refillThreshold,
-            isSkipped: medication.isSkipped,
-            isOneTimeWithFollowUp: medication.isOneTimeWithFollowUp,
-            isArchived: medication.isArchived,
-            isDeleted: true,
-            logReferenceID: medication.logReferenceID,
-            logEntryID: medication.logEntryID,
-            cloudLastModified: medication.cloudLastModified
-        )
-
-        let record = medicationRecord(from: deletedMedication)
-        record[Field.updatedAt] = Date() as CKRecordValue
-
-        let operation = CKModifyRecordsOperation(recordsToSave: [record])
-        operation.isLongLived = true
-        operation.modifyRecordsCompletionBlock = { savedRecords, _, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    completion?(.failure(error))
-                } else if let savedRecord = savedRecords?.first {
-                    completion?(.success(savedRecord))
-                }
-            }
-        }
-
-        database.add(operation)
-    }
 
     func save(log: MedicationLog, medication: Medication, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
         let record = medicationLogRecord(from: log, medication: medication)
