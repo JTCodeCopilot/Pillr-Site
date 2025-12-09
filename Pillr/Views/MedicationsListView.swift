@@ -1528,9 +1528,13 @@ fileprivate struct MedicationRowHeaderView: View {
     @State private var actionConfirmationWorkItem: DispatchWorkItem?
     @State private var confirmingDoseIndex: Int?
     @State private var doseConfirmationWorkItem: DispatchWorkItem?
+    @State private var skipConfirmationIndex: Int?
 
     private let timelineTimeWidth: CGFloat = 58
     private let logButtonMinWidth: CGFloat = 96
+    private var confirmButtonMinWidth: CGFloat {
+        logButtonMinWidth + 32
+    }
     private let confirmationDuration: TimeInterval = 5.0
 
     private var usesTimelineLayout: Bool {
@@ -1941,7 +1945,9 @@ fileprivate struct MedicationRowHeaderView: View {
     private func doseCardRow(for state: DoseButtonState, isPrimary: Bool) -> some View {
         let displayText = state.formattedTime ?? state.title
         let isConfirmingDose = isDoseConfirming(state.index)
+        let isSkipConfirming = isSkipConfirming(state.index)
         let defaultForeground = Color.white.opacity(state.status == .pending ? 1 : 0.85)
+        let showSkipButton = (isConfirmingDose || isSkipConfirming) && state.status == .pending
 
         return HStack(spacing: 12) {
             if state.status == .taken, let loggedText = state.loggedTimeLabel {
@@ -1966,22 +1972,32 @@ fileprivate struct MedicationRowHeaderView: View {
                     Button(action: {
                         handleDoseButtonTap(for: state)
                     }) {
-                        HStack(spacing: 6) {
-                            if isConfirmingDose {
-                                Image(systemName: "hand.tap.fill")
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 8) {
+                                Text(isConfirmingDose ? "Tap to confirm" : state.actionLabel)
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(confirmForegroundColor)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.94)
+                                    .allowsTightening(true)
+
+                                if isConfirmingDose {
+                                    Image(systemName: "hand.tap.fill")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(confirmForegroundColor)
+                                } else if state.status == .pending {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .opacity(0.95)
+                                }
                             }
 
-                            Text(isConfirmingDose ? "Tap to confirm" : state.actionLabel)
-                                .font(.system(size: 14, weight: .medium))
-
-                            if !isConfirmingDose, state.status == .pending {
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .opacity(0.95)
-                            }
+                            Text(isConfirmingDose ? "Records this dose now" : "Records dose")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(
+                                    (isConfirmingDose ? confirmForegroundColor : defaultForeground).opacity(0.8)
+                                )
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .foregroundColor(isConfirmingDose ? confirmForegroundColor : defaultForeground)
                         .padding(.vertical, 10)
                         .padding(.horizontal, 16)
@@ -1993,34 +2009,19 @@ fileprivate struct MedicationRowHeaderView: View {
                                         .stroke(Color.white.opacity(actionButtonStrokeOpacity), lineWidth: 0.9)
                                 )
                         )
-                        .frame(minWidth: logButtonMinWidth, alignment: .leading)
+                        .frame(
+                            minWidth: isConfirmingDose ? confirmButtonMinWidth : logButtonMinWidth,
+                            alignment: .leading
+                        )
+                        .scaleEffect(isConfirmingDose ? 1.02 : 1.0)
+                        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: isConfirmingDose)
                     }
                     .buttonStyle(ScaleButtonStyle())
                     .disabled(state.status != .pending)
 
-                    if isConfirmingDose {
-                        Button(action: {
-                            HapticManager.shared.warningNotification()
-                            resetDoseConfirmation()
-                            onSkipDose(state.index)
-                        }) {
-                            Text("Skip dose")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color(hex: "#FF6B6B"))
-                                .frame(minWidth: 80)
-                                .padding(.vertical, 10)
-                                .padding(.horizontal, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(hex: "#FF6B6B").opacity(0.12))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color(hex: "#FF6B6B").opacity(0.6), lineWidth: 0.9)
-                                        )
-                                )
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        .disabled(state.status != .pending)
+                    if showSkipButton {
+                        skipDoseButton(for: state, isConfirming: isSkipConfirming)
+                            .frame(minWidth: 110)
                     }
                 }
             }
@@ -2048,6 +2049,47 @@ fileprivate struct MedicationRowHeaderView: View {
             return state.scheduledTime != nil
         }
         return true
+    }
+
+    private func skipDoseButton(for state: DoseButtonState, isConfirming: Bool) -> some View {
+        Button(action: {
+            handleSkipButtonTap(for: state)
+        }) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Text(isConfirming ? "Tap to confirm" : "Tap to skip")
+                        .font(.system(size: 14, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.9)
+                        .allowsTightening(true)
+
+                    Image(systemName: isConfirming ? "hand.tap.fill" : "xmark.circle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+
+                Text(isConfirming ? "Skip this dose now" : "Will mark this dose skipped")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.9))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundColor(Color.white)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(hex: "#FF6B6B"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(isConfirming ? 0.8 : 0.35), lineWidth: 0.9)
+                    )
+            )
+            .scaleEffect(isConfirming ? 1.02 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: isConfirming)
+        }
+        .buttonStyle(ScaleButtonStyle())
+        .disabled(state.status != .pending)
+        .accessibilityLabel(isConfirming ? "Confirm skip" : "Skip dose")
+        .accessibilityHint(isConfirming ? "Double tap to skip this dose." : "Double tap to begin skip confirmation.")
     }
     
     private func nodeFill(for state: DoseButtonState) -> Color {
@@ -2121,6 +2163,7 @@ fileprivate struct MedicationRowHeaderView: View {
 
         if confirmingDoseIndex == state.index {
             resetDoseConfirmation()
+            HapticManager.shared.successNotification()
             withAnimation(.interactiveSpring(response: 0.45, dampingFraction: 0.75)) {
                 onDoseTap(state.index)
             }
@@ -2130,12 +2173,15 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     private func startDoseConfirmation(for index: Int) {
+        resetSkipConfirmation()
         confirmingDoseIndex = index
+        HapticManager.shared.selectionChanged()
         doseConfirmationWorkItem?.cancel()
 
         let workItem = DispatchWorkItem {
             if confirmingDoseIndex == index {
                 confirmingDoseIndex = nil
+                resetSkipConfirmation()
             }
             doseConfirmationWorkItem = nil
         }
@@ -2147,10 +2193,32 @@ fileprivate struct MedicationRowHeaderView: View {
         confirmingDoseIndex = nil
         doseConfirmationWorkItem?.cancel()
         doseConfirmationWorkItem = nil
+        resetSkipConfirmation()
     }
 
     private func isDoseConfirming(_ index: Int) -> Bool {
         confirmingDoseIndex == index
+    }
+
+    private func handleSkipButtonTap(for state: DoseButtonState) {
+        guard state.status == .pending else { return }
+
+        if isSkipConfirming(state.index) {
+            HapticManager.shared.warningNotification()
+            resetDoseConfirmation()
+            onSkipDose(state.index)
+        } else {
+            skipConfirmationIndex = state.index
+            HapticManager.shared.selectionChanged()
+        }
+    }
+
+    private func resetSkipConfirmation() {
+        skipConfirmationIndex = nil
+    }
+
+    private func isSkipConfirming(_ index: Int) -> Bool {
+        skipConfirmationIndex == index
     }
 }
 

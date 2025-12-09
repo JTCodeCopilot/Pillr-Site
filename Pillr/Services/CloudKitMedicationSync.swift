@@ -97,6 +97,19 @@ final class CloudKitMedicationSync {
         }
     }
 
+    func deleteMedication(withID medicationID: UUID, completion: ((Result<Void, Error>) -> Void)? = nil) {
+        let recordID = CKRecord.ID(recordName: medicationID.uuidString)
+        database.delete(withRecordID: recordID) { _, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion?(.failure(error))
+                } else {
+                    completion?(.success(()))
+                }
+            }
+        }
+    }
+
     func fetchAllRecords(completion: @escaping (Result<(medications: [Medication], logs: [MedicationLog]), Error>) -> Void) {
         let dispatchGroup = DispatchGroup()
 

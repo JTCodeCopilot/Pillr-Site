@@ -809,9 +809,7 @@ class MedicationStore: ObservableObject {
 
     private func syncDeleteMedication(_ medication: Medication) {
         guard !isPreviewMode else { return }
-        var deletedMedication = medication
-        deletedMedication.isDeleted = true
-        cloudSync.save(medication: deletedMedication) { result in
+        cloudSync.deleteMedication(withID: medication.id) { result in
             if case let .failure(error) = result {
                 print("CloudKit medication delete failed: \(error)")
             }
