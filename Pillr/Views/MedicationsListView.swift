@@ -241,10 +241,32 @@ struct MedicationsListView: View {
     }
     
     private func presentLogSheet(for medication: Medication) {
+        if shouldAutoLogCabinetMedication(medication) {
+            quickLogCabinetMedication(medication)
+            return
+        }
+        
         showingCabinetSheet = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             showingLogSheetFor = medication
         }
+    }
+    
+    private func shouldAutoLogCabinetMedication(_ medication: Medication) -> Bool {
+        guard medication.isCabinetMedication else { return false }
+        return medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "as needed".lowercased()
+    }
+    
+    private func quickLogCabinetMedication(_ medication: Medication) {
+        showingCabinetSheet = false
+        let resolvedMedication = store.findMedication(with: medication.id) ?? medication
+        store.logMedicationTaken(
+            medication: resolvedMedication,
+            actualTime: Date(),
+            notes: nil,
+            skipped: false,
+            reminderIndex: nil
+        )
     }
     
     private func presentEditSheet(for medication: Medication) {
@@ -1140,6 +1162,9 @@ fileprivate struct CabinetMedicationRow: View {
     let onEditTap: () -> Void
     let onDeleteTap: (() -> Void)?
     @State private var showDetails = false
+    @State private var awaitingLogConfirmation = false
+    @State private var logConfirmationWorkItem: DispatchWorkItem?
+    private let confirmationDuration: TimeInterval = 5.0
 
     private var detailSubtitle: String {
         if medication.frequency == "As needed" {
@@ -1183,32 +1208,29 @@ fileprivate struct CabinetMedicationRow: View {
             }
 
             HStack(spacing: 12) {
-                Button(action: onLogTap) {
-                    HStack {
-                        Text("Tap to log")
+                Button(action: handleLogButtonTap) {
+                    HStack(spacing: awaitingLogConfirmation ? 8 : 0) {
+                        if awaitingLogConfirmation {
+                            Image(systemName: "hand.tap.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(logButtonConfirmForeground)
+                        }
+                        Text(awaitingLogConfirmation ? "Confirm" : "Tap to log")
                     }
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Color(hex: "#2F352F"))
+                    .foregroundColor(awaitingLogConfirmation ? logButtonConfirmForeground : logButtonDefaultForeground)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(hex: "#E0E7DC"))
-                    )
-                }
-                .buttonStyle(ScaleButtonStyle())
-
-                Button(action: onEditTap) {
-                    HStack {
-                        Text("Edit")
-                    }
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E0E7DC"))
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#E0E7DC").opacity(0.4), lineWidth: 1)
+                            .fill(awaitingLogConfirmation ? logButtonConfirmBackground : logButtonDefaultBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(
+                                        awaitingLogConfirmation ? logButtonConfirmBackground.opacity(0.6) : Color.clear,
+                                        lineWidth: awaitingLogConfirmation ? 1 : 0
+                                    )
+                            )
                     )
                 }
                 .buttonStyle(ScaleButtonStyle())
@@ -1218,6 +1240,9 @@ fileprivate struct CabinetMedicationRow: View {
                 longPressHint
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
+        }
+        .onDisappear {
+            resetLogConfirmation()
         }
         .padding(18)
         .background(
@@ -1263,6 +1288,58 @@ fileprivate struct CabinetMedicationRow: View {
                 }
             }
         }
+    }
+
+    private var requiresLogConfirmation: Bool {
+        medication.frequency == "As needed"
+    }
+
+    private var logButtonDefaultForeground: Color {
+        Color(hex: "#2F352F")
+    }
+
+    private var logButtonDefaultBackground: Color {
+        Color(hex: "#E0E7DC")
+    }
+
+    private var logButtonConfirmForeground: Color {
+        Color(hex: "#424C43")
+    }
+
+    private var logButtonConfirmBackground: Color {
+        Color(hex: "#D9DDD7")
+    }
+
+    private func handleLogButtonTap() {
+        guard requiresLogConfirmation else {
+            onLogTap()
+            return
+        }
+
+        if awaitingLogConfirmation {
+            resetLogConfirmation()
+            onLogTap()
+        } else {
+            startLogConfirmation()
+        }
+    }
+
+    private func startLogConfirmation() {
+        awaitingLogConfirmation = true
+        logConfirmationWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem {
+            awaitingLogConfirmation = false
+            logConfirmationWorkItem = nil
+        }
+        logConfirmationWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + confirmationDuration, execute: workItem)
+    }
+
+    private func resetLogConfirmation() {
+        awaitingLogConfirmation = false
+        logConfirmationWorkItem?.cancel()
+        logConfirmationWorkItem = nil
     }
 }
 
