@@ -545,11 +545,11 @@ fileprivate func MedicationsListContent(
                             HapticManager.shared.lightImpact()
                             selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
                         },
-                        onDeleteTap: med.logEntryID == nil ? {
+                        onDeleteTap: {
                             HapticManager.shared.warningNotification()
                             medicationToDelete.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
                             showDeleteAlert.wrappedValue = true
-                        } : nil
+                        }
                     )
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
