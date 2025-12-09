@@ -1568,7 +1568,7 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     private var headerTitleOpacity: Double {
-        if cycleStatus == .taken {
+        if cycleStatus == .taken || cycleStatus == .skipped {
             return 0.55
         }
         return headerIsLoggedStatus ? 0.9 : 1.0
@@ -1762,7 +1762,7 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     private var actionConfirmationAppearance: (iconName: String, text: String, fgColor: Color, bgColor: Color) {
-        (iconName: "hand.tap.fill", text: "Tap to confirm", fgColor: confirmForegroundColor, bgColor: confirmBackgroundColor)
+        (iconName: "hand.tap.fill", text: "Confirm", fgColor: confirmForegroundColor, bgColor: confirmBackgroundColor)
     }
 
     var body: some View {
@@ -1950,6 +1950,7 @@ fileprivate struct MedicationRowHeaderView: View {
         let confirmTextFont: Font = isConfirmingDose
             ? .system(.callout, design: .default)
             : .system(size: 14)
+        let confirmTextMinimumScale: CGFloat = isConfirmingDose ? 0.75 : 0.94
         let skipAccentColor = Color(hex: "#E08D8A")
         let skipButtonWidth: CGFloat = max(logButtonMinWidth * 0.8, 82)
 
@@ -1983,11 +1984,11 @@ fileprivate struct MedicationRowHeaderView: View {
                                     .foregroundColor(confirmForegroundColor)
                             }
 
-                            Text(isConfirmingDose ? "Tap to confirm" : state.actionLabel)
+                            Text(isConfirmingDose ? "Confirm" : state.actionLabel)
                                 .font(confirmTextFont)
                                 .fontWeight(.medium)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.94)
+                                .minimumScaleFactor(confirmTextMinimumScale)
                                 .allowsTightening(true)
 
                             if !isConfirmingDose, state.status == .pending {
@@ -2382,7 +2383,7 @@ struct MedicationRow: View {
 
     private var cardBackgroundColor: Color {
         let baseColor = Color(hex: "#5B695D")
-        if isTakenStatus {
+        if usesLoggedCardStyle {
             return takenCardColor.opacity(0.65)
         }
         return isLoggedStatus ? baseColor.opacity(1.0) : baseColor.opacity(0.92)
@@ -2411,58 +2412,58 @@ struct MedicationRow: View {
     }
 
     private var cardPrimaryShadowOpacity: Double {
-        if isTakenStatus {
+        if usesLoggedCardStyle {
             return 0.015
         }
         return isLoggedStatus ? 0.18 : 0.25
     }
 
     private var cardPrimaryShadowRadius: CGFloat {
-        if isTakenStatus {
+        if usesLoggedCardStyle {
             return 2
         }
         return isLoggedStatus ? 10 : 12
     }
 
     private var cardPrimaryShadowYOffset: CGFloat {
-        if isTakenStatus {
+        if usesLoggedCardStyle {
             return 0.5
         }
         return isLoggedStatus ? 4 : 6
     }
 
     private var cardSecondaryShadowOpacity: Double {
-        if isTakenStatus {
+        if usesLoggedCardStyle {
             return 0
         }
         return isLoggedStatus ? 0.08 : 0.1
     }
 
     private var cardSecondaryShadowRadius: CGFloat {
-        if isTakenStatus {
+        if usesLoggedCardStyle {
             return 0
         }
         return isLoggedStatus ? 3 : 4
     }
 
     private var cardSecondaryShadowYOffset: CGFloat {
-        if isTakenStatus {
+        if usesLoggedCardStyle {
             return 0
         }
         return isLoggedStatus ? 1 : 2
     }
 
-    private var isTakenStatus: Bool {
-        cycleStatus == .taken
+    private var usesLoggedCardStyle: Bool {
+        switch cycleStatus {
+        case .taken, .skipped:
+            return true
+        default:
+            return false
+        }
     }
 
-    private var skippedIndicatorColor: Color {
+    private var skippedAccentColor: Color {
         Color(hex: "#FF6B6B")
-    }
-
-    private var leadingIndicatorConfig: (color: Color, width: CGFloat)? {
-        guard case .skipped = cycleStatus else { return nil }
-        return (skippedIndicatorColor, 4)
     }
 
     var body: some View {
@@ -2493,7 +2494,7 @@ struct MedicationRow: View {
                     skipDose(at: doseIndex)
                 },
                 highlightedDoseIndex: highlightedDoseIndex,
-                compactLayout: isTakenStatus
+                compactLayout: usesLoggedCardStyle
             )
             
             if showsDetails {
@@ -2508,15 +2509,6 @@ struct MedicationRow: View {
             cardBackgroundColor
         )
         .cornerRadius(14)
-        .overlay(alignment: .leading) {
-            if let config = leadingIndicatorConfig {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(config.color)
-                    .mask(
-                        LeadingStripeMask(width: config.width, cornerRadius: 14)
-                    )
-            }
-        }
         .overlay(notificationGlowOverlay)
         .overlay(alignment: .topTrailing) {
             Button(action: {
@@ -2602,13 +2594,16 @@ struct MedicationRow: View {
     private var enhancedBorderOverlay: some View {
         let (borderColor, borderWidth): (Color, CGFloat)
         
+        var showSkippedGlow = false
+
         switch cycleStatus {
         case .taken:
             borderColor = Color(hex: "#D7CCC8").opacity(0.35)
             borderWidth = 0.6
         case .skipped:
-            borderColor = Color(hex: "#FF6B6B")
-            borderWidth = 2.0
+            borderColor = skippedAccentColor
+            borderWidth = 1.4
+            showSkippedGlow = true
         case .overdue(_):
             borderColor = Color(hex: "#FFB74D")
             borderWidth = 2.0
@@ -2621,59 +2616,28 @@ struct MedicationRow: View {
             borderWidth = 0.0
         }
         
-        return RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .stroke(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        borderColor.opacity(0.8),
-                        borderColor.opacity(0.4)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: borderWidth
-            )
-    }
+        return ZStack {
+            if showSkippedGlow {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(skippedAccentColor.opacity(0.3), lineWidth: borderWidth * 3.2)
+                    .blur(radius: 6)
+                    .padding(-6)
+                    .blendMode(.screen)
+                    .allowsHitTesting(false)
+            }
 
-    private struct LeadingStripeMask: Shape {
-        var width: CGFloat
-        var cornerRadius: CGFloat
-
-        func path(in rect: CGRect) -> Path {
-            let stripeWidth = min(width, rect.width)
-            let radius = min(cornerRadius, rect.height / 2, stripeWidth / 2)
-            let stripeRect = CGRect(x: rect.minX, y: rect.minY, width: stripeWidth, height: rect.height)
-
-            var path = Path()
-            let topLeft = CGPoint(x: stripeRect.minX, y: stripeRect.minY)
-            let topRight = CGPoint(x: stripeRect.maxX, y: stripeRect.minY)
-            let bottomRight = CGPoint(x: stripeRect.maxX, y: stripeRect.maxY)
-            let bottomLeft = CGPoint(x: stripeRect.minX, y: stripeRect.maxY)
-
-            path.move(to: CGPoint(x: topLeft.x, y: topLeft.y + radius))
-            path.addArc(
-                center: CGPoint(x: topLeft.x + radius, y: topLeft.y + radius),
-                radius: radius,
-                startAngle: Angle(degrees: 180),
-                endAngle: Angle(degrees: 270),
-                clockwise: false
-            )
-
-            path.addLine(to: topRight)
-            path.addLine(to: bottomRight)
-
-            path.addArc(
-                center: CGPoint(x: bottomLeft.x + radius, y: bottomLeft.y - radius),
-                radius: radius,
-                startAngle: Angle(degrees: 90),
-                endAngle: Angle(degrees: 180),
-                clockwise: false
-            )
-
-            path.addLine(to: CGPoint(x: bottomLeft.x, y: bottomLeft.y - radius))
-            path.closeSubpath()
-
-            return path
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            borderColor.opacity(0.65),
+                            borderColor.opacity(0.3)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: borderWidth
+                )
         }
     }
 
