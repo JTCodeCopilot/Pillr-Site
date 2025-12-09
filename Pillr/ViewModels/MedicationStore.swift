@@ -814,11 +814,6 @@ class MedicationStore: ObservableObject {
                 print("CloudKit medication delete failed: \(error)")
             }
         }
-
-        let relatedLogs = logs.filter { $0.medicationID == medication.id }
-        for log in relatedLogs {
-            syncDeleteLog(log)
-        }
     }
 
     private func syncDeleteLog(_ log: MedicationLog) {
