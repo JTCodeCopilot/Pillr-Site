@@ -22,28 +22,28 @@ struct PremiumUpgradeView: View {
                                 icon: "pills.fill",
                                 title: "Unlimited Medications",
                                 description: "Track all of your medications without limits",
-                                iconColor: Color(hex: "#D4AF37")
+                                iconColor: Color(hex: "#F1F3F0")
                             )
 
                             PremiumFeature(
                                 icon: "hourglass",
                                 title: "AI Interaction Analysis",
                                 description: "Check for potential medication interactions",
-                                iconColor: Color(hex: "#D4AF37")
+                                iconColor: Color(hex: "#F1F3F0")
                             )
 
                             PremiumFeature(
                                 icon: "number.circle.fill",
                                 title: "Pill Count Tracking",
                                 description: "Monitor inventory and get refill reminders",
-                                iconColor: Color(hex: "#D4AF37")
+                                iconColor: Color(hex: "#F1F3F0")
                             )
 
                             PremiumFeature(
                                 icon: "arrow.clockwise.circle.fill",
                                 title: "Smart Reminders",
                                 description: "Follow-up alerts if you miss a dose",
-                                iconColor: Color(hex: "#D4AF37")
+                                iconColor: Color(hex: "#F1F3F0")
                             )
                         }
                         .padding(.top, 10)
@@ -87,7 +87,7 @@ struct PremiumUpgradeView: View {
                                     HStack(alignment: .center, spacing: 2) {
                                         if isButtonLoading && !isPreview {
                                             ProgressView()
-                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#4B534A")))
                                                 .scaleEffect(0.8)
                                             Text("Processing...")
                                                 .font(.system(.callout, weight: .medium))
@@ -96,22 +96,22 @@ struct PremiumUpgradeView: View {
                                                 .font(.system(.callout, weight: .medium))
                                         }
                                     }
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Color(hex: "#4B534A"))
                                     .frame(maxWidth: .infinity)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 23)
                                     .background(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(hex: "#D4AF37"),
-                                                Color(hex: "#D4AF37")
+                                                Color(hex: "#F1F3F0"),
+                                                Color(hex: "#F1F3F0")
                                             ]),
                                             startPoint: .top,
                                             endPoint: .bottom
                                         )
                                     )
                                     .cornerRadius(14)
-                                    .shadow(color: Color(hex: "#D4AF37").opacity(0.4), radius: 10, x: 0, y: 4)
+                                    .shadow(color: Color(hex: "#F1F3F0").opacity(0.4), radius: 10, x: 0, y: 4)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
@@ -127,7 +127,7 @@ struct PremiumUpgradeView: View {
                                     HStack(alignment: .center, spacing: 2) {
                                         if isButtonLoading && !isPreview {
                                             ProgressView()
-                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#4B534A")))
                                                 .scaleEffect(0.8)
                                             Text("Processing...")
                                                 .font(.system(.callout, weight: .medium))
@@ -136,22 +136,22 @@ struct PremiumUpgradeView: View {
                                                 .font(.system(.callout, weight: .medium))
                                         }
                                     }
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Color(hex: "#4B534A"))
                                     .frame(maxWidth: .infinity)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 23)
                                     .background(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
-                                                Color(hex: "#D4AF37"),
-                                                Color(hex: "#D4AF37")
+                                                Color(hex: "#F1F3F0"),
+                                                Color(hex: "#F1F3F0")
                                             ]),
                                             startPoint: .top,
                                             endPoint: .bottom
                                         )
                                     )
                                     .cornerRadius(14)
-                                    .shadow(color: Color(hex: "#D4AF37").opacity(0.4), radius: 10, x: 0, y: 4)
+                                    .shadow(color: Color(hex: "#F1F3F0").opacity(0.4), radius: 10, x: 0, y: 4)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
@@ -179,8 +179,8 @@ struct PremiumUpgradeView: View {
                             }) {
                                 Text("Restore Purchases")
                                     .font(.system(size: 15))
-                                    .foregroundColor(Color(hex: "#F4D37E"))
-                                    .underline(true, color: Color(hex: "#F4D37E"))
+                                    .foregroundColor(Color(hex: "#F1F3F0"))
+                                    .underline(true, color: Color(hex: "#F1F3F0"))
                                     .padding(.vertical, 8)
                             }
                             .padding(.top, 6)
@@ -190,7 +190,7 @@ struct PremiumUpgradeView: View {
                         VStack(spacing: 4) {
                             HStack {
                                 Image(systemName: "info.circle.fill")
-                                    .foregroundColor(Color(hex: "#D4AF37"))
+                                    .foregroundColor(Color(hex: "#F1F3F0"))
                                     .font(.system(size: 18))
                                 
                                 Text("Medical Disclaimer")
@@ -206,11 +206,11 @@ struct PremiumUpgradeView: View {
                                 .multilineTextAlignment(.leading)
                         }
                         .padding(14)
-                        .background(Color(hex: "#D4AF37").opacity(0.16))
+                        .background(Color(hex: "#F1F3F0").opacity(0.16))
                         .cornerRadius(10)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color(hex: "#D4AF37").opacity(0.35), lineWidth: 1)
+                                .stroke(Color(hex: "#F1F3F0").opacity(0.35), lineWidth: 1)
                         )
                         
                         Spacer(minLength: 20)
@@ -225,18 +225,14 @@ struct PremiumUpgradeView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: { dismiss() }) {
-                        Text("Close")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(Color(hex: "#FFFFFF"))
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 16)
-                            .contentShape(RoundedRectangle(cornerRadius: 16))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                            )
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(10)
                     }
+                    .contentShape(Circle())
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Close premium upgrade sheet")
                 }
             }
         }
@@ -398,23 +394,24 @@ struct PricingOption: View {
     }
     
     var body: some View {
+        let selectionColor = Color(hex: "#4B534A")
         Button(action: action) {
             HStack(spacing: 16) {
                 // Selection indicator
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color(hex: "#D4AF37") : Color(hex: "#999999").opacity(0.4), lineWidth: 2)
+                        .stroke(isSelected ? selectionColor : Color(hex: "#999999").opacity(0.4), lineWidth: 2)
                         .frame(width: 26, height: 26)
                         .background(
                             Circle()
-                                .fill(isSelected ? Color(hex: "#D4AF37") : Color.clear)
+                                .fill(isSelected ? Color(hex: "#F1F3F0").opacity(0.5) : Color.clear)
                                 .frame(width: 26, height: 26)
                         )
                     
                     if isSelected {
                         Image(systemName: "checkmark")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(selectionColor)
                     }
                 }
                 
@@ -430,7 +427,7 @@ struct PricingOption: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
-                                .background(Color(hex: "#D4AF37"))
+                                .background(Color(hex: "#F1F3F0"))
                                 .cornerRadius(4)
                                 .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.center] }
                         }
@@ -441,7 +438,7 @@ struct PricingOption: View {
                     HStack {
                         Text(price)
                             .font(.system(size: 22, weight: .heavy))
-                            .foregroundColor(Color(hex: "#D4AF37"))
+                            .foregroundColor(Color(hex: "#F1F3F0"))
                         
                         Text(period)
                             .font(.system(size: 15))
@@ -465,7 +462,7 @@ struct PricingOption: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(
-                                isSelected ? Color(hex: "#D4AF37").opacity(0.45) : Color(hex: "#999999").opacity(0.15),
+                                isSelected ? Color(hex: "#F1F3F0").opacity(0.45) : Color(hex: "#999999").opacity(0.15),
                                 lineWidth: isSelected ? 1.4 : 0.7
                             )
                     )

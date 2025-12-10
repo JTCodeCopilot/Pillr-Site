@@ -34,10 +34,9 @@ class PillrAppDelegate: NSObject, UIApplicationDelegate {
 
 @main
 struct PillrApp: App {
-    // IMPORTANT: This app uses only local device storage (UserDefaults)
-    // All medication data and history remains on device
-    // Data is only removed when the app is completely uninstalled
-    // No cloud sync, iCloud, or external servers are used for data storage
+    // IMPORTANT: Free users keep their medication data locally in UserDefaults.
+    // Premium users unlock iCloud sync for cross-device data mirroring.
+    // Data is only removed when the app is completely uninstalled.
     
     @UIApplicationDelegateAdaptor private var appDelegate: PillrAppDelegate
     

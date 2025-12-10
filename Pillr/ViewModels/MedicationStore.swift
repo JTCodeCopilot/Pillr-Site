@@ -38,6 +38,7 @@ class MedicationStore: ObservableObject {
     private let notificationManager = NotificationManager.shared
     private let hapticManager = HapticManager.shared
     private let cloudSync = CloudKitMedicationSync.shared
+    private var premiumStatusObserver: AnyCancellable?
     
     // Shared instance for access from notification handlers
     static let shared = MedicationStore()
@@ -56,6 +57,10 @@ class MedicationStore: ObservableObject {
     private let logsKey = "medicationLogsData"
     private let isPreviewMode: Bool
 
+    private var shouldUseCloudSync: Bool {
+        !isPreviewMode && UserSettings.shared.isPremiumUser
+    }
+
     var activeMedications: [Medication] {
         medications
     }
@@ -65,7 +70,10 @@ class MedicationStore: ObservableObject {
         if !isPreview {
             loadMedications()
             loadLogs()
-            fetchCloudData()
+            if shouldUseCloudSync {
+                fetchCloudData()
+            }
+            observePremiumStatusChanges()
         }
     }
     
@@ -770,7 +778,7 @@ class MedicationStore: ObservableObject {
     }
     
     private func fetchCloudData() {
-        guard !isPreviewMode else { return }
+        guard shouldUseCloudSync else { return }
         cloudSync.fetchAllRecords { [weak self] result in
             guard let self else { return }
             switch result {
@@ -784,7 +792,7 @@ class MedicationStore: ObservableObject {
     }
 
     private func syncMedicationWithCloud(_ medication: Medication) {
-        guard !isPreviewMode else { return }
+        guard shouldUseCloudSync else { return }
         cloudSync.save(medication: medication) { [weak self] result in
             switch result {
             case let .success(record):
@@ -798,7 +806,7 @@ class MedicationStore: ObservableObject {
     }
 
     private func syncLogWithCloud(_ log: MedicationLog) {
-        guard !isPreviewMode else { return }
+        guard shouldUseCloudSync else { return }
         guard let medication = medications.first(where: { $0.id == log.medicationID }) else { return }
         cloudSync.save(log: log, medication: medication) { result in
             if case let .failure(error) = result {
@@ -808,7 +816,7 @@ class MedicationStore: ObservableObject {
     }
 
     private func syncDeleteMedication(_ medication: Medication) {
-        guard !isPreviewMode else { return }
+        guard shouldUseCloudSync else { return }
         cloudSync.deleteMedication(withID: medication.id) { result in
             if case let .failure(error) = result {
                 print("CloudKit medication delete failed: \(error)")
@@ -817,7 +825,7 @@ class MedicationStore: ObservableObject {
     }
 
     private func syncDeleteLog(_ log: MedicationLog) {
-        guard !isPreviewMode else { return }
+        guard shouldUseCloudSync else { return }
         cloudSync.delete(log: log) { result in
             if case let .failure(error) = result {
                 print("CloudKit log delete failed: \(error)")
@@ -826,7 +834,7 @@ class MedicationStore: ObservableObject {
     }
 
     private func updateCloudLastModified(for medicationID: UUID, date: Date) {
-        guard !isPreviewMode else { return }
+        guard shouldUseCloudSync else { return }
         if let index = medications.firstIndex(where: { $0.id == medicationID }) {
             var medication = medications[index]
             medication.cloudLastModified = date
@@ -932,6 +940,16 @@ class MedicationStore: ObservableObject {
         }
 
         return mutable
+    }
+
+    private func observePremiumStatusChanges() {
+        premiumStatusObserver = UserSettings.shared.$isPremiumUser
+            .dropFirst()
+            .removeDuplicates()
+            .sink { [weak self] isPremium in
+                guard let self = self, isPremium else { return }
+                self.fetchCloudData()
+            }
     }
 
     // Made public to support previews

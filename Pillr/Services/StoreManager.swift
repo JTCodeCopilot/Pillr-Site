@@ -19,7 +19,8 @@ class StoreManager: ObservableObject {
     
     // Flag to disable StoreKit and force premium for local testing
     #if DEBUG
-    private let isTestMode = true
+    /// Set `PILLR_ENABLE_TEST_PREMIUM=1` in the environment to keep premium unlocked in debug builds.
+    private let isTestMode = ProcessInfo.processInfo.environment["PILLR_ENABLE_TEST_PREMIUM"] == "1"
     #else
     private let isTestMode = false
     #endif
