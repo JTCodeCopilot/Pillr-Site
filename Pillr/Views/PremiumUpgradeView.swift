@@ -13,75 +13,32 @@ struct PremiumUpgradeView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#525E55").ignoresSafeArea()
+                Color(hex: "#4B534A").ignoresSafeArea()
                 
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Header
-                        VStack(spacing: 14) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color(hex: "#D4AF37"),
-                                                Color(hex: "#D4AF37")
-                                            ]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .frame(width: 100, height: 100)
-                                    .shadow(color: Color(hex: "#ffffff").opacity(0.4), radius: 12, x: 0, y: 5)
-                                
-                                Image(systemName: "hourglass")
-                                    .font(.system(size: 44, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
-                            .accessibilityHidden(true)
-                            .padding(.top, 10)
-                            
-                            VStack(spacing: 14) {
-                                Text("Pillr Premium")
-                                    .font(.system(size: 32, weight: .bold))
-                                    .foregroundColor(Color(hex: "#FFFFFF"))
-                                
-                                Text("Advanced Management")
-                                    .font(.system(size: 22, weight: .bold))
-                                    .foregroundColor(Color(hex: "#D4AF37"))
-                                
-                            }
-                        }
-                        
-                        // Features
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Premium Features")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(Color(hex: "#FFFFFF"))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 4)
-                            
+                        VStack(alignment: .leading, spacing: 3) {
                             PremiumFeature(
                                 icon: "pills.fill",
                                 title: "Unlimited Medications",
                                 description: "Track all of your medications without limits",
                                 iconColor: Color(hex: "#D4AF37")
                             )
-                            
+
                             PremiumFeature(
                                 icon: "hourglass",
                                 title: "AI Interaction Analysis",
                                 description: "Check for potential medication interactions",
                                 iconColor: Color(hex: "#D4AF37")
                             )
-                            
+
                             PremiumFeature(
                                 icon: "number.circle.fill",
                                 title: "Pill Count Tracking",
                                 description: "Monitor inventory and get refill reminders",
                                 iconColor: Color(hex: "#D4AF37")
                             )
-                            
+
                             PremiumFeature(
                                 icon: "arrow.clockwise.circle.fill",
                                 title: "Smart Reminders",
@@ -89,12 +46,15 @@ struct PremiumUpgradeView: View {
                                 iconColor: Color(hex: "#D4AF37")
                             )
                         }
+                        .padding(.top, 10)
                         
                         // Pricing
                         VStack(spacing: 24) {
                             Text("ONE-TIME PURCHASE")
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.system(size: 24, weight: .semibold))
                                 .foregroundColor(Color(hex: "#FFFFFF"))
+                                .kerning(1.3)
+                                .padding(.top, 2)
                             
                             VStack(spacing: 12) {
                                 if let product = storeManager.getPremiumProduct() {
@@ -124,24 +84,22 @@ struct PremiumUpgradeView: View {
                                     isButtonLoading = true
                                     purchasePremium(product: product)
                                 }) {
-                                    HStack {
+                                    HStack(alignment: .center, spacing: 2) {
                                         if isButtonLoading && !isPreview {
                                             ProgressView()
                                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                                 .scaleEffect(0.8)
                                             Text("Processing...")
-                                                .font(.system(size: 18, weight: .semibold))
+                                                .font(.system(.callout, weight: .medium))
                                         } else {
-                                            Image(systemName: "crown.fill")
-                                                .font(.system(size: 18, weight: .bold))
-                                            
                                             Text("Purchase for \(product.displayPrice)")
-                                                .font(.system(size: 18, weight: .bold))
+                                                .font(.system(.callout, weight: .medium))
                                         }
                                     }
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 18)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 23)
                                     .background(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
@@ -152,37 +110,36 @@ struct PremiumUpgradeView: View {
                                             endPoint: .bottom
                                         )
                                     )
-                                    .cornerRadius(16)
-                                    .shadow(color: Color(hex: "#D4AF37").opacity(0.5), radius: 10, x: 0, y: 4)
+                                    .cornerRadius(14)
+                                    .shadow(color: Color(hex: "#D4AF37").opacity(0.4), radius: 10, x: 0, y: 4)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
                                 .animation(.easeInOut(duration: 0.1), value: isButtonLoading)
                                 .disabled(isButtonLoading && !isPreview)
                                 .accessibilityLabel("Purchase Pillr Premium for \(product.displayPrice)")
+                                .padding(.top, 4)
                             } else {
                                 Button(action: {
                                     alertMessage = "Products are currently unavailable. Please try again later."
                                     showingAlert = true
                                 }) {
-                                    HStack {
+                                    HStack(alignment: .center, spacing: 2) {
                                         if isButtonLoading && !isPreview {
                                             ProgressView()
                                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                                 .scaleEffect(0.8)
                                             Text("Processing...")
-                                                .font(.system(size: 18, weight: .semibold))
+                                                .font(.system(.callout, weight: .medium))
                                         } else {
-                                            Image(systemName: "crown.fill")
-                                                .font(.system(size: 18, weight: .bold))
-                                            
                                             Text("Purchase Unavailable")
-                                                .font(.system(size: 18, weight: .bold))
+                                                .font(.system(.callout, weight: .medium))
                                         }
                                     }
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 18)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 23)
                                     .background(
                                         LinearGradient(
                                             gradient: Gradient(colors: [
@@ -193,14 +150,15 @@ struct PremiumUpgradeView: View {
                                             endPoint: .bottom
                                         )
                                     )
-                                    .cornerRadius(16)
-                                    .shadow(color: Color(hex: "#D4AF37").opacity(0.5), radius: 10, x: 0, y: 4)
+                                    .cornerRadius(14)
+                                    .shadow(color: Color(hex: "#D4AF37").opacity(0.4), radius: 10, x: 0, y: 4)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
                                 .animation(.easeInOut(duration: 0.1), value: isButtonLoading)
                                 .disabled(isButtonLoading && !isPreview)
                                 .accessibilityLabel("Purchase Pillr Premium (unavailable)")
+                                .padding(.top, 4)
                             }
                             
                             // Continue with free version
@@ -208,11 +166,12 @@ struct PremiumUpgradeView: View {
                                 dismiss()
                             }) {
                                 Text("Continue with Free Version")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(hex: "#CCCCCC"))
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(Color(hex: "#CCCCCC").opacity(0.8))
                                     .padding(.vertical, 12)
                             }
                             .accessibilityLabel("Continue with free version of Pillr")
+                            .padding(.top, 4)
                             
                             // Restore purchases
                             Button(action: {
@@ -220,14 +179,15 @@ struct PremiumUpgradeView: View {
                             }) {
                                 Text("Restore Purchases")
                                     .font(.system(size: 15))
-                                    .foregroundColor(Color(hex: "#D4AF37"))
-                                    .underline()
+                                    .foregroundColor(Color(hex: "#F4D37E"))
+                                    .underline(true, color: Color(hex: "#F4D37E"))
                                     .padding(.vertical, 8)
                             }
+                            .padding(.top, 6)
                         }
                         
                         // Disclaimer
-                        VStack(spacing: 6) {
+                        VStack(spacing: 4) {
                             HStack {
                                 Image(systemName: "info.circle.fill")
                                     .foregroundColor(Color(hex: "#D4AF37"))
@@ -245,30 +205,38 @@ struct PremiumUpgradeView: View {
                                 .foregroundColor(Color(hex: "#CCCCCC"))
                                 .multilineTextAlignment(.leading)
                         }
-                        .padding(8)
-                        .background(Color(hex: "#D4AF37").opacity(0.1))
-                        .cornerRadius(12)
+                        .padding(14)
+                        .background(Color(hex: "#D4AF37").opacity(0.16))
+                        .cornerRadius(10)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(hex: "#D4AF37").opacity(0.3), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color(hex: "#D4AF37").opacity(0.35), lineWidth: 1)
                         )
                         
                         Spacer(minLength: 20)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    .padding(.bottom, 32)
+                    .padding(.top, 4)
+                    .padding(.bottom, 40)
                 }
             }
             .navigationTitle("Premium Upgrade")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") {
-                        dismiss()
+                    Button(action: { dismiss() }) {
+                        Text("Close")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(Color(hex: "#FFFFFF"))
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 16)
+                            .contentShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                            )
                     }
-                    .foregroundColor(Color(hex: "#FFFFFF"))
-                    .font(.system(size: 16, weight: .medium))
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -370,38 +338,43 @@ struct PremiumFeature: View {
     let iconColor: Color
     
     var body: some View {
-        HStack(spacing: 18) {
-            ZStack {
-                Circle()
-                    .fill(iconColor.opacity(0.15))
-                    .frame(width: 54, height: 54)
+        VStack(spacing: 0) {
+            HStack(spacing: 18) {
+                ZStack {
+                    Circle()
+                        .fill(iconColor.opacity(0.2))
+                        .frame(width: 56, height: 56)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundColor(iconColor)
+                }
                 
-                Image(systemName: icon)
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundColor(iconColor)
-            }
-            
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title)
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(Color(hex: "#FFFFFF"))
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(title)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(Color(hex: "#FFFFFF"))
+                    
+                    Text(description)
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "#CCCCCC"))
+                        .multilineTextAlignment(.leading)
+                }
                 
-                Text(description)
-                    .font(.system(size: 15))
-                    .foregroundColor(Color(hex: "#CCCCCC"))
-                    .multilineTextAlignment(.leading)
+                Spacer()
             }
-            
-            Spacer()
+            .padding(.vertical, 20)
+            .padding(.horizontal, 24)
         }
-        .padding(16)
-        .background(Color.black.opacity(0.2))
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(iconColor.opacity(0.2), lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.black.opacity(0.2))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(iconColor.opacity(0.2), lineWidth: 1)
+                )
         )
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
     }
 }
 
@@ -445,7 +418,7 @@ struct PricingOption: View {
                     }
                 }
                 
-                VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 11) {
                     HStack {
                         Text(title)
                             .font(.system(size: 18, weight: .bold))
@@ -455,10 +428,11 @@ struct PricingOption: View {
                             Text("POPULAR")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 8)
+                                .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
                                 .background(Color(hex: "#D4AF37"))
-                                .cornerRadius(6)
+                                .cornerRadius(4)
+                                .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.center] }
                         }
                         
                         Spacer()
@@ -466,7 +440,7 @@ struct PricingOption: View {
                     
                     HStack {
                         Text(price)
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 22, weight: .heavy))
                             .foregroundColor(Color(hex: "#D4AF37"))
                         
                         Text(period)
@@ -484,19 +458,19 @@ struct PricingOption: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 18)
+            .padding(.vertical, 22)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.black.opacity(0.25))
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.black.opacity(0.32))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 10)
                             .stroke(
-                                isSelected ? Color(hex: "#D4AF37") : Color(hex: "#999999").opacity(0.2),
-                                lineWidth: isSelected ? 2 : 1
+                                isSelected ? Color(hex: "#D4AF37").opacity(0.45) : Color(hex: "#999999").opacity(0.15),
+                                lineWidth: isSelected ? 1.4 : 0.7
                             )
                     )
             )
-            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+            .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 5)
         }
         .buttonStyle(PlainButtonStyle())
     }
