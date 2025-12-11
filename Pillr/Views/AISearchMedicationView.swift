@@ -6,7 +6,7 @@ struct AISearchMedicationView: View {
     @EnvironmentObject var storeManager: StoreManager
     @State private var searchQuery = ""
     @State private var isSearching = false
-    @State private var searchResults: [MedicationSearchResult] = []
+    @State private var searchOptions: [MedicationSearchResult] = []
     @State private var errorMessage: String? = nil
     @State private var showingPremiumUpgrade = false
     
@@ -67,7 +67,7 @@ struct AISearchMedicationView: View {
                         if !searchQuery.isEmpty {
                             Button(action: {
                                 searchQuery = ""
-                                searchResults = []
+                                searchOptions = []
                                 errorMessage = nil
                             }) {
                                 Image(systemName: "xmark.circle.fill")
@@ -130,7 +130,7 @@ struct AISearchMedicationView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 30)
-                        } else if searchResults.isEmpty && !searchQuery.isEmpty {
+                        } else if searchOptions.isEmpty && !searchQuery.isEmpty {
                             // No results view
                             VStack(spacing: 16) {
                                 Image(systemName: "pills.circle")
@@ -149,12 +149,12 @@ struct AISearchMedicationView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 30)
-                        } else if !searchResults.isEmpty {
+                        } else if !searchOptions.isEmpty {
                             // Results list
                             ScrollView {
                                 LazyVStack(spacing: 16) {
-                                    ForEach(searchResults) { result in
-                                        medicationResultCard(result)
+                                    ForEach(Array(searchOptions.enumerated()), id: \.element.id) { index, result in
+                                        medicationResultCard(result, index: index + 1, total: searchOptions.count)
                                             .onTapGesture {
                                                 HapticManager.shared.mediumImpact()
                                                 onSelectMedication(result)
@@ -212,7 +212,7 @@ struct AISearchMedicationView: View {
         }
         .onChange(of: searchQuery) { _, newValue in
             if newValue.isEmpty {
-                searchResults = []
+                searchOptions = []
                 errorMessage = nil
             }
         }
@@ -286,7 +286,7 @@ struct AISearchMedicationView: View {
     }
     
     // Medication result card
-    private func medicationResultCard(_ result: MedicationSearchResult) -> some View {
+    private func medicationResultCard(_ result: MedicationSearchResult, index: Int, total: Int) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             // Medication name and add button
             HStack {
@@ -325,6 +325,10 @@ struct AISearchMedicationView: View {
                 .accessibilityHint("Adds this medication to your list")
             }
             
+            Text("Option \(index) of \(total)")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+            
             // Description
             Text(result.description)
                 .font(.system(size: 14))
@@ -356,6 +360,20 @@ struct AISearchMedicationView: View {
                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                 }
             }
+            
+            if let note = result.distinguishingNote?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !note.isEmpty {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "#F5F5F5"))
+
+                    Text(note)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
         .padding()
         .background(
@@ -376,7 +394,7 @@ struct AISearchMedicationView: View {
         
         isSearching = true
         errorMessage = nil
-        searchResults = []
+        searchOptions = []
         
         // Make sure we have premium access
         guard userSettings.isPremiumUser else {
@@ -388,20 +406,22 @@ struct AISearchMedicationView: View {
         // Use the OpenAI service to get medication information
         Task {
             do {
-                let result = try await OpenAIService.shared.getMedicationInfo(medicationName: searchQuery)
-                
+                let results = try await OpenAIService.shared.getMedicationInfoOptions(medicationName: searchQuery)
+
                 await MainActor.run {
-                    searchResults = [result]
+                    searchOptions = results
                     isSearching = false
                 }
             } catch OpenAIError.premiumRequired {
                 await MainActor.run {
                     isSearching = false
                     showingPremiumUpgrade = true
+                    searchOptions = []
                 }
             } catch {
                 await MainActor.run {
                     isSearching = false
+                    searchOptions = []
                     errorMessage = "No medications found matching '\(searchQuery)'. Try a different search term or add your medication manually."
                 }
             }
@@ -416,6 +436,7 @@ struct MedicationSearchResult: Identifiable {
     let description: String
     let commonDosage: String?
     let needToKnow: String?
+    let distinguishingNote: String?
 }
 
 // Preview

@@ -244,25 +244,28 @@ struct OpenAIService {
         return interactions
     }
     
-    func getMedicationInfo(medicationName: String) async throws -> MedicationSearchResult {
+    func getMedicationInfoOptions(medicationName: String) async throws -> [MedicationSearchResult] {
         guard UserSettings.shared.hasAIAccess() else {
             throw OpenAIError.premiumRequired
         }
         
         let prompt = """
-        Provide detailed information about the medication: \(medicationName)
-        
-        Return ONLY a valid JSON object. No explanations, no markdown, just the JSON.
-        
+        Provide up to three helpful medication options for the query: \(medicationName)
+
+        Return ONLY a valid JSON array. No explanations, no markdown, just the JSON.
+
         Format:
-        {
-          "name": "Exact proper medication name with correct spelling and formatting (do not keep user's misspellings)",
-          "description": "Brief description of the medication, its purpose, and important information",
-          "commonDosage": "Common dosage information without using 'The' at the beginning (e.g., 'typical starting dose is' instead of 'The typical starting dose is')",
-          "needToKnow": "Important administration information such as whether to take with/without food, specific timing requirements, storage needs, side effects to watch for, etc."
-        }
-        
-        If you don't have information about this medication, return a JSON with "unknown" as name.
+        [
+          {
+            "name": "Exact proper medication name with correct spelling and formatting (do not keep the user's misspellings)",
+            "description": "Brief description of the medication, its purpose, and important information",
+            "commonDosage": "Common dosage information without using 'The' at the beginning (e.g., 'typical starting dose is' instead of 'The typical starting dose is')",
+            "needToKnow": "Important administration information such as whether to take with/without food, specific timing requirements, storage needs, side effects to watch for, etc.",
+            "distinguishingNote": "Why this option was chosen (for example why it matches the query or how it differs from other candidates)"
+          }
+        ]
+
+        If you do not have reliable information, return [].
         """
         
         do {
@@ -282,33 +285,42 @@ struct OpenAIService {
             
             // Clean and extract JSON from the response
             let cleanedContent = extractJSON(from: content)
-            
+
             guard let jsonData = cleanedContent.data(using: .utf8) else {
                 throw OpenAIError.invalidJSONResponse
             }
-            
-            // Try to decode the medication info
+
             struct MedicationInfoResponse: Codable {
                 let name: String
                 let description: String
                 let commonDosage: String?
                 let needToKnow: String?
+                let distinguishingNote: String?
             }
-            
-            let medicationInfo = try JSONDecoder().decode(MedicationInfoResponse.self, from: jsonData)
-            
-            if medicationInfo.name.lowercased() == "unknown" {
+
+            let medicationInfo = try JSONDecoder().decode([MedicationInfoResponse].self, from: jsonData)
+
+            let options = medicationInfo.compactMap { info -> MedicationSearchResult? in
+                let trimmedName = info.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedName.isEmpty, trimmedName.lowercased() != "unknown" else {
+                    return nil
+                }
+
+                return MedicationSearchResult(
+                    id: UUID().uuidString,
+                    name: trimmedName,
+                    description: info.description,
+                    commonDosage: info.commonDosage,
+                    needToKnow: info.needToKnow,
+                    distinguishingNote: info.distinguishingNote
+                )
+            }
+
+            guard !options.isEmpty else {
                 throw OpenAIError.invalidResponse
             }
-            
-            // Convert to MedicationSearchResult
-            return MedicationSearchResult(
-                id: UUID().uuidString,
-                name: medicationInfo.name,
-                description: medicationInfo.description,
-                commonDosage: medicationInfo.commonDosage,
-                needToKnow: medicationInfo.needToKnow
-            )
+
+            return options
             
         } catch {
             print("Error getting medication info: \(error)")
@@ -394,5 +406,4 @@ enum OpenAIError: LocalizedError {
         }
     }
 } 
-
 
