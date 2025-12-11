@@ -105,20 +105,8 @@ struct PremiumUpgradeView: View {
     }
 
     private var pricingSection: some View {
-        VStack(spacing: 16) {
-            Text("ONE-TIME PURCHASE")
-                .font(.system(size: 24, weight: .semibold, design: .rounded))
-                .foregroundColor(SettingsPalette.mainText)
-                .kerning(1.3)
-
-            PricingOption(
-                title: "Lifetime Premium",
-                price: storeManager.getPremiumProduct()?.displayPrice ?? "Unavailable",
-                period: "",
-                savings: "No subscription required",
-                isPopular: true,
-                isSelected: true
-            ) {}
+        VStack(spacing: 20) {
+            oneTimeHighlightCard
 
             purchaseButtonView(for: storeManager.getPremiumProduct())
 
@@ -138,6 +126,57 @@ struct PremiumUpgradeView: View {
                     .padding(.vertical, 6)
             }
         }
+    }
+
+    private var oneTimeHighlightCard: some View {
+        let priceText = storeManager.getPremiumProduct()?.displayPrice ?? "Unavailable"
+
+        return VStack(spacing: 16) {
+            Text("ONE-TIME PURCHASE")
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                .foregroundColor(SettingsPalette.mainText)
+                .kerning(1.5)
+
+            Capsule()
+                .fill(SettingsPalette.mainText.opacity(0.15))
+                .frame(height: 4)
+                .padding(.horizontal, 32)
+                .accessibilityHidden(true)
+
+            PricingOption(
+                title: "Lifetime Premium",
+                price: priceText,
+                period: "",
+                savings: "No subscription required",
+                isPopular: true,
+                isSelected: true
+            ) {}
+
+            Text("Lifetime access. One payment forever.")
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(SettingsPalette.secondaryText)
+                .multilineTextAlignment(.center)
+                .opacity(0.9)
+        }
+        .padding(22)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hex: "#556358"),
+                            SettingsPalette.cardBackground
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.45), radius: 16, x: 0, y: 10)
     }
 
     @ViewBuilder
