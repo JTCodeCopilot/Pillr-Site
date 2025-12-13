@@ -56,7 +56,7 @@ class UserSettings: ObservableObject {
     private let isPreviewMode: Bool
     
     // Free tier limitations
-    static let maxFreeMedications = 5
+    static let maxFreeMedications = 3
     
     static let shared = UserSettings()
     
@@ -125,4 +125,3 @@ class UserSettings: ObservableObject {
         return isPremiumUser
     }
 } 
-

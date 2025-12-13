@@ -76,7 +76,7 @@ struct EditMedicationView: View {
     
     // Computed properties
     private var needsMultipleReminders: Bool {
-        return frequency == "Twice daily" || frequency == "Three times daily"
+        userSettings.isPremiumUser && isPremiumFrequency(frequency)
     }
     
     private var progressColor: (Int) -> Color {
@@ -306,18 +306,22 @@ struct EditMedicationView: View {
                                         ForEach(frequencies, id: \.self) { freq in
                                             Button(action: {
                                                 HapticManager.shared.lightImpact()
+                                                if isPremiumFrequency(freq) && !userSettings.isPremiumUser {
+                                                    showingPremiumUpgrade = true
+                                                    return
+                                                }
                                                 frequency = freq
                                                 setupReminderTimesForFrequency(freq)
                                                 if freq == "As needed" {
                                                     enableNotification = false
                                                 }
                                             }) {
-                                                Text(freq)
+                                                Text(displayFrequencyName(freq))
                                             }
                                         }
                                     } label: {
                                         HStack {
-                                            Text(frequency)
+                                            Text(displayFrequencyName(frequency))
                                                 .font(.system(size: 15, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
                                                 .lineLimit(1)
@@ -647,6 +651,20 @@ struct EditMedicationView: View {
             }
             .onAppear {
                 setupKeyboardObservers()
+                if !userSettings.isPremiumUser && isPremiumFrequency(frequency) {
+                    frequency = "Once daily"
+                    reminderTimes = []
+                }
+            }
+            .onChange(of: userSettings.isPremiumUser) { isPremium in
+                if !isPremium {
+                    enableDailyCheckIn = false
+                    useCustomDailyCheckInTime = false
+                    if isPremiumFrequency(frequency) {
+                        frequency = "Once daily"
+                    }
+                    reminderTimes = []
+                }
             }
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
@@ -658,6 +676,12 @@ struct EditMedicationView: View {
     // MARK: - Helper Methods
     
     private func setupReminderTimesForFrequency(_ freq: String) {
+        if isPremiumFrequency(freq) && !userSettings.isPremiumUser {
+            showingPremiumUpgrade = true
+            frequency = "Once daily"
+            reminderTimes = []
+            return
+        }
         switch freq {
         case "Twice daily":
             if reminderTimes.count != 2 {
@@ -683,6 +707,17 @@ struct EditMedicationView: View {
             reminderTimes = []
             enableNotification = true
         }
+    }
+
+    private func isPremiumFrequency(_ frequency: String) -> Bool {
+        frequency == "Twice daily" || frequency == "Three times daily"
+    }
+
+    private func displayFrequencyName(_ frequency: String) -> String {
+        if isPremiumFrequency(frequency) && !userSettings.isPremiumUser {
+            return "\(frequency) · Premium"
+        }
+        return frequency
     }
     
     // MARK: - Helper Views
@@ -811,22 +846,46 @@ struct EditMedicationView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle(isOn: $enableDailyCheckIn) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Daily check-in")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                Text("At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication.")
+                                HStack {
+                                    Text("Daily check-in")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                    if !userSettings.isPremiumUser {
+                                        Button(action: {
+                                            showingPremiumUpgrade = true
+                                        }) {
+                                            Text("PREMIUM")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(Color(hex: "#D4A017"))
+                                                .cornerRadius(4)
+                                        }
+                                    }
+                                }
+                                Text(userSettings.isPremiumUser ?
+                                     "At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication." :
+                                        "Daily check-ins require a premium subscription.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                             }
                         }
                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                        .disabled(!userSettings.isPremiumUser)
+                        .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                         .onChange(of: enableDailyCheckIn) { newValue in
+                            guard userSettings.isPremiumUser else {
+                                enableDailyCheckIn = false
+                                useCustomDailyCheckInTime = false
+                                return
+                            }
                             if !newValue {
                                 useCustomDailyCheckInTime = false
                             }
                         }
 
-                        if enableDailyCheckIn {
+                        if enableDailyCheckIn && userSettings.isPremiumUser {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
                                     .font(.system(size: 12))
@@ -856,22 +915,46 @@ struct EditMedicationView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle(isOn: $enableDailyCheckIn) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Daily wellness check-in")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                Text("Get a daily reminder to reflect on how this medication felt.")
+                                HStack {
+                                    Text("Daily wellness check-in")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                    if !userSettings.isPremiumUser {
+                                        Button(action: {
+                                            showingPremiumUpgrade = true
+                                        }) {
+                                            Text("PREMIUM")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(Color(hex: "#D4A017"))
+                                                .cornerRadius(4)
+                                        }
+                                    }
+                                }
+                                Text(userSettings.isPremiumUser ?
+                                     "Get a daily reminder to reflect on how this medication felt." :
+                                        "Daily check-ins require a premium subscription.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                             }
                         }
                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                        .disabled(!userSettings.isPremiumUser)
+                        .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                         .onChange(of: enableDailyCheckIn) { isEnabled in
+                            guard userSettings.isPremiumUser else {
+                                enableDailyCheckIn = false
+                                useCustomDailyCheckInTime = false
+                                return
+                            }
                             if isEnabled {
                                 useCustomDailyCheckInTime = true
                             }
                         }
 
-                        if enableDailyCheckIn {
+                        if enableDailyCheckIn && userSettings.isPremiumUser {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Choose a time for your check-in.")
                                     .font(.system(size: 12))
@@ -1174,13 +1257,17 @@ struct EditMedicationView: View {
         updatedMedication.frequency = frequency
         updatedMedication.medicationType = medicationType
         let hasFocusWindow = medicationType == .stimulant && enableStimulantPhaseNotifications
+        let supportsGeneralCheckIn = medicationType != .stimulant
+        let shouldEnableDailyCheckIn = userSettings.isPremiumUser && enableDailyCheckIn && (hasFocusWindow || supportsGeneralCheckIn)
+        let shouldUseCustomDailyCheckInTime = supportsGeneralCheckIn || useCustomDailyCheckInTime
+        let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && shouldUseCustomDailyCheckInTime) ? customDailyCheckInTime : nil
         if medicationType == .stimulant {
             updatedMedication.isExtendedRelease = isExtendedRelease
             if hasFocusWindow {
                 updatedMedication.onsetMinutes = Int(onsetMinutesString)
                 updatedMedication.durationMinutes = Int(durationMinutesString)
-                updatedMedication.enableDailyCheckIn = enableDailyCheckIn
-                updatedMedication.dailyCheckInTime = (enableDailyCheckIn && useCustomDailyCheckInTime) ? customDailyCheckInTime : nil
+                updatedMedication.enableDailyCheckIn = shouldEnableDailyCheckIn
+                updatedMedication.dailyCheckInTime = shouldEnableDailyCheckIn ? selectedDailyCheckInTime : nil
             } else {
                 updatedMedication.onsetMinutes = nil
                 updatedMedication.durationMinutes = nil
@@ -1192,8 +1279,8 @@ struct EditMedicationView: View {
             updatedMedication.isExtendedRelease = false
             updatedMedication.onsetMinutes = nil
             updatedMedication.durationMinutes = nil
-            updatedMedication.enableDailyCheckIn = enableDailyCheckIn
-            updatedMedication.dailyCheckInTime = enableDailyCheckIn ? customDailyCheckInTime : nil
+            updatedMedication.enableDailyCheckIn = shouldEnableDailyCheckIn
+            updatedMedication.dailyCheckInTime = shouldEnableDailyCheckIn ? selectedDailyCheckInTime : nil
             updatedMedication.enableStimulantPhaseNotifications = false
         }
         updatedMedication.timeToTake = timeToTake

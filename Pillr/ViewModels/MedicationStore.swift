@@ -125,10 +125,15 @@ class MedicationStore: ObservableObject {
             return false // Cannot add medication due to free tier limit
         }
         
+        let isPremiumUser = UserSettings.shared.isPremiumUser
         // Only allow pill tracking for premium users
-        let finalPillCount = UserSettings.shared.isPremiumUser ? pillCount : nil
-        let finalPillsPerDose = UserSettings.shared.isPremiumUser ? pillsPerDose : 1
-        let finalRefillThreshold = UserSettings.shared.isPremiumUser ? refillThreshold : nil
+        let finalPillCount = isPremiumUser ? pillCount : nil
+        let finalPillsPerDose = isPremiumUser ? pillsPerDose : 1
+        let finalRefillThreshold = isPremiumUser ? refillThreshold : nil
+        let finalFrequency = isPremiumUser ? frequency : (frequency == "As needed" ? frequency : "Once daily")
+        let finalReminderTimes = isPremiumUser ? reminderTimes : []
+        let finalEnableDailyCheckIn = isPremiumUser ? enableDailyCheckIn : false
+        let finalDailyCheckInTime = finalEnableDailyCheckIn ? dailyCheckInTime : nil
         
         var newMed = Medication(
             name: name,
@@ -136,16 +141,16 @@ class MedicationStore: ObservableObject {
             dosageUnit: dosageUnit,
             iconName: iconName,
             createdAt: Date(), // Set creation date to now
-            frequency: frequency,
+            frequency: finalFrequency,
             medicationType: medicationType,
             isExtendedRelease: isExtendedRelease,
             onsetMinutes: onsetMinutes,
             durationMinutes: durationMinutes,
-            enableDailyCheckIn: enableDailyCheckIn,
+            enableDailyCheckIn: finalEnableDailyCheckIn,
             enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
-            dailyCheckInTime: enableDailyCheckIn ? dailyCheckInTime : nil,
+            dailyCheckInTime: finalDailyCheckInTime,
             timeToTake: timeToTake,
-            reminderTimes: reminderTimes,
+            reminderTimes: finalReminderTimes,
             notes: notes,
             pillCount: finalPillCount,
             pillsPerDose: finalPillsPerDose,
@@ -190,11 +195,17 @@ class MedicationStore: ObservableObject {
             // Create a mutable copy
             var updatedMedication = medication
             
-            // Only allow pill tracking for premium users
+            // Only allow premium-only features when subscribed
             if !UserSettings.shared.isPremiumUser {
                 updatedMedication.pillCount = nil
                 updatedMedication.pillsPerDose = 1
                 updatedMedication.refillThreshold = nil
+                updatedMedication.enableDailyCheckIn = false
+                updatedMedication.dailyCheckInTime = nil
+                updatedMedication.reminderTimes = []
+                if updatedMedication.frequency != "As needed" {
+                    updatedMedication.frequency = "Once daily"
+                }
             }
             
             // Schedule new notifications if enabled

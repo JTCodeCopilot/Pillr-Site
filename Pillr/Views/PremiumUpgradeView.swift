@@ -14,24 +14,43 @@ struct PremiumUpgradeView: View {
         PremiumFeatureContent(
             icon: "pills.fill",
             title: "Unlimited Medications",
-            description: "Track all of your medications without limits"
+            description: "Track unlimited medications with twice and three time daily reminders."
+        ),
+        PremiumFeatureContent(
+            icon: "icloud",
+            title: "iCloud Sync & Backup",
+            description: "Mirror data through iCloud for seamless recovery"
         ),
         PremiumFeatureContent(
             icon: "hourglass",
             title: "AI Interaction Analysis",
-            description: "Check for potential medication interactions"
+            description: "Instantly review potential medication conflicts"
         ),
         PremiumFeatureContent(
             icon: "number.circle.fill",
             title: "Pill Count Tracking",
-            description: "Monitor inventory and get refill reminders"
+            description: "Inventory dashboards with refill warnings"
         ),
         PremiumFeatureContent(
             icon: "arrow.clockwise.circle.fill",
             title: "Smart Reminders",
-            description: "Follow-up alerts if you miss a dose"
+            description: "Follow-up alerts if you miss or delay a dose"
+        ),
+        PremiumFeatureContent(
+            icon: "list.bullet.rectangle.portrait",
+            title: "Daily Check-Ins",
+            description: "Guided wellness, focus, and side-effect reflections"
         )
     ]
+
+    private var bentoColumns: [GridItem] {
+        [
+            GridItem(
+                .adaptive(minimum: 160, maximum: .infinity),
+                spacing: 12
+            )
+        ]
+    }
 
     var body: some View {
         ZStack {
@@ -97,9 +116,11 @@ struct PremiumUpgradeView: View {
     }
 
     private var featureListSection: some View {
-        VStack(spacing: 12) {
-            ForEach(premiumFeatures, id: \.title) { feature in
-                UpgradeFeatureRow(feature: feature)
+        VStack(alignment: .leading, spacing: 16) {
+            LazyVGrid(columns: bentoColumns, spacing: 12) {
+                ForEach(premiumFeatures, id: \.title) { feature in
+                    BentoFeatureCard(feature: feature)
+                }
             }
         }
     }
@@ -298,6 +319,7 @@ struct PremiumUpgradeView: View {
             }
         }
     }
+
 }
 
 private struct PremiumFeatureContent {
@@ -306,37 +328,43 @@ private struct PremiumFeatureContent {
     let description: String
 }
 
-private struct UpgradeFeatureRow: View {
+private struct BentoFeatureCard: View {
     let feature: PremiumFeatureContent
 
     var body: some View {
-        HStack(spacing: 18) {
-            ZStack {
-                Circle()
-                    .fill(SettingsPalette.secondaryText.opacity(0.2))
-                    .frame(width: 48, height: 48)
-
-                Image(systemName: feature.icon)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(SettingsPalette.mainText)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(feature.title)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .foregroundColor(SettingsPalette.mainText)
-
-                Text(feature.description)
-                    .font(.system(size: 15, weight: .regular, design: .rounded))
-                    .foregroundColor(SettingsPalette.secondaryText)
-                    .multilineTextAlignment(.leading)
-            }
-
-            Spacer()
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: feature.icon)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(SettingsPalette.mainText)
+                .padding(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(0.08))
+                )
+            
+            Text(feature.title)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundColor(SettingsPalette.mainText)
+                .fixedSize(horizontal: false, vertical: true)
+            
+            Text(feature.description)
+                .font(.system(size: 13, weight: .regular, design: .rounded))
+                .foregroundColor(SettingsPalette.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 18)
-        .settingsCardStyle(cornerRadius: 20)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .aspectRatio(1, contentMode: .fit)
     }
 }
 

@@ -3006,6 +3006,13 @@ fileprivate struct MedicationRowDetailsView: View {
             .sorted(by: { $0.takenAt < $1.takenAt })
     }
 
+    private var pillsTakenToday: Int {
+        todaysLogsForMedication.reduce(0) { partial, log in
+            let consumed = log.pillsConsumed ?? medication.pillsPerDose
+            return partial + max(consumed, 0)
+        }
+    }
+
     private var focusWindowTimingEntries: [FocusTimingEntry] {
         guard medication.hasStimulantTiming,
               medication.enableStimulantPhaseNotifications else {
@@ -3217,8 +3224,33 @@ fileprivate struct MedicationRowDetailsView: View {
         )
     }
 
+    private var pillInventoryDetail: (text: String, color: Color)? {
+        guard let pillCount = medication.pillCount else { return nil }
+        var segments: [String] = ["\(pillCount) left"]
+        let takenTodayValue = pillsTakenToday
+        if takenTodayValue > 0 {
+            segments.append("\(takenTodayValue) taken today")
+        }
+        let detailText = segments.joined(separator: " • ")
+        if let threshold = medication.refillThreshold, pillCount <= threshold {
+            return (detailText, Color(hex: "#FFC857"))
+        }
+        return (detailText, Color(hex: "#F5F7F4"))
+    }
+
     private var detailRowEntries: [DetailEntry] {
         var entries: [DetailEntry] = []
+
+        if let inventoryDetail = pillInventoryDetail {
+            entries.append(
+                DetailEntry(
+                    label: "Pill Inventory",
+                    value: inventoryDetail.text,
+                    valueColor: inventoryDetail.color,
+                    lineLimit: 2
+                )
+            )
+        }
 
         if medication.enableDailyCheckIn {
             let checkInDescription: String
