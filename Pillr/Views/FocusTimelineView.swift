@@ -20,6 +20,7 @@ struct FocusTimelineView: View {
         let onsetTime: Date
         let fadeTime: Date
         let status: DoseStatus
+        let scheduledDoseTime: Date?
     }
 
     struct FocusWindowGroup: Identifiable {
@@ -67,7 +68,8 @@ struct FocusTimelineView: View {
                                 doseTime: base,
                                 onsetTime: onset,
                                 fadeTime: fade,
-                                status: status
+                                status: status,
+                                scheduledDoseTime: nil
                             )
                         )
                     }
@@ -109,7 +111,8 @@ struct FocusTimelineView: View {
                                 doseTime: adjustedBase,
                                 onsetTime: adjustedOnset,
                                 fadeTime: adjustedFade,
-                                status: status
+                                status: status,
+                                scheduledDoseTime: base
                             )
                         )
                     }
@@ -429,6 +432,7 @@ private struct FocusWindowRow: View {
             Divider()
                 .background(Color.white.opacity(0.10))
             
+            let hasMultipleDoses = group.windows.count > 1
             ForEach(Array(group.windows.enumerated()), id: \.element.id) { index, window in
                 let isNowInsideWindow = now >= window.onsetTime && now <= window.fadeTime
                 let isAsNeededWithoutReminder = window.medication.frequency == "As needed" && window.medication.reminderTimes.isEmpty
@@ -442,9 +446,11 @@ private struct FocusWindowRow: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Dose \(window.doseIndex + 1)")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                            if hasMultipleDoses {
+                                Text("Dose \(window.doseIndex + 1)")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                            }
                             
                             let statusInfo = statusSubtitle(for: window, isAsNeededWithoutReminder: isAsNeededWithoutReminder)
                             Text(statusInfo.text)
@@ -477,6 +483,13 @@ private struct FocusWindowRow: View {
                         infoRow(title: "Fades", value: formatTime(window.fadeTime))
                     }
                     .padding(.top, 6)
+
+                    if let scheduledReminder = window.scheduledDoseTime {
+                        Text("Based on the \(formatTime(scheduledReminder)) reminder")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.65))
+                            .padding(.top, 2)
+                    }
                 }
             }
         }
@@ -565,11 +578,13 @@ private struct FocusBar: View {
     
     private let totalMinutes: CGFloat = 24 * 60
     private let hourTicks: [CGFloat] = stride(from: 0, through: 24, by: 2).map { CGFloat($0 * 60) }
-    private let hourLabelOpacity: Double = 0.7
+    private let labelRowHeight: CGFloat = 18
+    private let barRowHeight: CGFloat = 18
+    private let hourLabelOpacity: Double = 0.65
     private let trackCornerRadius: CGFloat = 12
-    private let trackFillOpacity: Double = 0.2
+    private let trackFillOpacity: Double = 0.14
     private let handleWidth: CGFloat = 14
-    private let handleHeight: CGFloat = 26
+    private let handleHeight: CGFloat = 22
     private let handleShadowRadius: CGFloat = 4
     
     private func minutesSinceMidnight(_ date: Date) -> CGFloat {
@@ -632,10 +647,8 @@ private struct FocusBar: View {
             let nowX = width * (max(0, min(totalMinutes, nowMinutes)) / totalMinutes)
             let showNowMarker = nowMinutes >= 0 && nowMinutes <= totalMinutes
             
-            let labelRowHeight: CGFloat = 16
-            let barRowHeight: CGFloat = 25
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 // PM hours above the bar
                 ZStack(alignment: .topLeading) {
                     ForEach(hourTicks, id: \.self) { tick in
@@ -646,7 +659,7 @@ private struct FocusBar: View {
                         
                         if isPM(tick) || isRightMidnight {
                             Text(label(for: tick))
-                                .font(.system(size: 9, weight: isMidday ? .semibold : .regular))
+                                .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(Color(hex: "#C7C7BD").opacity(hourLabelOpacity))
                                 .position(x: tickX, y: labelRowHeight / 2)
                         }
@@ -656,10 +669,10 @@ private struct FocusBar: View {
                 
                 // Bar with ticks and "now" marker
                 ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: trackCornerRadius, style: .continuous)
-                    .fill(Color.black.opacity(trackFillOpacity))
-                    .frame(height: 9)
-                    
+                    RoundedRectangle(cornerRadius: trackCornerRadius, style: .continuous)
+                        .fill(Color.black.opacity(trackFillOpacity))
+                        .frame(height: 7)
+                   
                     ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
                         let barStart = width * (segment.start / totalMinutes)
                         let barWidth = max(4, width * ((segment.end - segment.start) / totalMinutes))
@@ -675,18 +688,19 @@ private struct FocusBar: View {
                                     endPoint: .trailing
                                 )
                             )
-                            .frame(width: barWidth, height: 9)
+                            .frame(width: barWidth, height: 7)
                             .offset(x: barStart)
                     }
                     
                     ForEach(hourTicks, id: \.self) { tick in
                         let tickX = width * (tick / totalMinutes)
                         let isMidday = Int(tick) == 12 * 60
-                        
+                        let tickHeight: CGFloat = isMidday ? 12 : 8
+
                         Rectangle()
                             .fill(Color.white.opacity(isMidday ? 0.35 : 0.18))
-                            .frame(width: 1, height: isMidday ? 10 : 6)
-                            .offset(x: tickX - 0.5, y: 10)
+                            .frame(width: 1, height: tickHeight)
+                            .offset(x: tickX - 0.5, y: (barRowHeight / 2) - (tickHeight / 2))
                     }
                     
                     if showNowMarker {
@@ -700,6 +714,7 @@ private struct FocusBar: View {
                     }
                 }
                 .frame(height: barRowHeight)
+                .padding(.vertical, 6)
                 
                 // AM hours below the bar
                 ZStack(alignment: .topLeading) {
@@ -711,7 +726,7 @@ private struct FocusBar: View {
                         
                         if !isPM(tick) || isLeftMidnight {
                             Text(label(for: tick))
-                                .font(.system(size: 9, weight: isMidday ? .semibold : .regular))
+                                .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(Color(hex: "#C7C7BD").opacity(hourLabelOpacity))
                                 .position(x: tickX, y: labelRowHeight / 2)
                         }
@@ -721,18 +736,16 @@ private struct FocusBar: View {
                 
                 HStack {
                     Text("am")
-                        .font(.system(size: 9))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                        .baselineOffset(2)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.52))
                     Spacer()
                     Text("pm")
-                        .font(.system(size: 9))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-                        .baselineOffset(2)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.52))
                 }
             }
         }
-        .frame(height: 64)
+        .frame(height: 90)
     }
 }
 
@@ -778,6 +791,15 @@ struct ADHDDoseTimelineSheet: View {
         return "Expected focus window ~\(start) to ~\(end)."
     }
 
+    private var medicationCategoryLabel: String {
+        entry.medication.medicationType == .stimulant ? "Stimulant" : entry.medication.medicationType.displayName
+    }
+
+    private var pillInventoryDescription: String? {
+        guard let count = entry.medication.pillCount, count > 0 else { return nil }
+        return "\(count) tablets"
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -790,23 +812,36 @@ struct ADHDDoseTimelineSheet: View {
             )
             .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 28) {
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "hourglass")
                         .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(Color(hex: "#D7CCC8"))
+                        .foregroundColor(Color(hex: "#D7CCC8").opacity(0.6))
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Today's focus timeline")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.vertical, 4)
 
                         Text(entry.medication.name)
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(Color(hex: "#C7C7BD"))
 
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(medicationCategoryLabel)
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundColor(Color.white.opacity(0.88))
+
+                            if let inventoryDescription = pillInventoryDescription {
+                                Text(inventoryDescription)
+                                    .font(.system(size: 12, weight: .regular))
+                                    .foregroundColor(Color.white.opacity(0.58))
+                            }
+                        }
+
                         Text("\(entry.medication.dosage) \(entry.medication.dosageUnit)")
-                            .font(.system(size: 13))
+                            .font(.system(size: 13, weight: .regular))
                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                             .padding(.top, 4)
                     }
@@ -817,56 +852,52 @@ struct ADHDDoseTimelineSheet: View {
                     fadeTime: entry.fadeTime,
                     now: Date()
                 )
-                .padding(.top, 4)
+                .padding(.top, 12)
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
                     if let scheduled = entry.scheduledTime {
                         Text("Scheduled for \(formatTime(scheduled)), logged at \(formatTime(entry.actualTime)).")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                     } else {
                         Text("Logged at \(formatTime(entry.actualTime)).")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                     }
 
                     Text(effectWindowDescription)
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                        .padding(.top, 8)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.92))
 
                     if let shift = shiftDescription {
                         Text(shift)
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.55))
                     }
                 }
-                .padding(.top, 4)
+                .padding(.top, 16)
 
                 Spacer()
 
-                HStack {
-                    Spacer()
-                    Button {
-                        HapticManager.shared.lightImpact()
-                        dismiss()
-                    } label: {
-                        Text("Close")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#404C42"))
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color(hex: "#D7CCC8"))
-                            )
-                    }
-                    .buttonStyle(ScaleButtonStyle())
+                Button {
+                    HapticManager.shared.lightImpact()
+                    dismiss()
+                } label: {
+                    Text("Close")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.9))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            Capsule()
+                                .fill(Color.white.opacity(0.12))
+                        )
                 }
+                .buttonStyle(ScaleButtonStyle())
             }
             .padding(.horizontal, 20)
             .padding(.top, 32)
-            .padding(.bottom, 16)
+            .padding(.bottom, 28)
         }
     }
 }

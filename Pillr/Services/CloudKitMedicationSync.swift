@@ -52,6 +52,7 @@ final class CloudKitMedicationSync {
         static let focusRating = "focusRating"
         static let sideEffectSeverity = "sideEffectSeverity"
         static let notesLog = "notes"
+        static let hiddenFromMyMeds = "hiddenFromMyMeds"
     }
 
     // MARK: - Public API
@@ -262,6 +263,7 @@ final class CloudKitMedicationSync {
         let record = CKRecord(recordType: RecordType.medicationLog.rawValue, recordID: recordID)
         record[Field.medicationName] = log.medicationName as CKRecordValue
         record[Field.takenAt] = log.takenAt as CKRecordValue
+        record[Field.hiddenFromMyMeds] = NSNumber(value: log.hiddenFromMyMeds)
         record[Field.skipped] = log.skipped as CKRecordValue
         if let notes = log.notes {
             record[Field.notesLog] = notes as CKRecordValue
@@ -388,6 +390,7 @@ final class CloudKitMedicationSync {
         let reminderIndex = record[Field.reminderIndex] as? Int
         let focusRating = record[Field.focusRating] as? Int
         let sideEffectSeverity = record[Field.sideEffectSeverity] as? Int
+        let hiddenFromMyMeds = record[Field.hiddenFromMyMeds] as? Bool ?? false
 
         return MedicationLog(
             id: id,
@@ -399,7 +402,8 @@ final class CloudKitMedicationSync {
             pillsConsumed: pillsConsumed,
             reminderIndex: reminderIndex,
             focusRating: focusRating,
-            sideEffectSeverity: sideEffectSeverity
+            sideEffectSeverity: sideEffectSeverity,
+            hiddenFromMyMeds: hiddenFromMyMeds
         )
     }
 }

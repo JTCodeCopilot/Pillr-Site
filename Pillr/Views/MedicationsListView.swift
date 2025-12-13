@@ -19,6 +19,7 @@ struct MedicationsListView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
     @State private var medicationToDelete: Medication? = nil
+    @State private var logToDelete: MedicationLog? = nil
     @State private var showDeleteAlert = false
     @State private var showingInteractionSheet = false
     @State private var showingMedicationSelectionSheet = false
@@ -55,6 +56,7 @@ struct MedicationsListView: View {
         return cabinetMedications.flatMap { medication in
             let todaysLogs = store.logs.filter { log in
                 log.medicationID == medication.id &&
+                !log.hiddenFromMyMeds &&
                 calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
             }
             return todaysLogs.map { log in
@@ -75,6 +77,7 @@ struct MedicationsListView: View {
             showingLogSheetFor: $showingLogSheetFor,
             selectedMedicationToEdit: $selectedMedicationToEdit,
             medicationToDelete: $medicationToDelete,
+            logToDelete: $logToDelete,
             showDeleteAlert: $showDeleteAlert,
             showingInteractionSheet: $showingInteractionSheet,
             isCheckingInteractions: $isCheckingInteractions,
@@ -122,17 +125,26 @@ struct MedicationsListView: View {
             )
         }
         .alert(isPresented: $showDeleteAlert) {
-            Alert(
-                title: Text("Delete Medication"),
-                message: Text("Deleting \(medicationToDelete?.name ?? "this medication") will permanently remove it and it cannot be restored unless you enter it again."),
-                primaryButton: .destructive(Text("Delete")) {
+            let isDeletingLogEntry = logToDelete != nil
+            return Alert(
+                title: Text(isDeletingLogEntry ? "Hide Log Entry" : "Delete Medication"),
+                message: Text(
+                    isDeletingLogEntry
+                        ? "Hiding this entry removes it from the My Meds view only; the cabinet copy and history entry stay intact, and you can fully remove the medication from the Cabinet if needed."
+                        : "Deleting \(medicationToDelete?.name ?? "this medication") will permanently remove it and it cannot be restored unless you enter it again."
+                ),
+                primaryButton: .destructive(Text(isDeletingLogEntry ? "Hide from My Meds" : "Delete")) {
                     if let med = medicationToDelete {
                         store.deleteMedication(med)
+                    } else if let log = logToDelete {
+                        store.hideLogFromMyMeds(log)
                     }
                     medicationToDelete = nil
+                    logToDelete = nil
                 },
                 secondaryButton: .cancel {
                     medicationToDelete = nil
+                    logToDelete = nil
                 }
             )
         }
@@ -523,6 +535,7 @@ fileprivate func MedicationsListContent(
     showingLogSheetFor: Binding<Medication?>,
     selectedMedicationToEdit: Binding<Medication?>,
     medicationToDelete: Binding<Medication?>,
+    logToDelete: Binding<MedicationLog?>,
     showDeleteAlert: Binding<Bool>,
     showingInteractionSheet: Binding<Bool>,
     isCheckingInteractions: Binding<Bool>,
@@ -534,28 +547,35 @@ fileprivate func MedicationsListContent(
 ) -> some View {
     VStack(alignment: .leading, spacing: 16) {
         ForEach(sortedMedications(medications, logs: store.logs, referenceDate: referenceDate)) { med in
-                    MedicationRow(
-                        medication: med,
-                        referenceDate: referenceDate,
-                        onLogTap: {
-                            HapticManager.shared.lightImpact()
-                            showingLogSheetFor.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                        },
-                        onEditTap: {
-                            HapticManager.shared.lightImpact()
-                            selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                        },
-                        onDeleteTap: {
-                            HapticManager.shared.warningNotification()
-                            medicationToDelete.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                            showDeleteAlert.wrappedValue = true
-                        }
-                    )
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
-                    removal: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.95))
-                ))
-                .id(med.id)
+            MedicationRow(
+                medication: med,
+                referenceDate: referenceDate,
+                onLogTap: {
+                    HapticManager.shared.lightImpact()
+                    showingLogSheetFor.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+                },
+                onEditTap: {
+                    HapticManager.shared.lightImpact()
+                    selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+                },
+                onDeleteTap: {
+                    HapticManager.shared.warningNotification()
+                    if let logEntryID = med.logEntryID,
+                       let logEntry = store.logs.first(where: { $0.id == logEntryID }) {
+                        logToDelete.wrappedValue = logEntry
+                        medicationToDelete.wrappedValue = nil
+                    } else {
+                        medicationToDelete.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+                        logToDelete.wrappedValue = nil
+                    }
+                    showDeleteAlert.wrappedValue = true
+                }
+            )
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.95)),
+                removal: .opacity.combined(with: .move(edge: .leading)).combined(with: .scale(scale: 0.95))
+            ))
+            .id(med.id)
         }
     }
     .padding(.horizontal, horizontalInsets)
@@ -1350,6 +1370,7 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var showingLogSheetFor: Medication?
     @Binding var selectedMedicationToEdit: Medication?
     @Binding var medicationToDelete: Medication?
+    @Binding var logToDelete: MedicationLog?
     @Binding var showDeleteAlert: Bool
     @Binding var showingInteractionSheet: Bool
     @Binding var isCheckingInteractions: Bool
@@ -1412,6 +1433,7 @@ fileprivate struct MedicationsListMainContent: View {
                                 showingLogSheetFor: $showingLogSheetFor,
                                 selectedMedicationToEdit: $selectedMedicationToEdit,
                                 medicationToDelete: $medicationToDelete,
+                                logToDelete: $logToDelete,
                                 showDeleteAlert: $showDeleteAlert,
                                 showingInteractionSheet: $showingInteractionSheet,
                                 isCheckingInteractions: $isCheckingInteractions,
@@ -2577,7 +2599,8 @@ struct MedicationRow: View {
             if showsDetails {
                 MedicationRowDetailsView(
                     medication: medication,
-                    onEditTap: onEditTap,
+                    referenceDate: referenceDate,
+                    onEditTap: onEditTap
                 )
                 .padding(.top, 12)
             }
@@ -2586,6 +2609,7 @@ struct MedicationRow: View {
             cardBackgroundColor
         )
         .cornerRadius(14)
+        .overlay(loggedCheckmarkOverlay, alignment: .topTrailing)
         .overlay(notificationGlowOverlay)
         .overlay(alignment: .topTrailing) {
             Button(action: {
@@ -2665,6 +2689,26 @@ struct MedicationRow: View {
             .blendMode(.screen)
             .allowsHitTesting(false)
             .animation(.easeInOut(duration: 0.35), value: isNotificationGlowActive)
+    }
+
+    @ViewBuilder
+    private var loggedCheckmarkOverlay: some View {
+        if usesLoggedCardStyle {
+            GeometryReader { geometry in
+                HStack {
+                    Spacer()
+                    Image(systemName: "checkmark")
+                        .font(.system(size: geometry.size.height * 0.9, weight: .heavy, design: .rounded))
+                        .foregroundColor(Color.white)
+                        .opacity(0.015)
+                        .rotationEffect(.degrees(-10))
+                        .frame(height: geometry.size.height * 0.9)
+                        .padding(.trailing, 18)
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
+            }
+            .allowsHitTesting(false)
+        }
     }
     
     // Enhanced border overlay with better visual feedback
@@ -2904,41 +2948,123 @@ extension MedicationCycleStatus: Equatable {
 // MARK: - MedicationRowDetailsView
 fileprivate struct MedicationRowDetailsView: View {
     let medication: Medication
+    let referenceDate: Date
     let onEditTap: () -> Void
-
-    private var baseTimeForTiming: Date {
-        // Use the first reminder time if available, otherwise fall back to the primary time
-        medication.reminderTimes.first ?? medication.timeToTake
-    }
-
-    private var reminderTimesString: String {
-        if medication.reminderTimes.isEmpty {
-            return commonFormatTime(medication.timeToTake) // Fallback to single timeToTake
-        }
-        return medication.reminderTimes.map { commonFormatTime($0) }.joined(separator: ", ")
-    }
+    @EnvironmentObject var store: MedicationStore
 
     private var notificationsEnabled: Bool {
         return !(medication.notificationID == nil && medication.notificationIDs.isEmpty)
     }
-    
-    private var stimulantTimingSummary: String? {
-        guard medication.hasStimulantTiming,
-              medication.enableStimulantPhaseNotifications,
-              let onset = medication.onsetMinutes,
-              let duration = medication.durationMinutes else { return nil }
-        
+
+    private var todaysLogsForMedication: [MedicationLog] {
         let calendar = Calendar.current
-        let base = baseTimeForTiming
-        
-        guard let onsetDate = calendar.date(byAdding: .minute, value: onset, to: base),
-              let fadeDate = calendar.date(byAdding: .minute, value: duration, to: base) else {
-            return nil
+        return store.logs
+            .filter { log in
+                log.medicationID == medication.logIdentifier &&
+                !log.hiddenFromMyMeds &&
+                !log.skipped &&
+                calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
+            }
+            .sorted(by: { $0.takenAt < $1.takenAt })
+    }
+
+    private var focusWindowTimingEntries: [FocusTimingEntry] {
+        guard medication.hasStimulantTiming,
+              medication.enableStimulantPhaseNotifications else {
+            return []
         }
-        
-        let onsetString = commonFormatTime(onsetDate)
-        let fadeString = commonFormatTime(fadeDate)
-        return "Starts ~\(onsetString), wears off ~\(fadeString)"
+
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: referenceDate)
+
+        if medication.frequency == "As needed" && medication.reminderTimes.isEmpty {
+            return todaysLogsForMedication.map { FocusTimingEntry(baseTime: $0.takenAt, source: .logged) }
+        }
+
+        var entries: [FocusTimingEntry] = []
+        var unassignedLogs = todaysLogsForMedication.filter { $0.reminderIndex == nil }
+        let scheduledTimes = medication.reminderTimes.isEmpty ? [medication.timeToTake] : medication.reminderTimes
+
+        for (index, rawTime) in scheduledTimes.enumerated() {
+            let components = calendar.dateComponents([.hour, .minute], from: rawTime)
+            guard let scheduledBase = calendar.date(
+                bySettingHour: components.hour ?? 8,
+                minute: components.minute ?? 0,
+                second: 0,
+                of: dayStart
+            ) else {
+                continue
+            }
+
+            let scheduledIndex = medication.reminderTimes.isEmpty ? nil : index
+            let (baseTime, source) = actualDoseTime(
+                for: scheduledIndex,
+                scheduledBase: scheduledBase,
+                unassignedLogs: &unassignedLogs
+            )
+            entries.append(
+                FocusTimingEntry(baseTime: baseTime, source: source)
+            )
+        }
+
+        return entries
+    }
+
+    private func actualDoseTime(
+        for scheduledIndex: Int?,
+        scheduledBase: Date,
+        unassignedLogs: inout [MedicationLog]
+    ) -> (baseTime: Date, source: FocusTimingSource) {
+        if let index = scheduledIndex,
+           let matchingLog = todaysLogsForMedication.first(where: { $0.reminderIndex == index }) {
+            return (matchingLog.takenAt, .logged)
+        }
+
+        if !unassignedLogs.isEmpty {
+            return (unassignedLogs.removeFirst().takenAt, .logged)
+        }
+
+        return (scheduledBase, .scheduled)
+    }
+
+    private enum FocusTimingSource {
+        case scheduled
+        case logged
+    }
+
+    private struct FocusTimingEntry: Identifiable {
+        let id = UUID()
+        let baseTime: Date
+        let source: FocusTimingSource
+    }
+
+    private struct FocusWindowDescription: Identifiable {
+        let id = UUID()
+        let summary: String
+        let source: FocusTimingSource
+    }
+
+    private var focusWindowDescriptions: [FocusWindowDescription] {
+        guard let onset = medication.onsetMinutes,
+              let duration = medication.durationMinutes else {
+            return []
+        }
+
+        let entries = focusWindowTimingEntries
+        guard !entries.isEmpty else { return [] }
+
+        let calendar = Calendar.current
+        return entries.enumerated().compactMap { index, entry in
+            guard let onsetDate = calendar.date(byAdding: .minute, value: onset, to: entry.baseTime),
+                  let fadeDate = calendar.date(byAdding: .minute, value: duration, to: entry.baseTime) else {
+                return nil
+            }
+            let onsetString = commonFormatTime(onsetDate)
+            let fadeString = commonFormatTime(fadeDate)
+            let labelPrefix = entries.count > 1 ? "Dose \(index + 1) • " : ""
+            let summary = "\(labelPrefix)Starts ~\(onsetString), wears off ~\(fadeString)"
+            return FocusWindowDescription(summary: summary, source: entry.source)
+        }
     }
 
     var body: some View {
@@ -2968,6 +3094,31 @@ fileprivate struct MedicationRowDetailsView: View {
                     .padding(.horizontal, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
+
+                if !focusWindowDescriptions.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Focus Window:")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        ForEach(focusWindowDescriptions) { entry in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(entry.summary)
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Color(hex: "#F5F7F4"))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(entry.source == .logged ? "Based on logged time" : "Based on reminder time")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.65))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 
                 if let rawNotes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !rawNotes.isEmpty {
                     HStack(alignment: .top, spacing: 10) {
@@ -3030,17 +3181,6 @@ fileprivate struct MedicationRowDetailsView: View {
 
     private var detailRowEntries: [DetailEntry] {
         var entries: [DetailEntry] = []
-
-        if let timingSummary = stimulantTimingSummary {
-            entries.append(
-                DetailEntry(
-                    label: "Focus Window",
-                    value: timingSummary,
-                    lineLimit: 2,
-                    placeValueOnNewLine: true
-                )
-            )
-        }
 
         if medication.enableDailyCheckIn {
             let checkInDescription: String

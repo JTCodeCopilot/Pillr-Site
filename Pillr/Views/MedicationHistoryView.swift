@@ -206,16 +206,16 @@ struct MedicationHistoryView: View {
     }
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 1) {
             Text("History")
                 .font(.system(size: 30, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
             
             Text("Logged doses: \(rangeTakenCount)  •  Adherence: \(rangeAdherenceRate)")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .font(.system(size: 15, weight: .regular))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.65))
         }
-        .padding(.top, 10)
+        .padding(.top, 16)
     }
     
     private var dateRangeFullScreen: some View {
@@ -446,8 +446,8 @@ struct MedicationHistoryView: View {
         GlassContainer(spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Refine history")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
 
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 14) {
@@ -462,6 +462,7 @@ struct MedicationHistoryView: View {
                 }
             }
         }
+        .padding(.top, 16)
     }
 
     private var filterControl: some View {
@@ -512,7 +513,7 @@ struct MedicationHistoryView: View {
                             .font(.system(size: isToday ? 13 : 18, weight: isToday ? .semibold : .bold))
                             .foregroundColor(
                                 isToday
-                                    ? Color(hex: "#C7C7BD").opacity(0.75)
+                                    ? Color(hex: "#C7C7BD").opacity(0.55)
                                     : Color(hex: "#E8E8E0")
                             )
                     }
@@ -530,7 +531,7 @@ struct MedicationHistoryView: View {
                 }
             }
         }
-        .padding(.top, 16)
+        .padding(.top, 28)
     }
     
     private func dayLabel(for date: Date) -> String {
@@ -584,13 +585,13 @@ private struct MedicationTimelineRow: View {
         HStack(alignment: .center, spacing: 12) {
             VStack(spacing: 6) {
                 Circle()
-                    .fill(Color.white.opacity(log.skipped ? 0.45 : 0.65))
+                    .fill(Color.white.opacity(log.skipped ? 0.3 : 0.45))
                     .frame(width: 12, height: 12)
-                    .shadow(color: Color.black.opacity(0.25), radius: 3, x: 0, y: 2)
+                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
                 
                 Rectangle()
-                    .fill(Color.white.opacity(0.08))
-                    .frame(width: 1)
+                    .fill(Color.white.opacity(0.035))
+                    .frame(width: 0.6)
                     .frame(maxHeight: .infinity)
                     .opacity(isLast ? 0 : 1)
             }
@@ -623,15 +624,16 @@ private struct MedicationTimelineRow: View {
                         .foregroundColor(Color(hex: "#E8E8E0"))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.03))
+                        .background(Color.white.opacity(0.015))
                         .cornerRadius(10)
+                        .frame(minWidth: 66, alignment: .trailing)
                 }
                 
-                HStack(spacing: 6) {
+                HStack(spacing: 3) {
                     HistoryChip(
                         icon: log.skipped ? "xmark.circle.fill" : "checkmark.circle.fill",
                         text: log.skipped ? "Skipped" : "Taken",
-                        tint: log.skipped ? Color(hex: "#E0867D") : Color(hex: "#C7C7BD")
+                        tint: log.skipped ? Color(hex: "#D78B7E") : Color(hex: "#C7C7BD")
                     )
                     
                     if let pills = log.pillsConsumed {
@@ -642,10 +644,12 @@ private struct MedicationTimelineRow: View {
                         )
                     }
                     
-                    if let reminder = log.reminderIndex {
+                    if let reminder = log.reminderIndex,
+                       let medication,
+                       medication.reminderTimes.count > 1 {
                         HistoryChip(
                             icon: "bell.badge.fill",
-                            text: "Reminder \(reminder + 1)",
+                            text: "Dose \(reminder + 1)",
                             tint: Color(hex: "#C7C7BD").opacity(0.9)
                         )
                     }
@@ -690,14 +694,14 @@ private struct MedicationTimelineRow: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(Color.white.opacity(0.05))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .stroke(Color.white.opacity(0.07), lineWidth: 1)
                     )
             )
-            .shadow(color: Color.black.opacity(0.25), radius: 18, x: 0, y: 8)
+            .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 5)
         }
     }
 }
@@ -708,7 +712,7 @@ private struct HistoryChip: View {
     let tint: Color
     
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 3) {
             Image(systemName: icon)
                 .font(.caption.weight(.medium))
             Text(text)
@@ -1031,7 +1035,7 @@ private struct HistoryControlButton: View {
     let detail: String?
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(alignment: .firstTextBaseline, spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
                 .frame(width: 36, height: 36)
@@ -1044,8 +1048,9 @@ private struct HistoryControlButton: View {
                                 .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
                         )
                 )
+                .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(title.uppercased())
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
@@ -1067,12 +1072,12 @@ private struct HistoryControlButton: View {
             Spacer()
 
             Image(systemName: "chevron.down")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 9, weight: .semibold))
                 .foregroundColor(Color(hex: "#C7C7BD"))
-                .opacity(0.55)
+                .opacity(0.35)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)

@@ -536,6 +536,23 @@ class MedicationStore: ObservableObject {
         }
     }
 
+    func deleteLog(_ log: MedicationLog) {
+        guard let index = logs.firstIndex(where: { $0.id == log.id }) else { return }
+        logs.remove(at: index)
+        saveLogs()
+        syncDeleteLog(log)
+    }
+
+    func hideLogFromMyMeds(_ log: MedicationLog) {
+        guard let index = logs.firstIndex(where: { $0.id == log.id }) else { return }
+        var updatedLog = logs[index]
+        guard !updatedLog.hiddenFromMyMeds else { return }
+        updatedLog.hiddenFromMyMeds = true
+        logs[index] = updatedLog
+        saveLogs()
+        syncLogWithCloud(updatedLog)
+    }
+
     private func preservedReminderIdentifiers(
         for medication: Medication,
         excludingReminderIndex excludedIndex: Int?,

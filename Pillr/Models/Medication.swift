@@ -309,6 +309,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
     var reminderIndex: Int? // Which reminder this log corresponds to (if multiple reminders)
     var focusRating: Int? // 1–5 focus quality rating
     var sideEffectSeverity: Int? // 1–5 overall side-effect severity
+    var hiddenFromMyMeds: Bool = false // Hide from My Meds list while keeping it in history
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -321,6 +322,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         case reminderIndex
         case focusRating
         case sideEffectSeverity
+        case hiddenFromMyMeds
     }
 
     init(
@@ -333,7 +335,8 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         pillsConsumed: Int? = nil,
         reminderIndex: Int? = nil,
         focusRating: Int? = nil,
-        sideEffectSeverity: Int? = nil
+        sideEffectSeverity: Int? = nil,
+        hiddenFromMyMeds: Bool = false
     ) {
         self.id = id
         self.medicationID = medicationID
@@ -345,6 +348,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.reminderIndex = reminderIndex
         self.focusRating = focusRating
         self.sideEffectSeverity = sideEffectSeverity
+        self.hiddenFromMyMeds = hiddenFromMyMeds
     }
 
     init(from decoder: Decoder) throws {
@@ -360,6 +364,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.reminderIndex = try container.decodeIfPresent(Int.self, forKey: .reminderIndex)
         self.focusRating = try container.decodeIfPresent(Int.self, forKey: .focusRating)
         self.sideEffectSeverity = try container.decodeIfPresent(Int.self, forKey: .sideEffectSeverity)
+        self.hiddenFromMyMeds = try container.decodeIfPresent(Bool.self, forKey: .hiddenFromMyMeds) ?? false
     }
 
     func encode(to encoder: Encoder) throws {
@@ -374,5 +379,6 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(reminderIndex, forKey: .reminderIndex)
         try container.encodeIfPresent(focusRating, forKey: .focusRating)
         try container.encodeIfPresent(sideEffectSeverity, forKey: .sideEffectSeverity)
+        try container.encode(hiddenFromMyMeds, forKey: .hiddenFromMyMeds)
     }
 }
