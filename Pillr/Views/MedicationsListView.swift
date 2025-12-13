@@ -29,11 +29,14 @@ struct MedicationsListView: View {
     @State private var showingInteractionResultSheet = false
     @State private var showingPremiumUpgrade = false
     @State private var showingFocusTimeline = false
-    @State private var showingCabinetSheet = false
-    @State private var referenceDate = Date()
-    private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
-    let onShowSettings: () -> Void
-    let onShowHistory: () -> Void
+	    @State private var showingCabinetSheet = false
+	    @State private var referenceDate = Date()
+	    private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+	    @State private var undoToastAction: MedicationStore.LogUndoAction?
+	    @State private var undoToastDismissWorkItem: DispatchWorkItem?
+	    private let undoToastDuration: TimeInterval = 5.0
+	    let onShowSettings: () -> Void
+	    let onShowHistory: () -> Void
 
     init(
         onShowSettings: @escaping () -> Void = {},
@@ -69,33 +72,50 @@ struct MedicationsListView: View {
         reminderMedications + cabinetLogMedications
     }
     
-    var body: some View {
-        MedicationsListMainContent(
-            store: store,
-            showingAddSheet: $showingAddSheet,
-            scrolledOffset: $scrolledOffset,
-            showingLogSheetFor: $showingLogSheetFor,
-            selectedMedicationToEdit: $selectedMedicationToEdit,
-            medicationToDelete: $medicationToDelete,
-            logToDelete: $logToDelete,
-            showDeleteAlert: $showDeleteAlert,
-            showingInteractionSheet: $showingInteractionSheet,
-            isCheckingInteractions: $isCheckingInteractions,
-            onCheckAllInteractions: showMedicationSelectionSheet,
-            onAddMedication: handleAddMedication,
-            onShowHistory: onShowHistory,
-            onShowSettings: onShowSettings,
-            onShowFocusTimeline: { showingFocusTimeline = true },
-            displayedMedications: displayedMedications,
-            cabinetMedications: cabinetMedications,
-            onShowCabinet: { showingCabinetSheet = true },
-            healthKitManager: healthKitManager,
-            referenceDate: referenceDate
-        )
-        .sheet(item: $showingLogSheetFor) { med in
-            LogMedicationView(medicationToLog: med)
-                .environmentObject(store)
+	    var body: some View {
+	        MedicationsListMainContent(
+	            store: store,
+	            showingAddSheet: $showingAddSheet,
+	            scrolledOffset: $scrolledOffset,
+	            showingLogSheetFor: $showingLogSheetFor,
+	            selectedMedicationToEdit: $selectedMedicationToEdit,
+	            medicationToDelete: $medicationToDelete,
+	            logToDelete: $logToDelete,
+	            showDeleteAlert: $showDeleteAlert,
+	            showingInteractionSheet: $showingInteractionSheet,
+	            isCheckingInteractions: $isCheckingInteractions,
+	            onCheckAllInteractions: showMedicationSelectionSheet,
+	            onAddMedication: handleAddMedication,
+	            onShowHistory: onShowHistory,
+	            onShowSettings: onShowSettings,
+	            onShowFocusTimeline: { showingFocusTimeline = true },
+	            onPresentUndoToast: presentUndoToast,
+	            displayedMedications: displayedMedications,
+	            cabinetMedications: cabinetMedications,
+	            onShowCabinet: { showingCabinetSheet = true },
+	            healthKitManager: healthKitManager,
+	            referenceDate: referenceDate
+	        )
+        .overlay(alignment: .bottom) {
+            if let action = undoToastAction {
+                LogUndoToastView(
+                    action: action,
+                    onUndo: {
+                        store.undoLogAction(action)
+                        dismissUndoToast()
+                    },
+                    onDismiss: dismissUndoToast
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 32)
+                .frame(maxWidth: .infinity, alignment: .bottom)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+	        .sheet(item: $showingLogSheetFor) { med in
+	            LogMedicationView(medicationToLog: med, onLogAction: presentUndoToast)
+	                .environmentObject(store)
+	        }
         .fullScreenCover(item: $selectedMedicationToEdit) { med in
             NavigationView {
                 AddMedicationView(
@@ -173,12 +193,12 @@ struct MedicationsListView: View {
                 }
             )
         }
-        .sheet(item: $store.dailyCheckInMedication, onDismiss: {
-            store.dailyCheckInMedication = nil
-        }) { med in
-            LogMedicationView(medicationToLog: med, isDailyCheckIn: true)
-                .environmentObject(store)
-        }
+	        .sheet(item: $store.dailyCheckInMedication, onDismiss: {
+	            store.dailyCheckInMedication = nil
+	        }) { med in
+	            LogMedicationView(medicationToLog: med, isDailyCheckIn: true, onLogAction: presentUndoToast)
+	                .environmentObject(store)
+	        }
         .sheet(item: $store.recentADHDDoseTimeline, onDismiss: {
             store.recentADHDDoseTimeline = nil
         }) { entry in
@@ -209,7 +229,11 @@ struct MedicationsListView: View {
     }
     
     private func showMedicationSelectionSheet() async {
-        showingMedicationSelectionSheet = true
+        if userSettings.hasAIAccess() {
+            showingMedicationSelectionSheet = true
+        } else {
+            showingPremiumUpgrade = true
+        }
     }
 
     private func refreshReferenceDate(resetBadge: Bool) {
@@ -269,27 +293,125 @@ struct MedicationsListView: View {
         return medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "as needed".lowercased()
     }
     
-    private func quickLogCabinetMedication(_ medication: Medication) {
-        showingCabinetSheet = false
-        let resolvedMedication = store.findMedication(with: medication.id) ?? medication
-        store.logMedicationTaken(
-            medication: resolvedMedication,
-            actualTime: Date(),
-            notes: nil,
-            skipped: false,
-            reminderIndex: nil
-        )
-    }
+	    private func quickLogCabinetMedication(_ medication: Medication) {
+	        showingCabinetSheet = false
+	        let resolvedMedication = store.findMedication(with: medication.id) ?? medication
+	        if let action = store.logMedicationTaken(
+	            medication: resolvedMedication,
+	            actualTime: Date(),
+	            notes: nil,
+	            skipped: false,
+	            reminderIndex: nil
+	        ) {
+	            presentUndoToast(action)
+	        }
+	    }
     
-    private func presentEditSheet(for medication: Medication) {
-        showingCabinetSheet = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            selectedMedicationToEdit = medication
-        }
-    }
-}
+	    private func presentEditSheet(for medication: Medication) {
+	        showingCabinetSheet = false
+	        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+	            selectedMedicationToEdit = medication
+	        }
+	    }
+
+	    private func presentUndoToast(_ action: MedicationStore.LogUndoAction) {
+	        undoToastDismissWorkItem?.cancel()
+	        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+	            undoToastAction = action
+	        }
+
+	        let workItem = DispatchWorkItem {
+	            dismissUndoToast()
+	        }
+	        undoToastDismissWorkItem = workItem
+	        DispatchQueue.main.asyncAfter(deadline: .now() + undoToastDuration, execute: workItem)
+	    }
+
+	    private func dismissUndoToast() {
+	        undoToastDismissWorkItem?.cancel()
+	        undoToastDismissWorkItem = nil
+	        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+	            undoToastAction = nil
+	        }
+	    }
+	}
 
 // MARK: - Subviews
+
+fileprivate struct LogUndoToastView: View {
+    let action: MedicationStore.LogUndoAction
+    let onUndo: () -> Void
+    let onDismiss: () -> Void
+
+    private var title: String {
+        action.newLog.skipped ? "Skipped" : "Logged"
+    }
+
+    private var subtitle: String {
+        action.newLog.medicationName
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+                Text(subtitle)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 12)
+
+            Button(action: {
+                HapticManager.shared.lightImpact()
+                onUndo()
+            }) {
+                Text("Undo")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "#2F352F"))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(
+                        Capsule()
+                            .fill(Color(hex: "#E0E7DC"))
+                    )
+            }
+            .buttonStyle(ScaleButtonStyle())
+
+            Button(action: {
+                HapticManager.shared.lightImpact()
+                onDismiss()
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                    .frame(width: 34, height: 34)
+                    .background(
+                        Circle()
+                            .fill(Color.white.opacity(0.08))
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss")
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color(hex: "#2F352F").opacity(0.94))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 8)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(subtitle)")
+        .accessibilityHint("Undo to revert this action.")
+    }
+}
 
 @ViewBuilder
 fileprivate func EmptyMedicationsView(onAddMedication: @escaping () -> Void) -> some View {
@@ -528,36 +650,38 @@ fileprivate func calculateDueTime(
 
 @ViewBuilder
 fileprivate func MedicationsListContent(
-    store: MedicationStore,
-    showingAddSheet: Binding<Bool>,
-    scrolledOffset: Binding<CGFloat>,
-    horizontalInsets: CGFloat,
-    showingLogSheetFor: Binding<Medication?>,
-    selectedMedicationToEdit: Binding<Medication?>,
-    medicationToDelete: Binding<Medication?>,
-    logToDelete: Binding<MedicationLog?>,
-    showDeleteAlert: Binding<Bool>,
-    showingInteractionSheet: Binding<Bool>,
-    isCheckingInteractions: Binding<Bool>,
-    onCheckAllInteractions: @escaping () async -> Void,
-    onAddMedication: @escaping () -> Void,
-    onShowFocusTimeline: @escaping () -> Void,
-    medications: [Medication],
-    referenceDate: Date
-) -> some View {
-    VStack(alignment: .leading, spacing: 16) {
-        ForEach(sortedMedications(medications, logs: store.logs, referenceDate: referenceDate)) { med in
-            MedicationRow(
-                medication: med,
-                referenceDate: referenceDate,
-                onLogTap: {
-                    HapticManager.shared.lightImpact()
-                    showingLogSheetFor.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                },
-                onEditTap: {
-                    HapticManager.shared.lightImpact()
-                    selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-                },
+	    store: MedicationStore,
+	    showingAddSheet: Binding<Bool>,
+	    scrolledOffset: Binding<CGFloat>,
+	    horizontalInsets: CGFloat,
+	    showingLogSheetFor: Binding<Medication?>,
+	    selectedMedicationToEdit: Binding<Medication?>,
+	    medicationToDelete: Binding<Medication?>,
+	    logToDelete: Binding<MedicationLog?>,
+	    showDeleteAlert: Binding<Bool>,
+	    showingInteractionSheet: Binding<Bool>,
+	    isCheckingInteractions: Binding<Bool>,
+	    onCheckAllInteractions: @escaping () async -> Void,
+	    onAddMedication: @escaping () -> Void,
+	    onShowFocusTimeline: @escaping () -> Void,
+	    onPresentUndoToast: @escaping (MedicationStore.LogUndoAction) -> Void,
+	    medications: [Medication],
+	    referenceDate: Date
+	) -> some View {
+	    VStack(alignment: .leading, spacing: 16) {
+	        ForEach(sortedMedications(medications, logs: store.logs, referenceDate: referenceDate)) { med in
+	            MedicationRow(
+	                medication: med,
+	                referenceDate: referenceDate,
+	                onPresentUndoToast: onPresentUndoToast,
+	                onLogTap: {
+	                    HapticManager.shared.lightImpact()
+	                    showingLogSheetFor.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+	                },
+	                onEditTap: {
+	                    HapticManager.shared.lightImpact()
+	                    selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+	                },
                 onDeleteTap: {
                     HapticManager.shared.warningNotification()
                     if let logEntryID = med.logEntryID,
@@ -1182,9 +1306,6 @@ fileprivate struct CabinetMedicationRow: View {
     let onEditTap: () -> Void
     let onDeleteTap: (() -> Void)?
     @State private var showDetails = false
-    @State private var awaitingLogConfirmation = false
-    @State private var logConfirmationWorkItem: DispatchWorkItem?
-    private let confirmationDuration: TimeInterval = 5.0
 
     private var detailSubtitle: String {
         if medication.frequency == "As needed" {
@@ -1228,29 +1349,17 @@ fileprivate struct CabinetMedicationRow: View {
             }
 
             HStack(spacing: 12) {
-                Button(action: handleLogButtonTap) {
-                    HStack(spacing: awaitingLogConfirmation ? 8 : 0) {
-                        if awaitingLogConfirmation {
-                            Image(systemName: "hand.tap.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(logButtonConfirmForeground)
-                        }
-                        Text(awaitingLogConfirmation ? "Confirm" : "Tap to log")
+                Button(action: onLogTap) {
+                    HStack(spacing: 6) {
+                        Text("Log dose")
                     }
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(awaitingLogConfirmation ? logButtonConfirmForeground : logButtonDefaultForeground)
+                    .foregroundColor(logButtonDefaultForeground)
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(awaitingLogConfirmation ? logButtonConfirmBackground : logButtonDefaultBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(
-                                        awaitingLogConfirmation ? logButtonConfirmBackground.opacity(0.6) : Color.clear,
-                                        lineWidth: awaitingLogConfirmation ? 1 : 0
-                                    )
-                            )
+                            .fill(logButtonDefaultBackground)
                     )
                 }
                 .buttonStyle(ScaleButtonStyle())
@@ -1260,9 +1369,6 @@ fileprivate struct CabinetMedicationRow: View {
                 longPressHint
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
-        }
-        .onDisappear {
-            resetLogConfirmation()
         }
         .padding(18)
         .background(
@@ -1310,56 +1416,12 @@ fileprivate struct CabinetMedicationRow: View {
         }
     }
 
-    private var requiresLogConfirmation: Bool {
-        medication.frequency == "As needed"
-    }
-
     private var logButtonDefaultForeground: Color {
         Color(hex: "#2F352F")
     }
 
     private var logButtonDefaultBackground: Color {
         Color(hex: "#E0E7DC")
-    }
-
-    private var logButtonConfirmForeground: Color {
-        Color(hex: "#424C43")
-    }
-
-    private var logButtonConfirmBackground: Color {
-        Color(hex: "#D9DDD7")
-    }
-
-    private func handleLogButtonTap() {
-        guard requiresLogConfirmation else {
-            onLogTap()
-            return
-        }
-
-        if awaitingLogConfirmation {
-            resetLogConfirmation()
-            onLogTap()
-        } else {
-            startLogConfirmation()
-        }
-    }
-
-    private func startLogConfirmation() {
-        awaitingLogConfirmation = true
-        logConfirmationWorkItem?.cancel()
-
-        let workItem = DispatchWorkItem {
-            awaitingLogConfirmation = false
-            logConfirmationWorkItem = nil
-        }
-        logConfirmationWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + confirmationDuration, execute: workItem)
-    }
-
-    private func resetLogConfirmation() {
-        awaitingLogConfirmation = false
-        logConfirmationWorkItem?.cancel()
-        logConfirmationWorkItem = nil
     }
 }
 
@@ -1376,14 +1438,15 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
     let onAddMedication: () -> Void
-    let onShowHistory: () -> Void
-    let onShowSettings: () -> Void
-    let onShowFocusTimeline: () -> Void
-    let displayedMedications: [Medication]
-    let cabinetMedications: [Medication]
-    let onShowCabinet: () -> Void
-    let healthKitManager: HealthKitManager
-    let referenceDate: Date
+	    let onShowHistory: () -> Void
+	    let onShowSettings: () -> Void
+	    let onShowFocusTimeline: () -> Void
+	    let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
+	    let displayedMedications: [Medication]
+	    let cabinetMedications: [Medication]
+	    let onShowCabinet: () -> Void
+	    let healthKitManager: HealthKitManager
+	    let referenceDate: Date
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -1425,24 +1488,25 @@ fileprivate struct MedicationsListMainContent: View {
                             )
                             .padding(.horizontal, horizontalInset)
                         } else {
-                            MedicationsListContent(
-                                store: store,
-                                showingAddSheet: $showingAddSheet,
-                                scrolledOffset: $scrolledOffset,
-                                horizontalInsets: horizontalInset,
-                                showingLogSheetFor: $showingLogSheetFor,
-                                selectedMedicationToEdit: $selectedMedicationToEdit,
-                                medicationToDelete: $medicationToDelete,
-                                logToDelete: $logToDelete,
-                                showDeleteAlert: $showDeleteAlert,
-                                showingInteractionSheet: $showingInteractionSheet,
-                                isCheckingInteractions: $isCheckingInteractions,
-                                onCheckAllInteractions: onCheckAllInteractions,
-                                onAddMedication: onAddMedication,
-                                onShowFocusTimeline: onShowFocusTimeline,
-                                medications: displayedMedications,
-                                referenceDate: referenceDate
-                            )
+	                            MedicationsListContent(
+	                                store: store,
+	                                showingAddSheet: $showingAddSheet,
+	                                scrolledOffset: $scrolledOffset,
+	                                horizontalInsets: horizontalInset,
+	                                showingLogSheetFor: $showingLogSheetFor,
+	                                selectedMedicationToEdit: $selectedMedicationToEdit,
+	                                medicationToDelete: $medicationToDelete,
+	                                logToDelete: $logToDelete,
+	                                showDeleteAlert: $showDeleteAlert,
+	                                showingInteractionSheet: $showingInteractionSheet,
+	                                isCheckingInteractions: $isCheckingInteractions,
+	                                onCheckAllInteractions: onCheckAllInteractions,
+	                                onAddMedication: onAddMedication,
+	                                onShowFocusTimeline: onShowFocusTimeline,
+	                                onPresentUndoToast: onPresentUndoToast,
+	                                medications: displayedMedications,
+	                                referenceDate: referenceDate
+	                            )
 
                         }
                         
@@ -1623,18 +1687,16 @@ fileprivate struct MedicationRowHeaderView: View {
     let highlightedDoseIndex: Int?
     let compactLayout: Bool
     
-    @State private var awaitingActionConfirmation = false
-    @State private var actionConfirmationWorkItem: DispatchWorkItem?
-    @State private var confirmingDoseIndex: Int?
-    @State private var doseConfirmationWorkItem: DispatchWorkItem?
-
     private let timelineTimeWidth: CGFloat = 58
     private let logButtonMinWidth: CGFloat = 96
-    private let confirmationDuration: TimeInterval = 5.0
 
-    private var usesTimelineLayout: Bool {
-        !doseStates.isEmpty && !compactLayout
-    }
+	    private var usesTimelineLayout: Bool {
+	        !doseStates.isEmpty && !compactLayout
+	    }
+
+	    private var pendingDoseIndex: Int? {
+	        doseStates.first(where: { $0.status == .pending })?.index
+	    }
 
     private var horizontalPadding: CGFloat {
         compactLayout ? 16 : 20
@@ -1773,17 +1835,10 @@ fileprivate struct MedicationRowHeaderView: View {
         if !badges.isEmpty {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(badges) { badge in
-                    HStack(alignment: .center, spacing: 6) {
-                        Image(systemName: badge.text.contains("Skipped") ? "xmark.app.fill" : "checkmark.app.fill")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(badge.text.contains("Skipped")
-                                             ? Color(hex: "#FF6B6B").opacity(0.58)
-                                             : Color(hex: "#C7C7BD").opacity(0.58))
-                        Text(badge.text)
-                            .font(.system(.body, weight: .semibold))
-                            .foregroundColor(Color(hex: "#F5F7F4"))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(badge.text)
+                        .font(.system(.body, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1798,70 +1853,57 @@ fileprivate struct MedicationRowHeaderView: View {
         return formatter
     }()
 
-    // Moved buttonProperties computed property
-    private var takenButtonLabel: String {
-        doseStates.count > 1 ? "All Taken" : "Taken"
-    }
-
-    private func buttonProperties() -> (iconName: String, text: String, fgColor: Color, bgColor: Color) {
+    private var canPerformPrimaryAction: Bool {
         switch cycleStatus {
-        case .taken:
-            return (
-                iconName: "checkmark.circle.fill",
-                text: takenButtonLabel,
-                fgColor: Color(hex: "#D9DDD7"),
-                bgColor: Color(hex: "#52594F").opacity(0.6)
-            )
-        case .skipped:
-            return (iconName: "xmark.circle.fill", text: "Skipped", fgColor: Color(hex: "#C62828"), bgColor: Color(hex: "#FFCDD2"))
-        case .overdue(_), .due(_):
-            return (iconName: "circle", text: "Take Now", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
-        case .asNeeded: // Add .asNeeded case
-            return (iconName: "circle", text: "Take Now", fgColor: Color(hex: "#E0E0E0"), bgColor: Color.black.opacity(0.4))
-        }
-    }
-
-    private var actionButtonStrokeOpacity: Double {
-        switch cycleStatus {
-        case .taken, .skipped:
-            return 0.12
-        default:
-            return 0.26
-        }
-    }
-
-    private var actionButtonHorizontalPadding: CGFloat {
-        switch cycleStatus {
-        case .taken, .skipped:
-            return 18
-        default:
-            return 22
-        }
-    }
-
-    private var requiresActionConfirmation: Bool {
-        switch cycleStatus {
-        case .due, .asNeeded:
+        case .due, .overdue, .asNeeded:
             return true
         default:
             return false
         }
     }
 
-    private var isActionConfirmationActive: Bool {
-        awaitingActionConfirmation && requiresActionConfirmation
+    private var skipActionAvailable: Bool {
+        pendingDoseIndex != nil
     }
 
-    private var confirmForegroundColor: Color {
-        Color(hex: "#424C43")
+    private var baseTakeButtonColors: (fg: Color, bg: Color, border: Color) {
+        (
+            fg: Color(hex: "#2F352F"),
+            bg: Color(hex: "#E0E7DC"),
+            border: Color.white.opacity(0.18)
+        )
     }
 
-    private var confirmBackgroundColor: Color {
-        Color(hex: "#D9DDD7")
+    private var baseSkipButtonColors: (fg: Color, bg: Color, border: Color) {
+        (
+            fg: Color(hex: "#8D5E5A"),
+            bg: Color(hex: "#F4DDE0"),
+            border: Color(hex: "#E3B7B5").opacity(0.5)
+        )
     }
 
-    private var actionConfirmationAppearance: (iconName: String, text: String, fgColor: Color, bgColor: Color) {
-        (iconName: "hand.tap.fill", text: "Confirm", fgColor: confirmForegroundColor, bgColor: confirmBackgroundColor)
+    private var takeButtonStyle: (fg: Color, bg: Color, border: Color) {
+        if canPerformPrimaryAction {
+            return baseTakeButtonColors
+        } else {
+            return (
+                fg: Color(hex: "#C7C7BD").opacity(0.6),
+                bg: Color.white.opacity(0.08),
+                border: Color.white.opacity(0.05)
+            )
+        }
+    }
+
+    private var skipButtonStyle: (fg: Color, bg: Color, border: Color) {
+        if skipActionAvailable {
+            return baseSkipButtonColors
+        } else {
+            return (
+                fg: Color(hex: "#C7C7BD").opacity(0.6),
+                bg: Color.white.opacity(0.08),
+                border: Color.white.opacity(0.05)
+            )
+        }
     }
 
     var body: some View {
@@ -1871,7 +1913,7 @@ fileprivate struct MedicationRowHeaderView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
                     if !usesTimelineLayout && !compactLayout {
-                        actionButton
+                        takeSkipButtonRow
                     }
                 }
             }
@@ -1985,39 +2027,64 @@ fileprivate struct MedicationRowHeaderView: View {
         }
     }
     
-    // Enhanced action button
-    private var actionButton: some View {
-        let properties = buttonProperties()
-        let appearance = isActionConfirmationActive ? actionConfirmationAppearance : properties
-
-        return Button(action: {
-            handleActionButtonTap()
-        }) {
-            HStack(spacing: 8) {
-                Image(systemName: appearance.iconName)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(appearance.fgColor)
-                
-                Text(appearance.text)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(appearance.fgColor)
-            }
-            .padding(.vertical, 12)
-            .padding(.horizontal, actionButtonHorizontalPadding)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(appearance.bgColor)
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-            )
+    private var takeSkipButtonRow: some View {
+        HStack(spacing: 12) {
+            takeButton
+            skipButton
         }
-        .buttonStyle(ScaleButtonStyle())
-        .onChange(of: cycleStatus) { _ in
-            if !requiresActionConfirmation {
-                resetActionConfirmation()
-            }
-        }
+        .frame(maxWidth: 240)
     }
     
+    private var takeButton: some View {
+        let style = takeButtonStyle
+        
+        return Button(action: {
+            handleButtonTap()
+        }) {
+            Text("Take")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(style.fg)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(style.bg)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(style.border, lineWidth: 1)
+                )
+        }
+        .buttonStyle(ScaleButtonStyle())
+        .disabled(!canPerformPrimaryAction)
+    }
+
+    private var skipButton: some View {
+        let style = skipButtonStyle
+        
+        return Button(action: {
+            guard let index = pendingDoseIndex else { return }
+            HapticManager.shared.warningNotification()
+            onSkipDose(index)
+        }) {
+            Text("Skip")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(style.fg)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(style.bg)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(style.border, lineWidth: 1)
+                )
+        }
+        .buttonStyle(ScaleButtonStyle())
+        .disabled(!skipActionAvailable)
+    }
+
     private var multiDoseGrid: some View {
         VStack(spacing: 0) {
             let primaryIndex = highlightedDoseIndex
@@ -2039,19 +2106,12 @@ fileprivate struct MedicationRowHeaderView: View {
 
     private func doseCardRow(for state: DoseButtonState, isPrimary: Bool) -> some View {
         let displayText = state.formattedTime ?? state.title
-        let isConfirmingDose = isDoseConfirming(state.index)
-        let defaultForeground = Color.white.opacity(state.status == .pending ? 1 : 0.85)
-        let confirmCapsuleCornerRadius: CGFloat = isConfirmingDose ? 16 : 12
-        let confirmContentSpacing: CGFloat = isConfirmingDose ? 4 : 6
-        let capsuleVerticalPadding: CGFloat = isConfirmingDose ? 14 : 12
-        let confirmHorizontalPadding: CGFloat = isConfirmingDose ? 22 : 16
-        let interButtonSpacing: CGFloat = isConfirmingDose ? 28 : 10
-        let confirmTextFont: Font = isConfirmingDose
-            ? .system(.callout, design: .default)
-            : .system(size: 14)
-        let confirmTextMinimumScale: CGFloat = isConfirmingDose ? 0.75 : 0.94
-        let skipAccentColor = Color(hex: "#E08D8A")
-        let skipButtonWidth: CGFloat = max(logButtonMinWidth * 0.8, 82)
+        let capsuleCornerRadius: CGFloat = 12
+        let capsuleVerticalPadding: CGFloat = 12
+        let interButtonSpacing: CGFloat = 10
+        let textFont: Font = .system(size: 14)
+        let takeStyle = baseTakeButtonColors
+        let skipStyle = baseSkipButtonColors
 
         return HStack(spacing: 12) {
             if state.status == .taken, let loggedText = state.loggedTimeLabel {
@@ -2071,88 +2131,66 @@ fileprivate struct MedicationRowHeaderView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Color.white.opacity(0.15), lineWidth: 0.6)
                 )
+            } else if state.status == .skipped {
+                HStack(spacing: 8) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "#FFE4E6").opacity(0.95))
+                    Text(state.loggedTimeLabel ?? "Skipped")
+                        .font(.system(.body, weight: .semibold))
+                        .foregroundColor(Color(hex: "#FFE4E6"))
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 16)
+                .frame(minWidth: logButtonMinWidth, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(hex: "#7A3330").opacity(0.25))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 0.6)
+                )
             } else {
                 HStack(spacing: interButtonSpacing) {
                     Button(action: {
                         handleDoseButtonTap(for: state)
                     }) {
-                        HStack(spacing: confirmContentSpacing) {
-                            if isConfirmingDose {
-                                Image(systemName: "hand.tap.fill")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(confirmForegroundColor)
-                            }
-
-                            Text(isConfirmingDose ? "Confirm" : state.actionLabel)
-                                .font(confirmTextFont)
-                                .fontWeight(.medium)
-                                .lineLimit(1)
-                                .minimumScaleFactor(confirmTextMinimumScale)
-                                .allowsTightening(true)
-
-                            if !isConfirmingDose, state.status == .pending {
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .opacity(0.95)
-                            }
-                        }
-                        .foregroundColor(isConfirmingDose ? confirmForegroundColor : defaultForeground)
-                        .padding(.vertical, capsuleVerticalPadding)
-                        .padding(.horizontal, confirmHorizontalPadding)
-                        .background(
-                            RoundedRectangle(cornerRadius: confirmCapsuleCornerRadius)
-                                .fill(isConfirmingDose ? confirmBackgroundColor : Color.white.opacity(0.08))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: confirmCapsuleCornerRadius)
-                                        .stroke(
-                                            isConfirmingDose
-                                                ? confirmBackgroundColor.opacity(0.65)
-                                                : Color.white.opacity(actionButtonStrokeOpacity),
-                                            lineWidth: isConfirmingDose ? 1 : 0.9
-                                        )
-                                )
-                        )
-                        .shadow(
-                            color: isConfirmingDose ? Color.black.opacity(0.12) : Color.clear,
-                            radius: isConfirmingDose ? 6 : 0,
-                            x: 0,
-                            y: isConfirmingDose ? 2 : 0
-                        )
-                        .frame(
-                            minWidth: isConfirmingDose ? nil : logButtonMinWidth,
-                            maxWidth: isConfirmingDose ? .infinity : nil,
-                            alignment: .leading
-                        )
-                        .layoutPriority(isConfirmingDose ? 1 : 0)
+                        Text("Take")
+                            .font(textFont.weight(.semibold))
+                            .foregroundColor(takeStyle.fg)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, capsuleVerticalPadding)
+                            .background(
+                                RoundedRectangle(cornerRadius: capsuleCornerRadius)
+                                    .fill(takeStyle.bg)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: capsuleCornerRadius)
+                                    .stroke(takeStyle.border, lineWidth: 1)
+                            )
                     }
                     .buttonStyle(ScaleButtonStyle())
-                    .disabled(state.status != .pending)
 
-                    if isConfirmingDose {
-                        Button(action: {
-                            HapticManager.shared.warningNotification()
-                            resetDoseConfirmation()
-                            onSkipDose(state.index)
-                        }) {
-                            Text("Skip")
-                                .font(.system(.callout, design: .default))
-                                .fontWeight(.medium)
-                                .foregroundColor(skipAccentColor.opacity(0.85))
-                                .frame(width: skipButtonWidth)
-                                .padding(.vertical, 14)
-                                .padding(.horizontal, 16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(skipAccentColor.opacity(0.12))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(skipAccentColor.opacity(0.25), lineWidth: 1)
-                                        )
-                                )
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        .disabled(state.status != .pending)
+                    Button(action: {
+                        HapticManager.shared.warningNotification()
+                        onSkipDose(state.index)
+                    }) {
+                        Text("Skip")
+                            .font(textFont.weight(.semibold))
+                            .foregroundColor(skipStyle.fg)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, capsuleVerticalPadding)
+                            .background(
+                                RoundedRectangle(cornerRadius: capsuleCornerRadius)
+                                    .fill(skipStyle.bg)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: capsuleCornerRadius)
+                                    .stroke(skipStyle.border, lineWidth: 1)
+                            )
                     }
+                    .buttonStyle(ScaleButtonStyle())
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -2218,78 +2256,19 @@ fileprivate struct MedicationRowHeaderView: View {
         onLogTap()
     }
 
-    private func handleActionButtonTap() {
-        guard requiresActionConfirmation else {
-            handleButtonTap()
-            return
-        }
-
-        if isActionConfirmationActive {
-            resetActionConfirmation()
-            handleButtonTap()
-        } else {
-            startActionConfirmation()
-        }
-    }
-
-    private func startActionConfirmation() {
-        awaitingActionConfirmation = true
-        actionConfirmationWorkItem?.cancel()
-        let workItem = DispatchWorkItem {
-            awaitingActionConfirmation = false
-            actionConfirmationWorkItem = nil
-        }
-        actionConfirmationWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + confirmationDuration, execute: workItem)
-    }
-
-    private func resetActionConfirmation() {
-        awaitingActionConfirmation = false
-        actionConfirmationWorkItem?.cancel()
-        actionConfirmationWorkItem = nil
-    }
-
     private func handleDoseButtonTap(for state: DoseButtonState) {
         guard state.status == .pending else { return }
 
-        if confirmingDoseIndex == state.index {
-            resetDoseConfirmation()
-            withAnimation(.interactiveSpring(response: 0.45, dampingFraction: 0.75)) {
-                onDoseTap(state.index)
-            }
-        } else {
-            startDoseConfirmation(for: state.index)
+        withAnimation(.interactiveSpring(response: 0.45, dampingFraction: 0.75)) {
+            onDoseTap(state.index)
         }
-    }
-
-    private func startDoseConfirmation(for index: Int) {
-        confirmingDoseIndex = index
-        doseConfirmationWorkItem?.cancel()
-
-        let workItem = DispatchWorkItem {
-            if confirmingDoseIndex == index {
-                confirmingDoseIndex = nil
-            }
-            doseConfirmationWorkItem = nil
-        }
-        doseConfirmationWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + confirmationDuration, execute: workItem)
-    }
-
-    private func resetDoseConfirmation() {
-        confirmingDoseIndex = nil
-        doseConfirmationWorkItem?.cancel()
-        doseConfirmationWorkItem = nil
-    }
-
-    private func isDoseConfirming(_ index: Int) -> Bool {
-        confirmingDoseIndex == index
     }
 }
 
 struct MedicationRow: View {
     let medication: Medication
     let referenceDate: Date
+    let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
     let onLogTap: () -> Void
     let onEditTap: () -> Void
     let onDeleteTap: (() -> Void)?
@@ -2700,7 +2679,7 @@ struct MedicationRow: View {
                     Image(systemName: "checkmark")
                         .font(.system(size: geometry.size.height * 0.9, weight: .heavy, design: .rounded))
                         .foregroundColor(Color.white)
-                        .opacity(0.015)
+                        .opacity(0.045)
                         .rotationEffect(.degrees(-10))
                         .frame(height: geometry.size.height * 0.9)
                         .padding(.trailing, 18)
@@ -2840,72 +2819,82 @@ struct MedicationRow: View {
     }
     
     // Quick log medication function for context menu
-    private func quickLogMedication(taken: Bool) {
-        guard hasRemainingDoseToday else { return }
-        let now = Date()
-        
-        let reminderIndex = medication.reminderTimes.isEmpty ? nil : nextReminderIndexToLog()
+	    private func quickLogMedication(taken: Bool) {
+	        guard hasRemainingDoseToday else { return }
+	        let now = Date()
+	        
+	        let reminderIndex = medication.reminderTimes.isEmpty ? nil : nextReminderIndexToLog()
         
         if medication.reminderTimes.count > 0 && reminderIndex == nil {
             return
         }
         
-        store.logMedicationTaken(
-            medication: medication,
-            actualTime: now,
-            notes: nil,
-            skipped: !taken,
-            reminderIndex: reminderIndex
-        )
-    }
+	        if let action = store.logMedicationTaken(
+	            medication: medication,
+	            actualTime: now,
+	            notes: nil,
+	            skipped: !taken,
+	            reminderIndex: reminderIndex
+	        ) {
+	            onPresentUndoToast(action)
+	        }
+	    }
     
-    private func logDose(at index: Int) {
-        if medication.reminderTimes.isEmpty {
-            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
-            store.logMedicationTaken(
-                medication: medication,
-                actualTime: Date(),
-                notes: nil,
-                skipped: false,
-                reminderIndex: nil
-            )
-            return
-        }
+	    private func logDose(at index: Int) {
+	        if medication.reminderTimes.isEmpty {
+	            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
+	            if let action = store.logMedicationTaken(
+	                medication: medication,
+	                actualTime: Date(),
+	                notes: nil,
+	                skipped: false,
+	                reminderIndex: nil
+	            ) {
+	                onPresentUndoToast(action)
+	            }
+	            return
+	        }
         
         guard medication.reminderTimes.indices.contains(index) else { return }
         guard !todaysLogsForMedication.contains(where: { $0.reminderIndex == index }) else { return }
         
-        store.logMedicationTaken(
-            medication: medication,
-            actualTime: Date(),
-            notes: nil,
-            skipped: false,
-            reminderIndex: index
-        )
-    }
+	        if let action = store.logMedicationTaken(
+	            medication: medication,
+	            actualTime: Date(),
+	            notes: nil,
+	            skipped: false,
+	            reminderIndex: index
+	        ) {
+	            onPresentUndoToast(action)
+	        }
+	    }
 
-    private func skipDose(at index: Int) {
-        if medication.reminderTimes.isEmpty {
-            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
-            store.skipMedication(
-                medication: medication,
-                actualTime: Date(),
-                notes: nil,
-                reminderIndex: nil
-            )
-            return
-        }
+	    private func skipDose(at index: Int) {
+	        if medication.reminderTimes.isEmpty {
+	            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
+	            if let action = store.skipMedication(
+	                medication: medication,
+	                actualTime: Date(),
+	                notes: nil,
+	                reminderIndex: nil
+	            ) {
+	                onPresentUndoToast(action)
+	            }
+	            return
+	        }
 
         guard medication.reminderTimes.indices.contains(index) else { return }
         guard !todaysLogsForMedication.contains(where: { $0.reminderIndex == index }) else { return }
 
-        store.skipMedication(
-            medication: medication,
-            actualTime: Date(),
-            notes: nil,
-            reminderIndex: index
-        )
-    }
+	        if let action = store.skipMedication(
+	            medication: medication,
+	            actualTime: Date(),
+	            notes: nil,
+	            reminderIndex: index
+	        ) {
+	            onPresentUndoToast(action)
+	        }
+	    }
     
     private func toggleExpansion() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
