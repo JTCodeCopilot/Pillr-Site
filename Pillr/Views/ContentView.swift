@@ -182,17 +182,21 @@ struct ContentView: View {
                 
                 // Popout Menu Overlay - Direct rendering with no animation wrapper
                 if showingPopoutMenu {
-                    PopoutMenuOverlay(
-                        showingPopoutMenu: $showingPopoutMenu,
-                        showingLogView: $showingLogView,
-                        showingSettingsView: $showingSettingsView,
-                        showingMedicationSelectionSheet: $showingMedicationSelectionSheet,
-                        showingAddMedicationSheet: $showingAddMedicationSheet,
-                        geometry: geometry
-                    )
+                        PopoutMenuOverlay(
+                            showingPopoutMenu: $showingPopoutMenu,
+                            showingLogView: $showingLogView,
+                            showingSettingsView: $showingSettingsView,
+                            showingMedicationSelectionSheet: $showingMedicationSelectionSheet,
+                            showingAddMedicationSheet: $showingAddMedicationSheet,
+                            isPremiumUser: userSettings.isPremiumUser,
+                            onShowPremiumUpgrade: {
+                                showingPremiumUpgrade = true
+                            },
+                            geometry: geometry
+                        )
+                    }
                 }
             }
-        }
         .preferredColorScheme(.dark)
         .accessibilityAddTraits(.isButton)
         .accessibilityElement(children: .ignore)
@@ -312,6 +316,8 @@ struct PopoutMenuOverlay: View {
     @Binding var showingSettingsView: Bool
     @Binding var showingMedicationSelectionSheet: Bool
     @Binding var showingAddMedicationSheet: Bool
+    let isPremiumUser: Bool
+    let onShowPremiumUpgrade: () -> Void
     let geometry: GeometryProxy
     @State private var animateItems = false
     
@@ -360,7 +366,11 @@ struct PopoutMenuOverlay: View {
                                 showingPopoutMenu = false
                             }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                showingMedicationSelectionSheet = true
+                                if isPremiumUser {
+                                    showingMedicationSelectionSheet = true
+                                } else {
+                                    onShowPremiumUpgrade()
+                                }
                             }
                         }
                     )

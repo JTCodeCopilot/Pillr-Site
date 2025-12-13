@@ -9,18 +9,19 @@
 import SwiftUI
 import UIKit
 
-struct LogMedicationView: View {
-    @EnvironmentObject var store: MedicationStore
-    @Environment(\.dismiss) var dismiss
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.colorScheme) private var colorScheme
+	struct LogMedicationView: View {
+	    @EnvironmentObject var store: MedicationStore
+	    @Environment(\.dismiss) var dismiss
+	    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+	    @Environment(\.colorScheme) private var colorScheme
 
-    let medicationToLog: Medication
-    var isDailyCheckIn: Bool = false
-    @State private var actualTimeTaken: Date = Date()
-    @State private var logNotes: String = ""
-    @State private var keyboardHeight: CGFloat = 0
-    @State private var remainingPills: Int?
+	    let medicationToLog: Medication
+	    var isDailyCheckIn: Bool = false
+	    var onLogAction: ((MedicationStore.LogUndoAction) -> Void)? = nil
+	    @State private var actualTimeTaken: Date = Date()
+	    @State private var logNotes: String = ""
+	    @State private var keyboardHeight: CGFloat = 0
+	    @State private var remainingPills: Int?
     @State private var selectedDoseIndex: Int = 0
     @State private var showQuickLogOption: Bool = false
     @State private var selectedQuickTime: QuickTimeOption = .now
@@ -600,7 +601,7 @@ struct LogMedicationView: View {
         }
     }
     
-    private func processDoseAction(skipped: Bool) {
+	    private func processDoseAction(skipped: Bool) {
         // Use the selected time instead of current time
         let timeToUse = selectedQuickTime == .custom ? actualTimeTaken : Date().addingTimeInterval(selectedQuickTime.timeOffset)
         
@@ -622,31 +623,35 @@ struct LogMedicationView: View {
         let focusToSave = isDailyCheckIn && focusRating > 0 ? focusRating : nil
         let sideEffectToSave = isDailyCheckIn && sideEffectSeverity > 0 ? sideEffectSeverity : nil
         
-        if skipped {
-            store.skipMedication(
-                medication: medicationToLog,
-                actualTime: timeToUse,
-                notes: notesToSave,
-                reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
-                focusRating: focusToSave,
-                sideEffectSeverity: sideEffectToSave,
-                showFocusTimeline: !isDailyCheckIn
-            )
-        } else {
-            store.logMedicationTaken(
-                medication: medicationToLog,
-                actualTime: timeToUse,
-                notes: notesToSave,
-                skipped: false,
-                reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
-                focusRating: focusToSave,
-                sideEffectSeverity: sideEffectToSave,
-                showFocusTimeline: !isDailyCheckIn,
-                isDailyCheckIn: isDailyCheckIn
-            )
-        }
-        dismiss()
-    }
+	        if skipped {
+	            if let action = store.skipMedication(
+	                medication: medicationToLog,
+	                actualTime: timeToUse,
+	                notes: notesToSave,
+	                reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
+	                focusRating: focusToSave,
+	                sideEffectSeverity: sideEffectToSave,
+	                showFocusTimeline: !isDailyCheckIn
+	            ) {
+	                onLogAction?(action)
+	            }
+	        } else {
+	            if let action = store.logMedicationTaken(
+	                medication: medicationToLog,
+	                actualTime: timeToUse,
+	                notes: notesToSave,
+	                skipped: false,
+	                reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
+	                focusRating: focusToSave,
+	                sideEffectSeverity: sideEffectToSave,
+	                showFocusTimeline: !isDailyCheckIn,
+	                isDailyCheckIn: isDailyCheckIn
+	            ) {
+	                onLogAction?(action)
+	            }
+	        }
+	        dismiss()
+	    }
     
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()

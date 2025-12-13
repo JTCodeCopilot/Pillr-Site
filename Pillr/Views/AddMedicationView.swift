@@ -1779,6 +1779,9 @@ struct AddMedicationView: View {
 
             if success {
                 onFinish()
+            } else {
+                HapticManager.shared.warningNotification()
+                showingPremiumUpgrade = true
             }
         }
     }

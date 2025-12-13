@@ -21,6 +21,21 @@ struct ADHDDoseTimelineEntry: Identifiable, Equatable {
 }
 
 class MedicationStore: ObservableObject {
+    struct LogUndoAction: Identifiable, Equatable {
+        let id = UUID()
+        let newLog: MedicationLog
+        let replacedLog: MedicationLog?
+        let replacedLogIndex: Int?
+        let pillCountDelta: Int
+
+        init(newLog: MedicationLog, replacedLog: MedicationLog?, replacedLogIndex: Int?, pillCountDelta: Int) {
+            self.newLog = newLog
+            self.replacedLog = replacedLog
+            self.replacedLogIndex = replacedLogIndex
+            self.pillCountDelta = pillCountDelta
+        }
+    }
+
     @Published var medications: [Medication] = []
     @Published var logs: [MedicationLog] = []
     @Published var recentADHDDoseTimeline: ADHDDoseTimelineEntry?
@@ -218,6 +233,7 @@ class MedicationStore: ObservableObject {
         }
     }
 
+    @discardableResult
     func logMedicationTaken(
         medication: Medication,
         actualTime: Date,
@@ -228,11 +244,12 @@ class MedicationStore: ObservableObject {
         sideEffectSeverity: Int? = nil,
         showFocusTimeline: Bool = true,
         isDailyCheckIn: Bool = false
-    ) {
+    ) -> LogUndoAction? {
         let pillsConsumed = skipped ? 0 : medication.pillsPerDose
         let calendar = Calendar.current
         let resolvedReminderIndex = reminderIndex ?? inferReminderIndexIfNeeded(for: medication, actualTime: actualTime)
         var previousLog: MedicationLog?
+        var previousLogIndex: Int?
         
         if !medication.isCabinetMedication {
             if let existingIndex = logs.firstIndex(where: { log in
@@ -265,10 +282,11 @@ class MedicationStore: ObservableObject {
                     } else {
                         hapticManager.warningNotification()
                     }
-                    return
+                    return nil
                 }
 
                 previousLog = existingLog
+                previousLogIndex = existingIndex
                 logs.remove(at: existingIndex)
             } else if resolvedReminderIndex == nil {
                 // Single-dose medications (no reminder index) can only be logged once per day
@@ -280,7 +298,7 @@ class MedicationStore: ObservableObject {
 
                 if alreadyLogged {
                     hapticManager.warningNotification()
-                    return
+                    return nil
                 }
             }
         }
@@ -413,6 +431,13 @@ class MedicationStore: ObservableObject {
         if !skipped && !isDailyCheckIn {
             notificationManager.scheduleDailyCheckInReminder(for: medication, referenceDate: actualTime)
         }
+
+        return LogUndoAction(
+            newLog: newLog,
+            replacedLog: previousLog,
+            replacedLogIndex: previousLogIndex,
+            pillCountDelta: pillCountDelta
+        )
     }
     
     // Helper method to check if badge should be reset
@@ -453,6 +478,7 @@ class MedicationStore: ObservableObject {
         resetBadgeIfNeeded()
     }
     
+    @discardableResult
     func skipMedication(
         medication: Medication,
         actualTime: Date,
@@ -461,8 +487,8 @@ class MedicationStore: ObservableObject {
         focusRating: Int? = nil,
         sideEffectSeverity: Int? = nil,
         showFocusTimeline: Bool = true
-    ) {
-        logMedicationTaken(
+    ) -> LogUndoAction? {
+        return logMedicationTaken(
             medication: medication,
             actualTime: actualTime,
             notes: notes,
@@ -472,6 +498,32 @@ class MedicationStore: ObservableObject {
             sideEffectSeverity: sideEffectSeverity,
             showFocusTimeline: showFocusTimeline
         )
+    }
+
+    func undoLogAction(_ action: LogUndoAction) {
+        guard let insertedIndex = logs.firstIndex(where: { $0.id == action.newLog.id }) else { return }
+
+        logs.remove(at: insertedIndex)
+        saveLogs()
+        syncDeleteLog(action.newLog)
+
+        if let replacedLog = action.replacedLog {
+            let restoreIndex = min(action.replacedLogIndex ?? 0, logs.count)
+            logs.insert(replacedLog, at: restoreIndex)
+            saveLogs()
+            syncLogWithCloud(replacedLog)
+        }
+
+        if action.pillCountDelta != 0,
+           let index = medications.firstIndex(where: { $0.id == action.newLog.medicationID }),
+           var pillCount = medications[index].pillCount {
+            pillCount = max(0, pillCount - action.pillCountDelta)
+            medications[index].pillCount = pillCount
+            saveMedications()
+            syncMedicationWithCloud(medications[index])
+        }
+
+        resetBadgeIfNeeded()
     }
     
     func toggleSkipStatus(for medicationID: UUID) {

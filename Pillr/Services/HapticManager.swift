@@ -37,41 +37,58 @@ class HapticManager {
         notificationFeedbackGenerator.prepare()
     }
 
-    private func triggerStrongImpact() {
-        let generator = rigidImpactFeedbackGenerator
+    private func impact(_ generator: UIImpactFeedbackGenerator, intensity: CGFloat? = nil) {
         generator.prepare()
-        generator.impactOccurred()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        if let intensity {
+            generator.impactOccurred(intensity: intensity)
+        } else {
             generator.impactOccurred()
-            generator.prepare()
+        }
+    }
+
+    private func dualImpact(primary: UIImpactFeedbackGenerator,
+                            secondary: UIImpactFeedbackGenerator? = nil,
+                            firstIntensity: CGFloat,
+                            secondIntensity: CGFloat,
+                            delay: TimeInterval = 0.06) {
+        impact(primary, intensity: firstIntensity)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self = self else { return }
+            let secondaryGenerator = secondary ?? primary
+            self.impact(secondaryGenerator, intensity: secondIntensity)
         }
     }
 
     func strongImpact() {
-        triggerStrongImpact()
+        dualImpact(
+            primary: rigidImpactFeedbackGenerator,
+            secondary: heavyImpactFeedbackGenerator,
+            firstIntensity: 1.0,
+            secondIntensity: 0.45,
+            delay: 0.065
+        )
     }
     
     // MARK: - Impact Feedback
     
     func lightImpact() {
-        triggerStrongImpact()
+        impact(lightImpactFeedbackGenerator, intensity: 0.55)
     }
     
     func mediumImpact() {
-        triggerStrongImpact()
+        impact(mediumImpactFeedbackGenerator, intensity: 0.8)
     }
     
     func heavyImpact() {
-        triggerStrongImpact()
+        impact(heavyImpactFeedbackGenerator, intensity: 1.0)
     }
     
     func softImpact() {
-        triggerStrongImpact()
+        impact(softImpactFeedbackGenerator, intensity: 0.5)
     }
     
     func rigidImpact() {
-        triggerStrongImpact()
+        impact(rigidImpactFeedbackGenerator, intensity: 0.95)
     }
     
     // MARK: - Notification Feedback
@@ -101,19 +118,41 @@ class HapticManager {
     // MARK: - Pulsed Feedback
     
     func pulseLight() {
-        strongImpact()
+        dualImpact(
+            primary: softImpactFeedbackGenerator,
+            firstIntensity: 0.5,
+            secondIntensity: 0.25,
+            delay: 0.06
+        )
     }
     
     func pulseMedium() {
-        strongImpact()
+        dualImpact(
+            primary: mediumImpactFeedbackGenerator,
+            firstIntensity: 0.75,
+            secondIntensity: 0.35,
+            delay: 0.07
+        )
     }
     
     func pulseRigid() {
-        strongImpact()
+        dualImpact(
+            primary: rigidImpactFeedbackGenerator,
+            secondary: mediumImpactFeedbackGenerator,
+            firstIntensity: 0.95,
+            secondIntensity: 0.4,
+            delay: 0.07
+        )
     }
     
     func pulseButton() {
-        strongImpact()
+        dualImpact(
+            primary: softImpactFeedbackGenerator,
+            secondary: rigidImpactFeedbackGenerator,
+            firstIntensity: 0.55,
+            secondIntensity: 0.85,
+            delay: 0.05
+        )
     }
 }
 

@@ -782,6 +782,7 @@ fileprivate func MedicationsListHeader(
 
 fileprivate struct HealthSummaryWidget: View {
     @ObservedObject var manager: HealthKitManager
+    @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = DistanceUnit.miles.rawValue
 
     private static let integerFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
@@ -789,6 +790,22 @@ fileprivate struct HealthSummaryWidget: View {
         formatter.maximumFractionDigits = 0
         return formatter
     }()
+    
+    private static let decimalFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 1
+        formatter.maximumFractionDigits = 1
+        return formatter
+    }()
+    
+    private enum DistanceUnit: String, CaseIterable, Identifiable {
+        case miles = "mi"
+        case kilometers = "km"
+        
+        var id: String { rawValue }
+        var label: String { rawValue.uppercased() }
+    }
 
     private struct Metric {
         let title: String
@@ -796,16 +813,19 @@ fileprivate struct HealthSummaryWidget: View {
         let value: String
     }
 
+    private var distanceUnit: DistanceUnit {
+        DistanceUnit(rawValue: distanceUnitRawValue) ?? .miles
+    }
+
     private var metrics: [Metric] {
         [
-            Metric(title: "Steps", unit: "steps", value: formatted(manager.dailySteps)),
-            Metric(title: "Water", unit: "mL", value: formatted(manager.waterMilliliters)),
-            Metric(title: "Active Calories", unit: "kcal", value: formatted(manager.activeCalories))
+            Metric(title: "Steps", unit: "steps", value: formattedSteps(manager.dailySteps)),
+            Metric(title: "Distance", unit: distanceUnit.rawValue, value: formattedDistance(manager.dailyDistanceMiles))
         ]
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             header
 
             if !manager.isHealthDataAvailable {
@@ -825,17 +845,17 @@ fileprivate struct HealthSummaryWidget: View {
                     .lineLimit(2)
             }
         }
-        .padding(12)
+        .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(Color(hex: "#404C42"))
         )
-        .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
+        .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
         .accessibilityElement(children: .combine)
     }
 
     private var header: some View {
-        HStack {
+        HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Health Snapshot")
                     .font(.system(size: 16, weight: .semibold))
@@ -844,11 +864,14 @@ fileprivate struct HealthSummaryWidget: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
             }
+            
+            Spacer()
+            unitPicker
         }
     }
 
     private var metricGrid: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 12) {
             ForEach(metrics.indices, id: \.self) { index in
                 metricSquare(metric: metrics[index])
                 if index < metrics.count - 1 {
@@ -856,15 +879,15 @@ fileprivate struct HealthSummaryWidget: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var permissionPrompt: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(
                 manager.hasDeniedPermission
-                    ? "Health permissions are currently denied. Open Settings to re-allow steps, exercise, water and calorie data."
-                    : "Grant access to Apple Health to surface your daily steps, exercise, water, and calories."
+                    ? "Health permissions are currently denied. Open Settings to re-allow fitness data."
+                    : "Grant access to Apple Health to surface your daily steps and distance."
             )
             .font(.system(size: 13))
             .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
@@ -895,37 +918,66 @@ fileprivate struct HealthSummaryWidget: View {
     }
 
     private func metricSquare(metric: Metric) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(metric.title)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
 
             Text(metric.value)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundColor(Color(hex: "#F5F7F4"))
 
             Text(metric.unit)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
         }
-        .frame(height: 80)
+        .frame(height: 70)
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
     }
 
     private var verticalDivider: some View {
         Rectangle()
             .frame(width: 1)
-            .foregroundColor(Color.white.opacity(0.15))
-            .padding(.vertical, 6)
+            .foregroundColor(Color.white.opacity(0.12))
+            .padding(.vertical, 4)
     }
 
-    private func formatted(_ value: Int?) -> String {
+    private func formattedSteps(_ value: Int?) -> String {
         guard let value = value else {
             return "--"
         }
         return Self.integerFormatter.string(from: NSNumber(value: value)) ?? "\(value)"
+    }
+    
+    private func formattedDistance(_ milesValue: Double?) -> String {
+        guard let converted = convertedDistance(fromMiles: milesValue) else {
+            return "--"
+        }
+        return Self.decimalFormatter.string(from: NSNumber(value: converted)) ?? String(format: "%.1f", converted)
+    }
+    
+    private func convertedDistance(fromMiles milesValue: Double?) -> Double? {
+        guard let miles = milesValue else { return nil }
+        switch distanceUnit {
+        case .miles:
+            return miles
+        case .kilometers:
+            return miles * 1.60934
+        }
+    }
+    
+    private var unitPicker: some View {
+        Picker("Distance Unit", selection: $distanceUnitRawValue) {
+            ForEach(DistanceUnit.allCases) { unit in
+                Text(unit.label).tag(unit.rawValue)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(width: 120)
+        .font(.system(size: 11, weight: .semibold))
+        .accessibilityLabel("Distance unit")
     }
 }
 
@@ -1875,11 +1927,7 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     private var baseSkipButtonColors: (fg: Color, bg: Color, border: Color) {
-        (
-            fg: Color(hex: "#8D5E5A"),
-            bg: Color(hex: "#F4DDE0"),
-            border: Color(hex: "#E3B7B5").opacity(0.5)
-        )
+        baseTakeButtonColors
     }
 
     private var takeButtonStyle: (fg: Color, bg: Color, border: Color) {
@@ -2259,6 +2307,7 @@ fileprivate struct MedicationRowHeaderView: View {
     private func handleDoseButtonTap(for state: DoseButtonState) {
         guard state.status == .pending else { return }
 
+        HapticManager.shared.successNotification()
         withAnimation(.interactiveSpring(response: 0.45, dampingFraction: 0.75)) {
             onDoseTap(state.index)
         }

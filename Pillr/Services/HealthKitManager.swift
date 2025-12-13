@@ -13,8 +13,7 @@ import UIKit
 final class HealthKitManager: ObservableObject {
     // MARK: - Published state
     @Published private(set) var dailySteps: Int?
-    @Published private(set) var waterMilliliters: Int?
-    @Published private(set) var activeCalories: Int?
+    @Published private(set) var dailyDistanceMiles: Double?
     @Published private(set) var hasAnyPermission = false
     @Published private(set) var hasAllPermissions = false
     @Published private(set) var authorizationError: String?
@@ -27,8 +26,7 @@ final class HealthKitManager: ObservableObject {
 
     private static let requiredIdentifiers: [HKQuantityTypeIdentifier] = [
         .stepCount,
-        .dietaryWater,
-        .activeEnergyBurned
+        .distanceWalkingRunning
     ]
 
     private var readQuantityTypes: [HKQuantityType] {
@@ -75,35 +73,25 @@ final class HealthKitManager: ObservableObject {
         let predicate = todayPredicate()
 
         authorizationError = nil
-        async let steps = fetchSum(
+        let steps = await fetchSum(
             identifier: .stepCount,
             unit: HKUnit.count(),
             predicate: predicate
         )
-        async let water = fetchSum(
-            identifier: .dietaryWater,
-            unit: HKUnit.literUnit(with: .milli),
-            predicate: predicate
-        )
-        async let calories = fetchSum(
-            identifier: .activeEnergyBurned,
-            unit: HKUnit.kilocalorie(),
+        let distance = await fetchSum(
+            identifier: .distanceWalkingRunning,
+            unit: HKUnit.mile(),
             predicate: predicate
         )
 
-        let results = await (steps, water, calories)
-
-        dailySteps = results.0.map { Int($0.rounded(.down)) }
-        waterMilliliters = results.1.map { Int($0.rounded(.down)) }
-        activeCalories = results.2.map { Int($0.rounded(.down)) }
+        dailySteps = steps.map { Int($0.rounded(.down)) }
+        dailyDistanceMiles = distance
         lastUpdated = Date()
     }
 
     // MARK: - Private helpers
     var hasMetricValues: Bool {
-        dailySteps != nil ||
-        waterMilliliters != nil ||
-        activeCalories != nil
+        dailySteps != nil || dailyDistanceMiles != nil
     }
 
     private func updatePermissionState() {
