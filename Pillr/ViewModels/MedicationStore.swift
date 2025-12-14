@@ -253,6 +253,7 @@ class MedicationStore: ObservableObject {
         showFocusTimeline: Bool = true,
         isDailyCheckIn: Bool = false
     ) -> LogUndoAction? {
+        let storedMedication = medications.first(where: { $0.id == medication.id })
         let pillsConsumed = skipped ? 0 : medication.pillsPerDose
         let calendar = Calendar.current
         let resolvedReminderIndex = reminderIndex ?? inferReminderIndexIfNeeded(for: medication, actualTime: actualTime)
@@ -382,11 +383,12 @@ class MedicationStore: ObservableObject {
         
         // Cancel the specific notification that triggered this log
         if let specificIndex = resolvedReminderIndex,
-           !medication.notificationIDs.isEmpty,
-           specificIndex < medication.notificationIDs.count {
+           let referenceMedication = storedMedication,
+           !referenceMedication.notificationIDs.isEmpty,
+           specificIndex < referenceMedication.notificationIDs.count {
             // Cancel the specific notification if we know which one
-            notificationManager.cancelNotification(with: medication.notificationIDs[specificIndex])
-        } else if let notificationID = medication.notificationID {
+            notificationManager.cancelNotification(with: referenceMedication.notificationIDs[specificIndex])
+        } else if let notificationID = storedMedication?.notificationID ?? medication.notificationID {
             // Legacy support - cancel the single notification
             notificationManager.cancelNotification(with: notificationID)
         }

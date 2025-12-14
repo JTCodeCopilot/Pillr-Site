@@ -43,7 +43,7 @@ struct MainTabView: View {
                     .tabItem {
                         Image(systemName: "pill")
                             .symbolVariant(.none)
-                        Text("My Meds")
+                            .accessibilityLabel("My Meds")
                     }
                     .tag(MainTab.meds)
                 
@@ -51,7 +51,7 @@ struct MainTabView: View {
                 MedicationHistoryView()
                     .tabItem {
                         Image(systemName: "calendar")
-                        Text("History")
+                            .accessibilityLabel("History")
                     }
                     .tag(MainTab.history)
                 
@@ -59,7 +59,7 @@ struct MainTabView: View {
                 FocusTimelineView(isModal: false)
                     .tabItem {
                         Image(systemName: "hourglass")
-                        Text("Focus")
+                            .accessibilityLabel("Focus")
                     }
                     .tag(MainTab.focus)
                 
@@ -67,7 +67,7 @@ struct MainTabView: View {
                 SettingsView()
                     .tabItem {
                         Image(systemName: "ellipsis")
-                        Text("More")
+                            .accessibilityLabel("More")
                     }
                     .tag(MainTab.more)
             }

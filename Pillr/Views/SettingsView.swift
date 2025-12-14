@@ -12,6 +12,9 @@ struct SettingsView: View {
     @State private var showingInteractionHistory = false
     @State private var showingInteractionSelectionSheet = false
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
+    @State private var isHealthSettingsExpanded = false
+    @State private var isNotificationSettingsExpanded = false
+    @State private var isPremiumSettingsExpanded = false
     
     var body: some View {
         NavigationView {
@@ -22,8 +25,7 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         interactionsSection
-                        healthSettingsSection
-                        notificationSettingsSection
+                        generalSettingsSection
                         supportLinksSection
                         Color.clear.frame(height: 20)
                     }
@@ -59,26 +61,6 @@ struct SettingsView: View {
         }
     }
     
-    private var healthSettingsSection: some View {
-        settingsSection(title: "Apple Health") {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Choose how Pillr displays your Health distance values. This controls whether steps convert to miles or kilometers in the Health Snapshot.")
-                    .font(.system(size: 14, design: .rounded))
-                    .foregroundColor(SettingsPalette.secondaryText)
-                    .lineSpacing(4)
-                    .padding(.horizontal, 4)
-                
-                Picker("Distance Unit", selection: $distanceUnitRawValue) {
-                    ForEach(HealthDistanceUnit.allCases) { unit in
-                        Text(unit.label).tag(unit.rawValue)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .accessibilityLabel("Health distance unit")
-            }
-        }
-    }
-    
     private var interactionsSection: some View {
         settingsSection(title: "AI Interactions") {
             settingsActionRow(
@@ -97,28 +79,97 @@ struct SettingsView: View {
         }
     }
     
-    private var notificationSettingsSection: some View {
-        settingsSection(title: "Notifications") {
-            Text("Medication reminders depend on system notifications. Tap below to open the Settings app where you can enable or disable Pillr reminders.")
-                .font(.system(size: 14, design: .rounded))
-                .foregroundColor(SettingsPalette.secondaryText)
-                .lineSpacing(4)
-                .padding(.horizontal, 4)
+    private var generalSettingsSection: some View {
+        settingsSection(title: "Settings") {
+            let premiumActive = storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Status: \(notificationStatusValue)")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundColor(SettingsPalette.mainText)
-                Text(notificationStatusContext)
-                    .font(.system(size: 14, weight: .regular, design: .rounded))
-                    .foregroundColor(SettingsPalette.secondaryText)
+            VStack(spacing: 14) {
+                collapsibleSettingsSection(
+                    title: "Apple Health",
+                    isExpanded: $isHealthSettingsExpanded,
+                    titleFont: .system(size: 16, weight: .medium, design: .rounded),
+                    titleColor: SettingsPalette.mainText
+                ) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Choose how Pillr displays your Health distance values. This controls whether steps convert to miles or kilometers in the Health Snapshot.")
+                            .font(.system(size: 14, design: .rounded))
+                            .foregroundColor(SettingsPalette.secondaryText)
+                            .lineSpacing(4)
+                            .padding(.horizontal, 4)
+                        
+                        Picker("Distance Unit", selection: $distanceUnitRawValue) {
+                            ForEach(HealthDistanceUnit.allCases) { unit in
+                                Text(unit.label).tag(unit.rawValue)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .accessibilityLabel("Health distance unit")
+                    }
+                }
+                
+                collapsibleSettingsSection(
+                    title: "Notifications",
+                    isExpanded: $isNotificationSettingsExpanded,
+                    titleFont: .system(size: 16, weight: .medium, design: .rounded),
+                    titleColor: SettingsPalette.mainText
+                ) {
+                    Text("Medication reminders depend on system notifications. Tap below to open the Settings app where you can enable or disable Pillr reminders.")
+                        .font(.system(size: 14, design: .rounded))
+                        .foregroundColor(SettingsPalette.secondaryText)
+                        .lineSpacing(4)
+                        .padding(.horizontal, 4)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Status: \(notificationStatusValue)")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundColor(SettingsPalette.mainText)
+                        Text(notificationStatusContext)
+                            .font(.system(size: 14, weight: .regular, design: .rounded))
+                            .foregroundColor(SettingsPalette.secondaryText)
+                    }
+
+                    settingsActionRow(
+                        title: "Open iOS Settings",
+                        subtitle: "Manage Pillr notification permissions",
+                        action: openAppSettings
+                    )
+                }
+
+                collapsibleSettingsSection(
+                    title: premiumActive ? "Premium" : "Upgrade to Premium",
+                    isExpanded: $isPremiumSettingsExpanded,
+                    titleFont: .system(size: 16, weight: .medium, design: .rounded),
+                    titleColor: SettingsPalette.mainText
+                ) {
+                    if premiumActive {
+                        Text("Thank you for supporting Pillr Premium. Enjoy full access to AI-powered analysis.")
+                            .font(.system(size: 14, design: .rounded))
+                            .foregroundColor(SettingsPalette.secondaryText)
+                            .lineSpacing(4)
+                            .padding(.horizontal, 4)
+
+                        settingsActionRow(
+                            title: "Premium Active",
+                            showChevron: false,
+                            trailingIcon: "checkmark"
+                        ) {}
+                    } else {
+                        Text("Unlock AI-powered medication analysis and other premium perks.")
+                            .font(.system(size: 14, design: .rounded))
+                            .foregroundColor(SettingsPalette.secondaryText)
+                            .lineSpacing(4)
+                            .padding(.horizontal, 4)
+
+                        settingsActionRow(
+                            title: "Upgrade Now",
+                            subtitle: "One-tap purchase",
+                            showChevron: false
+                        ) {
+                            showingPremiumUpgrade = true
+                        }
+                    }
+                }
             }
-
-            settingsActionRow(
-                title: "Open iOS Settings",
-                subtitle: "Manage Pillr notification permissions",
-                action: openAppSettings
-            )
         }
     }
 
@@ -136,24 +187,6 @@ struct SettingsView: View {
     
     private var supportLinksSection: some View {
         settingsSection(title: "Support & Resources") {
-            let premiumActive = storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
-
-            if premiumActive {
-                settingsActionRow(
-                    title: "Premium Purchased",
-                    showChevron: false,
-                    trailingIcon: "checkmark"
-                ) {}
-            } else {
-                settingsActionRow(
-                    title: "Upgrade to Premium",
-                    subtitle: "Unlock AI-powered medication analysis",
-                    showChevron: false
-                ) {
-                    showingPremiumUpgrade = true
-                }
-            }
-
             settingsActionRow(title: "Privacy Policy") {
                 openLink("https://tally.so/r/3yR6M4")
             }
@@ -169,12 +202,61 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
+    private func collapsibleSettingsSection<Content: View>(
+        title: String,
+        isExpanded: Binding<Bool>,
+        titleFont: Font = .system(size: 18, weight: .semibold, design: .rounded),
+        titleColor: Color = SettingsPalette.headerColor,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.85, blendDuration: 0.2)) {
+                    isExpanded.wrappedValue.toggle()
+                }
+            } label: {
+                HStack {
+                    Text(title)
+                        .font(titleFont)
+                        .foregroundColor(titleColor)
+
+                    Spacer()
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: SettingsMetrics.arrowSize, weight: .semibold))
+                        .foregroundColor(SettingsPalette.arrowColor.opacity(SettingsMetrics.arrowOpacity))
+                        .rotationEffect(.degrees(isExpanded.wrappedValue ? 0 : -90))
+                        .animation(.easeInOut(duration: 0.2), value: isExpanded.wrappedValue)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            if isExpanded.wrappedValue {
+                Divider()
+                    .background(Color.white.opacity(0.08))
+
+                VStack(alignment: .leading, spacing: 12) {
+                    content()
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(SettingsPalette.nestedCardBackground)
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    @ViewBuilder
     private func settingsSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundColor(SettingsPalette.headerColor)
+                    Text(title)
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .foregroundColor(SettingsPalette.headerColor)
 
                 Divider()
                     .background(Color.white.opacity(0.08))

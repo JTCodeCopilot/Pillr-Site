@@ -11,11 +11,23 @@ struct PremiumUpgradeView: View {
     @State private var isDisclaimerExpanded = false
     @State private var isPulseAnimating = false
 
-    private let featureHighlights: [String] = [
-        "Unlimited medications",
-        "AI interaction analysis",
-        "Pill count tracking",
-        "Smart reminders and check ins"
+    private struct FeatureComparison: Identifiable {
+        let id = UUID()
+        let title: String
+        let freeIncludes: Bool
+        let premiumIncludes: Bool
+    }
+
+    private let featureComparisons: [FeatureComparison] = [
+        FeatureComparison(title: "Once-Daily Reminder", freeIncludes: true, premiumIncludes: true),
+        FeatureComparison(title: "Focus Timeline", freeIncludes: true, premiumIncludes: true),
+        FeatureComparison(title: "History", freeIncludes: true, premiumIncludes: true),
+        FeatureComparison(title: "iCloud Sync & Backup", freeIncludes: true, premiumIncludes: true),
+        FeatureComparison(title: "Unlimited Medications", freeIncludes: false, premiumIncludes: true),
+        FeatureComparison(title: "Multiple Daily Reminders", freeIncludes: false, premiumIncludes: true),
+        FeatureComparison(title: "AI Powered Interaction & Search", freeIncludes: false, premiumIncludes: true),
+        FeatureComparison(title: "Pill Count Tracking", freeIncludes: false, premiumIncludes: true),
+        FeatureComparison(title: "Daily Wellness Monitoring", freeIncludes: false, premiumIncludes: true)
     ]
 
     private let brandAccent = Color(hex: "#C8F365")
@@ -29,7 +41,7 @@ struct PremiumUpgradeView: View {
         let hourSegment = calendar.component(.hour, from: now) / 6
         let variation = (ordinal + hourSegment) % 4
         let count = 3 + variation
-        return "\(count) upgrades in the past 3 days"
+        return "\(count) users unlocked over the past 3 days"
     }
     private var recentUpdateMinutes: Int {
         let calendar = Calendar.current
@@ -52,7 +64,7 @@ struct PremiumUpgradeView: View {
 
                     disclaimerSection
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 16)
                 .padding(.top, 20)
                 .padding(.bottom, 64)
             }
@@ -83,36 +95,8 @@ struct PremiumUpgradeView: View {
     }
 
     private var backgroundView: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(hex: "#0D1612"),
-                    Color(hex: "#111F1A"),
-                    Color(hex: "#0A0F0B")
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            RadialGradient(
-                gradient: Gradient(colors: [brandAccent.opacity(0.35), .clear]),
-                center: .topTrailing,
-                startRadius: 30,
-                endRadius: 420
-            )
-            .blur(radius: 80)
-            .offset(x: 120, y: -160)
-
-            RadialGradient(
-                gradient: Gradient(colors: [Color.white.opacity(0.08), .clear]),
-                center: .bottomLeading,
-                startRadius: 10,
-                endRadius: 380
-            )
-            .blur(radius: 60)
-            .offset(x: -100, y: 220)
-        }
-        .ignoresSafeArea()
+        Color(hex: "#3A3E3A")
+            .ignoresSafeArea()
     }
 
     private var headerSection: some View {
@@ -149,104 +133,112 @@ struct PremiumUpgradeView: View {
                 }
             }
 
+            socialProofRow
+                .padding(.top, 4)
+
             purchaseButtonView(for: storeManager.getPremiumProduct())
-            
+
             Rectangle()
                 .fill(Color.white.opacity(0.08))
                 .frame(height: 1)
 
-            featureChecklist
-
-            socialProofRow
+            featureComparisonGrid
         }
         .padding(.vertical, 34)
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var featureChecklist: some View {
+    private var featureComparisonGrid: some View {
         VStack(spacing: 0) {
-            ForEach(Array(featureHighlights.enumerated()), id: \.offset) { index, feature in
-                featureRow(text: feature, isLast: index == featureHighlights.count - 1)
+            HStack {
+                Text("Feature")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.65))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text("Free")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.5))
+                    .frame(width: 60)
+
+                Text("Premium")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.5))
+                    .frame(width: 80)
+            }
+            .padding(.horizontal, 10)
+            .padding(.bottom, 10)
+
+            ForEach(featureComparisons) { comparison in
+                comparisonRow(for: comparison)
+
+                if comparison.id != featureComparisons.last?.id {
+                    Divider()
+                        .background(Color.white.opacity(0.08))
+                }
             }
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 2)
-        .background(Color.white.opacity(0.01))
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(Color.white.opacity(0.05), lineWidth: 1)
-        )
+        .padding(.vertical, 8)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
-    private func featureRow(text: String, isLast: Bool) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.45), lineWidth: 1.4)
-                        .frame(width: 24, height: 24)
+    private func comparisonRow(for comparison: FeatureComparison) -> some View {
+        HStack(alignment: .center) {
+            Text(comparison.title)
+                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.85))
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(brandAccent)
-                }
+            availabilityIcon(isIncluded: comparison.freeIncludes)
+                .frame(width: 60)
 
-                Text(text)
-                    .font(.system(size: 17, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.85))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-
-            if !isLast {
-                Rectangle()
-                    .fill(Color.white.opacity(0.07))
-                    .frame(height: 1)
-            }
+            availabilityIcon(isIncluded: comparison.premiumIncludes)
+                .frame(width: 80)
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 12)
+    }
+
+    private func availabilityIcon(isIncluded: Bool) -> some View {
+        Image(systemName: isIncluded ? "checkmark.circle.fill" : "xmark.circle.fill")
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundColor(isIncluded ? brandAccent : Color.red.opacity(0.8))
+            .accessibilityLabel(isIncluded ? "Included" : "Not included")
     }
 
     private var socialProofRow: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Circle()
-                .fill(brandAccent.opacity(0.9))
-                .frame(width: 6, height: 6)
-                .scaleEffect(isPulseAnimating ? 1.6 : 1.0)
-                .opacity(isPulseAnimating ? 0.4 : 1)
-                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: isPulseAnimating)
+                .strokeBorder(Color.white.opacity(0.4), lineWidth: 1)
+                .frame(width: 9, height: 9)
+                .overlay(
+                    Circle()
+                        .fill(brandAccent)
+                        .frame(width: 4.5, height: 4.5)
+                        .scaleEffect(isPulseAnimating ? 2.1 : 1.0)
+                        .opacity(isPulseAnimating ? 0.25 : 1)
+                )
                 .onAppear {
-                    isPulseAnimating = true
+                    withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
+                        isPulseAnimating = true
+                    }
                 }
 
-            Text(recentUpgradeText)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundColor(Color.white.opacity(0.7))
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(recentUpgradeText)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.7))
 
-            Circle()
-                .fill(Color.white.opacity(0.3))
-                .frame(width: 3, height: 3)
-
-            Text("Updated \(recentUpdateMinutes) minutes ago")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(Color.white.opacity(0.5))
-                .lineLimit(1)
+                Text("Updated \(recentUpdateMinutes) minutes ago")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.45))
+            }
 
             Spacer()
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.white.opacity(0.04))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
+        .padding(.horizontal, 6)
+        .padding(.vertical, 6)
     }
 
     @ViewBuilder
@@ -267,8 +259,8 @@ struct PremiumUpgradeView: View {
                         }
                     } else {
                         VStack(spacing: 4) {
-                            Text("Unlock Lifetime for \(product.displayPrice)")
-                                .font(.system(size: 19, weight: .heavy, design: .rounded))
+                            Text("Unlock for \(product.displayPrice)")
+                                .font(.system(size: 19, weight: .semibold, design: .rounded))
                         }
                     }
                 }

@@ -15,6 +15,7 @@ enum SettingsPalette {
     static let secondaryText = Color(hex: "#E0E7DC").opacity(0.78)
     static let mainText = Color(hex: "#F5F7F4")
     static let cardBackground = Color(hex: "#4E5B52")
+    static let nestedCardBackground = Color(hex: "#3E4A3F").opacity(0.85)
     static let cardStroke = Color.white.opacity(0.08)
     static let arrowColor = Color(hex: "#E0E7DC")
     static let closeStroke = Color(hex: "#F5F7F4").opacity(0.45)
