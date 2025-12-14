@@ -2,9 +2,9 @@ import SwiftUI
 
 enum MainTab: Hashable {
     case meds
-    case add
+    case history
     case focus
-    case interactions
+    case more
 }
 
 struct MainTabView: View {
@@ -13,21 +13,19 @@ struct MainTabView: View {
     @EnvironmentObject var storeManager: StoreManager
     
     @State private var selectedTab: MainTab = .meds
-    @State private var hasUnsavedAddFlow = false
+    @StateObject private var addFlowCoordinator = AddMedicationFlowCoordinator()
     @State private var pendingTabSelection: MainTab?
     @State private var showDiscardAlert = false
-    @State private var addFormResetToken = UUID()
-    
+
     private var tabSelection: Binding<MainTab> {
         Binding(
             get: { selectedTab },
             set: { newValue in
-                if selectedTab == .add && newValue != .add && hasUnsavedAddFlow {
+                if selectedTab == .meds && newValue != .meds && addFlowCoordinator.isShowing {
                     pendingTabSelection = newValue
                     showDiscardAlert = true
                 } else {
                     selectedTab = newValue
-                    pendingTabSelection = nil
                 }
             }
         )
@@ -41,50 +39,37 @@ struct MainTabView: View {
             
             TabView(selection: tabSelection) {
                 // Home / My Meds
-                MedicationsHomeView()
+                MedicationsHomeView(addFlowCoordinator: addFlowCoordinator)
                     .tabItem {
                         Image(systemName: "pill")
-                            .symbolVariant(.none) // Keep outline style even when selected
-                            .accessibilityLabel("My Meds")
+                            .symbolVariant(.none)
+                        Text("My Meds")
                     }
                     .tag(MainTab.meds)
                 
-                // Add medication
-                NavigationView {
-                    AddMedicationView(
-                        onFinish: {
-                            // After saving, return to My Meds tab
-                            hasUnsavedAddFlow = false
-                            selectedTab = .meds
-                            // Ensure a fresh form next time
-                            addFormResetToken = UUID()
-                        },
-                        onProgressStateChange: { hasUnsavedAddFlow = $0 },
-                        resetTrigger: addFormResetToken
-                    )
-                }
-                .tabItem {
-                    Image(systemName: "plus.app")
-                        .symbolVariant(.none) // Use unfilled variant
-                        .accessibilityLabel("Add")
-                }
-                .tag(MainTab.add)
+                // Medication history
+                MedicationHistoryView()
+                    .tabItem {
+                        Image(systemName: "calendar")
+                        Text("History")
+                    }
+                    .tag(MainTab.history)
                 
                 // Focus timeline
                 FocusTimelineView(isModal: false)
                     .tabItem {
                         Image(systemName: "hourglass")
-                            .accessibilityLabel("Focus")
+                        Text("Focus")
                     }
                     .tag(MainTab.focus)
                 
-                // Interaction history
-                InteractionHistoryView(isModal: false)
+                // Settings / More
+                SettingsView()
                     .tabItem {
-                        Image(systemName: "link")
-                            .accessibilityLabel("Interactions")
+                        Image(systemName: "ellipsis")
+                        Text("More")
                     }
-                    .tag(MainTab.interactions)
+                    .tag(MainTab.more)
             }
             .onChange(of: selectedTab) { _ in
                 HapticManager.shared.strongImpact()
@@ -93,9 +78,7 @@ struct MainTabView: View {
         }
         .alert("Discard medication?", isPresented: $showDiscardAlert) {
             Button("Discard", role: .destructive) {
-                hasUnsavedAddFlow = false
-                // Force the AddMedicationView to reset its form the next time it's shown
-                addFormResetToken = UUID()
+                addFlowCoordinator.discardFlow()
                 selectedTab = pendingTabSelection ?? .meds
                 pendingTabSelection = nil
             }
@@ -120,8 +103,7 @@ struct MedicationsHomeView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var showingSettings = false
-    @State private var showingHistory = false
+    let addFlowCoordinator: AddMedicationFlowCoordinator
     
     var body: some View {
         GeometryReader { geometry in
@@ -139,19 +121,10 @@ struct MedicationsHomeView: View {
                     .frame(height: geometry.safeAreaInsets.top + 44)
                     .ignoresSafeArea(edges: .top)
                 
-                MedicationsListView(
-                    onShowSettings: { showingSettings = true },
-                    onShowHistory: { showingHistory = true }
-                )
+                MedicationsListView(addFlowCoordinator: addFlowCoordinator)
                     .scrollContentBackground(.hidden)
                     .frame(maxHeight: .infinity)
             }
-        }
-        .fullScreenCover(isPresented: $showingSettings) {
-            SettingsView()
-        }
-        .fullScreenCover(isPresented: $showingHistory) {
-            MedicationHistoryView(isModal: true)
         }
     }
 }
