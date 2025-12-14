@@ -7,10 +7,25 @@
 
 import SwiftUI
 
+final class AddMedicationFlowCoordinator: ObservableObject {
+    @Published var isShowing = false
+    @Published var hasUnsavedChanges = false
+    @Published var dismissTrigger = UUID()
+    @Published var resetTrigger = UUID()
+
+    func discardFlow() {
+        hasUnsavedChanges = false
+        isShowing = false
+        dismissTrigger = UUID()
+        resetTrigger = UUID()
+    }
+}
+
 struct MedicationsListView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
     @Environment(\.scenePhase) private var scenePhase
+    @ObservedObject private var addFlowCoordinator: AddMedicationFlowCoordinator
     @State private var showingLogSheetFor: Medication?
     @State private var selectedMedicationToEdit: Medication?
     @State private var showingAddSheet = false
@@ -29,22 +44,12 @@ struct MedicationsListView: View {
     @State private var showingInteractionResultSheet = false
     @State private var showingPremiumUpgrade = false
     @State private var showingFocusTimeline = false
-	    @State private var showingCabinetSheet = false
-	    @State private var referenceDate = Date()
-	    private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
-	    @State private var undoToastAction: MedicationStore.LogUndoAction?
-	    @State private var undoToastDismissWorkItem: DispatchWorkItem?
-	    private let undoToastDuration: TimeInterval = 5.0
-	    let onShowSettings: () -> Void
-	    let onShowHistory: () -> Void
-
-    init(
-        onShowSettings: @escaping () -> Void = {},
-        onShowHistory: @escaping () -> Void = {}
-    ) {
-        self.onShowSettings = onShowSettings
-        self.onShowHistory = onShowHistory
-    }
+        @State private var showingCabinetSheet = false
+        @State private var referenceDate = Date()
+        private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+        @State private var undoToastAction: MedicationStore.LogUndoAction?
+        @State private var undoToastDismissWorkItem: DispatchWorkItem?
+        private let undoToastDuration: TimeInterval = 5.0
 
     private var reminderMedications: [Medication] {
         store.activeMedications.filter { !$0.isCabinetMedication }
@@ -52,6 +57,10 @@ struct MedicationsListView: View {
     
     private var cabinetMedications: [Medication] {
         store.activeMedications.filter { $0.isCabinetMedication }
+    }
+
+    init(addFlowCoordinator: AddMedicationFlowCoordinator = AddMedicationFlowCoordinator()) {
+        self._addFlowCoordinator = ObservedObject(wrappedValue: addFlowCoordinator)
     }
 
     private var cabinetLogMedications: [Medication] {
@@ -72,159 +81,172 @@ struct MedicationsListView: View {
         reminderMedications + cabinetLogMedications
     }
     
-	    var body: some View {
-	        MedicationsListMainContent(
-	            store: store,
-	            showingAddSheet: $showingAddSheet,
-	            scrolledOffset: $scrolledOffset,
-	            showingLogSheetFor: $showingLogSheetFor,
-	            selectedMedicationToEdit: $selectedMedicationToEdit,
-	            medicationToDelete: $medicationToDelete,
-	            logToDelete: $logToDelete,
-	            showDeleteAlert: $showDeleteAlert,
-	            showingInteractionSheet: $showingInteractionSheet,
-	            isCheckingInteractions: $isCheckingInteractions,
-	            onCheckAllInteractions: showMedicationSelectionSheet,
-	            onAddMedication: handleAddMedication,
-	            onShowHistory: onShowHistory,
-	            onShowSettings: onShowSettings,
-	            onShowFocusTimeline: { showingFocusTimeline = true },
-	            onPresentUndoToast: presentUndoToast,
-	            displayedMedications: displayedMedications,
-	            cabinetMedications: cabinetMedications,
-	            onShowCabinet: { showingCabinetSheet = true },
-	            healthKitManager: healthKitManager,
-	            referenceDate: referenceDate
-	        )
-        .overlay(alignment: .bottom) {
-            if let action = undoToastAction {
-                LogUndoToastView(
-                    action: action,
-                    onUndo: {
-                        store.undoLogAction(action)
-                        dismissUndoToast()
-                    },
-                    onDismiss: dismissUndoToast
+        var body: some View {
+        NavigationStack {
+            ZStack {
+                MedicationsListMainContent(
+                    store: store,
+                    showingAddSheet: $showingAddSheet,
+                    scrolledOffset: $scrolledOffset,
+                    showingLogSheetFor: $showingLogSheetFor,
+                    selectedMedicationToEdit: $selectedMedicationToEdit,
+                    medicationToDelete: $medicationToDelete,
+                    logToDelete: $logToDelete,
+                    showDeleteAlert: $showDeleteAlert,
+                    showingInteractionSheet: $showingInteractionSheet,
+                    isCheckingInteractions: $isCheckingInteractions,
+                    onCheckAllInteractions: showMedicationSelectionSheet,
+                    onAddMedication: handleAddMedication,
+                    onShowFocusTimeline: { showingFocusTimeline = true },
+                    onPresentUndoToast: presentUndoToast,
+                    displayedMedications: displayedMedications,
+                    cabinetMedications: cabinetMedications,
+                    onShowCabinet: { showingCabinetSheet = true },
+                    healthKitManager: healthKitManager,
+                    referenceDate: referenceDate
                 )
-                .padding(.horizontal, 16)
-                .padding(.bottom, 32)
-                .frame(maxWidth: .infinity, alignment: .bottom)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-	        .sheet(item: $showingLogSheetFor) { med in
-	            LogMedicationView(medicationToLog: med, onLogAction: presentUndoToast)
-	                .environmentObject(store)
-	        }
-        .fullScreenCover(item: $selectedMedicationToEdit) { med in
-            NavigationView {
-                AddMedicationView(
-                    medicationToEdit: med,
-                    onFinish: { selectedMedicationToEdit = nil }
-                )
-                .environmentObject(store)
-                .environmentObject(userSettings)
-            }
-        }
-        .sheet(isPresented: $showingAddSheet) {
-            NavigationView {
-                AddMedicationView(onFinish: { showingAddSheet = false })
-                    .environmentObject(store)
-                    .environmentObject(userSettings)
-            }
-        }
-        .sheet(isPresented: $showingMedicationSelectionSheet) {
-            MedicationInteractionSelectionSheet()
-                .environmentObject(store)
-        }
-        .sheet(isPresented: $showingInteractionResultSheet) {
-            InteractionResultsSheetView(
-                isPresented: $showingInteractionResultSheet,
-                interactions: foundInteractions ?? [],
-                error: interactionCheckError
-            )
-        }
-        .alert(isPresented: $showDeleteAlert) {
-            let isDeletingLogEntry = logToDelete != nil
-            return Alert(
-                title: Text(isDeletingLogEntry ? "Hide Log Entry" : "Delete Medication"),
-                message: Text(
-                    isDeletingLogEntry
-                        ? "Hiding this entry removes it from the My Meds view only; the cabinet copy and history entry stay intact, and you can fully remove the medication from the Cabinet if needed."
-                        : "Deleting \(medicationToDelete?.name ?? "this medication") will permanently remove it and it cannot be restored unless you enter it again."
-                ),
-                primaryButton: .destructive(Text(isDeletingLogEntry ? "Hide from My Meds" : "Delete")) {
-                    if let med = medicationToDelete {
-                        store.deleteMedication(med)
-                    } else if let log = logToDelete {
-                        store.hideLogFromMyMeds(log)
-                    }
-                    medicationToDelete = nil
-                    logToDelete = nil
-                },
-                secondaryButton: .cancel {
-                    medicationToDelete = nil
-                    logToDelete = nil
-                }
-            )
-        }
-        .sheet(isPresented: $showingPremiumUpgrade) {
-            PremiumUpgradeView()
-                .environmentObject(StoreManager.shared)
-        }
-        .sheet(isPresented: $showingFocusTimeline) {
-            FocusTimelineView()
-                .environmentObject(store)
-        }
-        .sheet(isPresented: $showingCabinetSheet) {
-            MedicationCabinetSheet(
-                medications: cabinetMedications,
-                logs: store.logs,
-                referenceDate: referenceDate,
-                onLogMedication: { presentLogSheet(for: $0) },
-                onEditMedication: { presentEditSheet(for: $0) },
-                onDeleteMedication: { med in
-                    HapticManager.shared.warningNotification()
-                    showingCabinetSheet = false
-                    medicationToDelete = store.findMedication(with: med.id) ?? med
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        showDeleteAlert = true
+                .overlay(alignment: .bottom) {
+                    if let action = undoToastAction {
+                        LogUndoToastView(
+                            action: action,
+                            onUndo: {
+                                store.undoLogAction(action)
+                                dismissUndoToast()
+                            },
+                            onDismiss: dismissUndoToast
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 32)
+                        .frame(maxWidth: .infinity, alignment: .bottom)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
-            )
-        }
-	        .sheet(item: $store.dailyCheckInMedication, onDismiss: {
-	            store.dailyCheckInMedication = nil
-	        }) { med in
-	            LogMedicationView(medicationToLog: med, isDailyCheckIn: true, onLogAction: presentUndoToast)
-	                .environmentObject(store)
-	        }
-        .sheet(item: $store.recentADHDDoseTimeline, onDismiss: {
-            store.recentADHDDoseTimeline = nil
-        }) { entry in
-            ADHDDoseTimelineSheet(entry: entry)
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-        }
-        .onReceive(referenceTimer) { output in
-            guard scenePhase == .active else { return }
-            referenceDate = output
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
-            refreshReferenceDate(resetBadge: false)
-        }
-        .onChange(of: scenePhase) { newPhase in
-            if newPhase == .active {
-                refreshReferenceDate(resetBadge: true)
-                Task {
+                .sheet(item: $showingLogSheetFor) { med in
+                    LogMedicationView(medicationToLog: med, onLogAction: presentUndoToast)
+                        .environmentObject(store)
+                }
+                .fullScreenCover(item: $selectedMedicationToEdit) { med in
+                    NavigationView {
+                        AddMedicationView(
+                            medicationToEdit: med,
+                            onFinish: { selectedMedicationToEdit = nil }
+                        )
+                        .environmentObject(store)
+                        .environmentObject(userSettings)
+                    }
+                }
+                .sheet(isPresented: $showingMedicationSelectionSheet) {
+                    MedicationInteractionSelectionSheet()
+                        .environmentObject(store)
+                }
+                .sheet(isPresented: $showingInteractionResultSheet) {
+                    InteractionResultsSheetView(
+                        isPresented: $showingInteractionResultSheet,
+                        interactions: foundInteractions ?? [],
+                        error: interactionCheckError
+                    )
+                }
+                .alert(isPresented: $showDeleteAlert) {
+                    let isDeletingLogEntry = logToDelete != nil
+                    return Alert(
+                        title: Text(isDeletingLogEntry ? "Hide Log Entry" : "Delete Medication"),
+                        message: Text(
+                            isDeletingLogEntry
+                                ? "Hiding this entry removes it from the My Meds view only; the cabinet copy and history entry stay intact, and you can fully remove the medication from the Cabinet if needed."
+                                : "Deleting \(medicationToDelete?.name ?? "this medication") will permanently remove it and it cannot be restored unless you enter it again."
+                        ),
+                        primaryButton: .destructive(Text(isDeletingLogEntry ? "Hide from My Meds" : "Delete")) {
+                            if let med = medicationToDelete {
+                                store.deleteMedication(med)
+                            } else if let log = logToDelete {
+                                store.hideLogFromMyMeds(log)
+                            }
+                            medicationToDelete = nil
+                            logToDelete = nil
+                        },
+                        secondaryButton: .cancel {
+                            medicationToDelete = nil
+                            logToDelete = nil
+                        }
+                    )
+                }
+                .sheet(isPresented: $showingPremiumUpgrade) {
+                    PremiumUpgradeView()
+                        .environmentObject(StoreManager.shared)
+                }
+                .sheet(isPresented: $showingFocusTimeline) {
+                    FocusTimelineView()
+                        .environmentObject(store)
+                }
+                .sheet(isPresented: $showingCabinetSheet) {
+                    MedicationCabinetSheet(
+                        medications: cabinetMedications,
+                        logs: store.logs,
+                        referenceDate: referenceDate,
+                        onLogMedication: { presentLogSheet(for: $0) },
+                        onEditMedication: { presentEditSheet(for: $0) },
+                        onDeleteMedication: { med in
+                            HapticManager.shared.warningNotification()
+                            showingCabinetSheet = false
+                            medicationToDelete = store.findMedication(with: med.id) ?? med
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                showDeleteAlert = true
+                            }
+                        }
+                    )
+                }
+                .sheet(item: $store.dailyCheckInMedication, onDismiss: {
+                    store.dailyCheckInMedication = nil
+                }) { med in
+                    LogMedicationView(medicationToLog: med, isDailyCheckIn: true, onLogAction: presentUndoToast)
+                        .environmentObject(store)
+                }
+                .sheet(item: $store.recentADHDDoseTimeline, onDismiss: {
+                    store.recentADHDDoseTimeline = nil
+                }) { entry in
+                    ADHDDoseTimelineSheet(entry: entry)
+                        .presentationDetents([.medium])
+                        .presentationDragIndicator(.visible)
+                }
+                .onReceive(referenceTimer) { output in
+                    guard scenePhase == .active else { return }
+                    referenceDate = output
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+                    refreshReferenceDate(resetBadge: false)
+                }
+                .onChange(of: scenePhase) { newPhase in
+                    if newPhase == .active {
+                        refreshReferenceDate(resetBadge: true)
+                        Task {
+                            await healthKitManager.requestAuthorizationIfNeeded()
+                            await healthKitManager.refreshMetrics()
+                        }
+                    }
+                }
+                .task {
                     await healthKitManager.requestAuthorizationIfNeeded()
                     await healthKitManager.refreshMetrics()
                 }
+                .onChange(of: addFlowCoordinator.dismissTrigger) { _ in
+                    if showingAddSheet {
+                        showingAddSheet = false
+                    }
+                }
+                .onChange(of: showingAddSheet) { isActive in
+                    addFlowCoordinator.isShowing = isActive
+                    addFlowCoordinator.hasUnsavedChanges = isActive ? true : false
+                }
+                .toolbar(.hidden, for: .navigationBar)
+                
+                NavigationLink(
+                    destination: addMedicationDestination,
+                    isActive: $showingAddSheet
+                ) {
+                    EmptyView()
+                }
+                .hidden()
             }
-        }
-        .task {
-            await healthKitManager.requestAuthorizationIfNeeded()
-            await healthKitManager.refreshMetrics()
         }
     }
     
@@ -246,10 +268,30 @@ struct MedicationsListView: View {
     private func handleAddMedication() {
         let currentActiveMedications = store.activeMedications.count
         if userSettings.canAddMedication(currentCount: currentActiveMedications) {
-            showingAddSheet = true
+            presentAddMedicationFlow()
         } else {
             showingPremiumUpgrade = true
         }
+    }
+    
+    private func presentAddMedicationFlow() {
+        addFlowCoordinator.resetTrigger = UUID()
+        showingAddSheet = true
+    }
+    
+    private func dismissAddMedicationFlow() {
+        showingAddSheet = false
+    }
+    
+    @ViewBuilder
+    private var addMedicationDestination: some View {
+        AddMedicationView(
+            onFinish: { dismissAddMedicationFlow() },
+            resetTrigger: addFlowCoordinator.resetTrigger
+        )
+            .environmentObject(store)
+            .environmentObject(userSettings)
+            .toolbar(.hidden, for: .navigationBar)
     }
     
     private func checkAllMedicationInteractions() async {
@@ -709,8 +751,7 @@ fileprivate func MedicationsListContent(
 fileprivate func MedicationsListHeader(
     store: MedicationStore,
     horizontalInsets: CGFloat,
-    onShowHistory: @escaping () -> Void,
-    onShowSettings: @escaping () -> Void,
+    onAddMedication: @escaping () -> Void,
     onShowCabinet: @escaping () -> Void,
     cabinetCount: Int
 ) -> some View {
@@ -729,17 +770,6 @@ fileprivate func MedicationsListHeader(
             Spacer()
             
             HStack(spacing: 10) {
-                Button(action: onShowHistory) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(.plain)
-                .frame(width: 46, height: 46)
-                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
-                .contentShape(Circle())
-
                 Button(action: onShowCabinet) {
                     Image(systemName: "cabinet.fill")
                         .font(.system(size: 18, weight: .semibold))
@@ -762,8 +792,8 @@ fileprivate func MedicationsListHeader(
                 .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
                 .contentShape(Circle())
 
-                Button(action: onShowSettings) {
-                    Image(systemName: "gearshape")
+                Button(action: onAddMedication) {
+                    Image(systemName: "plus")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(Color(hex: "#F5F7F4"))
                         .frame(width: 24, height: 24)
@@ -772,6 +802,7 @@ fileprivate func MedicationsListHeader(
                 .frame(width: 46, height: 46)
                 .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
                 .contentShape(Circle())
+
             }
         }
     }
@@ -782,7 +813,7 @@ fileprivate func MedicationsListHeader(
 
 fileprivate struct HealthSummaryWidget: View {
     @ObservedObject var manager: HealthKitManager
-    @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = DistanceUnit.miles.rawValue
+    @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = HealthDistanceUnit.miles.rawValue
 
     private static let integerFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
@@ -799,22 +830,14 @@ fileprivate struct HealthSummaryWidget: View {
         return formatter
     }()
     
-    private enum DistanceUnit: String, CaseIterable, Identifiable {
-        case miles = "mi"
-        case kilometers = "km"
-        
-        var id: String { rawValue }
-        var label: String { rawValue.uppercased() }
-    }
-
     private struct Metric {
         let title: String
         let unit: String
         let value: String
     }
 
-    private var distanceUnit: DistanceUnit {
-        DistanceUnit(rawValue: distanceUnitRawValue) ?? .miles
+    private var distanceUnit: HealthDistanceUnit {
+        HealthDistanceUnit(rawValue: distanceUnitRawValue) ?? .miles
     }
 
     private var metrics: [Metric] {
@@ -857,16 +880,12 @@ fileprivate struct HealthSummaryWidget: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Health Snapshot")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
-                Text("Apple Health")
+                Text("Apple Health Snapshot")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
             }
             
             Spacer()
-            unitPicker
         }
     }
 
@@ -960,24 +979,7 @@ fileprivate struct HealthSummaryWidget: View {
     
     private func convertedDistance(fromMiles milesValue: Double?) -> Double? {
         guard let miles = milesValue else { return nil }
-        switch distanceUnit {
-        case .miles:
-            return miles
-        case .kilometers:
-            return miles * 1.60934
-        }
-    }
-    
-    private var unitPicker: some View {
-        Picker("Distance Unit", selection: $distanceUnitRawValue) {
-            ForEach(DistanceUnit.allCases) { unit in
-                Text(unit.label).tag(unit.rawValue)
-            }
-        }
-        .pickerStyle(.segmented)
-        .frame(width: 120)
-        .font(.system(size: 11, weight: .semibold))
-        .accessibilityLabel("Distance unit")
+        return distanceUnit.convertDistance(fromMiles: miles)
     }
 }
 
@@ -1490,9 +1492,7 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
     let onAddMedication: () -> Void
-	    let onShowHistory: () -> Void
-	    let onShowSettings: () -> Void
-	    let onShowFocusTimeline: () -> Void
+        let onShowFocusTimeline: () -> Void
 	    let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
 	    let displayedMedications: [Medication]
 	    let cabinetMedications: [Medication]
@@ -1521,8 +1521,7 @@ fileprivate struct MedicationsListMainContent: View {
                         MedicationsListHeader(
                             store: store,
                             horizontalInsets: horizontalInset,
-                            onShowHistory: onShowHistory,
-                            onShowSettings: onShowSettings,
+                            onAddMedication: onAddMedication,
                             onShowCabinet: onShowCabinet,
                             cabinetCount: cabinetMedications.count
                         )
@@ -1711,7 +1710,8 @@ fileprivate struct DoseButtonState: Identifiable {
 
     var loggedTimeLabel: String? {
         guard let actualTime else { return nil }
-        return "Taken at \(DoseButtonState.loggedTimeFormatter.string(from: actualTime))"
+        let statusLabel = status == .skipped ? "Skipped" : "Taken"
+        return "\(statusLabel) at \(DoseButtonState.loggedTimeFormatter.string(from: actualTime))"
     }
     
     private static let timeFormatter: DateFormatter = {
@@ -2725,11 +2725,11 @@ struct MedicationRow: View {
             GeometryReader { geometry in
                 HStack {
                     Spacer()
-                    Image(systemName: "checkmark")
+                    Image(systemName: cycleStatus == .skipped ? "xmark" : "checkmark")
                         .font(.system(size: geometry.size.height * 0.9, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color.white)
-                        .opacity(0.045)
-                        .rotationEffect(.degrees(-10))
+                        .foregroundColor(cycleStatus == .skipped ? skippedAccentColor : Color.white)
+                        .opacity(cycleStatus == .skipped ? 0.09 : 0.045)
+                        .rotationEffect(.degrees(cycleStatus == .skipped ? 0 : -10))
                         .frame(height: geometry.size.height * 0.9)
                         .padding(.trailing, 18)
                 }

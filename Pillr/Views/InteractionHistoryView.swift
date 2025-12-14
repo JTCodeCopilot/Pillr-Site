@@ -100,26 +100,6 @@ struct InteractionHistoryView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .safeAreaInset(edge: .bottom) {
-            if !interactionStore.interactionHistory.isEmpty {
-                HStack {
-                    Spacer()
-                    Button(action: { showingMedicationSelectionSheet = true }) {
-                        Text("Check Interactions")
-                            .font(.headline)
-                            .foregroundColor(Color(hex: "#404C42"))
-                            .frame(maxWidth: 320)
-                            .padding(.vertical, 14)
-                            .background(Color.pillrAccent)
-                            .cornerRadius(12)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
-                .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
-            }
-        }
     }
     
     // MARK: - Subviews

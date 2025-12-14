@@ -5,10 +5,13 @@ import UserNotifications
 
 struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
+    @EnvironmentObject var store: MedicationStore
     @ObservedObject private var storeManager = StoreManager.shared
+    @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = HealthDistanceUnit.miles.rawValue
     @State private var showingPremiumUpgrade = false
+    @State private var showingInteractionHistory = false
+    @State private var showingInteractionSelectionSheet = false
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
-    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
@@ -18,8 +21,8 @@ struct SettingsView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        settingsHeader
-                        aiSettingsSection
+                        interactionsSection
+                        healthSettingsSection
                         notificationSettingsSection
                         supportLinksSection
                         Color.clear.frame(height: 20)
@@ -38,6 +41,16 @@ struct SettingsView: View {
             PremiumUpgradeView()
                 .environmentObject(StoreManager.shared)
         }
+        .sheet(isPresented: $showingInteractionHistory) {
+            InteractionHistoryView()
+                .environmentObject(store)
+                .environmentObject(storeManager)
+        }
+        .sheet(isPresented: $showingInteractionSelectionSheet) {
+            MedicationInteractionSelectionSheet()
+                .environmentObject(store)
+                .environmentObject(storeManager)
+        }
         .task {
             // Update purchased products and load products when the view appears
             await storeManager.loadProducts()
@@ -45,46 +58,41 @@ struct SettingsView: View {
             refreshNotificationSettings()
         }
     }
-    // Computed property for AI Settings section
-    private var aiSettingsSection: some View {
-        settingsSection(title: "AI Features") {
-            if storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser() {
-                let subscriptionDescription = OpenAIService.shared.getSubscriptionType()
-                    .map { "\($0.capitalized) subscription" }
-                    ?? "AI-powered interaction checking enabled"
-
-                HStack(alignment: .top, spacing: SettingsMetrics.rowSpacing) {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: SettingsMetrics.rowIconSize, weight: .semibold, design: .rounded))
-                        .foregroundColor(SettingsPalette.mainText)
-                        .frame(width: SettingsMetrics.rowIconFrame, height: SettingsMetrics.rowIconFrame, alignment: .leading)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Premium Active")
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
-                            .foregroundColor(SettingsPalette.mainText)
-
-                        Text(subscriptionDescription)
-                            .font(.system(size: 14, weight: .regular, design: .rounded))
-                            .foregroundColor(SettingsPalette.secondaryText)
+    
+    private var healthSettingsSection: some View {
+        settingsSection(title: "Apple Health") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Choose how Pillr displays your Health distance values. This controls whether steps convert to miles or kilometers in the Health Snapshot.")
+                    .font(.system(size: 14, design: .rounded))
+                    .foregroundColor(SettingsPalette.secondaryText)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 4)
+                
+                Picker("Distance Unit", selection: $distanceUnitRawValue) {
+                    ForEach(HealthDistanceUnit.allCases) { unit in
+                        Text(unit.label).tag(unit.rawValue)
                     }
-
-                    Spacer()
-
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "#7CD4BA"))
-                        .frame(width: 24, height: 24)
                 }
-                .padding(.vertical, 10)
-            } else {
-                settingsActionRow(
-                    iconName: "hourglass",
-                    title: "Upgrade to Premium",
-                    subtitle: "Unlock AI-powered medication analysis"
-                ) {
-                    showingPremiumUpgrade = true
-                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel("Health distance unit")
+            }
+        }
+    }
+    
+    private var interactionsSection: some View {
+        settingsSection(title: "AI Interactions") {
+            settingsActionRow(
+                title: "Check Interactions",
+                subtitle: "Compare medications for potential conflicts"
+            ) {
+                showingInteractionSelectionSheet = true
+            }
+
+            settingsActionRow(
+                title: "Interaction History",
+                subtitle: "Review your past interaction checks"
+            ) {
+                showingInteractionHistory = true
             }
         }
     }
@@ -107,7 +115,6 @@ struct SettingsView: View {
             }
 
             settingsActionRow(
-                iconName: "gearshape.fill",
                 title: "Open iOS Settings",
                 subtitle: "Manage Pillr notification permissions",
                 action: openAppSettings
@@ -129,37 +136,35 @@ struct SettingsView: View {
     
     private var supportLinksSection: some View {
         settingsSection(title: "Support & Resources") {
-            settingsActionRow(iconName: "hand.raised.fill", title: "Privacy Policy") {
+            let premiumActive = storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
+
+            if premiumActive {
+                settingsActionRow(
+                    title: "Premium Purchased",
+                    showChevron: false,
+                    trailingIcon: "checkmark"
+                ) {}
+            } else {
+                settingsActionRow(
+                    title: "Upgrade to Premium",
+                    subtitle: "Unlock AI-powered medication analysis",
+                    showChevron: false
+                ) {
+                    showingPremiumUpgrade = true
+                }
+            }
+
+            settingsActionRow(title: "Privacy Policy") {
                 openLink("https://tally.so/r/3yR6M4")
             }
 
-            settingsActionRow(iconName: "message.fill", title: "Feedback") {
+            settingsActionRow(title: "Feedback") {
                 openLink("https://tally.so/r/w2yeXV")
             }
 
-            settingsActionRow(iconName: "envelope.fill", title: "Contact Us") {
+            settingsActionRow(title: "Contact Us") {
                 openLink("https://tally.so/r/3qMdL7")
             }
-        }
-    }
-
-    private var settingsHeader: some View {
-        HStack {
-            Text("Settings")
-                .font(.system(size: 32, weight: .semibold, design: .rounded))
-                .foregroundColor(SettingsPalette.mainText)
-
-            Spacer()
-
-            closeButton
-        }
-        .padding(.top, 12)
-        .padding(.bottom, 18)
-    }
-
-    private var closeButton: some View {
-        SettingsCloseButton {
-            dismiss()
         }
     }
 
@@ -184,14 +189,15 @@ struct SettingsView: View {
         .settingsCardStyle()
     }
 
-    private func settingsActionRow(iconName: String, title: String, subtitle: String? = nil, iconColor: Color = SettingsPalette.mainText, action: @escaping () -> Void) -> some View {
+    private func settingsActionRow(
+        title: String,
+        subtitle: String? = nil,
+        showChevron: Bool = true,
+        trailingIcon: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             HStack(alignment: .top, spacing: SettingsMetrics.rowSpacing) {
-                Image(systemName: iconName)
-                    .font(.system(size: SettingsMetrics.rowIconSize, weight: .semibold, design: .rounded))
-                    .foregroundColor(iconColor)
-                    .frame(width: SettingsMetrics.rowIconFrame, height: SettingsMetrics.rowIconFrame, alignment: .leading)
-
                 VStack(alignment: .leading, spacing: subtitle == nil ? 0 : 4) {
                     Text(title)
                         .font(.system(size: 16, weight: .medium, design: .rounded))
@@ -206,9 +212,17 @@ struct SettingsView: View {
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: SettingsMetrics.arrowSize, weight: .semibold))
-                    .foregroundColor(SettingsPalette.arrowColor.opacity(SettingsMetrics.arrowOpacity))
+                if let iconName = trailingIcon {
+                    Image(systemName: iconName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(SettingsPalette.secondaryText)
+                        .padding(.top, 2)
+                } else if showChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(SettingsPalette.secondaryText)
+                        .padding(.top, 2)
+                }
             }
             .contentShape(Rectangle())
             .padding(.vertical, 10)
@@ -281,6 +295,7 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView()
             .environmentObject(UserSettings.shared)
+            .environmentObject(MedicationStore.shared)
 
             .preferredColorScheme(.dark)
     }

@@ -34,8 +34,7 @@ class PillrAppDelegate: NSObject, UIApplicationDelegate {
 
 @main
 struct PillrApp: App {
-    // IMPORTANT: Free users keep their medication data locally in UserDefaults.
-    // Premium users unlock iCloud sync for cross-device data mirroring.
+    // IMPORTANT: Medication data stays on-device and mirrors to iCloud for backup.
     // Data is only removed when the app is completely uninstalled.
     
     @UIApplicationDelegateAdaptor private var appDelegate: PillrAppDelegate

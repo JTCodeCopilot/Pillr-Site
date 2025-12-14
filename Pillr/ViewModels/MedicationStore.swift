@@ -7,7 +7,6 @@
 
 
 import SwiftUI
-import Combine
 import UserNotifications
 import CloudKit
 
@@ -53,7 +52,6 @@ class MedicationStore: ObservableObject {
     private let notificationManager = NotificationManager.shared
     private let hapticManager = HapticManager.shared
     private let cloudSync = CloudKitMedicationSync.shared
-    private var premiumStatusObserver: AnyCancellable?
     
     // Shared instance for access from notification handlers
     static let shared = MedicationStore()
@@ -73,7 +71,7 @@ class MedicationStore: ObservableObject {
     private let isPreviewMode: Bool
 
     private var shouldUseCloudSync: Bool {
-        !isPreviewMode && UserSettings.shared.isPremiumUser
+        !isPreviewMode
     }
 
     var activeMedications: [Medication] {
@@ -88,7 +86,6 @@ class MedicationStore: ObservableObject {
             if shouldUseCloudSync {
                 fetchCloudData()
             }
-            observePremiumStatusChanges()
         }
     }
     
@@ -1020,16 +1017,6 @@ class MedicationStore: ObservableObject {
         }
 
         return mutable
-    }
-
-    private func observePremiumStatusChanges() {
-        premiumStatusObserver = UserSettings.shared.$isPremiumUser
-            .dropFirst()
-            .removeDuplicates()
-            .sink { [weak self] isPremium in
-                guard let self = self, isPremium else { return }
-                self.fetchCloudData()
-            }
     }
 
     // Made public to support previews

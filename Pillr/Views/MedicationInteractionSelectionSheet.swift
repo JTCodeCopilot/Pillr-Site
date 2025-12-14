@@ -560,6 +560,13 @@ struct MedicationInteractionSelectionSheet: View {
     
     private func checkSelectedMedicationInteractions() async {
         guard canCheckInteractions else { return }
+
+        guard OpenAIService.shared.isPremiumUser() else {
+            await MainActor.run {
+                showingPremiumUpgrade = true
+            }
+            return
+        }
         
         withAnimation(.easeInOut(duration: 0.3)) {
             isCheckingInteractions = true
@@ -571,18 +578,6 @@ struct MedicationInteractionSelectionSheet: View {
         
         let medications = allMedicationsToCheck
         var interactionResults: [DrugInteraction] = []
-        
-        // Check if user has premium access
-        guard OpenAIService.shared.isPremiumUser() else {
-            await MainActor.run {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    interactionCheckError = "Premium subscription required to access AI-powered interaction checking."
-                    isCheckingInteractions = false
-                    hasCompletedCheck = true
-                }
-            }
-            return
-        }
         
         await MainActor.run {
             currentCheckingPair = "Analyzing all medications..."
