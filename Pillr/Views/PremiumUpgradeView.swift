@@ -19,6 +19,9 @@ struct PremiumUpgradeView: View {
     ]
 
     private let brandAccent = Color(hex: "#C8F365")
+    private var priceText: String {
+        storeManager.getPremiumProduct()?.displayPrice ?? "$2.99"
+    }
     private var recentUpgradeText: String {
         let calendar = Calendar.current
         let now = Date()
@@ -36,31 +39,22 @@ struct PremiumUpgradeView: View {
 
     var body: some View {
         ZStack {
-            SettingsPalette.backgroundColor
-                .ignoresSafeArea()
+            backgroundView
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 26) {
+                VStack(spacing: 28) {
                     headerSection
 
-                    lifetimeAccessCard
-
-                    featureConfirmationList
-
-                    socialProofRow
-
-                    purchaseButtonView(for: storeManager.getPremiumProduct())
-                        .padding(.vertical, 12)
+                    pricingCard
 
                     secondaryActionsSection
+                        .padding(.top, 8)
 
                     disclaimerSection
-
-                    Spacer(minLength: 12)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 48)
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 64)
             }
         }
         .preferredColorScheme(.dark)
@@ -88,106 +82,171 @@ struct PremiumUpgradeView: View {
         }
     }
 
+    private var backgroundView: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(hex: "#0D1612"),
+                    Color(hex: "#111F1A"),
+                    Color(hex: "#0A0F0B")
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            RadialGradient(
+                gradient: Gradient(colors: [brandAccent.opacity(0.35), .clear]),
+                center: .topTrailing,
+                startRadius: 30,
+                endRadius: 420
+            )
+            .blur(radius: 80)
+            .offset(x: 120, y: -160)
+
+            RadialGradient(
+                gradient: Gradient(colors: [Color.white.opacity(0.08), .clear]),
+                center: .bottomLeading,
+                startRadius: 10,
+                endRadius: 380
+            )
+            .blur(radius: 60)
+            .offset(x: -100, y: 220)
+        }
+        .ignoresSafeArea()
+    }
+
     private var headerSection: some View {
         HStack {
-            Text("Pillr Premium")
-                .font(.system(size: 32, weight: .semibold, design: .rounded))
-                .foregroundColor(SettingsPalette.mainText)
-
             Spacer()
 
             SettingsCloseButton {
                 dismiss()
             }
         }
-        .padding(.top, 12)
+        .padding(.top, 8)
     }
 
-    private var lifetimeAccessCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
+    private var pricingCard: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text("Lifetime Premium Access")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(SettingsPalette.mainText)
+                    .font(.system(size: 26, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
 
                 Text("Pay once. Use forever.")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundColor(SettingsPalette.mainText.opacity(0.85))
+                    .font(.system(size: 17, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.7))
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(priceText)
+                        .font(.system(size: 62, weight: .bold, design: .rounded))
+                        .kerning(-1)
+                        .foregroundColor(.white)
+
+                    Text("One time payment")
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.65))
+                }
+            }
+
+            purchaseButtonView(for: storeManager.getPremiumProduct())
+            
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 1)
+
+            featureChecklist
+
+            socialProofRow
+        }
+        .padding(.vertical, 34)
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var featureChecklist: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(featureHighlights.enumerated()), id: \.offset) { index, feature in
+                featureRow(text: feature, isLast: index == featureHighlights.count - 1)
             }
         }
-        .padding(.vertical, 22)
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color(hex: "#7F867D"))
-        )
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(Color.white.opacity(0.01))
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.18), lineWidth: 1.2)
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.55), radius: 22, x: 0, y: 16)
+    }
+
+    private func featureRow(text: String, isLast: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .stroke(Color.white.opacity(0.45), lineWidth: 1.4)
+                        .frame(width: 24, height: 24)
+
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(brandAccent)
+                }
+
+                Text(text)
+                    .font(.system(size: 17, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+
+            if !isLast {
+                Rectangle()
+                    .fill(Color.white.opacity(0.07))
+                    .frame(height: 1)
+            }
+        }
     }
 
     private var socialProofRow: some View {
-        HStack(spacing: 10) {
-            Text(recentUpgradeText)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundColor(Color(hex: "#1F3220").opacity(0.6))
-                .lineLimit(1)
-                .layoutPriority(1)
-
+        HStack(spacing: 12) {
             Circle()
-                .fill(brandAccent)
+                .fill(brandAccent.opacity(0.9))
                 .frame(width: 6, height: 6)
                 .scaleEffect(isPulseAnimating ? 1.6 : 1.0)
-                .opacity(isPulseAnimating ? 0.25 : 1)
-                .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: isPulseAnimating)
+                .opacity(isPulseAnimating ? 0.4 : 1)
+                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: isPulseAnimating)
                 .onAppear {
                     isPulseAnimating = true
                 }
 
-            Text("Updated \(recentUpdateMinutes) minutes ago")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundColor(Color(hex: "#1F3220").opacity(0.6))
+            Text(recentUpgradeText)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.7))
                 .lineLimit(1)
+
+            Circle()
+                .fill(Color.white.opacity(0.3))
+                .frame(width: 3, height: 3)
+
+            Text("Updated \(recentUpdateMinutes) minutes ago")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundColor(Color.white.opacity(0.5))
+                .lineLimit(1)
+
+            Spacer()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(0.9))
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.white.opacity(0.04))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(SettingsPalette.mainText.opacity(0.35), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
         )
-    }
-
-    private var featureConfirmationList: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(featureHighlights, id: \.self) { feature in
-                HStack(alignment: .center, spacing: 10) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(brandAccent)
-
-                    Text(feature)
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundColor(SettingsPalette.mainText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.white.opacity(0.04))
-                )
-            }
-        }
-        .padding(16)
-        .settingsCardStyle(cornerRadius: 28)
     }
 
     @ViewBuilder
@@ -201,7 +260,7 @@ struct PremiumUpgradeView: View {
                     if isButtonLoading && !isPreview {
                         HStack(spacing: 8) {
                             ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: Color.black.opacity(0.7)))
+                                .progressViewStyle(CircularProgressViewStyle(tint: Color.white.opacity(0.85)))
                                 .scaleEffect(0.8)
                             Text("Processing...")
                                 .font(.system(size: 18, weight: .semibold, design: .rounded))
@@ -210,21 +269,30 @@ struct PremiumUpgradeView: View {
                         VStack(spacing: 4) {
                             Text("Unlock Lifetime for \(product.displayPrice)")
                                 .font(.system(size: 19, weight: .heavy, design: .rounded))
-
-                            Text("One time payment")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .opacity(0.75)
                         }
                     }
                 }
-                .foregroundColor(Color(hex: "#1D260D"))
+                .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 23)
+                .padding(.vertical, 20)
                 .background(
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(brandAccent)
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.24),
+                                    Color.white.opacity(0.08)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .stroke(Color.white.opacity(0.25), lineWidth: 0.7)
+                        )
                 )
-                .shadow(color: brandAccent.opacity(0.55), radius: 24, x: 0, y: 14)
+                .shadow(color: Color.black.opacity(0.55), radius: 18, x: 0, y: 12)
             }
             .buttonStyle(PlainButtonStyle())
             .scaleEffect(isButtonLoading && !isPreview ? 0.98 : 1.0)
@@ -238,12 +306,16 @@ struct PremiumUpgradeView: View {
             }) {
                 Text("Purchase Unavailable")
                     .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundColor(Color(hex: "#4B534A"))
+                    .foregroundColor(Color.white.opacity(0.7))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
                     .background(
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(Color(hex: "#F1F3F0"))
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
+                            )
                     )
             }
             .buttonStyle(PlainButtonStyle())
@@ -252,26 +324,25 @@ struct PremiumUpgradeView: View {
     }
 
     private var secondaryActionsSection: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 10) {
             Button(action: { dismiss() }) {
                 Text("Continue with Free Version")
                     .font(.system(size: 13, weight: .regular, design: .rounded))
-                    .foregroundColor(SettingsPalette.secondaryText.opacity(0.5))
+                    .foregroundColor(Color.white.opacity(0.55))
                     .padding(.vertical, 6)
                     .frame(maxWidth: .infinity)
             }
             .accessibilityLabel("Continue with free version of Pillr")
-            .padding(.top, 26)
 
             Button(action: restorePurchases) {
                 Text("Restore Purchases")
                     .font(.system(size: 12, weight: .regular, design: .rounded))
-                    .foregroundColor(SettingsPalette.secondaryText.opacity(0.6))
-                    .underline(true, color: SettingsPalette.secondaryText.opacity(0.4))
+                    .foregroundColor(Color.white.opacity(0.5))
+                    .underline(true, color: Color.white.opacity(0.25))
                     .padding(.vertical, 4)
             }
         }
-        .padding(.top, 12)
+        .padding(.top, 8)
     }
 
     private var disclaimerSection: some View {
@@ -283,18 +354,18 @@ struct PremiumUpgradeView: View {
             }) {
                 HStack(spacing: 10) {
                     Image(systemName: "info.circle")
-                        .foregroundColor(SettingsPalette.mainText)
+                        .foregroundColor(Color.white.opacity(0.9))
                         .font(.system(size: 16, weight: .semibold))
 
                     Text("Medical Disclaimer")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundColor(SettingsPalette.mainText)
+                        .foregroundColor(.white)
 
                     Spacer()
 
                     Image(systemName: "chevron.down")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(SettingsPalette.secondaryText)
+                        .foregroundColor(Color.white.opacity(0.6))
                         .rotationEffect(.degrees(isDisclaimerExpanded ? 180 : 0))
                         .animation(.easeInOut(duration: 0.2), value: isDisclaimerExpanded)
                 }
@@ -305,18 +376,18 @@ struct PremiumUpgradeView: View {
             if isDisclaimerExpanded {
                 Text("This app is for tracking purposes only and should not replace professional medical advice. Always consult your healthcare provider regarding your medications.")
                     .font(.system(size: 13, design: .rounded))
-                    .foregroundColor(SettingsPalette.secondaryText)
+                    .foregroundColor(Color.white.opacity(0.7))
                     .multilineTextAlignment(.leading)
                     .padding(.top, 12)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding(16)
-        .background(Color.white.opacity(0.06))
+        .background(Color.white.opacity(0.04))
         .cornerRadius(18)
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
         )
     }
 
