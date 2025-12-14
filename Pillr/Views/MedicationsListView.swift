@@ -802,7 +802,7 @@ fileprivate func MedicationsListHeader(
                 .frame(width: 46, height: 46)
                 .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
                 .contentShape(Circle())
-
+                .onboardingTarget(.addMedicationButton)
             }
         }
     }

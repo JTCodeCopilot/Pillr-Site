@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum MainTab: Hashable {
+enum MainTab: Hashable, CaseIterable {
     case meds
     case history
     case focus
@@ -16,6 +16,9 @@ struct MainTabView: View {
     @StateObject private var addFlowCoordinator = AddMedicationFlowCoordinator()
     @State private var pendingTabSelection: MainTab?
     @State private var showDiscardAlert = false
+    @AppStorage("hasCompletedOnboardingGuide") private var hasCompletedOnboardingGuide = false
+    @State private var onboardingStep: OnboardingStep?
+    @State private var highlightFrames: [OnboardingTarget: CGRect] = [:]
 
     private var tabSelection: Binding<MainTab> {
         Binding(
@@ -32,49 +35,63 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        ZStack {
-            // Shared app background
-            LinearGradient.pillrBackground
-                .ignoresSafeArea()
-            
-            TabView(selection: tabSelection) {
-                // Home / My Meds
-                MedicationsHomeView(addFlowCoordinator: addFlowCoordinator)
-                    .tabItem {
-                        Image(systemName: "pill")
-                            .symbolVariant(.none)
-                            .accessibilityLabel("My Meds")
-                    }
-                    .tag(MainTab.meds)
+        GeometryReader { geometry in
+            ZStack {
+                LinearGradient.pillrBackground
+                    .ignoresSafeArea()
                 
-                // Medication history
-                MedicationHistoryView()
-                    .tabItem {
-                        Image(systemName: "calendar")
-                            .accessibilityLabel("History")
-                    }
-                    .tag(MainTab.history)
-                
-                // Focus timeline
-                FocusTimelineView(isModal: false)
-                    .tabItem {
-                        Image(systemName: "hourglass")
-                            .accessibilityLabel("Focus")
-                    }
-                    .tag(MainTab.focus)
-                
-                // Settings / More
-                SettingsView()
-                    .tabItem {
-                        Image(systemName: "ellipsis")
-                            .accessibilityLabel("More")
-                    }
-                    .tag(MainTab.more)
+                TabView(selection: tabSelection) {
+                    MedicationsHomeView(addFlowCoordinator: addFlowCoordinator)
+                        .tabItem {
+                            Image(systemName: "pill")
+                                .symbolVariant(.none)
+                                .accessibilityLabel("My Meds")
+                        }
+                        .tag(MainTab.meds)
+                    
+                    MedicationHistoryView()
+                        .tabItem {
+                            Image(systemName: "calendar")
+                                .accessibilityLabel("History")
+                        }
+                        .tag(MainTab.history)
+                    
+                    FocusTimelineView(isModal: false)
+                        .tabItem {
+                            Image(systemName: "hourglass")
+                                .accessibilityLabel("Focus")
+                        }
+                        .tag(MainTab.focus)
+                    
+                    SettingsView()
+                        .tabItem {
+                            Image(systemName: "ellipsis")
+                                .accessibilityLabel("More")
+                        }
+                        .tag(MainTab.more)
+                }
+                .onChange(of: selectedTab) { _ in
+                    HapticManager.shared.strongImpact()
+                }
+                .accentColor(Color.pillrAccent)
+
             }
-            .onChange(of: selectedTab) { _ in
-                HapticManager.shared.strongImpact()
+            .coordinateSpace(name: "onboarding")
+            .onPreferenceChange(OnboardingHighlightPreferenceKey.self) { highlightFrames = $0 }
+            .overlay {
+                if let step = onboardingStep {
+                    OnboardingGuideOverlay(
+                        step: step,
+                        geometry: geometry,
+                        highlightFrame: highlightRect(for: step, geometry: geometry),
+                        stepIndex: stepIndex(for: step),
+                        totalSteps: OnboardingStep.allCases.count,
+                        onNext: advanceOnboarding,
+                        onSkip: skipOnboarding
+                    )
+                    .transition(.opacity)
+                }
             }
-            .accentColor(Color.pillrAccent)
         }
         .alert("Discard medication?", isPresented: $showDiscardAlert) {
             Button("Discard", role: .destructive) {
@@ -88,6 +105,12 @@ struct MainTabView: View {
         } message: {
             Text("Any progress you've made on this medication will be discarded.")
         }
+        .onAppear {
+            startOnboardingIfNeeded()
+        }
+        .onChange(of: onboardingStep) { newStep in
+            handleOnboardingStepChange(newStep)
+        }
         .onChange(of: store.requestedMainTab) { requested in
             guard let requested else { return }
             selectedTab = requested
@@ -97,6 +120,71 @@ struct MainTabView: View {
         }
         .preferredColorScheme(.dark)
     }
+
+    private func startOnboardingIfNeeded() {
+        guard !hasCompletedOnboardingGuide else { return }
+        if onboardingStep == nil {
+            onboardingStep = .addMedication
+        }
+    }
+
+    private func advanceOnboarding() {
+        guard let current = onboardingStep,
+              let index = OnboardingStep.allCases.firstIndex(of: current) else {
+            return
+        }
+
+        let nextIndex = index + 1
+        if OnboardingStep.allCases.indices.contains(nextIndex) {
+            onboardingStep = OnboardingStep.allCases[nextIndex]
+        } else {
+            completeOnboarding()
+        }
+    }
+
+    private func skipOnboarding() {
+        completeOnboarding()
+    }
+
+    private func completeOnboarding() {
+        hasCompletedOnboardingGuide = true
+        onboardingStep = nil
+    }
+
+    private func handleOnboardingStepChange(_ step: OnboardingStep?) {
+        guard let step else { return }
+        switch step {
+        case .historyTab:
+            selectedTab = .history
+        case .focusTimeline:
+            selectedTab = .focus
+        default:
+            if selectedTab != .meds {
+                selectedTab = .meds
+            }
+        }
+    }
+
+    private func highlightRect(for step: OnboardingStep, geometry: GeometryProxy) -> CGRect? {
+        guard step.target != .historyTab else { return nil }
+        guard let rect = highlightFrames[step.target] else { return nil }
+        return convertToLocal(rect, geometry: geometry)
+    }
+
+    private func convertToLocal(_ rect: CGRect, geometry: GeometryProxy) -> CGRect {
+        let rootFrame = geometry.frame(in: .global)
+        return CGRect(
+            x: rect.origin.x - rootFrame.origin.x,
+            y: rect.origin.y - rootFrame.origin.y,
+            width: rect.width,
+            height: rect.height
+        )
+    }
+
+    private func stepIndex(for step: OnboardingStep) -> Int {
+        (OnboardingStep.allCases.firstIndex(of: step) ?? 0) + 1
+    }
+
 }
 
 struct MedicationsHomeView: View {

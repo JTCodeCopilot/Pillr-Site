@@ -294,7 +294,7 @@ struct FocusTimelineView: View {
                         headerSection
                         
                         if hasWindows {
-                            ForEach(focusWindowGroups) { group in
+                            ForEach(Array(focusWindowGroups.enumerated()), id: \.element.id) { index, group in
                                 FocusWindowRow(
                                     group: group,
                                     formatTime: formatTime,
@@ -302,9 +302,11 @@ struct FocusTimelineView: View {
                                         handleMedicationSelection(group.medication)
                                     }
                                 )
+                                .onboardingTarget(.focusTimeline, enabled: index == 0)
                             }
                         } else {
                             emptyState
+                                .onboardingTarget(.focusTimeline)
                         }
                     }
                     .padding(.horizontal, timelineHorizontalPadding)
