@@ -302,11 +302,9 @@ struct FocusTimelineView: View {
                                         handleMedicationSelection(group.medication)
                                     }
                                 )
-                                .onboardingTarget(.focusTimeline, enabled: index == 0)
                             }
                         } else {
                             emptyState
-                                .onboardingTarget(.focusTimeline)
                         }
                     }
                     .padding(.horizontal, timelineHorizontalPadding)

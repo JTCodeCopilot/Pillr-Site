@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum MainTab: Hashable, CaseIterable {
+enum MainTab: String, Hashable, CaseIterable {
     case meds
     case history
     case focus
@@ -16,9 +16,8 @@ struct MainTabView: View {
     @StateObject private var addFlowCoordinator = AddMedicationFlowCoordinator()
     @State private var pendingTabSelection: MainTab?
     @State private var showDiscardAlert = false
-    @AppStorage("hasCompletedOnboardingGuide") private var hasCompletedOnboardingGuide = false
-    @State private var onboardingStep: OnboardingStep?
-    @State private var highlightFrames: [OnboardingTarget: CGRect] = [:]
+    @State private var activeOnboardingStage: OnboardingStageInfo?
+    @State private var activeOnboardingTab: MainTab?
 
     private var tabSelection: Binding<MainTab> {
         Binding(
@@ -28,76 +27,66 @@ struct MainTabView: View {
                     pendingTabSelection = newValue
                     showDiscardAlert = true
                 } else {
-                    selectedTab = newValue
+                    applySelectedTab(newValue)
                 }
             }
         )
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                LinearGradient.pillrBackground
-                    .ignoresSafeArea()
+        ZStack {
+            LinearGradient.pillrBackground
+                .ignoresSafeArea()
+            
+            TabView(selection: tabSelection) {
+                MedicationsHomeView(addFlowCoordinator: addFlowCoordinator)
+                    .tabItem {
+                        Image(systemName: "pill")
+                            .symbolVariant(.none)
+                            .accessibilityLabel("My Meds")
+                    }
+                    .tag(MainTab.meds)
                 
-                TabView(selection: tabSelection) {
-                    MedicationsHomeView(addFlowCoordinator: addFlowCoordinator)
-                        .tabItem {
-                            Image(systemName: "pill")
-                                .symbolVariant(.none)
-                                .accessibilityLabel("My Meds")
-                        }
-                        .tag(MainTab.meds)
-                    
-                    MedicationHistoryView()
-                        .tabItem {
-                            Image(systemName: "calendar")
-                                .accessibilityLabel("History")
-                        }
-                        .tag(MainTab.history)
-                    
-                    FocusTimelineView(isModal: false)
-                        .tabItem {
-                            Image(systemName: "hourglass")
-                                .accessibilityLabel("Focus")
-                        }
-                        .tag(MainTab.focus)
-                    
-                    SettingsView()
-                        .tabItem {
-                            Image(systemName: "ellipsis")
-                                .accessibilityLabel("More")
-                        }
-                        .tag(MainTab.more)
-                }
-                .onChange(of: selectedTab) { _ in
-                    HapticManager.shared.strongImpact()
-                }
-                .accentColor(Color.pillrAccent)
-
+                MedicationHistoryView()
+                    .tabItem {
+                        Image(systemName: "calendar")
+                            .accessibilityLabel("History")
+                    }
+                    .tag(MainTab.history)
+                
+                FocusTimelineView(isModal: false)
+                    .tabItem {
+                        Image(systemName: "hourglass")
+                            .accessibilityLabel("Focus")
+                    }
+                    .tag(MainTab.focus)
+                
+                SettingsView()
+                    .tabItem {
+                        Image(systemName: "ellipsis")
+                            .accessibilityLabel("More")
+                    }
+                    .tag(MainTab.more)
             }
-            .coordinateSpace(name: "onboarding")
-            .onPreferenceChange(OnboardingHighlightPreferenceKey.self) { highlightFrames = $0 }
-            .overlay {
-                if let step = onboardingStep {
-                    OnboardingGuideOverlay(
-                        step: step,
-                        geometry: geometry,
-                        highlightFrame: highlightRect(for: step, geometry: geometry),
-                        stepIndex: stepIndex(for: step),
-                        totalSteps: OnboardingStep.allCases.count,
-                        onNext: advanceOnboarding,
-                        onSkip: skipOnboarding
-                    )
-                    .transition(.opacity)
+            .onChange(of: selectedTab) { _ in
+                HapticManager.shared.strongImpact()
+            }
+            .accentColor(Color.pillrAccent)
+
+            if let stage = activeOnboardingStage {
+                OnboardingOverlayView(info: stage) {
+                    dismissOnboarding()
                 }
+                .transition(.opacity)
+                .zIndex(1)
             }
         }
         .alert("Discard medication?", isPresented: $showDiscardAlert) {
             Button("Discard", role: .destructive) {
                 addFlowCoordinator.discardFlow()
-                selectedTab = pendingTabSelection ?? .meds
+                let target = pendingTabSelection ?? .meds
                 pendingTabSelection = nil
+                applySelectedTab(target)
             }
             Button("Keep editing", role: .cancel) {
                 pendingTabSelection = nil
@@ -106,14 +95,11 @@ struct MainTabView: View {
             Text("Any progress you've made on this medication will be discarded.")
         }
         .onAppear {
-            startOnboardingIfNeeded()
-        }
-        .onChange(of: onboardingStep) { newStep in
-            handleOnboardingStepChange(newStep)
+            scheduleOnboarding(for: selectedTab)
         }
         .onChange(of: store.requestedMainTab) { requested in
             guard let requested else { return }
-            selectedTab = requested
+            applySelectedTab(requested)
             DispatchQueue.main.async {
                 store.requestedMainTab = nil
             }
@@ -121,68 +107,30 @@ struct MainTabView: View {
         .preferredColorScheme(.dark)
     }
 
-    private func startOnboardingIfNeeded() {
-        guard !hasCompletedOnboardingGuide else { return }
-        if onboardingStep == nil {
-            onboardingStep = .addMedication
+    private func applySelectedTab(_ tab: MainTab) {
+        selectedTab = tab
+        scheduleOnboarding(for: tab)
+    }
+
+    private func scheduleOnboarding(for tab: MainTab) {
+        guard activeOnboardingStage == nil else { return }
+        let key = tab.rawValue
+        guard !userSettings.hasSeenOnboardingStage(key) else { return }
+        guard let info = tab.onboardingInfo else { return }
+        activeOnboardingTab = tab
+        withAnimation(.easeInOut(duration: 0.2)) {
+            activeOnboardingStage = info
         }
     }
 
-    private func advanceOnboarding() {
-        guard let current = onboardingStep,
-              let index = OnboardingStep.allCases.firstIndex(of: current) else {
-            return
+    private func dismissOnboarding() {
+        if let tab = activeOnboardingTab {
+            userSettings.markOnboardingStageSeen(tab.rawValue)
         }
-
-        let nextIndex = index + 1
-        if OnboardingStep.allCases.indices.contains(nextIndex) {
-            onboardingStep = OnboardingStep.allCases[nextIndex]
-        } else {
-            completeOnboarding()
+        withAnimation(.easeInOut(duration: 0.15)) {
+            activeOnboardingStage = nil
+            activeOnboardingTab = nil
         }
-    }
-
-    private func skipOnboarding() {
-        completeOnboarding()
-    }
-
-    private func completeOnboarding() {
-        hasCompletedOnboardingGuide = true
-        onboardingStep = nil
-    }
-
-    private func handleOnboardingStepChange(_ step: OnboardingStep?) {
-        guard let step else { return }
-        switch step {
-        case .historyTab:
-            selectedTab = .history
-        case .focusTimeline:
-            selectedTab = .focus
-        default:
-            if selectedTab != .meds {
-                selectedTab = .meds
-            }
-        }
-    }
-
-    private func highlightRect(for step: OnboardingStep, geometry: GeometryProxy) -> CGRect? {
-        guard step.target != .historyTab else { return nil }
-        guard let rect = highlightFrames[step.target] else { return nil }
-        return convertToLocal(rect, geometry: geometry)
-    }
-
-    private func convertToLocal(_ rect: CGRect, geometry: GeometryProxy) -> CGRect {
-        let rootFrame = geometry.frame(in: .global)
-        return CGRect(
-            x: rect.origin.x - rootFrame.origin.x,
-            y: rect.origin.y - rootFrame.origin.y,
-            width: rect.width,
-            height: rect.height
-        )
-    }
-
-    private func stepIndex(for step: OnboardingStep) -> Int {
-        (OnboardingStep.allCases.firstIndex(of: step) ?? 0) + 1
     }
 
 }
@@ -213,6 +161,65 @@ struct MedicationsHomeView: View {
                     .scrollContentBackground(.hidden)
                     .frame(maxHeight: .infinity)
             }
+        }
+    }
+}
+
+private extension MainTab {
+    var onboardingInfo: OnboardingStageInfo? {
+        switch self {
+        case .meds:
+                return OnboardingStageInfo(
+                    title: "My Meds",
+                    description: "Track every active medication, log reminders, and tap cabinet cards for quick dosing.",
+                    benefits: [
+                        "See reminder and cabinet meds grouped in one scrollable list.",
+                        "Log doses and undo mistakes in seconds with the toast.",
+                        "Open a pill card to check interactions or reschedule reminders."
+                    ],
+                    iconName: "pills.fill",
+                    accentColor: Color(hex: "#C8F365"),
+                    buttonAccessibilityLabel: "Continue to My Meds"
+                )
+        case .history:
+                return OnboardingStageInfo(
+                    title: "Medication History",
+                    description: "Review every log to understand patterns, missed doses, and progress.",
+                    benefits: [
+                        "Filter by medication or day to spot adherence streaks.",
+                        "Tap entries for notes, refills, or cabinet details.",
+                        "Catch gaps before they become habits."
+                    ],
+                    iconName: "calendar.badge.clock",
+                    accentColor: Color(hex: "#81C784"),
+                    buttonAccessibilityLabel: "Continue to History"
+                )
+        case .focus:
+                return OnboardingStageInfo(
+                    title: "Focus Timeline",
+                    description: "Visualize how medications support your focus and energy throughout the day.",
+                    benefits: [
+                        "Track reminders, logs, and focus shifts on a single timeline.",
+                        "Spot downtime so you can rebalance dosages or breaks.",
+                        "Tap the timeline to explore your strongest focus windows."
+                    ],
+                    iconName: "hourglass",
+                    accentColor: Color(hex: "#64B5F6"),
+                    buttonAccessibilityLabel: "Continue to Focus Timeline"
+                )
+        case .more:
+                return OnboardingStageInfo(
+                    title: "More",
+                    description: "Manage preferences, privacy, and premium upgrades in one place.",
+                    benefits: [
+                        "Tweak reminders, notifications, and sync settings with confidence.",
+                        "Review our privacy promise whenever you need reassurance.",
+                        "Restore purchases or unlock premium perks without leaving this tab."
+                    ],
+                    iconName: "ellipsis.circle",
+                    accentColor: Color(hex: "#FFB74D"),
+                    buttonAccessibilityLabel: "Continue to Settings"
+                )
         }
     }
 }

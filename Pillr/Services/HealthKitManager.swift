@@ -89,6 +89,13 @@ final class HealthKitManager: ObservableObject {
         lastUpdated = Date()
     }
 
+    func refreshAuthorizationState() async {
+        updatePermissionState()
+        if hasAnyPermission {
+            await refreshMetrics()
+        }
+    }
+
     // MARK: - Private helpers
     var hasMetricValues: Bool {
         dailySteps != nil || dailyDistanceMiles != nil

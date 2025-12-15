@@ -157,6 +157,7 @@ class MedicationStore: ObservableObject {
         
         // Schedule notifications only if enabled
         if enableNotification {
+            notificationManager.requestAuthorizationIfNeeded()
             if isOneTimeWithFollowUp {
                 let notificationID = notificationManager.scheduleNotification(for: newMed)
                 newMed.notificationID = notificationID
@@ -207,6 +208,7 @@ class MedicationStore: ObservableObject {
             
             // Schedule new notifications if enabled
             if enableNotification {
+                notificationManager.requestAuthorizationIfNeeded()
                 if updatedMedication.isOneTimeWithFollowUp {
                     let newNotificationID = notificationManager.scheduleNotification(for: updatedMedication)
                     updatedMedication.notificationID = newNotificationID

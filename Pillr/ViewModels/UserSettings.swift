@@ -26,6 +26,14 @@ class UserSettings: ObservableObject {
     }
     
     @Published var isFirstLaunch: Bool = false
+
+    @Published private(set) var seenOnboardingStages: Set<String> = [] {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(Array(seenOnboardingStages), forKey: onboardingStagesKey)
+            }
+        }
+    }
     
     // Premium status management
     @Published var isPremiumUser: Bool {
@@ -53,6 +61,7 @@ class UserSettings: ObservableObject {
     private let privacyNoticeKey = "hasShownPrivacyNotice"
     private let premiumStatusKey = "is_premium_user"
     private let subscriptionTypeKey = "subscription_type"
+    private let onboardingStagesKey = "seen_onboarding_stages"
     private let isPreviewMode: Bool
     
     // Free tier limitations
@@ -74,6 +83,7 @@ class UserSettings: ObservableObject {
             self.hasShownPrivacyNotice = true
             self.isPremiumUser = false
             self.subscriptionType = nil
+            self.seenOnboardingStages = []
         } else {
             // Load user name if available, otherwise use default
             self.userName = UserDefaults.standard.string(forKey: userNameKey) ?? "User"
@@ -82,6 +92,7 @@ class UserSettings: ObservableObject {
             // Load premium status
             self.isPremiumUser = UserDefaults.standard.bool(forKey: premiumStatusKey)
             self.subscriptionType = UserDefaults.standard.string(forKey: subscriptionTypeKey)
+            self.seenOnboardingStages = Set(UserDefaults.standard.stringArray(forKey: onboardingStagesKey) ?? [])
         }
     }
     
@@ -124,4 +135,15 @@ class UserSettings: ObservableObject {
     func canUsePillTracking() -> Bool {
         return isPremiumUser
     }
-} 
+
+    func hasSeenOnboardingStage(_ key: String) -> Bool {
+        return seenOnboardingStages.contains(key)
+    }
+
+    func markOnboardingStageSeen(_ key: String) {
+        guard !seenOnboardingStages.contains(key) else { return }
+        var updatedStages = seenOnboardingStages
+        updatedStages.insert(key)
+        seenOnboardingStages = updatedStages
+    }
+}

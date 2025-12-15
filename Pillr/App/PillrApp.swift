@@ -126,7 +126,6 @@ struct PillrApp: App {
                 .onAppear {
                     // Reset badge when ContentView appears
                     store.checkAndResetBadge()
-                    NotificationManager.shared.requestAuthorizationIfNeeded()
                 }
                 .task {
                     // Initialize StoreKit, load products and check for purchases

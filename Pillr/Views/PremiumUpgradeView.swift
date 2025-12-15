@@ -10,6 +10,8 @@ struct PremiumUpgradeView: View {
     @State private var isButtonLoading = false
     @State private var isDisclaimerExpanded = false
     @State private var isPulseAnimating = false
+    @StateObject private var healthKitManager = HealthKitManager()
+    @State private var isHealthButtonLoading = false
 
     private struct FeatureComparison: Identifiable {
         let id = UUID()
@@ -91,6 +93,7 @@ struct PremiumUpgradeView: View {
                     showingAlert = true
                 }
             }
+            await healthKitManager.refreshAuthorizationState()
         }
     }
 
@@ -317,14 +320,23 @@ struct PremiumUpgradeView: View {
 
     private var secondaryActionsSection: some View {
         VStack(spacing: 10) {
-            Button(action: { dismiss() }) {
-                Text("Continue with Free Version")
-                    .font(.system(size: 13, weight: .regular, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.55))
-                    .padding(.vertical, 6)
-                    .frame(maxWidth: .infinity)
+            Button(action: handleSecondaryActionTap) {
+                HStack(spacing: 6) {
+                    if shouldPromptForHealthConnection && isHealthButtonLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color.white.opacity(0.85)))
+                            .scaleEffect(0.7)
+                    }
+
+                    Text(secondaryActionTitle)
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                }
+                .foregroundColor(Color.white.opacity(0.55))
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity)
             }
-            .accessibilityLabel("Continue with free version of Pillr")
+            .disabled(shouldPromptForHealthConnection && isHealthButtonLoading)
+            .accessibilityLabel(secondaryActionAccessibilityLabel)
 
             Button(action: restorePurchases) {
                 Text("Restore Purchases")
@@ -335,6 +347,39 @@ struct PremiumUpgradeView: View {
             }
         }
         .padding(.top, 8)
+    }
+
+    private var shouldPromptForHealthConnection: Bool {
+        healthKitManager.isHealthDataAvailable && !healthKitManager.hasAnyPermission
+    }
+
+    private var secondaryActionTitle: String {
+        shouldPromptForHealthConnection ? "Connect Apple Health" : "Continue with Free Version"
+    }
+
+    private var secondaryActionAccessibilityLabel: String {
+        secondaryActionTitle
+    }
+
+    private func handleSecondaryActionTap() {
+        guard shouldPromptForHealthConnection else {
+            dismiss()
+            return
+        }
+
+        if healthKitManager.hasDeniedPermission {
+            healthKitManager.openHealthSettings()
+            return
+        }
+
+        isHealthButtonLoading = true
+        Task {
+            await healthKitManager.requestAuthorizationIfNeeded()
+            await healthKitManager.refreshMetrics()
+            await MainActor.run {
+                isHealthButtonLoading = false
+            }
+        }
     }
 
     private var disclaimerSection: some View {
