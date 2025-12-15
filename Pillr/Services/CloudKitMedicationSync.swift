@@ -53,6 +53,9 @@ final class CloudKitMedicationSync {
         static let sideEffectSeverity = "sideEffectSeverity"
         static let notesLog = "notes"
         static let hiddenFromMyMeds = "hiddenFromMyMeds"
+        static let medicationDosageText = "medicationDosageText"
+        static let medicationIconName = "medicationIconName"
+        static let medicationReminderCount = "medicationReminderCount"
     }
 
     // MARK: - Public API
@@ -262,6 +265,9 @@ final class CloudKitMedicationSync {
         let recordID = CKRecord.ID(recordName: log.id.uuidString)
         let record = CKRecord(recordType: RecordType.medicationLog.rawValue, recordID: recordID)
         record[Field.medicationName] = log.medicationName as CKRecordValue
+        record[Field.medicationDosageText] = log.medicationDosageText as CKRecordValue
+        record[Field.medicationIconName] = log.medicationIconName as CKRecordValue
+        record[Field.medicationReminderCount] = log.medicationReminderCount as CKRecordValue
         record[Field.takenAt] = log.takenAt as CKRecordValue
         record[Field.hiddenFromMyMeds] = NSNumber(value: log.hiddenFromMyMeds)
         record[Field.skipped] = log.skipped as CKRecordValue
@@ -391,6 +397,9 @@ final class CloudKitMedicationSync {
         let focusRating = record[Field.focusRating] as? Int
         let sideEffectSeverity = record[Field.sideEffectSeverity] as? Int
         let hiddenFromMyMeds = record[Field.hiddenFromMyMeds] as? Bool ?? false
+        let medicationDosageText = record[Field.medicationDosageText] as? String ?? ""
+        let medicationIconName = record[Field.medicationIconName] as? String ?? "pill"
+        let medicationReminderCount = record[Field.medicationReminderCount] as? Int ?? 0
 
         return MedicationLog(
             id: id,
@@ -403,7 +412,10 @@ final class CloudKitMedicationSync {
             reminderIndex: reminderIndex,
             focusRating: focusRating,
             sideEffectSeverity: sideEffectSeverity,
-            hiddenFromMyMeds: hiddenFromMyMeds
+            hiddenFromMyMeds: hiddenFromMyMeds,
+            medicationDosageText: medicationDosageText,
+            medicationIconName: medicationIconName,
+            medicationReminderCount: medicationReminderCount
         )
     }
 }

@@ -569,9 +569,8 @@ struct MedicationLogView: View {
             let time = timeFormatter.string(from: log.takenAt)
             let medicationName = log.medicationName
             
-            // Get medication details if available
-            let medication = store.medications.first { $0.id == log.medicationID }
-            let dosage = medication != nil ? "\(medication!.dosage) \(medication!.dosageUnit)" : ""
+            // Use the stored dose text to avoid retroactive updates
+            let dosage = log.recordedDosageWithUnit
             
             // Clean up notes to be CSV compatible
             let cleanNotes = log.notes?.replacingOccurrences(of: ",", with: ";") ?? ""
@@ -617,8 +616,6 @@ struct MedicationLogView: View {
         let calendar = Calendar.current
         let groupedLogs = Dictionary(grouping: logs) { calendar.startOfDay(for: $0.takenAt) }
         let sortedDates = groupedLogs.keys.sorted(by: >)
-        let medicationsByID = Dictionary(uniqueKeysWithValues: store.medications.map { ($0.id, $0) })
-        
         let sectionDateFormatter = DateFormatter()
         sectionDateFormatter.dateStyle = .long
         let timeFormatter = DateFormatter()
@@ -721,13 +718,7 @@ struct MedicationLogView: View {
             }
             
             func drawLogEntry(_ log: MedicationLog) {
-                let medication = medicationsByID[log.medicationID]
-                let dosageText: String
-                if let med = medication {
-                    dosageText = "\(med.dosage) \(med.dosageUnit)"
-                } else {
-                    dosageText = ""
-                }
+                let dosageText = log.recordedDosageWithUnit
                 
                 let dateString = sectionDateFormatter.string(from: log.takenAt)
                 let timeString = timeFormatter.string(from: log.takenAt)
@@ -1076,7 +1067,7 @@ struct LogsContentView: View {
                         Section {
                             VStack(spacing: 12) {
                                 ForEach(groupedLogs[date] ?? []) { logEntry in
-                                    EnhancedLogEntryRow(logEntry: logEntry, store: store)
+                                    EnhancedLogEntryRow(logEntry: logEntry)
                                 }
                             }
                         } header: {
@@ -1092,7 +1083,7 @@ struct LogsContentView: View {
             ScrollView {
                 LazyVStack(spacing: 12) {
                     ForEach(logsForSelectedDate) { logEntry in
-                        EnhancedLogEntryRow(logEntry: logEntry, store: store)
+                        EnhancedLogEntryRow(logEntry: logEntry)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -1151,15 +1142,12 @@ struct DateSectionHeader: View {
 
 struct EnhancedLogEntryRow: View {
     let logEntry: MedicationLog
-    let store: MedicationStore
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showAdditionalInfo: Bool = false
-    
-    // Get medication details
-    private var medication: Medication? {
-        store.medications.first { $0.id == logEntry.medicationID }
+
+    private var resolvedIconName: String {
+        logEntry.recordedIconName.isEmpty ? "pill.fill" : logEntry.recordedIconName
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Main medication info
@@ -1169,44 +1157,44 @@ struct EnhancedLogEntryRow: View {
                     Circle()
                         .fill(Color(hex: "#525E55").opacity(0.15))
                         .frame(width: 44, height: 44)
-                    
-                    Image(systemName: medication?.unitIconName ?? "pill.fill")
+
+                    Image(systemName: resolvedIconName)
                         .font(.system(size: 20))
                         .foregroundColor(Color(hex: "#525E55"))
                 }
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     // Medication name and dosage
                     HStack {
                         Text(logEntry.medicationName)
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(Color(hex: "#525E55"))
-                        
+
                         Spacer()
-                        
+
                         // Time taken
                         Text(timeFormatter.string(from: logEntry.takenAt))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(Color(hex: "#525E55").opacity(0.8))
                     }
-                    
+
                     // Dosage information
-                    if let med = medication {
+                    if !logEntry.recordedDosageWithUnit.isEmpty {
                         HStack(spacing: 8) {
-                            Text("\(med.dosage) \(med.dosageUnit)")
+                            Text(logEntry.recordedDosageWithUnit)
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Color(hex: "#525E55"))
-                            
+
                             if let pillsConsumed = logEntry.pillsConsumed, pillsConsumed > 1 {
                                 Text("• \(pillsConsumed) pills")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#525E55").opacity(0.7))
                             }
-                            
+
                             Spacer()
                         }
                     }
-                    
+
                     // Show toggle button if notes exist
                     if let notes = logEntry.notes, !notes.isEmpty {
                         Button(action: {
@@ -1218,36 +1206,36 @@ struct EnhancedLogEntryRow: View {
                                 Text("Additional Information")
                                     .font(.system(size: 13))
                                     .foregroundColor(Color(hex: "#525E55").opacity(0.8))
-                                
+
                                 Spacer()
-                                
+
                                 Image(systemName: showAdditionalInfo ? "chevron.up" : "chevron.down")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#525E55").opacity(0.5))
                             }
                             .padding(.top, 6)
                         }
-                        
+
                         // Notes and side effects (collapsible)
                         if showAdditionalInfo {
                             VStack(alignment: .leading, spacing: 6) {
                                 if notes.contains("Side effects:") {
                                     let components = notes.components(separatedBy: "Side effects:")
-                                    
+
                                     // Regular notes
                                     if components.count > 0 && !components[0].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                         Text(components[0].trimmingCharacters(in: .whitespacesAndNewlines))
                                             .font(.system(size: 13))
                                             .foregroundColor(Color(hex: "#525E55").opacity(0.8))
                                     }
-                                    
+
                                     // Side effects
                                     if components.count > 1 {
                                         HStack(alignment: .top, spacing: 6) {
                                             Image(systemName: "exclamationmark.triangle.fill")
                                                 .font(.system(size: 12))
                                                 .foregroundColor(.orange)
-                                            
+
                                             Text("Side effects: \(components[1].trimmingCharacters(in: .whitespacesAndNewlines))")
                                                 .font(.system(size: 13, weight: .medium))
                                                 .foregroundColor(.orange)
@@ -1258,7 +1246,7 @@ struct EnhancedLogEntryRow: View {
                                         Image(systemName: "note.text.fill")
                                             .font(.system(size: 12))
                                             .foregroundColor(Color(hex: "#525E55").opacity(0.6))
-                                        
+
                                         Text(notes)
                                             .font(.system(size: 13))
                                             .foregroundColor(Color(hex: "#525E55").opacity(0.8))

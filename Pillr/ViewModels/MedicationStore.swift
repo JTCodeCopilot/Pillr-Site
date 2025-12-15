@@ -323,7 +323,10 @@ class MedicationStore: ObservableObject {
             pillsConsumed: pillsConsumed,
             reminderIndex: resolvedReminderIndex,
             focusRating: focusRating,
-            sideEffectSeverity: sideEffectSeverity
+            sideEffectSeverity: sideEffectSeverity,
+            medicationDosageText: medication.dosageWithUnit,
+            medicationIconName: medication.iconName,
+            medicationReminderCount: medication.reminderTimes.count
         )
         
         logs.insert(newLog, at: 0) // Add to the top

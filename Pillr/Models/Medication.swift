@@ -310,6 +310,9 @@ struct MedicationLog: Identifiable, Codable, Hashable {
     var focusRating: Int? // 1–5 focus quality rating
     var sideEffectSeverity: Int? // 1–5 overall side-effect severity
     var hiddenFromMyMeds: Bool = false // Hide from My Meds list while keeping it in history
+    var medicationDosageText: String = ""
+    var medicationIconName: String = "pill"
+    var medicationReminderCount: Int = 0
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -323,6 +326,9 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         case focusRating
         case sideEffectSeverity
         case hiddenFromMyMeds
+        case medicationDosageText
+        case medicationIconName
+        case medicationReminderCount
     }
 
     init(
@@ -336,7 +342,10 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         reminderIndex: Int? = nil,
         focusRating: Int? = nil,
         sideEffectSeverity: Int? = nil,
-        hiddenFromMyMeds: Bool = false
+        hiddenFromMyMeds: Bool = false,
+        medicationDosageText: String = "",
+        medicationIconName: String = "pill",
+        medicationReminderCount: Int = 0
     ) {
         self.id = id
         self.medicationID = medicationID
@@ -349,6 +358,9 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.focusRating = focusRating
         self.sideEffectSeverity = sideEffectSeverity
         self.hiddenFromMyMeds = hiddenFromMyMeds
+        self.medicationDosageText = medicationDosageText
+        self.medicationIconName = medicationIconName
+        self.medicationReminderCount = medicationReminderCount
     }
 
     init(from decoder: Decoder) throws {
@@ -365,6 +377,9 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.focusRating = try container.decodeIfPresent(Int.self, forKey: .focusRating)
         self.sideEffectSeverity = try container.decodeIfPresent(Int.self, forKey: .sideEffectSeverity)
         self.hiddenFromMyMeds = try container.decodeIfPresent(Bool.self, forKey: .hiddenFromMyMeds) ?? false
+        self.medicationDosageText = try container.decodeIfPresent(String.self, forKey: .medicationDosageText) ?? ""
+        self.medicationIconName = try container.decodeIfPresent(String.self, forKey: .medicationIconName) ?? "pill"
+        self.medicationReminderCount = try container.decodeIfPresent(Int.self, forKey: .medicationReminderCount) ?? 0
     }
 
     func encode(to encoder: Encoder) throws {
@@ -380,5 +395,22 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(focusRating, forKey: .focusRating)
         try container.encodeIfPresent(sideEffectSeverity, forKey: .sideEffectSeverity)
         try container.encode(hiddenFromMyMeds, forKey: .hiddenFromMyMeds)
+        try container.encode(medicationDosageText, forKey: .medicationDosageText)
+        try container.encode(medicationIconName, forKey: .medicationIconName)
+        try container.encode(medicationReminderCount, forKey: .medicationReminderCount)
+    }
+}
+
+extension MedicationLog {
+    var recordedDosageWithUnit: String {
+        medicationDosageText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var recordedIconName: String {
+        medicationIconName.isEmpty ? "pill" : medicationIconName
+    }
+
+    var recordedHasMultipleReminders: Bool {
+        medicationReminderCount > 1
     }
 }

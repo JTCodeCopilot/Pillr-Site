@@ -520,12 +520,14 @@ struct MedicationHistoryView: View {
                     
                     VStack(spacing: 18) {
                         ForEach(Array(logs.enumerated()), id: \.element.id) { index, log in
-                            MedicationTimelineRow(
-                                log: log,
-                                medication: medication(for: log),
-                                timeText: MedicationHistoryView.timeFormatter.string(from: log.takenAt),
-                                isLast: index == logs.count - 1
-                            )
+                        MedicationTimelineRow(
+                            log: log,
+                            iconName: log.recordedIconName,
+                            dosageText: log.recordedDosageWithUnit.isEmpty ? nil : log.recordedDosageWithUnit,
+                            showDoseChip: log.recordedHasMultipleReminders,
+                            timeText: MedicationHistoryView.timeFormatter.string(from: log.takenAt),
+                            isLast: index == logs.count - 1
+                        )
                         }
                     }
                 }
@@ -545,10 +547,6 @@ struct MedicationHistoryView: View {
         }
     }
     
-    private func medication(for log: MedicationLog) -> Medication? {
-        store.medications.first { $0.id == log.medicationID }
-    }
-
     private func applyPreset(days: Int) {
         let now = Date()
         selectedEndDate = now
@@ -567,18 +565,14 @@ struct MedicationHistoryView: View {
 
 private struct MedicationTimelineRow: View {
     let log: MedicationLog
-    let medication: Medication?
+    let iconName: String
+    let dosageText: String?
+    let showDoseChip: Bool
     let timeText: String
     let isLast: Bool
-    
-    private var iconName: String {
-        medication?.iconName ?? "pills.fill"
-    }
-    
-    private var dosageText: String? {
-        guard let medication else { return nil }
-        let text = medication.dosageWithUnit.trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty ? nil : text
+
+    private var resolvedIconName: String {
+        iconName.isEmpty ? "pill" : iconName
     }
     
     var body: some View {
@@ -600,7 +594,7 @@ private struct MedicationTimelineRow: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline) {
                     HStack(spacing: 8) {
-                        Image(systemName: iconName)
+                        Image(systemName: resolvedIconName)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(Color(hex: "#D7CCC8"))
                         
@@ -645,8 +639,7 @@ private struct MedicationTimelineRow: View {
                     }
                     
                     if let reminder = log.reminderIndex,
-                       let medication,
-                       medication.reminderTimes.count > 1 {
+                       showDoseChip {
                         HistoryChip(
                             icon: "bell.badge.fill",
                             text: "Dose \(reminder + 1)",
@@ -754,8 +747,7 @@ extension MedicationHistoryView {
         timeFormatter.timeStyle = .short
         
         for log in logs {
-            let med = medication(for: log)
-            let dosage = med?.dosageWithUnit ?? ""
+            let dosage = log.recordedDosageWithUnit
             let cleanNotes = (log.notes ?? "").replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: ",", with: ";")
             let status = log.skipped ? "Skipped" : "Taken"
             csv += "\(dateFormatter.string(from: log.takenAt)),\(timeFormatter.string(from: log.takenAt)),\(log.medicationName),\(dosage),\(status),\(cleanNotes)\n"
@@ -779,8 +771,6 @@ extension MedicationHistoryView {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: logs) { calendar.startOfDay(for: $0.takenAt) }
         let sortedDates = grouped.keys.sorted(by: >)
-        let medicationsByID = Dictionary(uniqueKeysWithValues: store.medications.map { ($0.id, $0) })
-        
         let sectionDateFormatter = DateFormatter()
         sectionDateFormatter.dateStyle = .long
         let timeFormatter = DateFormatter()
@@ -883,8 +873,7 @@ extension MedicationHistoryView {
             }
             
             func drawLogEntry(_ log: MedicationLog) {
-                let medication = medicationsByID[log.medicationID]
-                let dosageText = medication?.dosageWithUnit ?? ""
+                let dosageText = log.recordedDosageWithUnit
                 
                 let dateString = sectionDateFormatter.string(from: log.takenAt)
                 let timeString = timeFormatter.string(from: log.takenAt)

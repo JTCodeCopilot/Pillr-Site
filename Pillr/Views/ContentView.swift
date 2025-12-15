@@ -847,8 +847,7 @@ struct MedicationLogContentView: View {
                 let time = timeFormatter.string(from: log.takenAt)
                 
                 // Get medication details if available
-                let medication = store.medications.first { $0.id == log.medicationID }
-                let dosage = medication != nil ? "\(medication!.dosage) \(medication!.dosageUnit)" : ""
+                let dosage = log.recordedDosageWithUnit
                 
                 textContent += "• \(medicationName) - \(dosage) at \(time)\n"
                 
