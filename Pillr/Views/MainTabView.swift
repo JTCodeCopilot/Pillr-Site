@@ -170,14 +170,12 @@ private extension MainTab {
         switch self {
         case .meds:
                 return OnboardingStageInfo(
-                    title: "My Meds",
-                    description: "Track every active medication, log reminders, and tap cabinet cards for quick dosing.",
+                    title: "Welcome to Pillr!",
+                    description: "To get started, this is the page to find all medications that have been created, track doses, and stay on schedule.",
                     benefits: [
-                        "See reminder and cabinet meds grouped in one scrollable list.",
-                        "Log doses and undo mistakes in seconds with the toast.",
-                        "Open a pill card to check interactions or reschedule reminders."
+                     
                     ],
-                    iconName: "pills.fill",
+                    icon: .asset(name: "PillrLogo"),
                     accentColor: Color(hex: "#C8F365"),
                     buttonAccessibilityLabel: "Continue to My Meds"
                 )
@@ -190,7 +188,7 @@ private extension MainTab {
                         "Tap entries for notes, refills, or cabinet details.",
                         "Catch gaps before they become habits."
                     ],
-                    iconName: "calendar.badge.clock",
+                    icon: .asset(name: "PillrLogo"),
                     accentColor: Color(hex: "#81C784"),
                     buttonAccessibilityLabel: "Continue to History"
                 )
@@ -203,7 +201,7 @@ private extension MainTab {
                         "Spot downtime so you can rebalance dosages or breaks.",
                         "Tap the timeline to explore your strongest focus windows."
                     ],
-                    iconName: "hourglass",
+                    icon: .asset(name: "PillrLogo"),
                     accentColor: Color(hex: "#64B5F6"),
                     buttonAccessibilityLabel: "Continue to Focus Timeline"
                 )
@@ -216,7 +214,7 @@ private extension MainTab {
                         "Review our privacy promise whenever you need reassurance.",
                         "Restore purchases or unlock premium perks without leaving this tab."
                     ],
-                    iconName: "ellipsis.circle",
+                    icon: .asset(name: "PillrLogo"),
                     accentColor: Color(hex: "#FFB74D"),
                     buttonAccessibilityLabel: "Continue to Settings"
                 )

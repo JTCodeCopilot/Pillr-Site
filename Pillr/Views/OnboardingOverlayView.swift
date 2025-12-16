@@ -7,11 +7,16 @@
 
 import SwiftUI
 
+enum OnboardingIcon {
+    case system(name: String)
+    case asset(name: String)
+}
+
 struct OnboardingStageInfo {
     let title: String
     let description: String
     let benefits: [String]
-    let iconName: String
+    let icon: OnboardingIcon
     let accentColor: Color
     let buttonAccessibilityLabel: String
 }
@@ -27,14 +32,7 @@ struct OnboardingOverlayView: View {
 
             VStack(spacing: 24) {
                 VStack(spacing: 10) {
-                    ZStack {
-                        Circle()
-                            .fill(info.accentColor.opacity(0.2))
-                            .frame(width: 70, height: 70)
-                        Image(systemName: info.iconName)
-                            .font(.system(size: 32, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
+                    iconContent
 
                     Text(info.title)
                         .font(.system(size: 26, weight: .bold, design: .rounded))
@@ -93,7 +91,23 @@ struct OnboardingOverlayView: View {
                 RoundedRectangle(cornerRadius: 32)
                     .stroke(Color.white.opacity(0.18), lineWidth: 1)
             )
-            .padding(.horizontal, 24)
+                .padding(.horizontal, 24)
+        }
+    }
+
+    @ViewBuilder
+    private var iconContent: some View {
+        switch info.icon {
+        case .system(let name):
+            Image(systemName: name)
+                .font(.system(size: 64, weight: .semibold))
+                .foregroundColor(.white)
+        case .asset(let name):
+            Image(name)
+                .renderingMode(.original)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 64, height: 64)
         }
     }
 }

@@ -271,7 +271,7 @@ struct MedicationsListView: View {
                 "Long-press a cabinet card to edit or delete without leaving this sheet.",
                 "Log doses directly from the cabinet and let Pillr keep the rest out of My Meds."
             ],
-            iconName: "cabinet.fill",
+            icon: .asset(name: "PillrLogo"),
             accentColor: Color(hex: "#81C784"),
             buttonAccessibilityLabel: "Open cabinet"
         )
