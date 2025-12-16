@@ -171,7 +171,9 @@ private extension MainTab {
         case .meds:
                 return OnboardingStageInfo(
                     title: "Welcome to Pillr!",
-                    description: "To get started, this is the page to find all medications that have been created, track doses, and stay on schedule.",
+                    description: AnyView(
+                        Text("My Meds is your home base for medications. View all the medications you have created, track doses, and stay on schedule.")
+                    ),
                     benefits: [
                      
                     ],
@@ -182,20 +184,25 @@ private extension MainTab {
         case .history:
                 return OnboardingStageInfo(
                     title: "Medication History",
-                    description: "Review every log to understand patterns, missed doses, and progress.",
+                    description: AnyView(
+                        VStack(alignment: .center, spacing: 14) {
+                            Text("Here you can view all your logged medications.")
+                            Text("Use filters to narrow the list, and export everything as a PDF or CSV using the top right export button.")
+                        }
+                    ),
                     benefits: [
-                        "Filter by medication or day to spot adherence streaks.",
-                        "Tap entries for notes, refills, or cabinet details.",
-                        "Catch gaps before they become habits."
+               
                     ],
-                    icon: .asset(name: "PillrLogo"),
+                    icon: .system(name: "calendar"),
                     accentColor: Color(hex: "#81C784"),
                     buttonAccessibilityLabel: "Continue to History"
                 )
         case .focus:
                 return OnboardingStageInfo(
                     title: "Focus Timeline",
-                    description: "Visualize how medications support your focus and energy throughout the day.",
+                    description: AnyView(
+                        Text("Visualize how medications support your focus and energy throughout the day.")
+                    ),
                     benefits: [
                         "Track reminders, logs, and focus shifts on a single timeline.",
                         "Spot downtime so you can rebalance dosages or breaks.",
@@ -208,7 +215,9 @@ private extension MainTab {
         case .more:
                 return OnboardingStageInfo(
                     title: "More",
-                    description: "Manage preferences, privacy, and premium upgrades in one place.",
+                    description: AnyView(
+                        Text("Manage preferences, privacy, and premium upgrades in one place.")
+                    ),
                     benefits: [
                         "Tweak reminders, notifications, and sync settings with confidence.",
                         "Review our privacy promise whenever you need reassurance.",

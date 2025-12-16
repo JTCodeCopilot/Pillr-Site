@@ -14,7 +14,7 @@ enum OnboardingIcon {
 
 struct OnboardingStageInfo {
     let title: String
-    let description: String
+    let description: AnyView
     let benefits: [String]
     let icon: OnboardingIcon
     let accentColor: Color
@@ -38,11 +38,10 @@ struct OnboardingOverlayView: View {
                         .font(.system(size: 26, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
 
-                    Text(info.description)
+                    info.description
                         .font(.system(size: 16, weight: .medium, design: .rounded))
                         .foregroundColor(Color.white.opacity(0.85))
                         .multilineTextAlignment(.center)
-                        .lineLimit(nil)
                 }
 
                 VStack(alignment: .leading, spacing: 12) {

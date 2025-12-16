@@ -265,7 +265,9 @@ struct MedicationsListView: View {
     private var cabinetOnboardingInfo: OnboardingStageInfo {
         OnboardingStageInfo(
             title: "Medication Cabinet",
-            description: "Store as-needed or unscheduled meds without cluttering your daily queue, then reopen them whenever you need a quick log.",
+            description: AnyView(
+                Text("Store as-needed or unscheduled meds without cluttering your daily queue, then reopen them whenever you need a quick log.")
+            ),
             benefits: [
                 "Keep unreminded meds handy until you actually need them.",
                 "Long-press a cabinet card to edit or delete without leaving this sheet.",
