@@ -172,22 +172,31 @@ private extension MainTab {
                 return OnboardingStageInfo(
                     title: "Welcome to Pillr!",
                     description: AnyView(
-                        Text("My Meds is your home base for medications. View all the medications you have created, track doses, and stay on schedule.")
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("This is your medication home base.")
+                                .multilineTextAlignment(.leading)
+                            Text("See your medications, track doses, and stay on schedule.")
+                                .multilineTextAlignment(.leading)
+                        }
                     ),
                     benefits: [
                      
                     ],
-                    icon: .asset(name: "PillrLogo"),
+                    icon: .system(name: "pill.fill"),
                     accentColor: Color(hex: "#C8F365"),
-                    buttonAccessibilityLabel: "Continue to My Meds"
+                    buttonAccessibilityLabel: "Continue to My Meds",
+                    subtitle: "We will walk you through the app as you go.",
+                    buttonTitle: "Get Started"
                 )
         case .history:
                 return OnboardingStageInfo(
                     title: "Medication History",
                     description: AnyView(
-                        VStack(alignment: .center, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("Here you can view all your logged medications.")
+                                .multilineTextAlignment(.leading)
                             Text("Use filters to narrow the list, and export everything as a PDF or CSV using the top right export button.")
+                                .multilineTextAlignment(.leading)
                         }
                     ),
                     benefits: [
@@ -201,14 +210,15 @@ private extension MainTab {
                 return OnboardingStageInfo(
                     title: "Focus Timeline",
                     description: AnyView(
-                        Text("Visualize how medications support your focus and energy throughout the day.")
+                        VStack(spacing: 12) {
+                            Text("Focus Timeline gives you a daily view of your ADHD stimulant medications.")
+                            Text("Each scheduled or logged dose becomes a visual window that shows when focus starts, peaks, and fades based on the set times.")
+                        }
                     ),
                     benefits: [
-                        "Track reminders, logs, and focus shifts on a single timeline.",
-                        "Spot downtime so you can rebalance dosages or breaks.",
-                        "Tap the timeline to explore your strongest focus windows."
+       
                     ],
-                    icon: .asset(name: "PillrLogo"),
+                    icon: .system(name: "hourglass"),
                     accentColor: Color(hex: "#64B5F6"),
                     buttonAccessibilityLabel: "Continue to Focus Timeline"
                 )
