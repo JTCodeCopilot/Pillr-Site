@@ -222,21 +222,19 @@ private extension MainTab {
                     accentColor: Color(hex: "#64B5F6"),
                     buttonAccessibilityLabel: "Continue to Focus Timeline"
                 )
-        case .more:
-                return OnboardingStageInfo(
-                    title: "More",
-                    description: AnyView(
-                        Text("Manage preferences, privacy, and premium upgrades in one place.")
-                    ),
-                    benefits: [
-                        "Tweak reminders, notifications, and sync settings with confidence.",
-                        "Review our privacy promise whenever you need reassurance.",
-                        "Restore purchases or unlock premium perks without leaving this tab."
-                    ],
-                    icon: .asset(name: "PillrLogo"),
-                    accentColor: Color(hex: "#FFB74D"),
-                    buttonAccessibilityLabel: "Continue to Settings"
-                )
+                case .more:
+                        return OnboardingStageInfo(
+                            title: "More",
+                            description: AnyView(
+                                Text("Manage your preferences, privacy, and premium features all in one place.")
+                            ),
+                            benefits: [
+ 
+                            ],
+                            icon: .system(name: "ellipsis"),
+                            accentColor: Color(hex: "#FFB74D"),
+                            buttonAccessibilityLabel: "Continue to Settings"
+                        )
         }
     }
 }

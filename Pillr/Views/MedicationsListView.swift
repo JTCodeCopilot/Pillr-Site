@@ -45,8 +45,6 @@ struct MedicationsListView: View {
     @State private var showingPremiumUpgrade = false
     @State private var showingFocusTimeline = false
         @State private var showingCabinetSheet = false
-        @State private var activeCabinetOnboardingStage: OnboardingStageInfo? = nil
-        @State private var shouldShowCabinetSheetAfterOnboarding = false
         @State private var referenceDate = Date()
         private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
         @State private var undoToastAction: MedicationStore.LogUndoAction?
@@ -122,14 +120,6 @@ struct MedicationsListView: View {
                         .frame(maxWidth: .infinity, alignment: .bottom)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                }
-
-                if let stage = activeCabinetOnboardingStage {
-                    OnboardingOverlayView(info: stage) {
-                        dismissCabinetOnboarding()
-                    }
-                    .transition(.opacity)
-                    .zIndex(1)
                 }
 
                 NavigationLink(
@@ -258,45 +248,8 @@ struct MedicationsListView: View {
         }
     }
     
-    private enum OnboardingStageKey {
-        static let cabinet = "cabinet"
-    }
-
-    private var cabinetOnboardingInfo: OnboardingStageInfo {
-        OnboardingStageInfo(
-            title: "Medication Cabinet",
-            description: AnyView(
-                Text("Here is where you will find medications that do not require a daily reminder.\n\nAny medication marked as “as needed” will be stored here and ready whenever you need it, so it stays out of your daily queue.")
-            ),
-            benefits: [
-        
-            ],
-            icon: .asset(name: "PillrLogo"),
-            accentColor: Color(hex: "#81C784"),
-            buttonAccessibilityLabel: "Open cabinet"
-        )
-    }
-
     private func handleCabinetTap() {
-        guard activeCabinetOnboardingStage == nil else { return }
-        let key = OnboardingStageKey.cabinet
-        if userSettings.hasSeenOnboardingStage(key) {
-            showingCabinetSheet = true
-        } else {
-            activeCabinetOnboardingStage = cabinetOnboardingInfo
-            shouldShowCabinetSheetAfterOnboarding = true
-        }
-    }
-
-    private func dismissCabinetOnboarding() {
-        guard activeCabinetOnboardingStage != nil else { return }
-        userSettings.markOnboardingStageSeen(OnboardingStageKey.cabinet)
-        activeCabinetOnboardingStage = nil
-        let shouldPresent = shouldShowCabinetSheetAfterOnboarding
-        shouldShowCabinetSheetAfterOnboarding = false
-        if shouldPresent {
-            showingCabinetSheet = true
-        }
+        showingCabinetSheet = true
     }
 
     private func showMedicationSelectionSheet() async {
@@ -1339,13 +1292,21 @@ fileprivate struct MedicationCabinetSheet: View {
                             .padding(.top, 12)
                         if medications.isEmpty {
                             VStack(spacing: 10) {
-                                Text("Empty Cabinet!")
+                                Text("Your Cabinet Is Empty")
                                     .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(Color(hex: "#F5F7F4"))
-                                Text("Medications with reminders will show within My Meds. Anything you set as \"as needed\" stays here tucked away and ready when you need them.")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(Color(hex: "#E0E7DC"))
-                                    .multilineTextAlignment(.center)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Medications with reminders will show within My Meds.")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(Color(hex: "#E0E7DC"))
+                                        .multilineTextAlignment(.leading)
+
+                                    Text("Anything you set as \"as needed\" stays here tucked away and ready when you need them.")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(Color(hex: "#E0E7DC"))
+                                        .multilineTextAlignment(.leading)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
