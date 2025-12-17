@@ -266,12 +266,10 @@ struct MedicationsListView: View {
         OnboardingStageInfo(
             title: "Medication Cabinet",
             description: AnyView(
-                Text("Store as-needed or unscheduled meds without cluttering your daily queue, then reopen them whenever you need a quick log.")
+                Text("Here is where you will find medications that do not require a daily reminder.\n\nAny medication marked as “as needed” will be stored here and ready whenever you need it, so it stays out of your daily queue.")
             ),
             benefits: [
-                "Keep unreminded meds handy until you actually need them.",
-                "Long-press a cabinet card to edit or delete without leaving this sheet.",
-                "Log doses directly from the cabinet and let Pillr keep the rest out of My Meds."
+        
             ],
             icon: .asset(name: "PillrLogo"),
             accentColor: Color(hex: "#81C784"),
@@ -1339,25 +1337,26 @@ fileprivate struct MedicationCabinetSheet: View {
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(Color(hex: "#F5F7F4"))
                             .padding(.top, 12)
-                        Text("The cabinet keeps medications that are taken as needed or don't currently have reminders, so they stay out of your daily queue.")
-                            .font(.system(size: 15))
-                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.85))
-                            .fixedSize(horizontal: false, vertical: true)
-
                         if medications.isEmpty {
-                            Text("Once you schedule a reminder or mark a medication as daily, it will move back into your main list. Until then, everything you store here stays tucked away for when you need it.")
-                                .font(.system(size: 16))
-                                .foregroundColor(Color(hex: "#E0E7DC"))
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 18)
-                                        .fill(Color(hex: "#5B695D"))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 18)
-                                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                                        )
-                                )
+                            VStack(spacing: 10) {
+                                Text("Empty Cabinet!")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#F5F7F4"))
+                                Text("Medications with reminders will show within My Meds. Anything you set as \"as needed\" stays here tucked away and ready when you need them.")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(Color(hex: "#E0E7DC"))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .fill(Color(hex: "#5B695D"))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 18)
+                                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                    )
+                            )
                         } else {
             if !asNeededMedications.isEmpty {
                 cabinetSection(title: "As needed", medications: asNeededMedications)
