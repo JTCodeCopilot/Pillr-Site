@@ -15,7 +15,7 @@ fileprivate struct NotificationCategoryIdentifier {
 }
 
 fileprivate struct NotificationActionIdentifier {
-    static let takeNow = "TAKE_ACTION"
+    static let trackNow = "TRACK_NOW_ACTION"
     static let remindLater = "REMIND_LATER"
     static let dismiss = "DISMISS_NOTIFICATION"
 }
@@ -29,10 +29,10 @@ class NotificationManager: ObservableObject {
     
     private func setupNotificationActions() {
         // Define the actions
-        let takeAction = UNNotificationAction(
-            identifier: NotificationActionIdentifier.takeNow,
-            title: "Take Now",
-            options: .foreground
+        let trackAction = UNNotificationAction(
+            identifier: NotificationActionIdentifier.trackNow,
+            title: "Track Now",
+            options: []
         )
         
         let remindAction = UNNotificationAction(
@@ -50,16 +50,20 @@ class NotificationManager: ObservableObject {
         // Define the medication reminder category (group of actions)
         let medicationCategory = UNNotificationCategory(
             identifier: NotificationCategoryIdentifier.medicationReminder,
-            actions: [takeAction, remindAction],
+            actions: [trackAction, remindAction],
             intentIdentifiers: [],
-            options: [.customDismissAction]
+            hiddenPreviewsBodyPlaceholder: "Take your scheduled dose now",
+            categorySummaryFormat: nil,
+            options: [.customDismissAction, .hiddenPreviewsShowTitle]
         )
 
         let stimulantCategory = UNNotificationCategory(
             identifier: NotificationCategoryIdentifier.stimulantReminder,
             actions: [dismissAction],
             intentIdentifiers: [],
-            options: [.customDismissAction]
+            hiddenPreviewsBodyPlaceholder: "Medication timing reminder",
+            categorySummaryFormat: nil,
+            options: [.customDismissAction, .hiddenPreviewsShowTitle]
         )
 
         // Register all relevant notification categories
@@ -104,13 +108,21 @@ class NotificationManager: ObservableObject {
             content.relevanceScore = 1.0
         }
     }
+
+    private func medicationDescriptor(for medication: Medication) -> String {
+        if medication.medicationType == .other {
+            return medication.name
+        }
+        return "\(medication.name) (\(medication.medicationType.displayName))"
+    }
     
     // Legacy support for single notification
     func scheduleNotification(for medication: Medication) -> UUID {
         
         let content = UNMutableNotificationContent()
         content.title = "Medication reminder"
-        content.body = "Please take \(medication.name) (\(medication.dosage)) now."
+        let descriptor = medicationDescriptor(for: medication)
+        content.body = "Please take \(descriptor) now."
         content.sound = UNNotificationSound.default
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
@@ -185,13 +197,14 @@ class NotificationManager: ObservableObject {
         let content = UNMutableNotificationContent()
         
         // Customize the notification based on which reminder it is
+        let descriptor = medicationDescriptor(for: medication)
         if total > 1 {
             let doseNumber = index + 1
-            content.title = "Dose #\(doseNumber) reminder: \(medication.name)"
-            content.body = "Take \(medication.pillsPerDose) \(medication.dosage) around \(formatTimeOnly(time))."
+            content.title = "Dose #\(doseNumber) reminder"
+            content.body = "Take \(descriptor) around \(formatTimeOnly(time))."
         } else {
             content.title = "Time to take your medication"
-            content.body = "It's time to take \(medication.name) (\(medication.dosage))"
+            content.body = "It's time to take \(descriptor)."
         }
         
         content.sound = UNNotificationSound.default
@@ -253,13 +266,14 @@ class NotificationManager: ObservableObject {
     func scheduleFollowUpNotification(for medication: Medication, time: Date, index: Int, after minutes: Int, originalID: UUID) {
         let content = UNMutableNotificationContent()
         
+        let descriptor = medicationDescriptor(for: medication)
         if medication.reminderTimes.count > 1 {
             let doseNumber = index + 1
             content.title = "Dose #\(doseNumber) follow-up reminder"
-            content.body = "Please take your \(medication.name) dose #\(doseNumber) if you haven't already."
+            content.body = "Please take \(descriptor) dose #\(doseNumber) if you haven't already."
         } else {
             content.title = "Medication follow-up reminder"
-            content.body = "Take your \(medication.name) if you missed the earlier reminder."
+            content.body = "Take \(descriptor) if you missed the earlier reminder."
         }
         
         content.sound = UNNotificationSound.default
@@ -302,7 +316,8 @@ class NotificationManager: ObservableObject {
     func scheduleOneTimeReminder(for medication: Medication, afterMinutes: Int) {
         let content = UNMutableNotificationContent()
         content.title = "Reminder: Take Your Medication"
-        content.body = "It's time to take \(medication.name) (\(medication.dosage))"
+        let descriptor = medicationDescriptor(for: medication)
+        content.body = "It's time to take \(descriptor)."
         content.sound = UNNotificationSound.default
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
@@ -496,7 +511,8 @@ class NotificationManager: ObservableObject {
     private func scheduleOneTimeFollowUp(for medication: Medication, after minutes: Int, originalID: UUID, baseInterval: TimeInterval) {
         let content = UNMutableNotificationContent()
         content.title = "Reminder: Medication Due"
-        content.body = "Don't forget to take your \(medication.name)"
+        let descriptor = medicationDescriptor(for: medication)
+        content.body = "Don't forget to take \(descriptor)"
         content.sound = UNNotificationSound.default
         content.userInfo = [
             "medicationID": medication.id.uuidString,
@@ -536,12 +552,13 @@ class NotificationManager: ObservableObject {
         }
 
         let calendar = Calendar.current
+        let descriptor = medicationDescriptor(for: medication)
 
         if let onsetDate = calendar.date(byAdding: .minute, value: onset, to: doseTime) {
             scheduleNotification(
                 for: medication,
                 title: "Medication starting to work",
-                body: "\(medication.name) is likely starting to work. This can be a good time to ease into tasks or planning.",
+                body: "\(descriptor) is likely starting to work. This can be a good time to ease into tasks or planning.",
                 userInfo: [
                     "medicationID": medication.id.uuidString,
                     "phase": "onset"
@@ -556,10 +573,10 @@ class NotificationManager: ObservableObject {
         if let fadeWarningDate = calendar.date(byAdding: .minute, value: warningOffset, to: doseTime) {
             let usesAutomaticCheckIn = medication.enableDailyCheckIn && medication.dailyCheckInTime == nil
             let (fadeTitle, fadeBody) = usesAutomaticCheckIn
-                ? ("Check in before \(medication.name) fades",
-                   "How was your focus and side effects today? Log a quick check-in before it wears off.")
-                : ("\(medication.name) about to wear off",
-                   "Effects may taper in ~10 minutes. Ease into lighter tasks or plan a break.")
+                ? ("Check in before your medication fades",
+                   "How was your focus and side effects today? Log a quick check-in before \(descriptor) wears off.")
+                : ("Medication about to wear off",
+                   "Effects may taper in ~10 minutes. Ease into lighter tasks or plan a break before \(descriptor) wears off.")
 
             scheduleNotification(
                 for: medication,
@@ -636,13 +653,14 @@ class NotificationManager: ObservableObject {
             }
         }
 
+        let descriptor = medicationDescriptor(for: medication)
         let noteBody = medication.medicationType == .stimulant
-            ? "Take a moment to reflect on focus and side effects today."
-            : "Add a quick note about how this medication felt today."
+            ? "Take a moment to reflect on focus and side effects today for \(descriptor)."
+            : "Add a quick note about how \(descriptor) felt today."
 
         scheduleNotification(
             for: medication,
-            title: "Daily check-in for \(medication.name)",
+            title: "Daily check-in reminder",
             body: noteBody,
             userInfo: [
                 "medicationID": medication.id.uuidString,
@@ -730,8 +748,8 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         
         // Handle different notification actions
         switch response.actionIdentifier {
-        case NotificationActionIdentifier.takeNow:
-            // User tapped "Take Now" - log the medication as taken
+        case NotificationActionIdentifier.trackNow:
+            // User tapped "Track Now" - log the medication as taken
             if let medicationIDString = userInfo["medicationID"] as? String,
                let medicationID = UUID(uuidString: medicationIDString) {
                 
@@ -746,9 +764,6 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                         skipped: false,
                         reminderIndex: reminderIndex
                     )
-                    
-                    // Provide success haptic feedback
-                    HapticManager.shared.successNotification()
                     
                     // Reset badge count after action
                     NotificationManager.shared.resetApplicationBadge()

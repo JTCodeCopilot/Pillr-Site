@@ -9,6 +9,7 @@
 import SwiftUI
 import UserNotifications
 import CloudKit
+import UIKit
 
 struct ADHDDoseTimelineEntry: Identifiable, Equatable {
     let id = UUID()
@@ -52,6 +53,9 @@ class MedicationStore: ObservableObject {
     private let notificationManager = NotificationManager.shared
     private let hapticManager = HapticManager.shared
     private let cloudSync = CloudKitMedicationSync.shared
+    private var dayChangeObserver: NSObjectProtocol?
+    private var appActiveObserver: NSObjectProtocol?
+    private var lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
     
     // Shared instance for access from notification handlers
     static let shared = MedicationStore()
@@ -86,6 +90,17 @@ class MedicationStore: ObservableObject {
             if shouldUseCloudSync {
                 fetchCloudData()
             }
+            lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
+            startObservingDayChanges()
+        }
+    }
+
+    deinit {
+        if let observer = dayChangeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = appActiveObserver {
+            NotificationCenter.default.removeObserver(observer)
         }
     }
     
@@ -806,33 +821,11 @@ class MedicationStore: ObservableObject {
                 notificationManager.purgeNotifications(excluding: activeMedicationIDs)
                 
                 // Reschedule notifications on app launch (in case app was terminated)
-                for (index, medication) in medications.enumerated() {
-                    // Cancel any existing notifications first
-                    if let notificationID = medication.notificationID {
-                        notificationManager.cancelNotification(with: notificationID)
-                    }
-                    if !medication.notificationIDs.isEmpty {
-                        notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
-                    }
-
-                    notificationManager.cancelNotifications(forMedicationID: medication.id)
-                    
-                    var updatedMedication = medication
-                    if !medication.reminderTimes.isEmpty {
-                        let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
-                        updatedMedication.notificationIDs = notificationIDs
-                        updatedMedication.notificationID = nil
-                    } else if medication.notificationID != nil {
-                        let notificationID = notificationManager.scheduleNotification(for: medication)
-                        updatedMedication.notificationID = notificationID
-                        updatedMedication.notificationIDs = []
-                    } else {
-                        updatedMedication.notificationIDs = []
-                    }
-                    
-                    medications[index] = updatedMedication
+                for index in medications.indices {
+                    medications[index] = refreshNotificationSchedule(for: medications[index])
                 }
                 saveMedications()
+                lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
                 
                 // Reset badge on app launch if needed
                 resetBadgeIfNeeded()
@@ -851,6 +844,83 @@ class MedicationStore: ObservableObject {
             }
         }
         self.logs = []
+    }
+
+    private func startObservingDayChanges() {
+        guard dayChangeObserver == nil else { return }
+
+        dayChangeObserver = NotificationCenter.default.addObserver(
+            forName: .NSCalendarDayChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.performDailyResetIfNeeded()
+        }
+
+        appActiveObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.performDailyResetIfNeeded()
+        }
+    }
+
+    private func performDailyResetIfNeeded() {
+        let today = Calendar.current.startOfDay(for: Date())
+        guard today > lastNotificationResetDay else { return }
+        lastNotificationResetDay = today
+        resetNotificationsForNewDay()
+        resetBadgeIfNeeded()
+    }
+
+    private func resetNotificationsForNewDay() {
+        guard !isPreviewMode else { return }
+        var updatedMedications = medications
+        var didReschedule = false
+
+        for index in updatedMedications.indices {
+            let medication = updatedMedications[index]
+            guard medication.hasActiveReminder else { continue }
+            updatedMedications[index] = refreshNotificationSchedule(for: medication)
+            didReschedule = true
+        }
+
+        if didReschedule {
+            medications = updatedMedications
+            saveMedications()
+        }
+    }
+
+    private func refreshNotificationSchedule(for medication: Medication) -> Medication {
+        guard medication.hasActiveReminder else { return medication }
+        var updatedMedication = medication
+
+        if let notificationID = medication.notificationID {
+            notificationManager.cancelNotification(with: notificationID)
+        }
+
+        if !medication.notificationIDs.isEmpty {
+            notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
+        }
+
+        notificationManager.cancelNotifications(forMedicationID: medication.id)
+
+        if updatedMedication.isOneTimeWithFollowUp {
+            let notificationID = notificationManager.scheduleNotification(for: updatedMedication)
+            updatedMedication.notificationID = notificationID
+            updatedMedication.notificationIDs = []
+        } else if !updatedMedication.reminderTimes.isEmpty {
+            let notificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
+            updatedMedication.notificationIDs = notificationIDs
+            updatedMedication.notificationID = nil
+        } else if updatedMedication.notificationID != nil {
+            let notificationID = notificationManager.scheduleNotification(for: updatedMedication)
+            updatedMedication.notificationID = notificationID
+            updatedMedication.notificationIDs = []
+        }
+
+        return updatedMedication
     }
 
     private func saveLogs() {
