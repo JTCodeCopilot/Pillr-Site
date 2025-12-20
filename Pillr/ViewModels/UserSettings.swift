@@ -52,6 +52,14 @@ class UserSettings: ObservableObject {
         }
     }
     
+    @Published var shouldUseCloudSync: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(shouldUseCloudSync, forKey: cloudSyncPreferenceKey)
+            }
+        }
+    }
+
     @Published var subscriptionType: String? {
         didSet {
             if !isPreviewMode {
@@ -71,6 +79,7 @@ class UserSettings: ObservableObject {
     private let subscriptionTypeKey = "subscription_type"
     private let onboardingStagesKey = "seen_onboarding_stages"
     private let cabinetIntroOverlayKey = "hasSeenCabinetIntroOverlay"
+    private let cloudSyncPreferenceKey = "should_use_cloud_sync"
     private let isPreviewMode: Bool
 
     #if DEBUG
@@ -101,6 +110,7 @@ class UserSettings: ObservableObject {
             self.subscriptionType = nil
             self.seenOnboardingStages = []
             self.hasSeenCabinetIntroOverlay = false
+            self.shouldUseCloudSync = true
         } else {
             // Load user name if available, otherwise use default
             self.userName = UserDefaults.standard.string(forKey: userNameKey) ?? "User"
@@ -111,6 +121,11 @@ class UserSettings: ObservableObject {
             self.subscriptionType = UserDefaults.standard.string(forKey: subscriptionTypeKey)
             self.seenOnboardingStages = Set(UserDefaults.standard.stringArray(forKey: onboardingStagesKey) ?? [])
             self.hasSeenCabinetIntroOverlay = UserDefaults.standard.bool(forKey: cabinetIntroOverlayKey)
+            if let stored = UserDefaults.standard.object(forKey: cloudSyncPreferenceKey) as? Bool {
+                self.shouldUseCloudSync = stored
+            } else {
+                self.shouldUseCloudSync = true
+            }
         }
 
         if forcePremiumFromEnv {
@@ -121,6 +136,10 @@ class UserSettings: ObservableObject {
     
     func saveUserName(_ name: String) {
         userName = name
+    }
+
+    func setCloudSyncPreference(_ enabled: Bool) {
+        shouldUseCloudSync = enabled
     }
     
     func markPrivacyNoticeAsShown() {

@@ -10,6 +10,7 @@ import SwiftUI
 import UserNotifications
 import CloudKit
 import UIKit
+import Combine
 
 struct ADHDDoseTimelineEntry: Identifiable, Equatable {
     let id = UUID()
@@ -38,6 +39,7 @@ class MedicationStore: ObservableObject {
 
     @Published var medications: [Medication] = []
     @Published var logs: [MedicationLog] = []
+    @Published private(set) var lastCloudSyncDate: Date?
     @Published var recentADHDDoseTimeline: ADHDDoseTimelineEntry?
     /// When set (typically from a notification tap), the UI
     /// should present a daily check-in logging sheet for this medication.
@@ -55,6 +57,8 @@ class MedicationStore: ObservableObject {
     private let cloudSync = CloudKitMedicationSync.shared
     private var dayChangeObserver: NSObjectProtocol?
     private var appActiveObserver: NSObjectProtocol?
+    private var cloudSyncPreferenceCancellable: AnyCancellable?
+    private var lastCloudSyncPreferenceState: Bool = false
     private var lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
     
     // Shared instance for access from notification handlers
@@ -75,7 +79,7 @@ class MedicationStore: ObservableObject {
     private let isPreviewMode: Bool
 
     private var shouldUseCloudSync: Bool {
-        !isPreviewMode
+        !isPreviewMode && UserSettings.shared.shouldUseCloudSync
     }
 
     var activeMedications: [Medication] {
@@ -84,6 +88,7 @@ class MedicationStore: ObservableObject {
 
     init(isPreview: Bool = false) {
         self.isPreviewMode = isPreview
+        self.lastCloudSyncPreferenceState = shouldUseCloudSync
         if !isPreview {
             loadMedications()
             loadLogs()
@@ -92,6 +97,7 @@ class MedicationStore: ObservableObject {
             }
             lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
             startObservingDayChanges()
+            observeCloudSyncPreference()
         }
     }
 
@@ -102,6 +108,7 @@ class MedicationStore: ObservableObject {
         if let observer = appActiveObserver {
             NotificationCenter.default.removeObserver(observer)
         }
+        cloudSyncPreferenceCancellable?.cancel()
     }
     
     // Find a medication by its ID
@@ -866,6 +873,22 @@ class MedicationStore: ObservableObject {
         }
     }
 
+    private func observeCloudSyncPreference() {
+        cloudSyncPreferenceCancellable = UserSettings.shared.$shouldUseCloudSync
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.handleCloudSyncPreferenceChange()
+            }
+    }
+
+    private func handleCloudSyncPreferenceChange() {
+        let enabled = shouldUseCloudSync
+        if enabled && !lastCloudSyncPreferenceState {
+            fetchCloudData()
+        }
+        lastCloudSyncPreferenceState = enabled
+    }
+
     private func performDailyResetIfNeeded() {
         let today = Calendar.current.startOfDay(for: Date())
         guard today > lastNotificationResetDay else { return }
@@ -939,6 +962,7 @@ class MedicationStore: ObservableObject {
             case let .success(payload):
                 self.mergeCloudMedications(payload.medications)
                 self.mergeCloudLogs(payload.logs)
+                self.lastCloudSyncDate = Date()
             case let .failure(error):
                 print("CloudKit fetch failed: \(error)")
             }
@@ -953,6 +977,7 @@ class MedicationStore: ObservableObject {
                 if let modificationDate = record.modificationDate {
                     self?.updateCloudLastModified(for: medication.id, date: modificationDate)
                 }
+                self?.lastCloudSyncDate = Date()
             case let .failure(error):
                 print("CloudKit medication save failed: \(error)")
             }
@@ -962,9 +987,11 @@ class MedicationStore: ObservableObject {
     private func syncLogWithCloud(_ log: MedicationLog) {
         guard shouldUseCloudSync else { return }
         guard let medication = medications.first(where: { $0.id == log.medicationID }) else { return }
-        cloudSync.save(log: log, medication: medication) { result in
+        cloudSync.save(log: log, medication: medication) { [weak self] result in
             if case let .failure(error) = result {
                 print("CloudKit log save failed: \(error)")
+            } else {
+                self?.lastCloudSyncDate = Date()
             }
         }
     }
@@ -994,6 +1021,7 @@ class MedicationStore: ObservableObject {
             medication.cloudLastModified = date
             medications[index] = medication
             saveMedications()
+            lastCloudSyncDate = Date()
         }
     }
 

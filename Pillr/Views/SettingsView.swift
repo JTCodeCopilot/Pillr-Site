@@ -2,6 +2,7 @@ import SwiftUI
 import StoreKit
 import UIKit
 import UserNotifications
+import CloudKit
 
 struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
@@ -12,12 +13,20 @@ struct SettingsView: View {
     @State private var showingInteractionHistory = false
     @State private var showingInteractionSelectionSheet = false
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
+    @State private var iCloudAccountStatus: CKAccountStatus?
     @State private var isHealthSettingsExpanded = false
     @State private var isNotificationSettingsExpanded = false
     @State private var isPremiumSettingsExpanded = false
+    @State private var showingCloudSyncChoiceAgain = false
+    @State private var showingCloudSyncConfirmationAgain = false
+    @State private var pendingCloudSyncChoice: CloudSyncChoice?
 
     private var isPremiumActive: Bool {
         storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
+    }
+    
+    private var shouldUseCloudSync: Bool {
+        userSettings.shouldUseCloudSync
     }
     
     var body: some View {
@@ -29,6 +38,7 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         interactionsSection
+                        iCloudSyncSection
                         generalSettingsSection
                         supportLinksSection
                         Color.clear.frame(height: 20)
@@ -39,6 +49,23 @@ struct SettingsView: View {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                     refreshNotificationSettings()
+                    Task {
+                        await refreshICloudStatus()
+                    }
+                }
+                if showingCloudSyncChoiceAgain && !showingCloudSyncConfirmationAgain {
+                    CloudSyncChoiceOverlay { choice in
+                        handleCloudSyncSelection(choice)
+                    }
+                    .transition(.opacity)
+                    .zIndex(2)
+                }
+                if showingCloudSyncConfirmationAgain, let choice = pendingCloudSyncChoice {
+                    CloudSyncChoiceConfirmationOverlay(
+                        choice: choice,
+                        onConfirm: confirmCloudSyncSetting,
+                        onCancel: cancelCloudSyncSetting
+                    )
                 }
             }
             .navigationBarHidden(true)
@@ -62,6 +89,7 @@ struct SettingsView: View {
             await storeManager.loadProducts()
             await storeManager.updatePurchasedProducts()
             refreshNotificationSettings()
+            await refreshICloudStatus()
         }
     }
     
@@ -82,6 +110,42 @@ struct SettingsView: View {
                 accessoryIcon: premiumActive ? nil : "lock"
             ) {
                 handleInteractionHistoryTap()
+            }
+        }
+    }
+    
+    private var iCloudSyncSection: some View {
+        settingsSection(title: "iCloud Sync") {
+            settingsStatusRow(
+                iconName: "icloud",
+                title: "Connection",
+                value: iCloudConnectionTitle,
+                detail: iCloudConnectionDetail,
+                valueColor: iCloudConnectionColor
+            )
+
+            settingsStatusRow(
+                iconName: "arrow.triangle.2.circlepath",
+                title: "Last sync",
+                value: iCloudLastSyncTitle,
+                detail: iCloudLastSyncDetail
+            )
+
+            if !shouldUseCloudSync {
+                Text("You chose to keep everything on this device. Connect to iCloud later whenever you’re ready.")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(SettingsPalette.secondaryText.opacity(0.9))
+                    .multilineTextAlignment(.leading)
+                    .padding(.top, 8)
+
+                settingsActionRow(
+                    title: "Change sync preference",
+                    subtitle: "Reopen the iCloud choice screen to enable sync again.",
+                    accessoryIcon: "icloud",
+                    action: {
+                        showingCloudSyncChoiceAgain = true
+                    }
+                )
             }
         }
     }
@@ -223,6 +287,26 @@ struct SettingsView: View {
         } else {
             showingPremiumUpgrade = true
         }
+    }
+
+    private func handleCloudSyncSelection(_ choice: CloudSyncChoice) {
+        pendingCloudSyncChoice = choice
+        showingCloudSyncChoiceAgain = false
+        showingCloudSyncConfirmationAgain = true
+    }
+
+    private func confirmCloudSyncSetting() {
+        guard let choice = pendingCloudSyncChoice else { return }
+        let enableSync = choice == .connect
+        userSettings.setCloudSyncPreference(enableSync)
+        pendingCloudSyncChoice = nil
+        showingCloudSyncConfirmationAgain = false
+    }
+
+    private func cancelCloudSyncSetting() {
+        pendingCloudSyncChoice = nil
+        showingCloudSyncConfirmationAgain = false
+        showingCloudSyncChoiceAgain = true
     }
 
     @ViewBuilder
@@ -385,6 +469,131 @@ struct SettingsView: View {
             return
         }
         UIApplication.shared.open(url)
+    }
+
+    private func settingsStatusRow(
+        iconName: String,
+        title: String,
+        value: String,
+        detail: String?,
+        valueColor: Color = SettingsPalette.mainText
+    ) -> some View {
+        HStack(alignment: .top, spacing: SettingsMetrics.rowSpacing) {
+            Image(systemName: iconName)
+                .font(.system(size: SettingsMetrics.rowIconSize, weight: .semibold))
+                .frame(width: SettingsMetrics.rowIconFrame, height: SettingsMetrics.rowIconFrame)
+                .foregroundColor(valueColor)
+
+            VStack(alignment: .leading, spacing: detail == nil ? 2 : 4) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundColor(SettingsPalette.secondaryText)
+
+                Text(value)
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(valueColor)
+
+                if let detail {
+                    Text(detail)
+                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .foregroundColor(SettingsPalette.secondaryText.opacity(0.9))
+                }
+            }
+
+            Spacer()
+        }
+    }
+
+    private func refreshICloudStatus() async {
+        do {
+            let status = try await CKContainer.default().accountStatus()
+            iCloudAccountStatus = status
+        } catch {
+            print("Failed to read iCloud account status: \(error)")
+            iCloudAccountStatus = nil
+        }
+    }
+
+    private var iCloudConnectionTitle: String {
+        if !shouldUseCloudSync {
+            return "On-device only"
+        }
+        switch iCloudAccountStatus {
+        case .available:
+            return "Connected"
+        case .noAccount:
+            return "Sign in to iCloud"
+        case .restricted:
+            return "iCloud Restricted"
+        case .temporarilyUnavailable:
+            return "Temporarily unavailable"
+        case .couldNotDetermine, .none:
+            return "Checking…"
+        @unknown default:
+            return "Unknown status"
+        }
+    }
+
+    private var iCloudConnectionDetail: String {
+        if !shouldUseCloudSync {
+            return "Medication records stay on this device, but you can connect to iCloud anytime from the prompt below."
+        }
+        switch iCloudAccountStatus {
+        case .available:
+            return "Your medications and logs are backed up securely."
+        case .noAccount:
+            return "Open iOS Settings to sign in and enable sync."
+        case .restricted:
+            return "Restrictions on this device prevent iCloud usage."
+        case .temporarilyUnavailable:
+            return "iCloud is temporarily unavailable. Try again shortly."
+        case .couldNotDetermine, .none:
+            return "Waiting for iCloud to report your account status."
+        @unknown default:
+            return "Account status currently unavailable."
+        }
+    }
+
+    private var iCloudConnectionColor: Color {
+        if !shouldUseCloudSync {
+            return SettingsPalette.secondaryText
+        }
+        switch iCloudAccountStatus {
+        case .available:
+            return Color(hex: "#C8F365")
+        case .noAccount, .restricted, .temporarilyUnavailable:
+            return Color(hex: "#F87171")
+        case .couldNotDetermine, .none:
+            return SettingsPalette.mainText
+        @unknown default:
+            return SettingsPalette.mainText
+        }
+    }
+
+    private var iCloudLastSyncTitle: String {
+        if !shouldUseCloudSync {
+            return "Sync disabled"
+        }
+        guard let date = store.lastCloudSyncDate else {
+            return "Not yet synced"
+        }
+        return "Synced \(relativeDateString(for: date))"
+    }
+
+    private var iCloudLastSyncDetail: String? {
+        if !shouldUseCloudSync {
+            return "Last sync tracking is paused while iCloud sync is off."
+        }
+        guard let date = store.lastCloudSyncDate else {
+            return "Waiting for Pillr to finish its first sync"
+        }
+        return DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .short)
+    }
+
+    private func relativeDateString(for date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

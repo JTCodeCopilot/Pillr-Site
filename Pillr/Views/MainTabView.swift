@@ -18,6 +18,11 @@ struct MainTabView: View {
     @State private var showDiscardAlert = false
     @State private var activeOnboardingStage: OnboardingStageInfo?
     @State private var activeOnboardingTab: MainTab?
+    @State private var showCloudSyncChoice = false
+    @State private var showCloudSyncConfirmation = false
+    @State private var pendingCloudSyncChoice: CloudSyncChoice?
+    
+    private static let cloudSyncOnboardingKey = "cloudSyncChoice"
 
     private var tabSelection: Binding<MainTab> {
         Binding(
@@ -73,14 +78,27 @@ struct MainTabView: View {
             }
             .accentColor(Color.pillrAccent)
 
-            if let stage = activeOnboardingStage {
-                OnboardingOverlayView(info: stage) {
-                    dismissOnboarding()
+                if let stage = activeOnboardingStage {
+                    OnboardingOverlayView(info: stage) {
+                        dismissOnboarding()
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
                 }
-                .transition(.opacity)
-                .zIndex(1)
+                if showCloudSyncChoice && !showCloudSyncConfirmation {
+                    CloudSyncChoiceOverlay { choice in
+                        handleCloudSyncSelection(choice)
+                    }
+                    .transition(.opacity)
+                }
+                if showCloudSyncConfirmation, let pending = pendingCloudSyncChoice {
+                    CloudSyncChoiceConfirmationOverlay(
+                        choice: pending,
+                        onConfirm: confirmCloudSyncChoice,
+                        onCancel: cancelCloudSyncChoice
+                    )
+                }
             }
-        }
         .alert("Discard medication?", isPresented: $showDiscardAlert) {
             Button("Discard", role: .destructive) {
                 addFlowCoordinator.discardFlow()
@@ -115,6 +133,10 @@ struct MainTabView: View {
     private func scheduleOnboarding(for tab: MainTab) {
         guard activeOnboardingStage == nil else { return }
         let key = tab.rawValue
+        if tab == .meds && !userSettings.hasSeenOnboardingStage(Self.cloudSyncOnboardingKey) {
+            showCloudSyncChoice = true
+            return
+        }
         guard !userSettings.hasSeenOnboardingStage(key) else { return }
         guard let info = tab.onboardingInfo else { return }
         activeOnboardingTab = tab
@@ -124,13 +146,39 @@ struct MainTabView: View {
     }
 
     private func dismissOnboarding() {
-        if let tab = activeOnboardingTab {
+        let dismissedTab = activeOnboardingTab
+        if let tab = dismissedTab {
             userSettings.markOnboardingStageSeen(tab.rawValue)
         }
         withAnimation(.easeInOut(duration: 0.15)) {
             activeOnboardingStage = nil
             activeOnboardingTab = nil
         }
+    }
+
+
+    private func handleCloudSyncSelection(_ choice: CloudSyncChoice) {
+        pendingCloudSyncChoice = choice
+        showCloudSyncChoice = false
+        showCloudSyncConfirmation = true
+    }
+
+    private func confirmCloudSyncChoice() {
+        guard let choice = pendingCloudSyncChoice else { return }
+        let enableSync = choice == .connect
+        userSettings.setCloudSyncPreference(enableSync)
+        userSettings.markOnboardingStageSeen(Self.cloudSyncOnboardingKey)
+        pendingCloudSyncChoice = nil
+        showCloudSyncConfirmation = false
+        DispatchQueue.main.async {
+            scheduleOnboarding(for: selectedTab)
+        }
+    }
+
+    private func cancelCloudSyncChoice() {
+        pendingCloudSyncChoice = nil
+        showCloudSyncConfirmation = false
+        showCloudSyncChoice = true
     }
 
 }
