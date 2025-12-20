@@ -45,6 +45,7 @@ struct MedicationsListView: View {
     @State private var showingPremiumUpgrade = false
     @State private var showingFocusTimeline = false
         @State private var showingCabinetSheet = false
+        @State private var showCabinetIntroOverlay = false
         @State private var referenceDate = Date()
         private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
         @State private var undoToastAction: MedicationStore.LogUndoAction?
@@ -187,7 +188,9 @@ struct MedicationsListView: View {
                 FocusTimelineView()
                     .environmentObject(store)
             }
-            .sheet(isPresented: $showingCabinetSheet) {
+            .sheet(isPresented: $showingCabinetSheet, onDismiss: {
+                showCabinetIntroOverlay = false
+            }) {
                 MedicationCabinetSheet(
                     medications: cabinetMedications,
                     logs: store.logs,
@@ -201,7 +204,8 @@ struct MedicationsListView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                             showDeleteAlert = true
                         }
-                    }
+                    },
+                    showCabinetIntroOverlay: $showCabinetIntroOverlay
                 )
             }
             .sheet(item: $store.dailyCheckInMedication, onDismiss: {
@@ -249,6 +253,10 @@ struct MedicationsListView: View {
     }
     
     private func handleCabinetTap() {
+        if !userSettings.hasSeenCabinetIntroOverlay {
+            showCabinetIntroOverlay = true
+            userSettings.markCabinetIntroOverlaySeen()
+        }
         showingCabinetSheet = true
     }
 
@@ -1261,6 +1269,7 @@ fileprivate struct MedicationCabinetSheet: View {
     let onLogMedication: (Medication) -> Void
     let onEditMedication: (Medication) -> Void
     let onDeleteMedication: ((Medication) -> Void)?
+    @Binding var showCabinetIntroOverlay: Bool
     @Environment(\.dismiss) private var dismiss
 
     private var asNeededMedications: [Medication] {
@@ -1295,18 +1304,14 @@ fileprivate struct MedicationCabinetSheet: View {
                                 Text("Your Cabinet Is Empty")
                                     .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(Color(hex: "#F5F7F4"))
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Medications with reminders will show within My Meds.")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(Color(hex: "#E0E7DC"))
-                                        .multilineTextAlignment(.leading)
+                                VStack(spacing: 6) {
 
                                     Text("Anything you set as \"as needed\" stays here tucked away and ready when you need them.")
                                         .font(.system(size: 16))
                                         .foregroundColor(Color(hex: "#E0E7DC"))
-                                        .multilineTextAlignment(.leading)
+                                        .multilineTextAlignment(.center)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(maxWidth: .infinity, alignment: .center)
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -1319,19 +1324,25 @@ fileprivate struct MedicationCabinetSheet: View {
                                     )
                             )
                         } else {
-            if !asNeededMedications.isEmpty {
-                cabinetSection(title: "As needed", medications: asNeededMedications)
-            }
-            
-            if !inactiveReminderMedications.isEmpty {
-                cabinetSection(title: "No daily reminders", medications: inactiveReminderMedications)
-            }
-        }
+                            if !asNeededMedications.isEmpty {
+                                cabinetSection(title: "As needed", medications: asNeededMedications)
+                            }
+                            
+                            if !inactiveReminderMedications.isEmpty {
+                                cabinetSection(title: "No daily reminders", medications: inactiveReminderMedications)
+                            }
+                        }
 
-        Spacer(minLength: 20)
+                        Spacer(minLength: 20)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 30)
+                }
+
+                if showCabinetIntroOverlay {
+                    CabinetIntroOverlayView(onDismiss: hideCabinetIntroOverlay)
+                        .transition(.opacity)
+                        .zIndex(1)
                 }
             }
             .toolbar {
@@ -1343,6 +1354,12 @@ fileprivate struct MedicationCabinetSheet: View {
         }
     }
 
+    private func hideCabinetIntroOverlay() {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showCabinetIntroOverlay = false
+        }
+    }
+
     @ViewBuilder
     private func cabinetSection(title: String, medications: [Medication]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1350,7 +1367,7 @@ fileprivate struct MedicationCabinetSheet: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(Color(hex: "#E0E7DC"))
 
-        ForEach(sortedMedications(medications, logs: logs, referenceDate: referenceDate)) { medication in
+            ForEach(sortedMedications(medications, logs: logs, referenceDate: referenceDate)) { medication in
                 CabinetMedicationRow(
                     medication: medication,
                     onLogTap: { onLogMedication(medication) },
@@ -1361,6 +1378,54 @@ fileprivate struct MedicationCabinetSheet: View {
                 )
             }
         }
+    }
+}
+
+fileprivate struct CabinetIntroOverlayView: View {
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.65)
+                .ignoresSafeArea()
+
+            VStack(spacing: 18) {
+                Image(systemName: "cabinet.fill")
+                    .font(.system(size: 48, weight: .semibold))
+                    .foregroundColor(.white)
+
+                Text("Medication Cabinet")
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+
+                Text("Medications set as “as needed” are located here, making it easy to log a dose whenever needed.")
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.9))
+                    .multilineTextAlignment(.center)
+
+                Button(action: onDismiss) {
+                    Text("Done")
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color(hex: "#2F352F"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(hex: "#F5F7F4"))
+                        )
+                }
+                .buttonStyle(ScaleButtonStyle())
+            }
+            .padding(28)
+            .frame(maxWidth: 360)
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(Color(hex: "#1B1D19").opacity(0.95))
+                    .shadow(color: Color.black.opacity(0.45), radius: 18, x: 0, y: 12)
+            )
+            .padding(.horizontal, 20)
+        }
+        .accessibilityAddTraits(.isModal)
     }
 }
 

@@ -750,13 +750,12 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         switch response.actionIdentifier {
         case NotificationActionIdentifier.trackNow:
             // User tapped "Track Now" - log the medication as taken
-            if let medicationIDString = userInfo["medicationID"] as? String,
-               let medicationID = UUID(uuidString: medicationIDString) {
-                
-                // Find the medication and log it as taken
-                if let medication = MedicationStore.shared.findMedication(with: medicationID) {
+            DispatchQueue.main.async {
+                if let medicationIDString = userInfo["medicationID"] as? String,
+                   let medicationID = UUID(uuidString: medicationIDString),
+                   let medication = MedicationStore.shared.findMedication(with: medicationID) {
+                    
                     let reminderIndex = userInfo["reminderIndex"] as? Int
-                    // Log the medication as taken (without additional check-in metadata)
                     MedicationStore.shared.logMedicationTaken(
                         medication: medication,
                         actualTime: Date(),
@@ -764,10 +763,9 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                         skipped: false,
                         reminderIndex: reminderIndex
                     )
-                    
-                    // Reset badge count after action
                     NotificationManager.shared.resetApplicationBadge()
                 }
+                self.cancelNotifications(for: response)
             }
             
         case NotificationActionIdentifier.remindLater:
@@ -823,5 +821,25 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         }
         
         completionHandler()
+    }
+
+    private func cancelNotifications(for response: UNNotificationResponse) {
+        let content = response.notification.request.content
+        if let originalIDString = content.userInfo["originalNotificationID"] as? String,
+           let originalUUID = UUID(uuidString: originalIDString) {
+            NotificationManager.shared.cancelNotification(with: originalUUID)
+            return
+        }
+
+        guard let baseUUID = baseNotificationUUID(from: response.notification.request.identifier) else { return }
+        NotificationManager.shared.cancelNotification(with: baseUUID)
+    }
+
+    private func baseNotificationUUID(from identifier: String) -> UUID? {
+        if let separatorIndex = identifier.firstIndex(of: "_") {
+            let baseString = String(identifier[..<separatorIndex])
+            return UUID(uuidString: baseString)
+        }
+        return UUID(uuidString: identifier)
     }
 } 

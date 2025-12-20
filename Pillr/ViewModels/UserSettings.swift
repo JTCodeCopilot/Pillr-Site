@@ -24,6 +24,14 @@ class UserSettings: ObservableObject {
             }
         }
     }
+
+    @Published var hasSeenCabinetIntroOverlay: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(hasSeenCabinetIntroOverlay, forKey: cabinetIntroOverlayKey)
+            }
+        }
+    }
     
     @Published var isFirstLaunch: Bool = false
 
@@ -62,6 +70,7 @@ class UserSettings: ObservableObject {
     private let premiumStatusKey = "is_premium_user"
     private let subscriptionTypeKey = "subscription_type"
     private let onboardingStagesKey = "seen_onboarding_stages"
+    private let cabinetIntroOverlayKey = "hasSeenCabinetIntroOverlay"
     private let isPreviewMode: Bool
     
     // Free tier limitations
@@ -84,6 +93,7 @@ class UserSettings: ObservableObject {
             self.isPremiumUser = false
             self.subscriptionType = nil
             self.seenOnboardingStages = []
+            self.hasSeenCabinetIntroOverlay = false
         } else {
             // Load user name if available, otherwise use default
             self.userName = UserDefaults.standard.string(forKey: userNameKey) ?? "User"
@@ -93,6 +103,7 @@ class UserSettings: ObservableObject {
             self.isPremiumUser = UserDefaults.standard.bool(forKey: premiumStatusKey)
             self.subscriptionType = UserDefaults.standard.string(forKey: subscriptionTypeKey)
             self.seenOnboardingStages = Set(UserDefaults.standard.stringArray(forKey: onboardingStagesKey) ?? [])
+            self.hasSeenCabinetIntroOverlay = UserDefaults.standard.bool(forKey: cabinetIntroOverlayKey)
         }
     }
     
@@ -145,5 +156,9 @@ class UserSettings: ObservableObject {
         var updatedStages = seenOnboardingStages
         updatedStages.insert(key)
         seenOnboardingStages = updatedStages
+    }
+
+    func markCabinetIntroOverlaySeen() {
+        hasSeenCabinetIntroOverlay = true
     }
 }
