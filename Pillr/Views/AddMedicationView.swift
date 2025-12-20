@@ -413,9 +413,9 @@ struct AddMedicationView: View {
                                     .font(.system(size: 16, weight: .medium))
 
                                 if !userSettings.isPremiumUser {
-                                    Image(systemName: "crown.fill")
+                                    Image(systemName: "lock")
                                         .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(Color(hex: "#D4A017"))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                 }
                             }
                             .foregroundColor(Color(hex: "#E8E8E0"))

@@ -496,7 +496,7 @@ struct MedicationInteractionSelectionSheet: View {
                                 }
                             }
                         },
-                        icon: error.contains("Premium") ? "crown.fill" : "exclamationmark.triangle.fill"
+                        icon: error.contains("Premium") ? "lock" : "exclamationmark.triangle.fill"
                     )
                 }
             }

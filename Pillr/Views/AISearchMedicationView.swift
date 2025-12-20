@@ -235,8 +235,8 @@ struct AISearchMedicationView: View {
     // Premium required view
     private var premiumRequiredView: some View {
         VStack(spacing: 24) {
-            Image(systemName: "crown.fill")
-                .foregroundColor(Color(hex: "#D4A017"))
+            Image(systemName: "lock")
+                .foregroundColor(Color(hex: "#C7C7BD"))
                 .font(.system(size: 40))
             
             Text("Premium Feature")
@@ -253,9 +253,9 @@ struct AISearchMedicationView: View {
                 showingPremiumUpgrade = true
             }) {
                 HStack {
-                    Image(systemName: "crown.fill")
+                    Image(systemName: "lock")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(hex: "#C7C7BD"))
                     Text("Upgrade to Premium")
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(.white)

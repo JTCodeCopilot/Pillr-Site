@@ -15,6 +15,10 @@ struct SettingsView: View {
     @State private var isHealthSettingsExpanded = false
     @State private var isNotificationSettingsExpanded = false
     @State private var isPremiumSettingsExpanded = false
+
+    private var isPremiumActive: Bool {
+        storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
+    }
     
     var body: some View {
         NavigationView {
@@ -62,26 +66,29 @@ struct SettingsView: View {
     }
     
     private var interactionsSection: some View {
-        settingsSection(title: "AI Interactions") {
+        let premiumActive = isPremiumActive
+        return settingsSection(title: "AI Interactions") {
             settingsActionRow(
                 title: "Check Interactions",
-                subtitle: "Compare medications for potential conflicts"
+                subtitle: "Compare medications for potential conflicts",
+                accessoryIcon: premiumActive ? nil : "lock"
             ) {
-                showingInteractionSelectionSheet = true
+                handleInteractionSelectionTap()
             }
 
             settingsActionRow(
                 title: "Interaction History",
-                subtitle: "Review your past interaction checks"
+                subtitle: "Review your past interaction checks",
+                accessoryIcon: premiumActive ? nil : "lock"
             ) {
-                showingInteractionHistory = true
+                handleInteractionHistoryTap()
             }
         }
     }
     
     private var generalSettingsSection: some View {
-        settingsSection(title: "Settings") {
-            let premiumActive = storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
+        let premiumActive = isPremiumActive
+        return settingsSection(title: "Settings") {
 
             VStack(spacing: 14) {
                 collapsibleSettingsSection(
@@ -151,7 +158,7 @@ struct SettingsView: View {
                         settingsActionRow(
                             title: "Premium Active",
                             showChevron: false,
-                            trailingIcon: "checkmark"
+                            trailingIcon: "lock.open"
                         ) {}
                     } else {
                         Text("Unlock AI-powered medication analysis and other premium perks.")
@@ -163,7 +170,8 @@ struct SettingsView: View {
                         settingsActionRow(
                             title: "Upgrade Now",
                             subtitle: "One-tap purchase",
-                            showChevron: false
+                            showChevron: false,
+                            accessoryIcon: "lock"
                         ) {
                             showingPremiumUpgrade = true
                         }
@@ -186,7 +194,7 @@ struct SettingsView: View {
     }
     
     private var supportLinksSection: some View {
-        settingsSection(title: "Support & Resources") {
+        return settingsSection(title: "Support & Resources") {
             settingsActionRow(title: "Privacy Policy") {
                 openLink("https://tally.so/r/3yR6M4")
             }
@@ -198,6 +206,22 @@ struct SettingsView: View {
             settingsActionRow(title: "Contact Us") {
                 openLink("https://tally.so/r/3qMdL7")
             }
+        }
+    }
+
+    private func handleInteractionSelectionTap() {
+        if isPremiumActive {
+            showingInteractionSelectionSheet = true
+        } else {
+            showingPremiumUpgrade = true
+        }
+    }
+
+    private func handleInteractionHistoryTap() {
+        if isPremiumActive {
+            showingInteractionHistory = true
+        } else {
+            showingPremiumUpgrade = true
         }
     }
 
@@ -275,6 +299,7 @@ struct SettingsView: View {
         title: String,
         subtitle: String? = nil,
         showChevron: Bool = true,
+        accessoryIcon: String? = nil,
         trailingIcon: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
@@ -294,16 +319,25 @@ struct SettingsView: View {
 
                 Spacer()
 
-                if let iconName = trailingIcon {
-                    Image(systemName: iconName)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(SettingsPalette.secondaryText)
-                        .padding(.top, 2)
-                } else if showChevron {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(SettingsPalette.secondaryText)
-                        .padding(.top, 2)
+                HStack(spacing: 6) {
+                    if let iconName = accessoryIcon {
+                        Image(systemName: iconName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(SettingsPalette.secondaryText)
+                            .padding(.top, 2)
+                    }
+
+                    if let iconName = trailingIcon {
+                        Image(systemName: iconName)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(SettingsPalette.secondaryText)
+                            .padding(.top, 2)
+                    } else if showChevron {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(SettingsPalette.secondaryText)
+                            .padding(.top, 2)
+                    }
                 }
             }
             .contentShape(Rectangle())

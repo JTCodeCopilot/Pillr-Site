@@ -31,13 +31,13 @@ class NotificationManager: ObservableObject {
         // Define the actions
         let trackAction = UNNotificationAction(
             identifier: NotificationActionIdentifier.trackNow,
-            title: "Track Now",
+            title: "Take Now",
             options: []
         )
         
         let remindAction = UNNotificationAction(
             identifier: NotificationActionIdentifier.remindLater,
-            title: "Remind in 5 minutes",
+            title: "Remind Me in 5 Minutes",
             options: .foreground
         )
         
@@ -52,7 +52,7 @@ class NotificationManager: ObservableObject {
             identifier: NotificationCategoryIdentifier.medicationReminder,
             actions: [trackAction, remindAction],
             intentIdentifiers: [],
-            hiddenPreviewsBodyPlaceholder: "Take your scheduled dose now",
+            hiddenPreviewsBodyPlaceholder: "Notification",
             categorySummaryFormat: nil,
             options: [.customDismissAction, .hiddenPreviewsShowTitle]
         )
@@ -120,7 +120,7 @@ class NotificationManager: ObservableObject {
     func scheduleNotification(for medication: Medication) -> UUID {
         
         let content = UNMutableNotificationContent()
-        content.title = "Medication reminder"
+        content.title = "Medication Reminder"
         let descriptor = medicationDescriptor(for: medication)
         content.body = "Please take \(descriptor) now."
         content.sound = UNNotificationSound.default

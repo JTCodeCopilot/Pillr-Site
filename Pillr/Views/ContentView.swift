@@ -1053,8 +1053,8 @@ struct SettingsContentView: View {
             if OpenAIService.shared.isPremiumUser() {
                 // Non-tappable premium status display
                 HStack {
-                    Image(systemName: "crown.fill")
-                        .foregroundColor(Color(hex: "#D4A017"))
+                    Image(systemName: "lock")
+                        .foregroundColor(Color(hex: "#C7C7BD"))
                         .frame(width: 20)
                     
                     VStack(alignment: .leading, spacing: 2) {
