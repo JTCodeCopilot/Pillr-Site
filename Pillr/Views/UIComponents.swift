@@ -34,7 +34,7 @@ struct PremiumBadgeView: View {
         HStack {
             Image(systemName: "checkmark")
                 .foregroundColor(Color(hex: "#E0E7DC"))
-            
+
             Text("Premium Mode Active")
                 .font(.system(size: 13))
                 .foregroundColor(Color(hex: "#E0E7DC"))
@@ -47,6 +47,14 @@ struct PremiumBadgeView: View {
             RoundedRectangle(cornerRadius: 4)
                 .stroke(Color(hex: "#D4A017").opacity(0.12), lineWidth: 0.8)
         )
+    }
+}
+
+struct PremiumLockIcon: View {
+    var body: some View {
+        Image(systemName: "lock")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
     }
 }
 

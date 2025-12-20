@@ -434,18 +434,13 @@ struct EditMedicationView: View {
                                                     Button(action: {
                                                         showingPremiumUpgrade = true
                                                     }) {
-                                                        Text("PREMIUM")
-                                                            .font(.system(size: 10, weight: .bold))
-                                                            .foregroundColor(.white)
-                                                            .padding(.horizontal, 6)
-                                                            .padding(.vertical, 2)
-                                                            .background(Color(hex: "#D4A017"))
-                                                            .cornerRadius(4)
+                                                        PremiumLockIcon()
                                                     }
+                                                    .buttonStyle(PlainButtonStyle())
                                                 }
                                             }
-                                            Text(userSettings.isPremiumUser ? 
-                                                 "Get refill reminders and track usage" : 
+                                            Text(userSettings.isPremiumUser ?
+                                                 "Get refill reminders and track usage" :
                                                  "Inventory tracking requires premium subscription")
                                                 .font(.system(size: 13))
                                                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
@@ -535,18 +530,13 @@ struct EditMedicationView: View {
                                                             Button(action: {
                                                                 showingPremiumUpgrade = true
                                                             }) {
-                                                                Text("PREMIUM")
-                                                                    .font(.system(size: 10, weight: .bold))
-                                                                    .foregroundColor(.white)
-                                                                    .padding(.horizontal, 6)
-                                                                    .padding(.vertical, 2)
-                                                                    .background(Color(hex: "#D4A017"))
-                                                                    .cornerRadius(4)
+                                                                PremiumLockIcon()
                                                             }
+                                                            .buttonStyle(PlainButtonStyle())
                                                         }
                                                     }
-                                                    Text(userSettings.isPremiumUser ? 
-                                                         "Single reminder + 30-min follow-up if not taken" : 
+                                                    Text(userSettings.isPremiumUser ?
+                                                         "Single reminder + 30-min follow-up if not taken" :
                                                          "Follow-up reminders require premium subscription")
                                                         .font(.system(size: 13))
                                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
@@ -854,14 +844,9 @@ struct EditMedicationView: View {
                                         Button(action: {
                                             showingPremiumUpgrade = true
                                         }) {
-                                            Text("PREMIUM")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(Color(hex: "#D4A017"))
-                                                .cornerRadius(4)
+                                            PremiumLockIcon()
                                         }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
                                 }
                                 Text(userSettings.isPremiumUser ?
@@ -923,14 +908,9 @@ struct EditMedicationView: View {
                                         Button(action: {
                                             showingPremiumUpgrade = true
                                         }) {
-                                            Text("PREMIUM")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(Color(hex: "#D4A017"))
-                                                .cornerRadius(4)
+                                            PremiumLockIcon()
                                         }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
                                 }
                                 Text(userSettings.isPremiumUser ?

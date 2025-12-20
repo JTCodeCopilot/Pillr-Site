@@ -604,14 +604,9 @@ struct AddMedicationView: View {
                                                         triggerStrongHaptic()
                                                         showingPremiumUpgrade = true
                                                     }) {
-                                                        Text("PREMIUM")
-                                                            .font(.system(size: 10, weight: .bold))
-                                                            .foregroundColor(.white)
-                                                            .padding(.horizontal, 6)
-                                                            .padding(.vertical, 2)
-                                                            .background(Color(hex: "#D4A017"))
-                                                            .cornerRadius(4)
+                                                        PremiumLockIcon()
                                                     }
+                                                    .buttonStyle(PlainButtonStyle())
                                                 }
                                             }
                                             Text(userSettings.isPremiumUser ?
@@ -627,6 +622,13 @@ struct AddMedicationView: View {
                                     .onChange(of: isOneTimeWithFollowUp) { _ in
                                         triggerStrongHaptic()
                                     }
+                                    .simultaneousGesture(
+                                        TapGesture().onEnded {
+                                            guard !userSettings.isPremiumUser else { return }
+                                            triggerStrongHaptic()
+                                            showingPremiumUpgrade = true
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -740,14 +742,9 @@ struct AddMedicationView: View {
                                                 triggerStrongHaptic()
                                                 showingPremiumUpgrade = true
                                             }) {
-                                                Text("PREMIUM")
-                                                    .font(.system(size: 10, weight: .bold))
-                                                    .foregroundColor(.white)
-                                                    .padding(.horizontal, 6)
-                                                    .padding(.vertical, 2)
-                                                    .background(Color(hex: "#D4A017"))
-                                                    .cornerRadius(4)
+                                                PremiumLockIcon()
                                             }
+                                            .buttonStyle(PlainButtonStyle())
                                         }
                                     }
                                     Text(userSettings.isPremiumUser ?
@@ -867,14 +864,9 @@ struct AddMedicationView: View {
                                             triggerStrongHaptic()
                                             showingPremiumUpgrade = true
                                         }) {
-                                            Text("PREMIUM")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(Color(hex: "#D4A017"))
-                                                .cornerRadius(4)
+                                            PremiumLockIcon()
                                         }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
                                 }
                                 Text(userSettings.isPremiumUser ?
@@ -936,14 +928,9 @@ struct AddMedicationView: View {
                                             triggerStrongHaptic()
                                             showingPremiumUpgrade = true
                                         }) {
-                                            Text("PREMIUM")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(Color(hex: "#D4A017"))
-                                                .cornerRadius(4)
+                                            PremiumLockIcon()
                                         }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
                                 }
                                 Text(userSettings.isPremiumUser ?

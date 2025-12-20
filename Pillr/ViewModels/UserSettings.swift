@@ -72,6 +72,13 @@ class UserSettings: ObservableObject {
     private let onboardingStagesKey = "seen_onboarding_stages"
     private let cabinetIntroOverlayKey = "hasSeenCabinetIntroOverlay"
     private let isPreviewMode: Bool
+
+    #if DEBUG
+    /// Set `PILLR_ENABLE_TEST_PREMIUM=1` in the scheme / environment to keep premium unlocked in debug builds.
+    private let forcePremiumFromEnv = ProcessInfo.processInfo.environment["PILLR_ENABLE_TEST_PREMIUM"] == "1"
+    #else
+    private let forcePremiumFromEnv = false
+    #endif
     
     // Free tier limitations
     static let maxFreeMedications = 3
@@ -104,6 +111,11 @@ class UserSettings: ObservableObject {
             self.subscriptionType = UserDefaults.standard.string(forKey: subscriptionTypeKey)
             self.seenOnboardingStages = Set(UserDefaults.standard.stringArray(forKey: onboardingStagesKey) ?? [])
             self.hasSeenCabinetIntroOverlay = UserDefaults.standard.bool(forKey: cabinetIntroOverlayKey)
+        }
+
+        if forcePremiumFromEnv {
+            isPremiumUser = true
+            subscriptionType = "one-time-purchase"
         }
     }
     
