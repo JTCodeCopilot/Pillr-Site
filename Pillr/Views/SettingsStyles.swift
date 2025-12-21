@@ -19,6 +19,7 @@ enum SettingsPalette {
     static let cardStroke = Color.white.opacity(0.08)
     static let arrowColor = Color(hex: "#E0E7DC")
     static let closeStroke = Color(hex: "#F5F7F4").opacity(0.45)
+    static let toggleActive = Color(hex: "#2F352F")
 }
 
 struct SettingsCloseButton: View {

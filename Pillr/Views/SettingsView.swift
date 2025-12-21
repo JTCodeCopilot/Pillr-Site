@@ -175,6 +175,10 @@ struct SettingsView: View {
                         }
                         .pickerStyle(.segmented)
                         .accessibilityLabel("Health distance unit")
+                        
+                        Toggle("Show Apple Health data on My Meds screen", isOn: appleHealthVisibilityBinding)
+                            .toggleStyle(SwitchToggleStyle(tint: SettingsPalette.toggleActive))
+                            .accessibilityLabel("Show Apple Health data on My Meds screen")
                     }
                 }
                 
@@ -257,6 +261,13 @@ struct SettingsView: View {
         openLink(UIApplication.openSettingsURLString)
     }
     
+    private var appleHealthVisibilityBinding: Binding<Bool> {
+        Binding(
+            get: { userSettings.shouldShowAppleHealthData },
+            set: { userSettings.shouldShowAppleHealthData = $0 }
+        )
+    }
+
     private var supportLinksSection: some View {
         return settingsSection(title: "Support & Resources") {
             settingsActionRow(title: "Privacy Policy") {

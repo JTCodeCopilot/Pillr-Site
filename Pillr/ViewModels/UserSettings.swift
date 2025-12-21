@@ -67,6 +67,14 @@ class UserSettings: ObservableObject {
             }
         }
     }
+    
+    @Published var shouldShowAppleHealthData: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(shouldShowAppleHealthData, forKey: appleHealthVisibilityKey)
+            }
+        }
+    }
 
     @Published var subscriptionType: String? {
         didSet {
@@ -89,6 +97,7 @@ class UserSettings: ObservableObject {
     private let cabinetIntroOverlayKey = "hasSeenCabinetIntroOverlay"
     private let notificationOnboardingPromptKey = "hasSeenNotificationOnboardingPrompt"
     private let cloudSyncPreferenceKey = "should_use_cloud_sync"
+    private let appleHealthVisibilityKey = "should_show_apple_health_data"
     private let isPreviewMode: Bool
 
     #if DEBUG
@@ -121,6 +130,7 @@ class UserSettings: ObservableObject {
             self.hasSeenCabinetIntroOverlay = false
             self.hasSeenNotificationOnboardingPrompt = false
             self.shouldUseCloudSync = true
+            self.shouldShowAppleHealthData = true
         } else {
             // Load user name if available, otherwise use default
             self.userName = UserDefaults.standard.string(forKey: userNameKey) ?? "User"
@@ -137,11 +147,22 @@ class UserSettings: ObservableObject {
             } else {
                 self.shouldUseCloudSync = true
             }
+            if let storedAppleHealthVisibility = UserDefaults.standard.object(forKey: appleHealthVisibilityKey) as? Bool {
+                self.shouldShowAppleHealthData = storedAppleHealthVisibility
+            } else {
+                self.shouldShowAppleHealthData = true
+            }
         }
 
         if forcePremiumFromEnv {
             isPremiumUser = true
             subscriptionType = "one-time-purchase"
+        }
+        if !isPreviewMode {
+            // Ensure visibility flag is persisted even if not set earlier
+            if UserDefaults.standard.object(forKey: appleHealthVisibilityKey) == nil {
+                UserDefaults.standard.set(true, forKey: appleHealthVisibilityKey)
+            }
         }
     }
     

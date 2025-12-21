@@ -822,7 +822,11 @@ fileprivate func MedicationsListHeader(
 
 fileprivate struct HealthSummaryWidget: View {
     @ObservedObject var manager: HealthKitManager
-    @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = HealthDistanceUnit.miles.rawValue
+    @EnvironmentObject private var userSettings: UserSettings
+    private static var defaultDistanceUnit: HealthDistanceUnit {
+        Locale.current.usesMetricSystem ? .kilometers : .miles
+    }
+    @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = defaultDistanceUnit.rawValue
 
     private static let integerFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
@@ -915,7 +919,7 @@ fileprivate struct HealthSummaryWidget: View {
             Text(
                 manager.hasDeniedPermission
                     ? "Health permissions are currently denied. Open Settings to re-allow fitness data."
-                    : "Grant access to Apple Health to surface your daily steps and distance."
+                    : "Allow access to Apple Health to show your daily steps and distance."
             )
             .font(.system(size: 13))
             .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
@@ -942,6 +946,23 @@ fileprivate struct HealthSummaryWidget: View {
                     )
             }
             .buttonStyle(ScaleButtonStyle())
+
+            Button {
+                withAnimation {
+                    userSettings.shouldShowAppleHealthData = false
+                }
+            } label: {
+                Text("Do not show Apple Health data")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(hex: "#F5F7F4").opacity(0.5), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -1568,12 +1589,13 @@ fileprivate struct MedicationsListMainContent: View {
     let onCheckAllInteractions: () async -> Void
     let onAddMedication: () -> Void
         let onShowFocusTimeline: () -> Void
-	    let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
-	    let displayedMedications: [Medication]
-	    let cabinetMedications: [Medication]
-	    let onShowCabinet: () -> Void
-	    let healthKitManager: HealthKitManager
-	    let referenceDate: Date
+    let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
+    let displayedMedications: [Medication]
+    let cabinetMedications: [Medication]
+    let onShowCabinet: () -> Void
+    let healthKitManager: HealthKitManager
+    let referenceDate: Date
+    @EnvironmentObject private var userSettings: UserSettings
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -1601,8 +1623,11 @@ fileprivate struct MedicationsListMainContent: View {
                             cabinetCount: cabinetMedications.count
                         )
 
-                        HealthSummaryWidget(manager: healthKitManager)
-                            .padding(.horizontal, horizontalInset)
+                        if userSettings.shouldShowAppleHealthData {
+                            HealthSummaryWidget(manager: healthKitManager)
+                                .environmentObject(userSettings)
+                                .padding(.horizontal, horizontalInset)
+                        }
 
                         if store.activeMedications.isEmpty {
                             EmptyMedicationsView(onAddMedication: onAddMedication)
