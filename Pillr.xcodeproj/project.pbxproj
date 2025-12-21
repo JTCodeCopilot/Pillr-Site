@@ -286,7 +286,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Pillr;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps, exercise minutes, water intake, and active calories.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
@@ -321,7 +322,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Pillr;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps, exercise minutes, water intake, and active calories.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
