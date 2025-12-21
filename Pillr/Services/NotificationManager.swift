@@ -27,6 +27,45 @@ class NotificationManager: ObservableObject {
         setupNotificationActions()
     }
     
+    private let trackedMedicationIDsQueue = DispatchQueue(
+        label: "NotificationManager.trackedMedicationIDsQueue",
+        attributes: .concurrent
+    )
+    private var trackedMedicationIDs = Set<UUID>()
+
+    func updateTrackedMedicationIDs(_ ids: Set<UUID>) {
+        trackedMedicationIDsQueue.sync(flags: .barrier) {
+            trackedMedicationIDs = ids
+        }
+    }
+
+    func registerTrackedMedicationID(_ id: UUID) {
+        trackedMedicationIDsQueue.sync(flags: .barrier) {
+            trackedMedicationIDs.insert(id)
+        }
+    }
+
+    func unregisterTrackedMedicationID(_ id: UUID) {
+        trackedMedicationIDsQueue.sync(flags: .barrier) {
+            trackedMedicationIDs.remove(id)
+        }
+    }
+
+    private func isMedicationTracked(_ id: UUID) -> Bool {
+        trackedMedicationIDsQueue.sync {
+            trackedMedicationIDs.contains(id)
+        }
+    }
+
+    private func ensureMedicationIsTracked(_ id: UUID) -> Bool {
+        guard isMedicationTracked(id) else {
+            cancelMedicationNotifications(for: id)
+            return false
+        }
+
+        return true
+    }
+
     private func setupNotificationActions() {
         // Define the actions
         let trackAction = UNNotificationAction(
@@ -117,7 +156,10 @@ class NotificationManager: ObservableObject {
     }
     
     // Legacy support for single notification
-    func scheduleNotification(for medication: Medication) -> UUID {
+    func scheduleNotification(for medication: Medication) -> UUID? {
+        guard ensureMedicationIsTracked(medication.id) else {
+            return nil
+        }
         
         let content = UNMutableNotificationContent()
         content.title = "Medication Reminder"
@@ -174,7 +216,10 @@ class NotificationManager: ObservableObject {
     
     // New method for scheduling multiple notifications
     func scheduleMultipleNotifications(for medication: Medication) -> [UUID] {
-        
+        guard ensureMedicationIsTracked(medication.id) else {
+            return []
+        }
+
         var notificationIDs: [UUID] = []
         
         // Use reminderTimes if available, otherwise fall back to legacy timeToTake
@@ -260,10 +305,17 @@ class NotificationManager: ObservableObject {
     }
     
     func scheduleFollowUpNotification(for medication: Medication, after minutes: Int, originalID: UUID) {
+        guard ensureMedicationIsTracked(medication.id) else {
+            return
+        }
+
         scheduleFollowUpNotification(for: medication, time: medication.timeToTake, index: 0, after: minutes, originalID: originalID)
     }
-    
+
     func scheduleFollowUpNotification(for medication: Medication, time: Date, index: Int, after minutes: Int, originalID: UUID) {
+        guard ensureMedicationIsTracked(medication.id) else {
+            return
+        }
         let content = UNMutableNotificationContent()
         
         let descriptor = medicationDescriptor(for: medication)
@@ -314,6 +366,10 @@ class NotificationManager: ObservableObject {
     }
     
     func scheduleOneTimeReminder(for medication: Medication, afterMinutes: Int) {
+        guard ensureMedicationIsTracked(medication.id) else {
+            return
+        }
+
         let content = UNMutableNotificationContent()
         content.title = "Reminder: Take Your Medication"
         let descriptor = medicationDescriptor(for: medication)
@@ -403,7 +459,7 @@ class NotificationManager: ObservableObject {
 
     /// Cancels any pending or delivered notifications that reference the provided medication ID.
     /// This is used as a safety net for deleted medications where we no longer want reminders firing.
-    func cancelNotifications(forMedicationID medicationID: UUID) {
+    func cancelMedicationNotifications(for medicationID: UUID) {
         let center = UNUserNotificationCenter.current()
         let medicationIDString = medicationID.uuidString
         let refillPrefix = "refill-\(medicationIDString)"
@@ -445,6 +501,10 @@ class NotificationManager: ObservableObject {
                 center.removeDeliveredNotifications(withIdentifiers: identifiers)
             }
         }
+    }
+
+    func cancelNotifications(forMedicationID medicationID: UUID) {
+        cancelMedicationNotifications(for: medicationID)
     }
     
     func cancelAllNotifications() {
@@ -509,6 +569,10 @@ class NotificationManager: ObservableObject {
     
     // Add a new function for one-time follow up
     private func scheduleOneTimeFollowUp(for medication: Medication, after minutes: Int, originalID: UUID, baseInterval: TimeInterval) {
+        guard ensureMedicationIsTracked(medication.id) else {
+            return
+        }
+
         let content = UNMutableNotificationContent()
         content.title = "Reminder: Medication Due"
         let descriptor = medicationDescriptor(for: medication)
@@ -545,7 +609,8 @@ class NotificationManager: ObservableObject {
     }
 
     func scheduleStimulantPhaseNotifications(for medication: Medication, doseTime: Date) {
-        guard shouldScheduleStimulantTiming(for: medication),
+        guard ensureMedicationIsTracked(medication.id),
+              shouldScheduleStimulantTiming(for: medication),
               let onset = medication.onsetMinutes,
               let duration = medication.durationMinutes else {
             return
@@ -604,7 +669,7 @@ class NotificationManager: ObservableObject {
         category: String = NotificationCategoryIdentifier.stimulantReminder
     ) {
         let interval = fireDate.timeIntervalSinceNow
-        guard interval > 0 else { return }
+        guard ensureMedicationIsTracked(medication.id), interval > 0 else { return }
 
         let content = UNMutableNotificationContent()
         content.title = title
@@ -629,6 +694,10 @@ class NotificationManager: ObservableObject {
     }
 
     func scheduleDailyCheckInReminder(for medication: Medication, referenceDate: Date) {
+        guard ensureMedicationIsTracked(medication.id) else {
+            return
+        }
+
         guard medication.enableDailyCheckIn,
               let customCheckInTime = medication.dailyCheckInTime else {
             return
@@ -723,7 +792,14 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     
     // Called when a notification is delivered to a foreground app
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        
+        if let medicationIDString = notification.request.content.userInfo["medicationID"] as? String,
+           let medicationID = UUID(uuidString: medicationIDString),
+           MedicationStore.shared.findMedication(with: medicationID) == nil {
+            NotificationManager.shared.cancelMedicationNotifications(for: medicationID)
+            completionHandler([])
+            return
+        }
+
         let hapticCategories: Set<String> = [
             NotificationCategoryIdentifier.medicationReminder,
             NotificationCategoryIdentifier.stimulantReminder
@@ -745,6 +821,14 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         
         let userInfo = response.notification.request.content.userInfo
+        if let medicationIDString = userInfo["medicationID"] as? String,
+           let medicationID = UUID(uuidString: medicationIDString),
+           MedicationStore.shared.findMedication(with: medicationID) == nil {
+            NotificationManager.shared.cancelMedicationNotifications(for: medicationID)
+            NotificationManager.shared.resetApplicationBadge()
+            completionHandler()
+            return
+        }
         
         // Handle different notification actions
         switch response.actionIdentifier {

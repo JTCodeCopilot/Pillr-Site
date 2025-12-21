@@ -177,22 +177,26 @@ class MedicationStore: ObservableObject {
             isOneTimeWithFollowUp: isOneTimeWithFollowUp,
         )
         
+        notificationManager.registerTrackedMedicationID(newMed.id)
+
         // Schedule notifications only if enabled
         if enableNotification {
             notificationManager.requestAuthorizationIfNeeded()
             if isOneTimeWithFollowUp {
-                let notificationID = notificationManager.scheduleNotification(for: newMed)
-                newMed.notificationID = notificationID
+                newMed.notificationID = notificationManager.scheduleNotification(for: newMed)
                 newMed.notificationIDs = []
             } else if reminderTimes.isEmpty {
                 // Legacy single notification support
-                let notificationID = notificationManager.scheduleNotification(for: newMed)
-                newMed.notificationID = notificationID
+                newMed.notificationID = notificationManager.scheduleNotification(for: newMed)
+                newMed.notificationIDs = []
             } else {
                 // Multiple notifications support
                 let notificationIDs = notificationManager.scheduleMultipleNotifications(for: newMed)
                 newMed.notificationIDs = notificationIDs
             }
+        } else {
+            newMed.notificationID = nil
+            newMed.notificationIDs = []
         }
         
         medications.append(newMed)
@@ -230,15 +234,14 @@ class MedicationStore: ObservableObject {
             
             // Schedule new notifications if enabled
             if enableNotification {
+                notificationManager.registerTrackedMedicationID(updatedMedication.id)
                 notificationManager.requestAuthorizationIfNeeded()
                 if updatedMedication.isOneTimeWithFollowUp {
-                    let newNotificationID = notificationManager.scheduleNotification(for: updatedMedication)
-                    updatedMedication.notificationID = newNotificationID
+                    updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
                     updatedMedication.notificationIDs = []
                 } else if updatedMedication.reminderTimes.isEmpty {
                     // Legacy single notification
-                    let newNotificationID = notificationManager.scheduleNotification(for: updatedMedication)
-                    updatedMedication.notificationID = newNotificationID
+                    updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
                     updatedMedication.notificationIDs = []
                 } else {
                     // Multiple notifications
@@ -249,7 +252,7 @@ class MedicationStore: ObservableObject {
             } else {
                 updatedMedication.notificationID = nil
                 updatedMedication.notificationIDs = []
-                notificationManager.cancelNotifications(forMedicationID: updatedMedication.id)
+                notificationManager.cancelMedicationNotifications(for: updatedMedication.id)
             }
             
             // Update medication name in existing logs if it changed
@@ -604,6 +607,9 @@ class MedicationStore: ObservableObject {
     }
 
     private func prepareMedicationForDeletion(_ medication: Medication) {
+        notificationManager.unregisterTrackedMedicationID(medication.id)
+        clearReminderState(for: medication)
+
         if let notificationID = medication.notificationID {
             notificationManager.cancelNotification(with: notificationID)
         }
@@ -612,8 +618,23 @@ class MedicationStore: ObservableObject {
             notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
         }
 
-        notificationManager.cancelNotifications(forMedicationID: medication.id)
+            notificationManager.cancelMedicationNotifications(for: medication.id)
         syncDeleteMedication(medication)
+    }
+
+    private func clearReminderState(for medication: Medication) {
+        if dailyCheckInMedication?.id == medication.id {
+            dailyCheckInMedication = nil
+        }
+        if highlightedMedicationID == medication.id {
+            highlightedMedicationID = nil
+        }
+        if notificationHighlightMedicationID == medication.id {
+            notificationHighlightMedicationID = nil
+        }
+        if recentADHDDoseTimeline?.medication.id == medication.id {
+            recentADHDDoseTimeline = nil
+        }
     }
     
     func deleteLog(at offsets: IndexSet) {
@@ -817,6 +838,8 @@ class MedicationStore: ObservableObject {
         if let encoded = try? JSONEncoder().encode(medications) {
             UserDefaults.standard.set(encoded, forKey: medicationsKey)
         }
+        let currentIDs = Set(medications.map { $0.id })
+        notificationManager.updateTrackedMedicationIDs(currentIDs)
     }
 
     public func loadMedications() {
@@ -825,6 +848,7 @@ class MedicationStore: ObservableObject {
                 self.medications = decodedMedications
 
                 let activeMedicationIDs = Set(decodedMedications.map { $0.id })
+                notificationManager.updateTrackedMedicationIDs(activeMedicationIDs)
                 notificationManager.purgeNotifications(excluding: activeMedicationIDs)
                 
                 // Reschedule notifications on app launch (in case app was terminated)
@@ -841,6 +865,7 @@ class MedicationStore: ObservableObject {
             }
         }
         self.medications = []
+        notificationManager.updateTrackedMedicationIDs([])
     }
 
     public func loadLogs() {
@@ -927,19 +952,17 @@ class MedicationStore: ObservableObject {
             notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
         }
 
-        notificationManager.cancelNotifications(forMedicationID: medication.id)
+            notificationManager.cancelMedicationNotifications(for: medication.id)
 
         if updatedMedication.isOneTimeWithFollowUp {
-            let notificationID = notificationManager.scheduleNotification(for: updatedMedication)
-            updatedMedication.notificationID = notificationID
+            updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
             updatedMedication.notificationIDs = []
         } else if !updatedMedication.reminderTimes.isEmpty {
             let notificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
             updatedMedication.notificationIDs = notificationIDs
             updatedMedication.notificationID = nil
         } else if updatedMedication.notificationID != nil {
-            let notificationID = notificationManager.scheduleNotification(for: updatedMedication)
-            updatedMedication.notificationID = notificationID
+            updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
             updatedMedication.notificationIDs = []
         }
 
@@ -1035,7 +1058,9 @@ class MedicationStore: ObservableObject {
             if !deletedRemoteIDs.isEmpty {
                 let toRemove = updated.filter { deletedRemoteIDs.contains($0.id) }
                 for medication in toRemove {
-                    self.notificationManager.cancelNotifications(forMedicationID: medication.id)
+                    self.notificationManager.cancelMedicationNotifications(for: medication.id)
+                    self.notificationManager.unregisterTrackedMedicationID(medication.id)
+                    self.clearReminderState(for: medication)
                 }
 
                 let beforeCount = updated.count
@@ -1048,16 +1073,20 @@ class MedicationStore: ObservableObject {
             for remoteMedication in remote where !remoteMedication.isDeleted {
                 if let index = updated.firstIndex(where: { $0.id == remoteMedication.id }) {
                     if self.shouldReplace(local: updated[index], with: remoteMedication) {
+                        self.notificationManager.registerTrackedMedicationID(remoteMedication.id)
                         let scheduled = self.scheduleNotificationsForCloudMedication(remoteMedication)
                         updated[index] = scheduled
                         hasChanges = true
                     }
                 } else {
+                    self.notificationManager.registerTrackedMedicationID(remoteMedication.id)
                     let scheduled = self.scheduleNotificationsForCloudMedication(remoteMedication)
                     updated.append(scheduled)
                     hasChanges = true
                 }
             }
+
+            self.notificationManager.updateTrackedMedicationIDs(Set(updated.map { $0.id }))
 
             if hasChanges {
                 self.medications = updated
@@ -1117,8 +1146,10 @@ class MedicationStore: ObservableObject {
 
         if mutable.reminderTimes.isEmpty {
             mutable.notificationID = notificationManager.scheduleNotification(for: mutable)
+            mutable.notificationIDs = []
         } else {
             mutable.notificationIDs = notificationManager.scheduleMultipleNotifications(for: mutable)
+            mutable.notificationID = nil
         }
 
         return mutable
@@ -1166,13 +1197,13 @@ class MedicationStore: ObservableObject {
             for (index, medication) in medications.enumerated() {
                 var updatedMedication = medication
                 
-                if !medication.reminderTimes.isEmpty {
-                    let notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
-                    updatedMedication.notificationIDs = notificationIDs
-                } else {
-                    let notificationID = notificationManager.scheduleNotification(for: medication)
-                    updatedMedication.notificationID = notificationID
-                }
+            if !medication.reminderTimes.isEmpty {
+                updatedMedication.notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
+                updatedMedication.notificationID = nil
+            } else {
+                updatedMedication.notificationID = notificationManager.scheduleNotification(for: medication)
+                updatedMedication.notificationIDs = []
+            }
                 
                 medications[index] = updatedMedication
             }

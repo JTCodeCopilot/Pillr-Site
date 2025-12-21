@@ -32,6 +32,14 @@ class UserSettings: ObservableObject {
             }
         }
     }
+
+    @Published var hasSeenNotificationOnboardingPrompt: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(hasSeenNotificationOnboardingPrompt, forKey: notificationOnboardingPromptKey)
+            }
+        }
+    }
     
     @Published var isFirstLaunch: Bool = false
 
@@ -79,6 +87,7 @@ class UserSettings: ObservableObject {
     private let subscriptionTypeKey = "subscription_type"
     private let onboardingStagesKey = "seen_onboarding_stages"
     private let cabinetIntroOverlayKey = "hasSeenCabinetIntroOverlay"
+    private let notificationOnboardingPromptKey = "hasSeenNotificationOnboardingPrompt"
     private let cloudSyncPreferenceKey = "should_use_cloud_sync"
     private let isPreviewMode: Bool
 
@@ -110,6 +119,7 @@ class UserSettings: ObservableObject {
             self.subscriptionType = nil
             self.seenOnboardingStages = []
             self.hasSeenCabinetIntroOverlay = false
+            self.hasSeenNotificationOnboardingPrompt = false
             self.shouldUseCloudSync = true
         } else {
             // Load user name if available, otherwise use default
@@ -121,6 +131,7 @@ class UserSettings: ObservableObject {
             self.subscriptionType = UserDefaults.standard.string(forKey: subscriptionTypeKey)
             self.seenOnboardingStages = Set(UserDefaults.standard.stringArray(forKey: onboardingStagesKey) ?? [])
             self.hasSeenCabinetIntroOverlay = UserDefaults.standard.bool(forKey: cabinetIntroOverlayKey)
+            self.hasSeenNotificationOnboardingPrompt = UserDefaults.standard.bool(forKey: notificationOnboardingPromptKey)
             if let stored = UserDefaults.standard.object(forKey: cloudSyncPreferenceKey) as? Bool {
                 self.shouldUseCloudSync = stored
             } else {
@@ -191,5 +202,10 @@ class UserSettings: ObservableObject {
 
     func markCabinetIntroOverlaySeen() {
         hasSeenCabinetIntroOverlay = true
+    }
+
+    func markNotificationOnboardingPromptSeen() {
+        guard !hasSeenNotificationOnboardingPrompt else { return }
+        hasSeenNotificationOnboardingPrompt = true
     }
 }

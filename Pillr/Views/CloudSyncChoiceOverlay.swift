@@ -20,21 +20,28 @@ struct CloudSyncChoiceOverlay: View {
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: 24) {
                             VStack(spacing: 10) {
-                                Text("Your medications can be stored in two ways.")
-                                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.center)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                VStack(spacing: 6) {
+                                    Text("Welcome to Pillr!")
+                                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                                        .foregroundColor(.white)
+                                        .multilineTextAlignment(.center)
+                                        .fixedSize(horizontal: false, vertical: true)
 
-                                Text("Choose the option that feels right for you. You can change this later in Settings.")
+                                    Text("First, choose how your medications are stored.")
+                                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                        .foregroundColor(.white)
+                                        .multilineTextAlignment(.center)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.6))
+                                    .frame(height: 0.5)
+                                    .padding(.horizontal, 10)
+
+                                Text("Pick what works for you.\nYou can change this later in Settings.")
                                     .font(.system(size: 14, weight: .medium, design: .rounded))
                                     .foregroundColor(Color.white.opacity(0.65))
-                                    .multilineTextAlignment(.center)
-                                    .lineSpacing(3)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                Text("If you want your medication history to be saved and restored if you reset or replace your device, choose iCloud Sync.")
-                                    .font(.system(size: 13, weight: .regular, design: .rounded))
-                                    .foregroundColor(Color.white.opacity(0.7))
                                     .multilineTextAlignment(.center)
                                     .lineSpacing(3)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -42,7 +49,7 @@ struct CloudSyncChoiceOverlay: View {
 
                             VStack(spacing: 16) {
                                 CloudSyncChoiceCard(
-                                    iconName: "shield.lefthalf.fill",
+                                    iconName: "internaldrive",
                                     title: "On device only",
                                     description: "Your medication data stays only on this phone. It is not shared with iCloud unless you turn it on later.",
                                     highlights: [
@@ -58,16 +65,19 @@ struct CloudSyncChoiceOverlay: View {
                                 )
 
                                 CloudSyncChoiceCard(
-                                    iconName: "icloud",
-                                    title: "Connect iCloud Sync",
+                                    iconName: "icloud.and.arrow.up",
+                                    title: "Connect iCloud Sync (recommended)",
                                     description: "Your medication history is encrypted and safely synced across all your Apple devices using your Apple ID.",
                                     highlights: [
                                         "Automatic backup and sync",
                                         "Access your logs on all devices",
                                         "History is restored if you change or reset devices"
                                     ],
-                                    accentColor: Color(hex: "#81C784"),
+                                    accentColor: Color(hex: "#2A2C27"),
                                     filled: true,
+                                    iconColor: Color(hex: "#2A2C27"),
+                                    tapBackgroundColor: Color(hex: "#2A2C27"),
+                                    tapTextColor: Color.white,
                                     action: {
                                         onChoice(.connect)
                                     }
@@ -111,20 +121,18 @@ private struct CloudSyncChoiceCard: View {
     let highlights: [String]
     let accentColor: Color
     var filled: Bool = false
+    var iconColor: Color? = nil
+    var tapBackgroundColor: Color? = nil
+    var tapTextColor: Color? = nil
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .center, spacing: 10) {
-                    ZStack {
-                        Circle()
-                            .fill(filled ? accentColor : Color.white.opacity(0.1))
-                            .frame(width: 36, height: 36)
-                        Image(systemName: iconName)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(filled ? Color(hex: "#404C42") : accentColor)
-                    }
+                    Image(systemName: iconName)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(iconColor ?? (filled ? Color.white : accentColor))
 
                     Text(title)
                         .font(.system(size: 19, weight: .semibold, design: .rounded))
@@ -151,10 +159,23 @@ private struct CloudSyncChoiceCard: View {
                     }
                 }
 
-                Text("Tap to select this option")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(filled ? Color(hex: "#404C42") : accentColor)
-                    .padding(.top, 2)
+                HStack {
+                    Spacer(minLength: 0)
+                    Text("Tap to select")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundColor(tapTextColor ?? (filled ? Color(hex: "#404C42") : accentColor))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(
+                                    tapBackgroundColor
+                                    ?? (filled ? Color.white.opacity(0.8) : Color.white.opacity(0.08))
+                                )
+                        )
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 2)
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
