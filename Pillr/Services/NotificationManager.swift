@@ -241,17 +241,9 @@ class NotificationManager: ObservableObject {
     private func scheduleNotificationForTime(medication: Medication, time: Date, index: Int, total: Int) -> UUID {
         let content = UNMutableNotificationContent()
         
-        // Customize the notification based on which reminder it is
         let formattedTime = formatTimeOnly(time)
-        let bodyCopy = "Take your \(formattedTime) now."
-        if total > 1 {
-            let doseNumber = index + 1
-            content.title = "Dose #\(doseNumber) reminder"
-            content.body = bodyCopy
-        } else {
-            content.title = "Time to take your medication"
-            content.body = bodyCopy
-        }
+        content.title = "Medication Reminder"
+        content.body = "Take your \(formattedTime) medications."
         
         content.sound = UNNotificationSound.default
         content.userInfo = [
