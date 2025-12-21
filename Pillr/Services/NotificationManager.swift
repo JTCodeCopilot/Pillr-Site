@@ -100,7 +100,7 @@ class NotificationManager: ObservableObject {
             identifier: NotificationCategoryIdentifier.stimulantReminder,
             actions: [dismissAction],
             intentIdentifiers: [],
-            hiddenPreviewsBodyPlaceholder: "Medication timing reminder",
+            hiddenPreviewsBodyPlaceholder: "Notification",
             categorySummaryFormat: nil,
             options: [.customDismissAction, .hiddenPreviewsShowTitle]
         )
@@ -163,8 +163,8 @@ class NotificationManager: ObservableObject {
         
         let content = UNMutableNotificationContent()
         content.title = "Medication Reminder"
-        let descriptor = medicationDescriptor(for: medication)
-        content.body = "Please take \(descriptor) now."
+        let reminderTime = formatTimeOnly(medication.timeToTake)
+        content.body = "Take your \(reminderTime) medications."
         content.sound = UNNotificationSound.default
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
@@ -242,14 +242,15 @@ class NotificationManager: ObservableObject {
         let content = UNMutableNotificationContent()
         
         // Customize the notification based on which reminder it is
-        let descriptor = medicationDescriptor(for: medication)
+        let formattedTime = formatTimeOnly(time)
+        let bodyCopy = "Take your \(formattedTime) now."
         if total > 1 {
             let doseNumber = index + 1
             content.title = "Dose #\(doseNumber) reminder"
-            content.body = "Take \(descriptor) around \(formatTimeOnly(time))."
+            content.body = bodyCopy
         } else {
             content.title = "Time to take your medication"
-            content.body = "It's time to take \(descriptor)."
+            content.body = bodyCopy
         }
         
         content.sound = UNNotificationSound.default
@@ -318,15 +319,8 @@ class NotificationManager: ObservableObject {
         }
         let content = UNMutableNotificationContent()
         
-        let descriptor = medicationDescriptor(for: medication)
-        if medication.reminderTimes.count > 1 {
-            let doseNumber = index + 1
-            content.title = "Dose #\(doseNumber) follow-up reminder"
-            content.body = "Please take \(descriptor) dose #\(doseNumber) if you haven't already."
-        } else {
-            content.title = "Medication follow-up reminder"
-            content.body = "Take \(descriptor) if you missed the earlier reminder."
-        }
+        content.title = "Medications Follow Up"
+        content.body = "Time to log your THE MAIN TIME medications."
         
         content.sound = UNNotificationSound.default
         content.userInfo = [
@@ -372,8 +366,7 @@ class NotificationManager: ObservableObject {
 
         let content = UNMutableNotificationContent()
         content.title = "Reminder: Take Your Medication"
-        let descriptor = medicationDescriptor(for: medication)
-        content.body = "It's time to take \(descriptor)."
+        content.body = "It's time to take your medication."
         content.sound = UNNotificationSound.default
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
@@ -575,8 +568,7 @@ class NotificationManager: ObservableObject {
 
         let content = UNMutableNotificationContent()
         content.title = "Reminder: Medication Due"
-        let descriptor = medicationDescriptor(for: medication)
-        content.body = "Don't forget to take \(descriptor)"
+        content.body = "Don't forget to take your medication."
         content.sound = UNNotificationSound.default
         content.userInfo = [
             "medicationID": medication.id.uuidString,
@@ -722,14 +714,11 @@ class NotificationManager: ObservableObject {
             }
         }
 
-        let descriptor = medicationDescriptor(for: medication)
-        let noteBody = medication.medicationType == .stimulant
-            ? "Take a moment to reflect on focus and side effects today for \(descriptor)."
-            : "Add a quick note about how \(descriptor) felt today."
+        let noteBody = "Take a moment to reflect on how you felt today taking \(medication.name)."
 
         scheduleNotification(
             for: medication,
-            title: "Daily check-in reminder",
+            title: "Daily Check-In",
             body: noteBody,
             userInfo: [
                 "medicationID": medication.id.uuidString,
