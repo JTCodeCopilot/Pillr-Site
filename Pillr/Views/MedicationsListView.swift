@@ -868,7 +868,7 @@ fileprivate struct HealthSummaryWidget: View {
                 Text("Apple Health is not available on this device.")
                     .font(.system(size: 13))
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
-            } else if manager.hasAnyPermission || manager.hasMetricValues {
+            } else if manager.hasConnected || manager.hasAnyPermission || manager.hasMetricValues {
                 metricGrid
             } else {
                 permissionPrompt
@@ -927,15 +927,11 @@ fileprivate struct HealthSummaryWidget: View {
 
             Button {
                 Task {
-                    if manager.hasDeniedPermission {
-                        manager.openHealthSettings()
-                    } else {
-                        await manager.requestAuthorizationIfNeeded()
-                        await manager.refreshMetrics()
-                    }
+                    await manager.requestAuthorizationIfNeeded()
+                    await manager.refreshMetrics()
                 }
             } label: {
-                Text(manager.hasDeniedPermission ? "Open Health Settings" : "Connect to Health")
+                Text("Connect to Health")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Color(hex: "#2F352F"))
                     .padding(.vertical, 10)
@@ -1011,6 +1007,7 @@ fileprivate struct HealthSummaryWidget: View {
         guard let miles = milesValue else { return nil }
         return distanceUnit.convertDistance(fromMiles: miles)
     }
+
 }
 
 fileprivate struct FloatingActionButton: View {

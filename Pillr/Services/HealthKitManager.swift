@@ -16,6 +16,7 @@ final class HealthKitManager: ObservableObject {
     @Published private(set) var dailyDistanceMiles: Double?
     @Published private(set) var hasAnyPermission = false
     @Published private(set) var hasAllPermissions = false
+    @Published private(set) var hasConnected = false
     @Published private(set) var authorizationError: String?
     @Published private(set) var hasDeniedPermission = false
     @Published private(set) var lastUpdated: Date?
@@ -23,6 +24,30 @@ final class HealthKitManager: ObservableObject {
     // MARK: - Private properties
     private let healthStore = HKHealthStore()
     private let calendar = Calendar.current
+    static let authorizationStorageKey = "apple_health_authorization_status"
+    static let hasConnectedStorageKey = "apple_health_has_connected"
+    private static let lastStepsStorageKey = "apple_health_last_steps"
+    private static let lastDistanceStorageKey = "apple_health_last_distance_miles"
+
+    init() {
+        if let cachedSteps = UserDefaults.standard.object(forKey: Self.lastStepsStorageKey) as? NSNumber {
+            self.dailySteps = cachedSteps.intValue
+        }
+        if let cachedDistance = UserDefaults.standard.object(forKey: Self.lastDistanceStorageKey) as? NSNumber {
+            self.dailyDistanceMiles = cachedDistance.doubleValue
+        }
+        let storedConnection = UserDefaults.standard.object(forKey: Self.hasConnectedStorageKey) as? Bool
+        let legacyConnection = UserDefaults.standard.object(forKey: Self.authorizationStorageKey) as? Bool
+        let connected = storedConnection ?? legacyConnection ?? false
+        self.hasConnected = connected
+        self.hasAnyPermission = connected
+        updatePermissionState()
+        if hasAnyPermission || hasConnected {
+            Task { [weak self] in
+                await self?.refreshAuthorizationState()
+            }
+        }
+    }
 
     private static let requiredIdentifiers: [HKQuantityTypeIdentifier] = [
         .stepCount,
@@ -46,6 +71,7 @@ final class HealthKitManager: ObservableObject {
         guard isHealthDataAvailable else {
             hasAnyPermission = false
             hasAllPermissions = false
+            persistConnectionStatus(false)
             return
         }
 
@@ -55,10 +81,14 @@ final class HealthKitManager: ObservableObject {
 
         authorizationError = nil
         do {
-            _ = try await performAuthorization()
-            updatePermissionState()
-            if hasAnyPermission {
+            let success = try await performAuthorization()
+            if success {
+                persistConnectionStatus(true)
+                hasAnyPermission = true
+                hasDeniedPermission = false
                 await refreshMetrics()
+            } else {
+                updatePermissionState()
             }
         } catch {
             authorizationError = error.localizedDescription
@@ -87,11 +117,17 @@ final class HealthKitManager: ObservableObject {
         dailySteps = steps.map { Int($0.rounded(.down)) }
         dailyDistanceMiles = distance
         lastUpdated = Date()
+        if let stepsValue = dailySteps {
+            UserDefaults.standard.set(stepsValue, forKey: Self.lastStepsStorageKey)
+        }
+        if let distanceValue = dailyDistanceMiles {
+            UserDefaults.standard.set(distanceValue, forKey: Self.lastDistanceStorageKey)
+        }
     }
 
     func refreshAuthorizationState() async {
         updatePermissionState()
-        if hasAnyPermission {
+        if hasAnyPermission || hasConnected {
             await refreshMetrics()
         }
     }
@@ -103,9 +139,18 @@ final class HealthKitManager: ObservableObject {
 
     private func updatePermissionState() {
         let statuses = readQuantityTypes.map { healthStore.authorizationStatus(for: $0) }
-        hasAnyPermission = statuses.contains { $0 == .sharingAuthorized }
+        let hasAuthorized = statuses.contains { $0 == .sharingAuthorized }
+        hasAnyPermission = hasAuthorized
         hasAllPermissions = !readQuantityTypes.isEmpty && statuses.allSatisfy { $0 == .sharingAuthorized }
         hasDeniedPermission = statuses.contains { $0 == .sharingDenied }
+        if hasAuthorized {
+            persistConnectionStatus(true)
+        } else if hasDeniedPermission {
+            persistConnectionStatus(false)
+        } else if hasConnected {
+            // Keep prior authorization while HealthKit resolves its status on launch.
+            hasAnyPermission = true
+        }
     }
 
     private func todayPredicate() -> NSPredicate {
@@ -138,6 +183,12 @@ final class HealthKitManager: ObservableObject {
             return
         }
         UIApplication.shared.open(settingsURL)
+    }
+
+    private func persistConnectionStatus(_ connected: Bool) {
+        hasConnected = connected
+        UserDefaults.standard.set(connected, forKey: Self.hasConnectedStorageKey)
+        UserDefaults.standard.set(connected, forKey: Self.authorizationStorageKey)
     }
 
     private func fetchSum(
