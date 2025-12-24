@@ -1,593 +1,398 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- SEO Improvement 1: Updated Title Tag -->
-    <title>Pillr | iOS Medication Tracking App & Smart Pill Organizer</title>
-    <!-- SEO Improvement 2: Added Meta Description -->
-    <meta name="description" content="Pillr is the leading iOS medication tracking app. Get intelligent reminders, pill organization, and seamless prescription management in one place.">
-    <meta name="robots" content="index, follow">
-    <meta name="keywords" content="iOS medication tracking app, medication reminder app, pill organizer iPhone, Pillr">
-    <link rel="canonical" href="https://pillr.app/">
-    <link rel="alternate" hreflang="en-us" href="https://pillr.app/">
-    <meta name="apple-itunes-app" content="app-id=6746717689">
-    <meta name="theme-color" content="#3D4B3A">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Pillr">
-    <meta property="og:title" content="Pillr | iOS Medication Tracking App">
-    <meta property="og:description" content="Manage medications effortlessly with Pillr—an iOS medication tracking app with smart reminders, pill organization, and safety insights.">
-    <meta property="og:url" content="https://pillr.app/">
-    <meta property="og:image" content="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000">
-    <meta property="og:image:alt" content="Download Pillr medication tracking app on the App Store">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Pillr | iOS Medication Tracking App">
-    <meta name="twitter:description" content="Stay on top of prescriptions with Pillr, the iOS medication tracking app built for smart reminders and pill organization.">
-    <meta name="twitter:image" content="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000">
-    
-    <!-- Favicon: A pill emoji SVG -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💊</text></svg>">
-    
-    <!-- Fonts: Inter (UI) and Playfair Display (Headings) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-    <!-- Font for Tech/Mono accents -->
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-    
-    <!-- Icons: FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "MobileApplication",
-            "name": "Pillr",
-            "operatingSystem": "iOS",
-            "applicationCategory": "https://schema.org/HealthApplication",
-            "url": "https://pillr.app/",
-            "downloadUrl": "https://apps.apple.com/us/app/pillr-medication-reminder/id6746717689?itscg=30200&itsct=apps_box_badge&mttnsubad=6746717689",
-            "description": "Pillr is the leading iOS medication tracking app with smart reminders, pill organization, and privacy-first health insights.",
-            "publisher": {
-                "@type": "Organization",
-                "name": "Pillr"
-            }
-        }
-    </script>
-    
-    <style>
-        :root {
-            /* Palette - Sophisticated Nature Tones */
-            --bg-body: #FDFCF8; /* Warm off-white */
-            --bg-surface: #FFFFFF;
-            --primary: #3D4B3A; /* Updated Primary Green */
-            --accent: #00676A; /* Teal */
-            --highlight: #92FF83; /* Lime */
-            --text-main: #1A2621;
-            --text-muted: #5F6F65;
-            
-            /* Spacing & Layout */
-            --container-width: 1120px;
-            --radius-lg: 24px;
-            --radius-md: 16px;
-            
-            /* Effects */
-            --shadow-subtle: 0 2px 20px rgba(0, 0, 0, 0.03);
-            --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.08);
-            --transition: all 0.3s ease;
-        }
-
-        /* --- BASE RESET --- */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            line-height: 1.6;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 600; }
-        
-        a { text-decoration: none; color: inherit; transition: var(--transition); }
-
-        .container {
-            max-width: var(--container-width);
-            margin: 0 auto;
-            padding: 0 24px;
-            position: relative; /* For z-index context */
-            z-index: 2;
-        }
-
-        /* --- HERO SECTION --- */
-        .hero {
-            min-height: 100vh; /* Larger height */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            position: relative;
-            padding-top: 60px;
-            overflow: hidden;
-            
-            /* Tech Grid Background */
-            background-image: 
-                linear-gradient(rgba(44, 74, 59, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(44, 74, 59, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-        }
-
-        .hero-title {
-            font-size: clamp(4rem, 8vw, 7rem); /* Increased size */
-            line-height: 1;
-            color: var(--primary);
-            margin-bottom: 40px;
-            letter-spacing: -0.03em;
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-title .italic-accent {
-            font-style: italic;
-            color: var(--accent);
-            position: relative;
-            display: inline-block;
-            white-space: nowrap;
-        }
-        
-        /* Underline decoration - sharper tech look */
-        .hero-title .italic-accent::after {
-            content: '';
-            position: absolute;
-            bottom: 12px;
-            left: -5%;
-            width: 110%;
-            height: 20px;
-            background-color: var(--highlight);
-            opacity: 0.6;
-            z-index: -1;
-            transform: skewX(-20deg);
-        }
-
-        .hero-subtitle {
-            font-size: 1.25rem;
-            color: var(--text-muted);
-            max-width: 580px;
-            margin: 0 auto 48px;
-            font-weight: 400;
-        }
-
-        /* Floating Pill Silhouettes - UPDATED FOR FLAT LOOK */
-        .floating-pill {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.3); /* Simplified white background */
-            border-radius: 100px;
-            z-index: 1;
-            pointer-events: none;
-            /* Removed border, box-shadow, and backdrop-filter */
-        }
-
-        .pill-1 {
-            top: 15%;
-            left: 8%;
-            width: 70px;
-            height: 28px;
-            transform: rotate(-25deg);
-            animation: float 7s ease-in-out infinite;
-        }
-
-        .pill-2 {
-            bottom: 25%;
-            right: 10%;
-            width: 100px;
-            height: 40px;
-            transform: rotate(15deg);
-            animation: float 9s ease-in-out infinite reverse;
-        }
-
-        .pill-3 {
-            top: 25%;
-            right: 15%;
-            width: 50px;
-            height: 20px;
-            transform: rotate(45deg);
-            opacity: 0.7;
-            animation: float 11s ease-in-out infinite 1s;
-        }
-
-        .pill-4 {
-            bottom: 15%;
-            left: 15%;
-            width: 80px;
-            height: 32px;
-            transform: rotate(-10deg);
-            animation: float 8s ease-in-out infinite 2s;
-        }
-
-        /* Tiny particle pills */
-        .pill-5 {
-            top: 50%;
-            left: 5%;
-            width: 30px;
-            height: 12px;
-            transform: rotate(90deg);
-            opacity: 0.5;
-            animation: float 12s ease-in-out infinite;
-        }
-
-        /* NEW Pill-6 */
-        .pill-6 {
-            bottom: 5%;
-            left: 50%;
-            width: 60px;
-            height: 24px;
-            transform: rotate(20deg) translateX(-50%);
-            opacity: 0.6;
-            animation: float 10s ease-in-out infinite 3s reverse;
-        }
-
-        .app-store-btn {
-            display: inline-block;
-            transition: transform 0.3s ease;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .app-store-btn:hover {
-            transform: translateY(-4px) scale(1.02);
-            /* Removed filter: drop-shadow(...) for flat look */
-        }
-
-        .app-store-btn img {
-            height: 72px; /* Slightly larger button */
-            width: auto;
-        }
-
-        .scroll-indicator {
-            position: absolute;
-            bottom: 40px;
-            animation: bounce 2s infinite;
-            color: var(--text-muted);
-            font-size: 1.2rem;
-            cursor: pointer;
-            z-index: 2;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        /* --- BENTO GRID FEATURES --- */
-        .features-section {
-            padding: 100px 0;
-            position: relative;
-            z-index: 2;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-
-        .section-title {
-            font-size: 2.5rem;
-            color: var(--primary);
-            margin-bottom: 16px;
-        }
-
-        .section-subtitle {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .bento-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, auto);
-            gap: 24px;
-        }
-
-        /* --- NEW CARD DESIGN --- */
-        .bento-card {
-            background: var(--bg-surface);
-            border-radius: 16px; /* Slightly tighter radius */
-            padding: 32px;
-            border: 1px solid #E0E6E2; /* Clean light border */
-            box-shadow: none; /* Flat look */
-            transition: var(--transition);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .bento-card:hover {
-            border-color: var(--primary); /* Highlight border on hover */
-            transform: translateY(-4px);
-        }
-
-        .bento-card.large {
-            grid-column: span 2;
-        }
-
-        /* Outlined Icon Circle */
-        .card-icon {
-            font-size: 1.5rem;
-            color: var(--primary);
-            margin-bottom: 24px;
-            width: 48px;
-            height: 48px;
-            background: transparent;
-            border: 1px solid var(--primary); /* Outlined style */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%; /* Circle */
-            transition: var(--transition);
-        }
-
-        /* Hover Effect for Icons - REMOVED BRIGHT BACKGROUND */
-        .bento-card:hover .card-icon {
-            background-color: transparent; /* Ensures no bright background */
-            border-color: var(--accent); /* Subtle border change to accent */
-            color: var(--accent);        /* Subtle icon color change to accent */
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            margin-bottom: 12px;
-            color: var(--primary);
-            font-family: 'Inter', sans-serif; /* Switched to Inter for cleaner look */
-            font-weight: 600;
-        }
-
-        .card-text {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        /* AI card specific */
-        .bento-card.ai-card {
-            background: #FFFFFF; /* Consistent white background */
-        }
-        
-        /* Ensure the AI card behaves same on hover */
-        .bento-card.ai-card:hover {
-             border-color: var(--primary);
-        }
-
-        /* --- REMOVED AI DEMO STYLES --- */
-        
-        @keyframes float {
-            0% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(5deg); }
-            100% { transform: translateY(0px) rotate(0deg); }
-        }
-
-        /* --- TESTIMONIALS --- */
-        .testimonials-section {
-            padding: 80px 0 120px;
-            background-color: #F6F8F6;
-            border-radius: 40px 40px 0 0;
-            /* Adjust margin since AI section is gone */
-            margin-top: 0; 
-            position: relative;
-            z-index: 1;
-        }
-
-        .testimonial-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 32px;
-        }
-
-        .review-card {
-            background: var(--bg-surface);
-            padding: 32px;
-            border-radius: var(--radius-md);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-        }
-
-        .stars {
-            color: #FFC107;
-            margin-bottom: 16px;
-            font-size: 0.9rem;
-        }
-
-        .review-text {
-            font-style: italic;
-            color: var(--text-main);
-            margin-bottom: 20px;
-            font-size: 1.05rem;
-        }
-
-        .reviewer {
-            font-weight: 600;
-            color: var(--accent);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* --- TALLY EMBED WRAPPER --- */
-        .embed-section {
-            padding: 0 0 60px 0;
-            background-color: #F6F8F6;
-        }
-        
-        .embed-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
-            background: transparent;
-        }
-
-        /* --- FOOTER --- */
-        footer {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            background-color: #F6F8F6;
-        }
-
-        /* --- RESPONSIVE --- */
-        @media (max-width: 900px) {
-            .bento-grid {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto;
-            }
-            .bento-card.large {
-                grid-column: span 1;
-            }
-            .hero-title {
-                margin-bottom: 24px;
-                font-size: 3.5rem;
-            }
-            .ai-actions {
-                flex-direction: column;
-            }
-            .ai-btn {
-                width: 100%;
-                justify-content: center;
-            }
-            .floating-shape {
-                display: none; /* Hide complex shapes on mobile to keep it clean */
-            }
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
-            40% {transform: translateX(-50%) translateY(-10px);}
-            60% {transform: translateX(-50%) translateY(-5px);}
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pillr - ADHD Medication Tracking App</title>
+  <meta name="description" content="Pillr is an ADHD medication tracking app that helps you stay on schedule with medication reminders, dose tracking, focus windows, and export-ready history." />
+  <meta property="og:title" content="Pillr - ADHD Medication Tracking App" />
+  <meta property="og:description" content="Track ADHD medications with smart reminders, focus timelines, interaction checks, and adherence history. Built for routine support and clarity." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://raw.githubusercontent.com/JTCodeCopilot/Pillr-Site/main/pillr%20adhd%20medication%20tracking.PNG" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Pillr - ADHD Medication Tracking App" />
+  <meta name="twitter:description" content="An ADHD medication tracker for dose tracking, medication reminders, focus windows, and prescription tracking." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/JTCodeCopilot/Pillr-Site/main/pillr%20adhd%20medication%20tracking.PNG" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+  <script
+    src="https://cdn.telemetrydeck.com/websdk/telemetrydeck.min.js"
+    data-app-id="99CA6098-7249-4281-B37F-B52637409282"
+  ></script>
 </head>
 <body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#top">Pillr</a>
+      <nav class="nav">
+        <a href="#how-it-works">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#benefits">Benefits</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button ghost" href="#features">See features</a>
+        <a class="button primary" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_link&mttnsubad=6746717689">Download</a>
+      </div>
+    </div>
+  </header>
 
-    <main>
-        <section class="hero">
-            <!-- Decorative Background Elements -->
-            <div class="floating-pill pill-1"></div>
-            <div class="floating-pill pill-2"></div>
-            <div class="floating-pill pill-3"></div>
-            <div class="floating-pill pill-4"></div>
-            <div class="floating-pill pill-5"></div>
-            <!-- Added a sixth decorative pill based on the selection -->
-            <div class="floating-pill pill-6"></div> 
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="floating-pill pill-1"></div>
+      <div class="floating-pill pill-2"></div>
+      <div class="floating-pill pill-3"></div>
+      <div class="floating-pill pill-4"></div>
+      <div class="floating-pill pill-5"></div>
+      <div class="floating-pill pill-6"></div>
 
-            <div class="container">
-                <h1 class="hero-title">
-                    The <span class="italic-accent">Pillr</span> of your<br>
-                    daily health.
-                </h1>
-                
-                <p class="hero-subtitle">
-                    Organize meds, track interactions, and build healthy habits with the most intelligent iOS medication tracking app.
-                </p>
-
-                <!-- SEO Improvement 3: Added alt text to the image badge -->
-                <a href="https://apps.apple.com/us/app/pillr-medication-reminder/id6746717689?itscg=30200&itsct=apps_box_badge&mttnsubad=6746717689" class="app-store-btn" target="_blank">
-                    <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download Pillr Medication Reminder on the App Store">
-                </a>
-            </div>
-            
-            <div class="scroll-indicator" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
-                <i class="fas fa-chevron-down"></i>
-            </div>
-        </section>
-
-        <section id="features" class="features-section">
-            <div class="container">
-                <div class="section-header">
-                    <h2 class="section-title">Designed for peace of mind</h2>
-                    <p class="section-subtitle">Everything you need to manage medication on your iPhone, sans the stress.</p>
-                </div>
-
-                <div class="bento-grid">
-                    <div class="bento-card large">
-                        <div class="card-icon"><i class="fas fa-pills"></i></div>
-                        <h3 class="card-title">Complete iOS Medication Management</h3>
-                        <!-- SEO Improvement 4: Added explicit keyword 'pill organizer' -->
-                        <p class="card-text">Organize all your medications, dosages, and schedules in one stress-free place with our pill organizer. Whether it's daily vitamins or complex prescriptions, keep your health data centralized.</p>
-                    </div>
-
-                    <div class="bento-card">
-                        <div class="card-icon"><i class="fas fa-bell"></i></div>
-                        <h3 class="card-title">Smart Reminders</h3>
-                        <p class="card-text">Never miss a dose. Intelligent notifications nudge you exactly when you need your iOS medication reminder.</p>
-                    </div>
-
-                    <div class="bento-card">
-                        <div class="card-icon"><i class="fas fa-calendar-alt"></i></div>
-                        <h3 class="card-title">Custom Schedules</h3>
-                        <p class="card-text">Personalize routines to fit your lifestyle, from alternate days to specific hourly intervals for precision medication tracking on iOS.</p>
-                    </div>
-
-                    <div class="bento-card">
-                        <div class="card-icon"><i class="fas fa-robot"></i></div>
-                        <h3 class="card-title">AI Safety Checks</h3>
-                        <p class="card-text">Built-in AI scans for interactions and helps you smartly add new meds.</p>
-                    </div>
-
-                    <div class="bento-card">
-                        <div class="card-icon"><i class="fas fa-shield-alt"></i></div>
-                        <h3 class="card-title">Privacy First</h3>
-                        <p class="card-text">Your health data stays on your device.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- REMOVED AI DEMO SECTION -->
-
-        <section class="testimonials-section">
-            <div class="container">
-                <div class="section-header">
-                    <h2 class="section-title">Loved by our community</h2>
-                </div>
-                
-                <div class="testimonial-grid">
-                    <div class="review-card">
-                        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p class="review-text">"Pillr has completely changed how I manage my meds. I used to forget doses all the time, but now I get reminders right when I need them. Simple, reliable."</p>
-                        <div class="reviewer">— Sarah L.</div>
-                    </div>
-                    
-                    <div class="review-card">
-                        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p class="review-text">"I've tried a few medication trackers, but Pillr is the only one that actually fits my routine. Clean interface, easy to log everything, and no annoying ads."</p>
-                        <div class="reviewer">— Marcus P.</div>
-                    </div>
-                    
-                    <div class="review-card">
-                        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p class="review-text">"I like that it's not cluttered with useless features. Just works like it should. Helps me track my prescriptions and supplements in one place."</p>
-                        <div class="reviewer">— Angela K.</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="embed-section">
-            <div class="container">
-                <div class="embed-wrapper">
-                    <iframe data-tally-src="https://tally.so/embed/3qMdL7?alignLeft=1&transparentBackground=1&dynamicHeight=1" loading="lazy" width="100%" height="180" frameborder="0" marginheight="0" marginwidth="0" title="How can we help? (Pillr)"></iframe>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p>&copy; 2025 Pillr. Your health, simplified.</p>
+      <div class="container">
+        <p class="eyebrow">ADHD medication tracking app</p>
+        <h1 id="hero-title" class="hero-title">
+          Stay on time with your ADHD meds, without the mental load.
+        </h1>
+        <div class="cta-group">
+          <a
+            class="app-store-btn"
+            href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_badge&mttnsubad=6746717689"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <img
+              src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000"
+              alt="Download Pillr Medication Reminder on the App Store"
+            />
+          </a>
+          <a class="button ghost" href="#features">See features</a>
         </div>
-    </footer>
+      </div>
 
-    <script>
-        // Tally Embed Script
-        var d=document,w="https://tally.so/widgets/embed.js",v=function(){"undefined"!=typeof Tally?Tally.loadEmbeds():d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function(e){e.src=e.dataset.tallySrc}))};if("undefined"!=typeof Tally)v();else if(d.querySelector('script[src="'+w+'"]')==null){var s=d.createElement("script");s.src=w,s.onload=v,s.onerror=v,d.body.appendChild(s);}
-    </script>
+      <div class="scroll-indicator" onclick="document.getElementById('how-it-works').scrollIntoView({behavior: 'smooth'})">
+        <span aria-hidden="true">▼</span>
+        <span class="sr-only">Scroll down to How it works</span>
+      </div>
+    </section>
+
+    <section class="hero-summary-panel" aria-label="Hero summary">
+      <div class="container">
+        <div class="hero-summary-shell">
+          <div class="hero-description-card">
+            <p class="hero-description-text">
+              Pillr turns your stimulant medication schedule into a calm routine. Set medication reminders, log
+              taken or skipped doses, see focus windows, and review medication adherence history with
+              export-ready reports. Your data stays on device, with optional iCloud sync when you want it.
+            </p>
+          </div>
+        <div class="hero-points">
+          <article class="hero-point-card">
+            <p class="hero-point-title">Time-sensitive reminders</p>
+            <p class="hero-point-copy">Take now, remind later, or skip in seconds.</p>
+          </article>
+          <article class="hero-point-card">
+            <p class="hero-point-title">Focus timeline</p>
+            <p class="hero-point-copy">Track stimulant onset, peak, and wear-off.</p>
+          </article>
+          <article class="hero-point-card">
+            <p class="hero-point-title">History + exports</p>
+            <p class="hero-point-copy">CSV and PDF logs ready for check-ins.</p>
+          </article>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="how" id="how-it-works" aria-labelledby="how-title">
+      <div class="container">
+        <div class="section-title">
+          <p class="eyebrow">How it works</p>
+          <h2 id="how-title">A routine that respects ADHD reality.</h2>
+          <p>Set it once, then let Pillr keep you in sync with your doses, reminders, and logs.</p>
+        </div>
+        <div class="steps">
+          <article class="step-card reveal" data-reveal="left" style="--delay: 0s;">
+            <span class="step-number">01</span>
+            <h3>Add your medications</h3>
+            <p>Track name, dosage, frequency, reminder times, and stimulant timing details.</p>
+          </article>
+          <article class="step-card reveal" data-reveal="right" style="--delay: 0.1s;">
+            <span class="step-number">02</span>
+            <h3>Get actionable reminders</h3>
+            <p>Time-sensitive notifications offer quick actions like take now or remind later.</p>
+          </article>
+          <article class="step-card reveal" data-reveal="left" style="--delay: 0.2s;">
+            <span class="step-number">03</span>
+            <h3>Log and review</h3>
+            <p>Log doses, notes, and daily check-ins, then review adherence and export history.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section" id="features" aria-labelledby="feature-title">
+      <div class="container feature-band">
+        <div class="feature-copy reveal" data-reveal="left">
+          <p class="eyebrow">Feature highlight</p>
+          <h2 id="feature-title">Smart medication reminders that act with you.</h2>
+          <p>
+            Schedule one-time or multiple reminders per day. Notifications are time-sensitive and let you
+            log a dose, skip it, or snooze with a follow-up.
+          </p>
+          <ul class="feature-list">
+            <li>Multiple reminders per medication</li>
+            <li>Take now or remind in 5 minutes</li>
+            <li>Automatic follow-up for one-time doses</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="right">
+          <div class="visual-card">
+            <div class="visual-pill">8:00 AM</div>
+            <div class="visual-pill">12:30 PM</div>
+            <div class="visual-pill">4:15 PM</div>
+            <div class="visual-timeline"></div>
+            <p class="visual-label">Reminder timeline</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section alt">
+      <div class="container feature-band reverse">
+        <div class="feature-copy reveal" data-reveal="right">
+          <p class="eyebrow">Feature highlight</p>
+          <h2>Focus timeline for stimulant medication.</h2>
+          <p>
+            Log doses and see when focus starts and fades. Enable stimulant phase notifications and daily
+            wear-off check-ins to capture focus ratings and side effects.
+          </p>
+          <ul class="feature-list">
+            <li>Onset and duration windows</li>
+            <li>Daily check-ins for focus and side effects</li>
+            <li>Focus timeline view for today</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="left">
+          <div class="visual-card">
+            <div class="visual-arc"></div>
+            <p class="visual-label">Focus window</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section">
+      <div class="container feature-band">
+        <div class="feature-copy reveal" data-reveal="left">
+          <p class="eyebrow">Feature highlight</p>
+          <h2>Interaction checks and AI medication search.</h2>
+          <p>
+            Check medication interactions with severity labels and recommended actions. Save results to
+            your interaction history, and use AI medication search to add new meds faster.
+          </p>
+          <ul class="feature-list">
+            <li>Severity filters and interaction history</li>
+            <li>Recommended actions in plain language</li>
+            <li>AI-powered medication search (optional)</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="right">
+          <div class="visual-card">
+            <div class="visual-tag danger">Major</div>
+            <div class="visual-tag warn">Moderate</div>
+            <div class="visual-tag safe">No interaction</div>
+            <p class="visual-label">Interaction results</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section alt">
+      <div class="container feature-band reverse">
+        <div class="feature-copy reveal" data-reveal="right">
+          <p class="eyebrow">Feature highlight</p>
+          <h2>History, adherence, and exports.</h2>
+          <p>
+            Review medication history by day, filter by medication, and see adherence stats like streaks
+            and taken counts. Export CSV or PDF reports for clinical visits.
+          </p>
+          <ul class="feature-list">
+            <li>Daily and date-range history views</li>
+            <li>Adherence rate and streak tracking</li>
+            <li>Export CSV and PDF reports</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="left">
+          <div class="visual-card">
+            <div class="visual-bars">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <p class="visual-label">Adherence snapshot</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section">
+      <div class="container feature-band">
+        <div class="feature-copy reveal" data-reveal="left">
+          <p class="eyebrow">Feature highlight</p>
+          <h2>Supply tracking, privacy, and Apple Health snapshots.</h2>
+          <p>
+            Track remaining pills with refill thresholds, keep your data on device by default, and optionally
+            sync with iCloud. Pull daily steps and distance from Apple Health for context.
+          </p>
+          <ul class="feature-list">
+            <li>Pill count and refill reminders</li>
+            <li>On-device storage or iCloud sync</li>
+            <li>Apple Health steps and distance</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="right">
+          <div class="visual-card">
+            <div class="visual-meter">
+              <div class="visual-meter-fill"></div>
+            </div>
+            <p class="visual-label">Refill alert</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="benefits" id="benefits" aria-labelledby="benefits-title">
+      <div class="container">
+        <div class="section-title">
+          <p class="eyebrow">Benefits</p>
+          <h2 id="benefits-title">ADHD-friendly clarity, every day.</h2>
+          <p>Pillr is built to reduce the mental overhead of medication management.</p>
+        </div>
+        <div class="benefit-grid">
+          <article class="benefit-card reveal" data-reveal="left">
+            <h3>Fewer missed doses</h3>
+            <p>Reliable medication reminders and quick actions mean fewer gaps in your routine.</p>
+          </article>
+          <article class="benefit-card reveal" data-reveal="right">
+            <h3>Routine support without clutter</h3>
+            <p>A simple log flow keeps dose tracking fast, even on busy days.</p>
+          </article>
+          <article class="benefit-card reveal" data-reveal="left">
+            <h3>Confidence in focus windows</h3>
+            <p>Stimulant timing and focus timelines help you plan deep work and downtime.</p>
+          </article>
+          <article class="benefit-card reveal" data-reveal="right">
+            <h3>Shareable history</h3>
+            <p>Export medication adherence history and notes for clinical conversations.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="keywords" aria-labelledby="keywords-title">
+      <div class="container">
+        <h2 id="keywords-title">ADHD medication tracking, stated plainly.</h2>
+        <p>
+          Pillr is an ADHD medication tracker designed for dose tracking and medication reminders. It
+          supports prescription tracking, medication adherence, and ADHD routine support by turning your
+          stimulant medication schedule into a clear daily plan. If you need an ADHD medication tracking
+          app that keeps logs, reminders, and focus timing in one place, Pillr is built for you.
+        </p>
+      </div>
+    </section>
+
+    <section class="faq" id="faq" aria-labelledby="faq-title">
+      <div class="container">
+        <div class="section-title">
+          <p class="eyebrow">FAQ</p>
+          <h2 id="faq-title">Answers, without the overwhelm.</h2>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>Does Pillr replace medical advice?</summary>
+            <p>No. Pillr helps you track and organize medications, but it does not replace a clinician.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can I track non-ADHD medications too?</summary>
+            <p>Yes. Pillr supports any medications, with special timing tools for ADHD stimulants.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Where is my data stored?</summary>
+            <p>Your data stays on device by default, with optional iCloud sync across Apple devices.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What can I export?</summary>
+            <p>You can export medication history as CSV or PDF for easy sharing.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Is Pillr a medication management tool?</summary>
+            <p>Pillr is built for medication management—set reminders, log doses, and review adherence right on your device so your ADHD routine stays steady.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Does Pillr include an ADHD symptom tracker?</summary>
+            <p>Pillr keeps symptom context in mind by capturing focus windows, side-effect notes, and wear-off check-ins alongside medication data.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can I use Pillr as a pill tracker or pill reminder?</summary>
+            <p>Yes, Pillr combines pill tracker features with flexible reminders so you always know when to take, skip, or snooze a dose.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Why is Pillr called an ADHD app?</summary>
+            <p>Every part of Pillr—from stimulant timing to focus timelines—was designed to support the specific rhythms of ADHD medication routines.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How does Pillr support medication adherence?</summary>
+            <p>Pillr tracks adherence rates, streaks, and refill status, making it easy to share proof of consistency with clinicians or caregivers.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta" id="get-started" aria-labelledby="cta-title">
+      <div class="container cta-box">
+        <div>
+          <p class="eyebrow">Get started</p>
+          <h2 id="cta-title">Your ADHD medication routine, in one calm place.</h2>
+          <p>Download Pillr and take control of your medication reminders, dose tracking, and focus plan.</p>
+        </div>
+        <div class="cta-actions">
+          <a
+            class="app-store-btn"
+            href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_badge&mttnsubad=6746717689"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <img
+              src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000"
+              alt="Download Pillr Medication Reminder on the App Store"
+            />
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p class="brand">Pillr</p>
+        <p class="footer-note">ADHD medication tracking that keeps your routine steady.</p>
+      </div>
+      <div>
+        <p class="footer-title">Explore</p>
+        <a href="#how-it-works">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#benefits">Benefits</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div>
+        <p class="footer-title">Contact</p>
+        <a href="https://tally.so/r/3qMdL7">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
