@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pillr - ADHD Medication Tracking App</title>
+  <meta name="description" content="Pillr is an ADHD medication tracking app that helps you stay on schedule with medication reminders, dose tracking, focus windows, and export-ready history." />
+  <meta property="og:title" content="Pillr - ADHD Medication Tracking App" />
+  <meta property="og:description" content="Track ADHD medications with smart reminders, focus timelines, interaction checks, and adherence history. Built for routine support and clarity." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://raw.githubusercontent.com/JTCodeCopilot/Pillr-Site/main/pillr%20adhd%20medication%20tracking.PNG" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Pillr - ADHD Medication Tracking App" />
+  <meta name="twitter:description" content="An ADHD medication tracker for dose tracking, medication reminders, focus windows, and prescription tracking." />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/JTCodeCopilot/Pillr-Site/main/pillr%20adhd%20medication%20tracking.PNG" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+  <script
+    src="https://cdn.telemetrydeck.com/websdk/telemetrydeck.min.js"
+    data-app-id="99CA6098-7249-4281-B37F-B52637409282"
+  ></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#top">Pillr</a>
+      <nav class="nav">
+        <a href="#how-it-works">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#benefits">Benefits</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button ghost" href="#features">See features</a>
+        <a class="button primary" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_link&mttnsubad=6746717689">Download</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="floating-pill pill-1"></div>
+      <div class="floating-pill pill-2"></div>
+      <div class="floating-pill pill-3"></div>
+      <div class="floating-pill pill-4"></div>
+      <div class="floating-pill pill-5"></div>
+      <div class="floating-pill pill-6"></div>
+
+      <div class="container">
+        <p class="eyebrow">ADHD medication tracking app</p>
+        <h1 id="hero-title" class="hero-title">
+          Stay on time with your ADHD meds, without the mental load.
+        </h1>
+        <div class="cta-group">
+          <a
+            class="app-store-btn"
+            href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_badge&mttnsubad=6746717689"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <img
+              src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000"
+              alt="Download Pillr Medication Reminder on the App Store"
+            />
+          </a>
+          <a class="button ghost" href="#features">See features</a>
+        </div>
+      </div>
+
+      <div class="scroll-indicator" onclick="document.getElementById('how-it-works').scrollIntoView({behavior: 'smooth'})">
+        <span aria-hidden="true">▼</span>
+        <span class="sr-only">Scroll down to How it works</span>
+      </div>
+    </section>
+
+    <section class="hero-summary-panel" aria-label="Hero summary">
+      <div class="container">
+        <div class="hero-summary-shell">
+          <div class="hero-description-card">
+            <p class="hero-description-text">
+              Pillr turns your stimulant medication schedule into a calm routine. Set medication reminders, log
+              taken or skipped doses, see focus windows, and review medication adherence history with
+              export-ready reports. Your data stays on device, with optional iCloud sync when you want it.
+            </p>
+          </div>
+        <div class="hero-points">
+          <article class="hero-point-card">
+            <p class="hero-point-title">Time-sensitive reminders</p>
+            <p class="hero-point-copy">Take now, remind later, or skip in seconds.</p>
+          </article>
+          <article class="hero-point-card">
+            <p class="hero-point-title">Focus timeline</p>
+            <p class="hero-point-copy">Track stimulant onset, peak, and wear-off.</p>
+          </article>
+          <article class="hero-point-card">
+            <p class="hero-point-title">History + exports</p>
+            <p class="hero-point-copy">CSV and PDF logs ready for check-ins.</p>
+          </article>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="how" id="how-it-works" aria-labelledby="how-title">
+      <div class="container">
+        <div class="section-title">
+          <p class="eyebrow">How it works</p>
+          <h2 id="how-title">A routine that respects ADHD reality.</h2>
+          <p>Set it once, then let Pillr keep you in sync with your doses, reminders, and logs.</p>
+        </div>
+        <div class="steps">
+          <article class="step-card reveal" data-reveal="left" style="--delay: 0s;">
+            <span class="step-number">01</span>
+            <h3>Add your medications</h3>
+            <p>Track name, dosage, frequency, reminder times, and stimulant timing details.</p>
+          </article>
+          <article class="step-card reveal" data-reveal="right" style="--delay: 0.1s;">
+            <span class="step-number">02</span>
+            <h3>Get actionable reminders</h3>
+            <p>Time-sensitive notifications offer quick actions like take now or remind later.</p>
+          </article>
+          <article class="step-card reveal" data-reveal="left" style="--delay: 0.2s;">
+            <span class="step-number">03</span>
+            <h3>Log and review</h3>
+            <p>Log doses, notes, and daily check-ins, then review adherence and export history.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section" id="features" aria-labelledby="feature-title">
+      <div class="container feature-band">
+        <div class="feature-copy reveal" data-reveal="left">
+          <p class="eyebrow">Feature highlight</p>
+          <h2 id="feature-title">Smart medication reminders that act with you.</h2>
+          <p>
+            Schedule one-time or multiple reminders per day. Notifications are time-sensitive and let you
+            log a dose, skip it, or snooze with a follow-up.
+          </p>
+          <ul class="feature-list">
+            <li>Multiple reminders per medication</li>
+            <li>Take now or remind in 5 minutes</li>
+            <li>Automatic follow-up for one-time doses</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="right">
+          <div class="visual-card">
+            <div class="visual-pill">8:00 AM</div>
+            <div class="visual-pill">12:30 PM</div>
+            <div class="visual-pill">4:15 PM</div>
+            <div class="visual-timeline"></div>
+            <p class="visual-label">Reminder timeline</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section alt">
+      <div class="container feature-band reverse">
+        <div class="feature-copy reveal" data-reveal="right">
+          <p class="eyebrow">Feature highlight</p>
+          <h2>Focus timeline for stimulant medication.</h2>
+          <p>
+            Log doses and see when focus starts and fades. Enable stimulant phase notifications and daily
+            wear-off check-ins to capture focus ratings and side effects.
+          </p>
+          <ul class="feature-list">
+            <li>Onset and duration windows</li>
+            <li>Daily check-ins for focus and side effects</li>
+            <li>Focus timeline view for today</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="left">
+          <div class="visual-card">
+            <div class="visual-arc"></div>
+            <p class="visual-label">Focus window</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section">
+      <div class="container feature-band">
+        <div class="feature-copy reveal" data-reveal="left">
+          <p class="eyebrow">Feature highlight</p>
+          <h2>Interaction checks and AI medication search.</h2>
+          <p>
+            Check medication interactions with severity labels and recommended actions. Save results to
+            your interaction history, and use AI medication search to add new meds faster.
+          </p>
+          <ul class="feature-list">
+            <li>Severity filters and interaction history</li>
+            <li>Recommended actions in plain language</li>
+            <li>AI-powered medication search (optional)</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="right">
+          <div class="visual-card">
+            <div class="visual-tag danger">Major</div>
+            <div class="visual-tag warn">Moderate</div>
+            <div class="visual-tag safe">No interaction</div>
+            <p class="visual-label">Interaction results</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section alt">
+      <div class="container feature-band reverse">
+        <div class="feature-copy reveal" data-reveal="right">
+          <p class="eyebrow">Feature highlight</p>
+          <h2>History, adherence, and exports.</h2>
+          <p>
+            Review medication history by day, filter by medication, and see adherence stats like streaks
+            and taken counts. Export CSV or PDF reports for clinical visits.
+          </p>
+          <ul class="feature-list">
+            <li>Daily and date-range history views</li>
+            <li>Adherence rate and streak tracking</li>
+            <li>Export CSV and PDF reports</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="left">
+          <div class="visual-card">
+            <div class="visual-bars">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <p class="visual-label">Adherence snapshot</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-section">
+      <div class="container feature-band">
+        <div class="feature-copy reveal" data-reveal="left">
+          <p class="eyebrow">Feature highlight</p>
+          <h2>Supply tracking, privacy, and Apple Health snapshots.</h2>
+          <p>
+            Track remaining pills with refill thresholds, keep your data on device by default, and optionally
+            sync with iCloud. Pull daily steps and distance from Apple Health for context.
+          </p>
+          <ul class="feature-list">
+            <li>Pill count and refill reminders</li>
+            <li>On-device storage or iCloud sync</li>
+            <li>Apple Health steps and distance</li>
+          </ul>
+        </div>
+        <div class="feature-visual reveal" data-reveal="right">
+          <div class="visual-card">
+            <div class="visual-meter">
+              <div class="visual-meter-fill"></div>
+            </div>
+            <p class="visual-label">Refill alert</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="benefits" id="benefits" aria-labelledby="benefits-title">
+      <div class="container">
+        <div class="section-title">
+          <p class="eyebrow">Benefits</p>
+          <h2 id="benefits-title">ADHD-friendly clarity, every day.</h2>
+          <p>Pillr is built to reduce the mental overhead of medication management.</p>
+        </div>
+        <div class="benefit-grid">
+          <article class="benefit-card reveal" data-reveal="left">
+            <h3>Fewer missed doses</h3>
+            <p>Reliable medication reminders and quick actions mean fewer gaps in your routine.</p>
+          </article>
+          <article class="benefit-card reveal" data-reveal="right">
+            <h3>Routine support without clutter</h3>
+            <p>A simple log flow keeps dose tracking fast, even on busy days.</p>
+          </article>
+          <article class="benefit-card reveal" data-reveal="left">
+            <h3>Confidence in focus windows</h3>
+            <p>Stimulant timing and focus timelines help you plan deep work and downtime.</p>
+          </article>
+          <article class="benefit-card reveal" data-reveal="right">
+            <h3>Shareable history</h3>
+            <p>Export medication adherence history and notes for clinical conversations.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="keywords" aria-labelledby="keywords-title">
+      <div class="container">
+        <h2 id="keywords-title">ADHD medication tracking, stated plainly.</h2>
+        <p>
+          Pillr is an ADHD medication tracker designed for dose tracking and medication reminders. It
+          supports prescription tracking, medication adherence, and ADHD routine support by turning your
+          stimulant medication schedule into a clear daily plan. If you need an ADHD medication tracking
+          app that keeps logs, reminders, and focus timing in one place, Pillr is built for you.
+        </p>
+      </div>
+    </section>
+
+    <section class="faq" id="faq" aria-labelledby="faq-title">
+      <div class="container">
+        <div class="section-title">
+          <p class="eyebrow">FAQ</p>
+          <h2 id="faq-title">Answers, without the overwhelm.</h2>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item">
+            <summary>Does Pillr replace medical advice?</summary>
+            <p>No. Pillr helps you track and organize medications, but it does not replace a clinician.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can I track non-ADHD medications too?</summary>
+            <p>Yes. Pillr supports any medications, with special timing tools for ADHD stimulants.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Where is my data stored?</summary>
+            <p>Your data stays on device by default, with optional iCloud sync across Apple devices.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What can I export?</summary>
+            <p>You can export medication history as CSV or PDF for easy sharing.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Is Pillr a medication management tool?</summary>
+            <p>Pillr is built for medication management—set reminders, log doses, and review adherence right on your device so your ADHD routine stays steady.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Does Pillr include an ADHD symptom tracker?</summary>
+            <p>Pillr keeps symptom context in mind by capturing focus windows, side-effect notes, and wear-off check-ins alongside medication data.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can I use Pillr as a pill tracker or pill reminder?</summary>
+            <p>Yes, Pillr combines pill tracker features with flexible reminders so you always know when to take, skip, or snooze a dose.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Why is Pillr called an ADHD app?</summary>
+            <p>Every part of Pillr—from stimulant timing to focus timelines—was designed to support the specific rhythms of ADHD medication routines.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How does Pillr support medication adherence?</summary>
+            <p>Pillr tracks adherence rates, streaks, and refill status, making it easy to share proof of consistency with clinicians or caregivers.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta" id="get-started" aria-labelledby="cta-title">
+      <div class="container cta-box">
+        <div>
+          <p class="eyebrow">Get started</p>
+          <h2 id="cta-title">Your ADHD medication routine, in one calm place.</h2>
+          <p>Download Pillr and take control of your medication reminders, dose tracking, and focus plan.</p>
+        </div>
+        <div class="cta-actions">
+          <a
+            class="app-store-btn"
+            href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_badge&mttnsubad=6746717689"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <img
+              src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000"
+              alt="Download Pillr Medication Reminder on the App Store"
+            />
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <p class="brand">Pillr</p>
+        <p class="footer-note">ADHD medication tracking that keeps your routine steady.</p>
+      </div>
+      <div>
+        <p class="footer-title">Explore</p>
+        <a href="#how-it-works">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#benefits">Benefits</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div>
+        <p class="footer-title">Contact</p>
+        <a href="https://tally.so/r/3qMdL7">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
