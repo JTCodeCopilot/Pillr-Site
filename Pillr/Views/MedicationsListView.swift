@@ -48,9 +48,11 @@ struct MedicationsListView: View {
         @State private var showCabinetIntroOverlay = false
         @State private var referenceDate = Date()
         private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+        private let healthRefreshTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
         @State private var undoToastAction: MedicationStore.LogUndoAction?
         @State private var undoToastDismissWorkItem: DispatchWorkItem?
         private let undoToastDuration: TimeInterval = 5.0
+        @State private var isViewActive = false
 
     private var reminderMedications: [Medication] {
         store.activeMedications.filter { !$0.isCabinetMedication }
@@ -228,11 +230,29 @@ struct MedicationsListView: View {
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 refreshReferenceDate(resetBadge: false)
             }
+            .onReceive(healthRefreshTimer) { _ in
+                guard scenePhase == .active, isViewActive else { return }
+                Task {
+                    await healthKitManager.refreshAuthorizationState()
+                    await healthKitManager.refreshMetrics()
+                }
+            }
+            .onAppear {
+                isViewActive = true
+                Task {
+                    await healthKitManager.refreshAuthorizationState()
+                    await healthKitManager.refreshMetrics()
+                }
+            }
+            .onDisappear {
+                isViewActive = false
+            }
             .onChange(of: scenePhase) { newPhase in
                 if newPhase == .active {
                     refreshReferenceDate(resetBadge: true)
                     Task {
                         await healthKitManager.refreshAuthorizationState()
+                        await healthKitManager.refreshMetrics()
                     }
                 }
             }
