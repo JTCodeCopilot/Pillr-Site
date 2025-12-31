@@ -139,4 +139,3 @@ enum ADHDMedicationGuidelines {
         return nil
     }
 }
-
