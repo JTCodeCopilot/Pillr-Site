@@ -88,6 +88,9 @@ struct AddMedicationView: View {
 
     private let standardFieldHeight: CGFloat = 52
     private let actionButtonMinWidth: CGFloat = 58
+    private let focusPickerHeight: CGFloat = 140
+    private let focusOnsetRange: ClosedRange<Int> = 30...1440
+    private let focusDurationRange: ClosedRange<Int> = 30...1440
 
     private enum ScrollAnchor {
         static let bottom = "AddMedicationViewBottomAnchor"
@@ -705,24 +708,22 @@ struct AddMedicationView: View {
                         }
 
                         if enableStimulantPhaseNotifications {
-                            enhancedInputField(
-                                title: "Starts working after (minutes)",
-                                placeholder: "30",
-                                text: $onsetMinutesString,
+                            minuteWheelPickerField(
+                                title: "Starts working after",
+                                selection: $onsetMinutesString,
+                                range: focusOnsetRange,
                                 field: .onsetMinutes,
                                 isRequired: true,
-                                errorMessage: onsetMinutesError,
-                                keyboardType: .numberPad
+                                errorMessage: onsetMinutesError
                             )
 
-                            enhancedInputField(
-                                title: "Lasts about (minutes)",
-                                placeholder: "240",
-                                text: $durationMinutesString,
+                            minuteWheelPickerField(
+                                title: "Lasts about",
+                                selection: $durationMinutesString,
+                                range: focusDurationRange,
                                 field: .durationMinutes,
                                 isRequired: true,
-                                errorMessage: durationMinutesError,
-                                keyboardType: .numberPad
+                                errorMessage: durationMinutesError
                             )
                         }
                     }
@@ -1300,6 +1301,106 @@ struct AddMedicationView: View {
 
                     validateField(field, value: processedValue)
                 }
+
+            if let errorMessage = errorMessage, showValidationErrors {
+                Text(errorMessage)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.red)
+            }
+        }
+    }
+
+    private func minuteOptions(range: ClosedRange<Int>, currentValue: String) -> [Int] {
+        var options: [Int] = []
+        let specialOptions = [30, 45]
+
+        for value in specialOptions where range.contains(value) {
+            options.append(value)
+        }
+
+        if range.upperBound >= 60 {
+            let startHour = max(60, ((range.lowerBound + 59) / 60) * 60)
+            for value in stride(from: startHour, through: range.upperBound, by: 60) {
+                if !options.contains(value) {
+                    options.append(value)
+                }
+            }
+        }
+
+        if let current = Int(currentValue), current > 0, !options.contains(current) {
+            options.append(current)
+        }
+
+        options.sort()
+        return options
+    }
+
+    private func hoursLabel(for minutes: Int) -> String {
+        if minutes == 30 || minutes == 45 {
+            return "\(minutes) min"
+        }
+        let hours = Double(minutes) / 60.0
+        let isWhole = hours.truncatingRemainder(dividingBy: 1) == 0
+        let formatted = isWhole ? String(format: "%.0f", hours) : String(format: "%.2f", hours)
+        let trimmed = formatted
+            .replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "\\.$", with: "", options: .regularExpression)
+        return "\(trimmed) hr"
+    }
+
+    @ViewBuilder
+    private func minuteWheelPickerField(
+        title: String,
+        selection: Binding<String>,
+        range: ClosedRange<Int>,
+        field: Field?,
+        isRequired: Bool = false,
+        errorMessage: String? = nil
+    ) -> some View {
+        let showError = showValidationErrors && errorMessage != nil
+        let options = minuteOptions(range: range, currentValue: selection.wrappedValue)
+
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                if isRequired {
+                    Text("*")
+                        .foregroundColor(.red)
+                        .font(.system(size: 14, weight: .bold))
+                }
+            }
+
+            Picker(title, selection: selection) {
+                Text("Select").tag("")
+                ForEach(options, id: \.self) { minutes in
+                    Text(hoursLabel(for: minutes)).tag("\(minutes)")
+                }
+            }
+            .pickerStyle(.wheel)
+            .labelsHidden()
+            .colorScheme(.dark)
+            .frame(height: focusPickerHeight)
+            .frame(maxWidth: .infinity)
+            .clipped()
+            .padding(.horizontal, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.black.opacity(0.2))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(
+                                showError ? Color.red : Color(hex: "#C7C7BD").opacity(0.3),
+                                lineWidth: showError ? 2 : 1
+                            )
+                    )
+            )
+            .onChange(of: selection.wrappedValue) { _, newValue in
+                if let field = field {
+                    validateField(field, value: newValue)
+                }
+            }
 
             if let errorMessage = errorMessage, showValidationErrors {
                 Text(errorMessage)
