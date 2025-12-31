@@ -43,10 +43,13 @@ const linkPreview = (() => {
   previewShell.innerHTML = `
     <div class="link-preview__glow"></div>
     <div class="link-preview__content">
-      <p class="link-preview__label">Preview</p>
-      <p class="link-preview__title"></p>
-      <p class="link-preview__desc"></p>
-      <span class="link-preview__url"></span>
+      <div class="link-preview__icon" aria-hidden="true"></div>
+      <div class="link-preview__text">
+        <p class="link-preview__label">Preview</p>
+        <p class="link-preview__title"></p>
+        <p class="link-preview__desc"></p>
+        <span class="link-preview__url"></span>
+      </div>
     </div>
   `;
 
