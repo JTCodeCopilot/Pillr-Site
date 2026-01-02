@@ -49,6 +49,7 @@ struct AddMedicationView: View {
     @State private var durationMinutesString: String = ""
     @State private var enableDailyCheckIn: Bool = false
     @State private var enableStimulantPhaseNotifications: Bool = false
+    @State private var enableTimingCalibration: Bool = false
     @State private var useCustomDailyCheckInTime: Bool = false
     @State private var customDailyCheckInTime: Date = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var onsetMinutesError: String? = nil
@@ -697,6 +698,7 @@ struct AddMedicationView: View {
                                     onsetMinutesError = nil
                                     durationMinutesError = nil
                                     enableDailyCheckIn = false
+                                    enableTimingCalibration = false
                                     useCustomDailyCheckInTime = false
                                 }
                             }
@@ -708,23 +710,70 @@ struct AddMedicationView: View {
                         }
 
                         if enableStimulantPhaseNotifications {
-                            minuteWheelPickerField(
-                                title: "Starts working after",
-                                selection: $onsetMinutesString,
-                                range: focusOnsetRange,
-                                field: .onsetMinutes,
-                                isRequired: true,
-                                errorMessage: onsetMinutesError
-                            )
+                            VStack(alignment: .leading, spacing: 10) {
+                                Toggle(isOn: $enableTimingCalibration) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Refine focus timing with 7-day check-ins")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                        Text("Optional. Pillr will ask short questions about when it kicks in and wears off.")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    }
+                                }
+                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#FFB74D")))
+                                .onChange(of: enableTimingCalibration) { _ in
+                                    validateField(.onsetMinutes, value: onsetMinutesString)
+                                    validateField(.durationMinutes, value: durationMinutesString)
+                                }
 
-                            minuteWheelPickerField(
-                                title: "Lasts about",
-                                selection: $durationMinutesString,
-                                range: focusDurationRange,
-                                field: .durationMinutes,
-                                isRequired: true,
-                                errorMessage: durationMinutesError
-                            )
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("How it works")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                    Text("1) We collect your kick-in and wear-off times for 7 days.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    Text("2) Pillr averages your kick-in and wear-off times.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    Text("3) We suggest updating this medication so future logs and focus timelines match your average.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    Text("Tip: You can leave the fields below blank if you want Pillr to learn first.")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                }
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.black.opacity(0.15))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                            }
+
+                            if !enableTimingCalibration {
+                                minuteWheelPickerField(
+                                    title: "Starts working after",
+                                    selection: $onsetMinutesString,
+                                    range: focusOnsetRange,
+                                    field: .onsetMinutes,
+                                    isRequired: !enableTimingCalibration,
+                                    errorMessage: onsetMinutesError
+                                )
+
+                                minuteWheelPickerField(
+                                    title: "Lasts about",
+                                    selection: $durationMinutesString,
+                                    range: focusDurationRange,
+                                    field: .durationMinutes,
+                                    isRequired: !enableTimingCalibration,
+                                    errorMessage: durationMinutesError
+                                )
+                            }
                         }
                     }
                 }
@@ -823,6 +872,7 @@ struct AddMedicationView: View {
                 onsetMinutesError = nil
                 durationMinutesError = nil
                 enableStimulantPhaseNotifications = false
+                enableTimingCalibration = false
                 if enableDailyCheckIn {
                     useCustomDailyCheckInTime = true
                 }
@@ -837,6 +887,7 @@ struct AddMedicationView: View {
                 onsetMinutesError = nil
                 durationMinutesError = nil
                 enableStimulantPhaseNotifications = false
+                enableTimingCalibration = false
                 if enableDailyCheckIn {
                     useCustomDailyCheckInTime = true
                 }
@@ -1537,7 +1588,7 @@ struct AddMedicationView: View {
             }
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty {
-                onsetMinutesError = "Onset time is required"
+                onsetMinutesError = enableTimingCalibration ? nil : "Onset time is required"
             } else if let minutes = Int(trimmed), minutes > 0 {
                 onsetMinutesError = nil
             } else {
@@ -1550,7 +1601,7 @@ struct AddMedicationView: View {
             }
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty {
-                durationMinutesError = "Wear-off time is required"
+                durationMinutesError = enableTimingCalibration ? nil : "Wear-off time is required"
             } else if let minutes = Int(trimmed), minutes > 0 {
                 durationMinutesError = nil
             } else {
@@ -1777,8 +1828,12 @@ struct AddMedicationView: View {
         if isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications {
             let trimmedOnset = onsetMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedDuration = durationMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
-            let onsetValid = !trimmedOnset.isEmpty && (Int(trimmedOnset) ?? 0) > 0
-            let durationValid = !trimmedDuration.isEmpty && (Int(trimmedDuration) ?? 0) > 0
+            let onsetValid = trimmedOnset.isEmpty
+                ? enableTimingCalibration
+                : (Int(trimmedOnset) ?? 0) > 0
+            let durationValid = trimmedDuration.isEmpty
+                ? enableTimingCalibration
+                : (Int(trimmedDuration) ?? 0) > 0
             return basicValid && customUnitValid && onsetValid && durationValid
         }
 
@@ -1808,6 +1863,7 @@ struct AddMedicationView: View {
         durationMinutesString = ""
         enableDailyCheckIn = false
         enableStimulantPhaseNotifications = false
+        enableTimingCalibration = false
         useCustomDailyCheckInTime = false
         customDailyCheckInTime = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
         onsetMinutesError = nil
@@ -1861,6 +1917,7 @@ struct AddMedicationView: View {
         isADHDMedication = medication.medicationType != .other
         isExtendedRelease = medication.isExtendedRelease
         enableStimulantPhaseNotifications = medication.enableStimulantPhaseNotifications
+        enableTimingCalibration = medication.enableTimingCalibration
         onsetMinutesString = medication.onsetMinutes.map { "\($0)" } ?? ""
         durationMinutesString = medication.durationMinutes.map { "\($0)" } ?? ""
         enableDailyCheckIn = userSettings.isPremiumUser ? medication.enableDailyCheckIn : false
@@ -1888,8 +1945,9 @@ struct AddMedicationView: View {
 
         let hasFocusWindow = isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications
         let supportsGeneralCheckIn = medicationType != .stimulant
-        let onsetMinutes = hasFocusWindow ? Int(onsetMinutesString) : nil
-        let durationMinutes = hasFocusWindow ? Int(durationMinutesString) : nil
+        let shouldEnableTimingCalibration = hasFocusWindow && enableTimingCalibration
+        let onsetMinutes = (hasFocusWindow && !shouldEnableTimingCalibration) ? Int(onsetMinutesString) : nil
+        let durationMinutes = (hasFocusWindow && !shouldEnableTimingCalibration) ? Int(durationMinutesString) : nil
         let shouldEnableDailyCheckIn = userSettings.isPremiumUser && enableDailyCheckIn && (hasFocusWindow || supportsGeneralCheckIn)
         let shouldUseCustomCheckInTime = supportsGeneralCheckIn || useCustomDailyCheckInTime
         let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && shouldUseCustomCheckInTime) ? customDailyCheckInTime : nil
@@ -1922,6 +1980,7 @@ struct AddMedicationView: View {
                     updatedMedication.dailyCheckInTime = nil
                 }
                 updatedMedication.enableStimulantPhaseNotifications = enableStimulantPhaseNotifications
+                updatedMedication.enableTimingCalibration = shouldEnableTimingCalibration
             } else {
                 updatedMedication.medicationType = medicationType
                 updatedMedication.isExtendedRelease = false
@@ -1930,6 +1989,7 @@ struct AddMedicationView: View {
                 updatedMedication.enableDailyCheckIn = shouldEnableDailyCheckIn
                 updatedMedication.dailyCheckInTime = shouldEnableDailyCheckIn ? selectedDailyCheckInTime : nil
                 updatedMedication.enableStimulantPhaseNotifications = false
+                updatedMedication.enableTimingCalibration = false
             }
 
             if trackPillCount {
@@ -1968,6 +2028,7 @@ struct AddMedicationView: View {
                 durationMinutes: durationMinutes,
                 enableDailyCheckIn: shouldEnableDailyCheckIn,
                 enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
+                enableTimingCalibration: shouldEnableTimingCalibration,
                 dailyCheckInTime: selectedDailyCheckInTime
             )
 

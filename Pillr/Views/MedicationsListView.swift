@@ -108,6 +108,21 @@ struct MedicationsListView: View {
                     healthKitManager: healthKitManager,
                     referenceDate: referenceDate
                 )
+                .alert(item: $store.timingCalibrationSuggestion) { suggestion in
+                    Alert(
+                        title: Text("Update focus timing?"),
+                        message: Text(
+                            "Based on \(suggestion.sampleCount) check-ins, update \(suggestion.medicationName) to start in ~\(formatMinutes(suggestion.onsetMinutes)) and wear off in ~\(formatMinutes(suggestion.durationMinutes))?"
+                        ),
+                        primaryButton: .default(Text("Update")) {
+                            store.applyTimingSuggestion(suggestion)
+                            store.timingCalibrationSuggestion = nil
+                        },
+                        secondaryButton: .cancel(Text("Keep current")) {
+                            store.timingCalibrationSuggestion = nil
+                        }
+                    )
+                }
                 .overlay(alignment: .bottom) {
                     if let action = undoToastAction {
                         LogUndoToastView(
@@ -210,10 +225,21 @@ struct MedicationsListView: View {
                     showCabinetIntroOverlay: $showCabinetIntroOverlay
                 )
             }
-            .sheet(item: $store.dailyCheckInMedication, onDismiss: {
-                store.dailyCheckInMedication = nil
-            }) { med in
-                LogMedicationView(medicationToLog: med, isDailyCheckIn: true, onLogAction: presentUndoToast)
+            .sheet(item: $store.dailyCheckInContext, onDismiss: {
+                store.dailyCheckInContext = nil
+            }) { context in
+                LogMedicationView(
+                    medicationToLog: context.medication,
+                    isDailyCheckIn: true,
+                    checkInLogID: context.logID,
+                    onLogAction: presentUndoToast
+                )
+                .environmentObject(store)
+            }
+            .sheet(item: $store.timingCheckInContext, onDismiss: {
+                store.timingCheckInContext = nil
+            }) { context in
+                StimulantTimingCheckInView(context: context)
                     .environmentObject(store)
             }
             .sheet(item: $store.recentADHDDoseTimeline, onDismiss: {
@@ -278,6 +304,19 @@ struct MedicationsListView: View {
             userSettings.markCabinetIntroOverlaySeen()
         }
         showingCabinetSheet = true
+    }
+
+    private func formatMinutes(_ minutes: Int) -> String {
+        let hours = minutes / 60
+        let remainder = minutes % 60
+
+        if hours == 0 {
+            return "\(minutes) min"
+        }
+        if remainder == 0 {
+            return "\(hours) hr"
+        }
+        return "\(hours) hr \(remainder) min"
     }
 
     private func showMedicationSelectionSheet() async {

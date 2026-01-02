@@ -21,6 +21,46 @@ struct ADHDDoseTimelineEntry: Identifiable, Equatable {
     let fadeTime: Date
 }
 
+enum TimingCheckInPhase: String {
+    case onset
+    case fade
+}
+
+struct StimulantTimingCheckInContext: Identifiable {
+    let id: UUID
+    let medication: Medication
+    let logID: UUID
+    let phase: TimingCheckInPhase
+
+    init(medication: Medication, logID: UUID, phase: TimingCheckInPhase) {
+        self.id = UUID()
+        self.medication = medication
+        self.logID = logID
+        self.phase = phase
+    }
+}
+
+struct DailyCheckInContext: Identifiable {
+    let id: UUID
+    let medication: Medication
+    let logID: UUID?
+
+    init(medication: Medication, logID: UUID? = nil) {
+        self.id = logID ?? UUID()
+        self.medication = medication
+        self.logID = logID
+    }
+}
+
+struct TimingCalibrationSuggestion: Identifiable {
+    let id = UUID()
+    let medicationID: UUID
+    let medicationName: String
+    let onsetMinutes: Int
+    let durationMinutes: Int
+    let sampleCount: Int
+}
+
 class MedicationStore: ObservableObject {
     struct LogUndoAction: Identifiable, Equatable {
         let id = UUID()
@@ -43,7 +83,11 @@ class MedicationStore: ObservableObject {
     @Published var recentADHDDoseTimeline: ADHDDoseTimelineEntry?
     /// When set (typically from a notification tap), the UI
     /// should present a daily check-in logging sheet for this medication.
-    @Published var dailyCheckInMedication: Medication?
+    @Published var dailyCheckInContext: DailyCheckInContext?
+    /// When set (typically from a notification tap), the UI should present a stimulant timing check-in.
+    @Published var timingCheckInContext: StimulantTimingCheckInContext?
+    /// When set, the UI should prompt to update stimulant timing based on recent check-ins.
+    @Published var timingCalibrationSuggestion: TimingCalibrationSuggestion?
     /// When set, the medications list should highlight / expand this medication card.
     @Published var highlightedMedicationID: UUID?
     /// When a medication reminder notification is tapped, this ID gets a quick glow treatment.
@@ -136,6 +180,7 @@ class MedicationStore: ObservableObject {
         durationMinutes: Int? = nil,
         enableDailyCheckIn: Bool = false,
         enableStimulantPhaseNotifications: Bool = false,
+        enableTimingCalibration: Bool = false,
         dailyCheckInTime: Date? = nil
     ) -> Bool {
         // Check if user can add more medications
@@ -167,6 +212,7 @@ class MedicationStore: ObservableObject {
             durationMinutes: durationMinutes,
             enableDailyCheckIn: finalEnableDailyCheckIn,
             enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
+            enableTimingCalibration: enableTimingCalibration,
             dailyCheckInTime: finalDailyCheckInTime,
             timeToTake: timeToTake,
             reminderTimes: finalReminderTimes,
@@ -265,6 +311,11 @@ class MedicationStore: ObservableObject {
             medications[index] = updatedMedication
             saveMedications()
             syncMedicationWithCloud(updatedMedication)
+
+            if !updatedMedication.enableTimingCalibration,
+               timingCalibrationSuggestion?.medicationID == updatedMedication.id {
+                timingCalibrationSuggestion = nil
+            }
         }
     }
 
@@ -464,8 +515,18 @@ class MedicationStore: ObservableObject {
                 onsetTime: onsetTime,
                 fadeTime: fadeTime
             )
+        }
 
-            notificationManager.scheduleStimulantPhaseNotifications(for: medication, doseTime: actualTime)
+        if !skipped,
+           !isDailyCheckIn,
+           medication.enableStimulantPhaseNotifications,
+           medication.medicationType == .stimulant,
+           (medication.enableTimingCalibration || (medication.enableDailyCheckIn && medication.dailyCheckInTime == nil)) {
+            notificationManager.scheduleStimulantPhaseNotifications(
+                for: medication,
+                doseTime: actualTime,
+                logID: newLog.id
+            )
         }
         
         if !skipped && !isDailyCheckIn {
@@ -623,8 +684,14 @@ class MedicationStore: ObservableObject {
     }
 
     private func clearReminderState(for medication: Medication) {
-        if dailyCheckInMedication?.id == medication.id {
-            dailyCheckInMedication = nil
+        if dailyCheckInContext?.medication.id == medication.id {
+            dailyCheckInContext = nil
+        }
+        if timingCheckInContext?.medication.id == medication.id {
+            timingCheckInContext = nil
+        }
+        if timingCalibrationSuggestion?.medicationID == medication.id {
+            timingCalibrationSuggestion = nil
         }
         if highlightedMedicationID == medication.id {
             highlightedMedicationID = nil
@@ -800,6 +867,170 @@ class MedicationStore: ObservableObject {
         logs[index] = logEntry
         saveLogs()
         hapticManager.successNotification()
+    }
+
+    @discardableResult
+    func applyTimingCheckIn(
+        medicationID: UUID,
+        logID: UUID?,
+        phase: TimingCheckInPhase,
+        reportedTime: Date
+    ) -> Bool {
+        guard let medication = medications.first(where: { $0.id == medicationID }),
+              medication.enableTimingCalibration else {
+            return false
+        }
+        guard let logIndex = resolveTimingLogIndex(
+            medicationID: medicationID,
+            logID: logID,
+            referenceDate: reportedTime
+        ) else {
+            return false
+        }
+
+        var logEntry = logs[logIndex]
+        guard !logEntry.skipped else { return false }
+
+        let rawMinutes = Int(round(reportedTime.timeIntervalSince(logEntry.takenAt) / 60))
+        guard rawMinutes > 0 else { return false }
+
+        let minutes = clampTimingMinutes(rawMinutes, for: phase)
+        switch phase {
+        case .onset:
+            logEntry.reportedOnsetMinutes = minutes
+        case .fade:
+            logEntry.reportedWearOffMinutes = minutes
+        }
+
+        logs[logIndex] = logEntry
+        saveLogs()
+        syncLogWithCloud(logEntry)
+        maybeQueueTimingSuggestion(for: medicationID)
+        return true
+    }
+
+    @discardableResult
+    func scheduleTimingCheckInReminder(
+        medicationID: UUID,
+        logID: UUID,
+        phase: TimingCheckInPhase,
+        afterMinutes minutes: Int = 60,
+        isDailyCheckIn: Bool = false
+    ) -> Bool {
+        guard let medication = findMedication(with: medicationID) else {
+            return false
+        }
+        if !isDailyCheckIn && !medication.enableTimingCalibration {
+            return false
+        }
+        guard medication.enableStimulantPhaseNotifications else {
+            return false
+        }
+
+        notificationManager.scheduleStimulantTimingReminder(
+            for: medication,
+            logID: logID,
+            phase: phase,
+            afterMinutes: minutes,
+            isDailyCheckIn: isDailyCheckIn
+        )
+        return true
+    }
+
+    func applyTimingSuggestion(_ suggestion: TimingCalibrationSuggestion) {
+        guard let index = medications.firstIndex(where: { $0.id == suggestion.medicationID }) else { return }
+        var updatedMedication = medications[index]
+        updatedMedication.onsetMinutes = suggestion.onsetMinutes
+        updatedMedication.durationMinutes = suggestion.durationMinutes
+        medications[index] = updatedMedication
+        saveMedications()
+        syncMedicationWithCloud(updatedMedication)
+    }
+
+    private func resolveTimingLogIndex(
+        medicationID: UUID,
+        logID: UUID?,
+        referenceDate: Date
+    ) -> Int? {
+        if let logID,
+           let index = logs.firstIndex(where: { $0.id == logID }) {
+            return index
+        }
+
+        let calendar = Calendar.current
+        let candidates = logs.enumerated().filter { entry in
+            entry.element.medicationID == medicationID &&
+            !entry.element.skipped &&
+            calendar.isDate(entry.element.takenAt, inSameDayAs: referenceDate)
+        }
+
+        return candidates.max(by: { $0.element.takenAt < $1.element.takenAt })?.offset
+    }
+
+    private func clampTimingMinutes(_ value: Int, for phase: TimingCheckInPhase) -> Int {
+        let bounds: (min: Int, max: Int) = phase == .onset
+            ? (min: 5, max: 240)
+            : (min: 60, max: 1440)
+        return min(max(value, bounds.min), bounds.max)
+    }
+
+    private func maybeQueueTimingSuggestion(for medicationID: UUID) {
+        guard timingCalibrationSuggestion == nil else { return }
+        guard let medication = medications.first(where: { $0.id == medicationID }) else { return }
+        guard medication.medicationType == .stimulant,
+              medication.enableStimulantPhaseNotifications,
+              medication.enableTimingCalibration else {
+            return
+        }
+
+        let calendar = Calendar.current
+        guard let cutoff = calendar.date(byAdding: .day, value: -7, to: Date()) else { return }
+
+        let recentLogs = logs.filter { log in
+            log.medicationID == medicationID &&
+            !log.skipped &&
+            log.takenAt >= cutoff
+        }
+        .sorted { $0.takenAt > $1.takenAt }
+
+        let onsetSamples = Array(
+            recentLogs.compactMap { $0.reportedOnsetMinutes }
+                .filter { $0 >= 5 && $0 <= 240 }
+                .prefix(7)
+        )
+        let wearOffSamples = Array(
+            recentLogs.compactMap { $0.reportedWearOffMinutes }
+                .filter { $0 >= 60 && $0 <= 1440 }
+                .prefix(7)
+        )
+
+        guard onsetSamples.count >= 7, wearOffSamples.count >= 7 else { return }
+
+        let onsetMedian = median(onsetSamples)
+        let wearOffMedian = median(wearOffSamples)
+
+        let onsetNeedsUpdate = medication.onsetMinutes.map { abs($0 - onsetMedian) >= 5 } ?? true
+        let durationNeedsUpdate = medication.durationMinutes.map { abs($0 - wearOffMedian) >= 10 } ?? true
+        guard onsetNeedsUpdate || durationNeedsUpdate else { return }
+
+        timingCalibrationSuggestion = TimingCalibrationSuggestion(
+            medicationID: medicationID,
+            medicationName: medication.name,
+            onsetMinutes: onsetMedian,
+            durationMinutes: wearOffMedian,
+            sampleCount: min(onsetSamples.count, wearOffSamples.count)
+        )
+    }
+
+    private func median(_ values: [Int]) -> Int {
+        let sortedValues = values.sorted()
+        let midIndex = sortedValues.count / 2
+        if sortedValues.count % 2 == 0 {
+            let lower = sortedValues[midIndex - 1]
+            let upper = sortedValues[midIndex]
+            return Int(round(Double(lower + upper) / 2.0))
+        }
+        return sortedValues[midIndex]
     }
 
     private func mergeNotes(existing: String?, with newNotes: String?) -> String? {

@@ -17,6 +17,7 @@ import UIKit
 
 	    let medicationToLog: Medication
 	    var isDailyCheckIn: Bool = false
+        var checkInLogID: UUID? = nil
 	    var onLogAction: ((MedicationStore.LogUndoAction) -> Void)? = nil
 	    @State private var actualTimeTaken: Date = Date()
 	    @State private var logNotes: String = ""
@@ -31,6 +32,11 @@ import UIKit
     @State private var showingAddCustomSideEffect: Bool = false
     @State private var focusRating: Int = 0 // 1–5, 0 = not set
     @State private var sideEffectSeverity: Int = 0 // 1–5, 0 = not set
+    @State private var isLoggingWearOff = false
+    @State private var wearOffOption: WearOffTimingOption = .now
+    @State private var customWearOffTime: Date = Date()
+    @State private var showingWearOffPicker = false
+    @State private var wearOffReminderMessage: String? = nil
     
     // Quick time options for easier logging
     enum QuickTimeOption: String, CaseIterable {
@@ -45,6 +51,24 @@ import UIKit
             switch self {
             case .now: return 0
             case .fiveMinAgo: return -300
+            case .fifteenMinAgo: return -900
+            case .thirtyMinAgo: return -1800
+            case .oneHourAgo: return -3600
+            case .custom: return 0
+            }
+        }
+    }
+
+    enum WearOffTimingOption: String, CaseIterable {
+        case now = "Now"
+        case fifteenMinAgo = "15 min ago"
+        case thirtyMinAgo = "30 min ago"
+        case oneHourAgo = "1 hour ago"
+        case custom = "Custom time"
+
+        var timeOffset: TimeInterval {
+            switch self {
+            case .now: return 0
             case .fifteenMinAgo: return -900
             case .thirtyMinAgo: return -1800
             case .oneHourAgo: return -3600
@@ -270,6 +294,111 @@ import UIKit
                         // Enhanced Notes & Side Effects Section
                         if isDailyCheckIn {
                             if medicationToLog.medicationType == .stimulant {
+                                if checkInLogID != nil && medicationToLog.enableTimingCalibration {
+                                    FormSection(title: "MEDICATION TIMING", icon: "hourglass") {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        Toggle(isOn: $isLoggingWearOff) {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("Log when it started wearing off")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                                Text("Optional but helps calibrate your focus window.")
+                                                    .font(.system(size: 13))
+                                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                            }
+                                        }
+                                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#FFB74D")))
+                                        .onChange(of: isLoggingWearOff) { isOn in
+                                            if !isOn {
+                                                wearOffReminderMessage = nil
+                                            }
+                                        }
+
+                                        if isLoggingWearOff {
+                                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                                                ForEach(WearOffTimingOption.allCases, id: \.self) { option in
+                                                    Button(action: {
+                                                        HapticManager.shared.lightImpact()
+                                                        wearOffOption = option
+                                                        showingWearOffPicker = option == .custom
+                                                    }) {
+                                                        Text(option.rawValue)
+                                                            .font(.system(size: 14, weight: .semibold))
+                                                            .foregroundColor(wearOffOption == option ? Color(hex: "#404C42") : Color(hex: "#E8E8E0"))
+                                                            .padding(.vertical, 10)
+                                                            .frame(maxWidth: .infinity)
+                                                            .background(
+                                                                RoundedRectangle(cornerRadius: 12)
+                                                                    .fill(wearOffOption == option ? Color(hex: "#F5F5F5") : Color.black.opacity(0.2))
+                                                                    .overlay(
+                                                                        RoundedRectangle(cornerRadius: 12)
+                                                                            .stroke(wearOffOption == option ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                                    )
+                                                            )
+                                                    }
+                                                    .buttonStyle(ScaleButtonStyle())
+                                                }
+                                            }
+
+                                            if showingWearOffPicker {
+                                                VStack(alignment: .leading, spacing: 12) {
+                                                    DatePicker(
+                                                        "",
+                                                        selection: $customWearOffTime,
+                                                        displayedComponents: [.date, .hourAndMinute]
+                                                    )
+                                                    .datePickerStyle(.compact)
+                                                    .labelsHidden()
+                                                    .colorScheme(.dark)
+                                                    .accentColor(Color(hex: "#F5F5F5"))
+                                                }
+                                                .padding(12)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .fill(Color.black.opacity(0.1))
+                                                        .overlay(
+                                                            RoundedRectangle(cornerRadius: 12)
+                                                                .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
+                                                        )
+                                                )
+                                            }
+
+                                            if let logID = checkInLogID {
+                                                Button {
+                                                    HapticManager.shared.lightImpact()
+                                                    let scheduled = store.scheduleTimingCheckInReminder(
+                                                        medicationID: medicationToLog.id,
+                                                        logID: logID,
+                                                        phase: .fade,
+                                                        afterMinutes: 60,
+                                                        isDailyCheckIn: true
+                                                    )
+                                                    wearOffReminderMessage = scheduled
+                                                        ? "We will remind you in 1 hour."
+                                                        : "Could not schedule a reminder."
+                                                } label: {
+                                                    Text("Remind me in 1 hour")
+                                                        .font(.system(size: 14, weight: .semibold))
+                                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                                        .frame(maxWidth: .infinity)
+                                                        .padding(.vertical, 10)
+                                                        .background(
+                                                            RoundedRectangle(cornerRadius: 12)
+                                                                .stroke(Color(hex: "#E8E8E0").opacity(0.6), lineWidth: 1)
+                                                        )
+                                                }
+                                            }
+
+                                            if let wearOffReminderMessage {
+                                                Text(wearOffReminderMessage)
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                            }
+                                        }
+                                    }
+                                }
+                                }
+
                                 FormSection(title: "NOTES & SIDE EFFECTS", icon: "note.text.fill") {
                                     VStack(alignment: .leading, spacing: 20) {
                                         // Quick check-in sliders
@@ -650,6 +779,21 @@ import UIKit
 	                onLogAction?(action)
 	            }
 	        }
+
+            if isDailyCheckIn,
+               medicationToLog.medicationType == .stimulant,
+               medicationToLog.enableTimingCalibration,
+               isLoggingWearOff {
+                let wearOffTime = wearOffOption == .custom
+                    ? customWearOffTime
+                    : Date().addingTimeInterval(wearOffOption.timeOffset)
+                store.applyTimingCheckIn(
+                    medicationID: medicationToLog.id,
+                    logID: checkInLogID,
+                    phase: .fade,
+                    reportedTime: wearOffTime
+                )
+            }
 	        dismiss()
 	    }
     

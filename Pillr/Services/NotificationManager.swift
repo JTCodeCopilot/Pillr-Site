@@ -588,44 +588,68 @@ class NotificationManager: ObservableObject {
     
     // MARK: - Stimulant phase notifications
 
-    private func shouldScheduleStimulantTiming(for medication: Medication) -> Bool {
-        return medication.hasStimulantTiming && medication.enableStimulantPhaseNotifications
+    private func resolvedStimulantTiming(for medication: Medication) -> (onset: Int, duration: Int)? {
+        if let onset = medication.onsetMinutes,
+           let duration = medication.durationMinutes {
+            return (onset, duration)
+        }
+
+        if medication.enableTimingCalibration {
+            return (45, 300)
+        }
+
+        guard medication.medicationType == .stimulant,
+              let guideline = ADHDMedicationGuidelines.guideline(for: medication.name) else {
+            return nil
+        }
+
+        return (guideline.typicalOnsetMinutes, guideline.typicalDurationMinutes)
     }
 
-    func scheduleStimulantPhaseNotifications(for medication: Medication, doseTime: Date) {
+    func scheduleStimulantPhaseNotifications(for medication: Medication, doseTime: Date, logID: UUID) {
+        let shouldAskTiming = medication.enableTimingCalibration
+        let shouldScheduleFadeCheckIn = medication.enableDailyCheckIn && medication.dailyCheckInTime == nil
         guard ensureMedicationIsTracked(medication.id),
-              shouldScheduleStimulantTiming(for: medication),
-              let onset = medication.onsetMinutes,
-              let duration = medication.durationMinutes else {
+              medication.enableStimulantPhaseNotifications,
+              medication.medicationType == .stimulant,
+              (shouldAskTiming || shouldScheduleFadeCheckIn),
+              let timing = resolvedStimulantTiming(for: medication) else {
             return
         }
 
         let calendar = Calendar.current
         let descriptor = medicationDescriptor(for: medication)
+        let onset = timing.onset
+        let duration = timing.duration
 
-        if let onsetDate = calendar.date(byAdding: .minute, value: onset, to: doseTime) {
+        if shouldAskTiming,
+           let onsetDate = calendar.date(byAdding: .minute, value: onset, to: doseTime) {
             scheduleNotification(
                 for: medication,
                 title: "Medication starting to work",
-                body: "\(descriptor) is likely starting to work. This can be a good time to ease into tasks or planning.",
+                body: "Is \(descriptor) kicking in? Tap to log when it starts working.",
                 userInfo: [
                     "medicationID": medication.id.uuidString,
-                    "phase": "onset"
+                    "phase": "onset",
+                    "logID": logID.uuidString
                 ],
                 identifierSuffix: "onset",
                 fireDate: onsetDate
             )
         }
 
-        // Warn roughly 10 minutes before the expected fade so the user can prepare.
-        let warningOffset = duration > 10 ? duration - 10 : duration
-        if let fadeWarningDate = calendar.date(byAdding: .minute, value: warningOffset, to: doseTime) {
-            let usesAutomaticCheckIn = medication.enableDailyCheckIn && medication.dailyCheckInTime == nil
+        let fadeOffset = shouldAskTiming ? duration : (duration > 10 ? duration - 10 : duration)
+        if let fadeWarningDate = calendar.date(byAdding: .minute, value: fadeOffset, to: doseTime) {
+            let usesAutomaticCheckIn = shouldScheduleFadeCheckIn
             let (fadeTitle, fadeBody) = usesAutomaticCheckIn
-                ? ("Check in before your medication fades",
-                   "How was your focus and side effects today? Log a quick check-in before \(descriptor) wears off.")
+                ? (shouldAskTiming
+                    ? "Check in as your medication wears off"
+                    : "Check in before your medication fades",
+                   shouldAskTiming
+                    ? "How was your focus and side effects today? Tap to log when \(descriptor) starts wearing off."
+                    : "How was your focus and side effects today? Log a quick check-in before \(descriptor) wears off.")
                 : ("Medication about to wear off",
-                   "Effects may taper in ~10 minutes. Ease into lighter tasks or plan a break before \(descriptor) wears off.")
+                   "Effects may taper soon. Tap to log when \(descriptor) starts wearing off.")
 
             scheduleNotification(
                 for: medication,
@@ -634,13 +658,63 @@ class NotificationManager: ObservableObject {
                 userInfo: [
                     "medicationID": medication.id.uuidString,
                     "phase": "fade",
-                    "isDailyCheckIn": usesAutomaticCheckIn
+                    "isDailyCheckIn": usesAutomaticCheckIn,
+                    "logID": logID.uuidString
                 ],
                 identifierSuffix: "fade",
                 fireDate: fadeWarningDate
             )
         }
 
+    }
+
+    func scheduleStimulantTimingReminder(
+        for medication: Medication,
+        logID: UUID,
+        phase: TimingCheckInPhase,
+        afterMinutes minutes: Int,
+        isDailyCheckIn: Bool = false
+    ) {
+        guard ensureMedicationIsTracked(medication.id),
+              medication.enableStimulantPhaseNotifications,
+              medication.medicationType == .stimulant else {
+            return
+        }
+
+        let descriptor = medicationDescriptor(for: medication)
+        let (title, body): (String, String) = {
+            switch phase {
+            case .onset:
+                return ("Medication starting to work",
+                        "Is \(descriptor) kicking in? Tap to log when it starts working.")
+            case .fade:
+                if isDailyCheckIn {
+                    return ("Check in as your medication fades",
+                            "How was your focus and side effects today? Tap to log when \(descriptor) starts wearing off.")
+                }
+                return ("Medication about to wear off",
+                        "Effects may taper soon. Tap to log when \(descriptor) starts wearing off.")
+            }
+        }()
+
+        var userInfo: [String: Any] = [
+            "medicationID": medication.id.uuidString,
+            "phase": phase.rawValue,
+            "logID": logID.uuidString
+        ]
+        if phase == .fade {
+            userInfo["isDailyCheckIn"] = isDailyCheckIn
+        }
+
+        let fireDate = Date().addingTimeInterval(Double(minutes) * 60.0)
+        scheduleNotification(
+            for: medication,
+            title: title,
+            body: body,
+            userInfo: userInfo,
+            identifierSuffix: "\(phase.rawValue)_reminder",
+            fireDate: fireDate
+        )
     }
 
     private func scheduleNotification(
@@ -663,6 +737,10 @@ class NotificationManager: ObservableObject {
         content.categoryIdentifier = category
         content.threadIdentifier = "medication-reminders"
         content.badge = 1
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+            content.relevanceScore = 1.0
+        }
 
         let request = UNNotificationRequest(
             identifier: "\(medication.id.uuidString)_\(identifierSuffix)_\(UUID().uuidString)",
@@ -869,11 +947,28 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 
                 // If this is a stimulant fade notification with daily check-in enabled,
                 // surface the notes & side-effects logging sheet for this medication.
-                if let phase = userInfo["phase"] as? String,
-                   (phase == "fade" || phase == "checkin"),
-                   medication.enableDailyCheckIn {
-                    DispatchQueue.main.async {
-                        MedicationStore.shared.dailyCheckInMedication = medication
+                if let phase = userInfo["phase"] as? String {
+                    if phase == "checkin", medication.enableDailyCheckIn {
+                        DispatchQueue.main.async {
+                            MedicationStore.shared.dailyCheckInContext = DailyCheckInContext(medication: medication)
+                        }
+                    } else if let timingPhase = TimingCheckInPhase(rawValue: phase),
+                              let logIDString = userInfo["logID"] as? String,
+                              let logID = UUID(uuidString: logIDString) {
+                        DispatchQueue.main.async {
+                            if timingPhase == .fade, medication.enableDailyCheckIn {
+                                MedicationStore.shared.dailyCheckInContext = DailyCheckInContext(
+                                    medication: medication,
+                                    logID: logID
+                                )
+                            } else {
+                                MedicationStore.shared.timingCheckInContext = StimulantTimingCheckInContext(
+                                    medication: medication,
+                                    logID: logID,
+                                    phase: timingPhase
+                                )
+                            }
+                        }
                     }
                 }
                 

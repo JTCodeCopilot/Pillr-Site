@@ -27,6 +27,7 @@ final class CloudKitMedicationSync {
         static let durationMinutes = "durationMinutes"
         static let enableDailyCheckIn = "enableDailyCheckIn"
         static let enableStimulantPhaseNotifications = "enableStimulantPhaseNotifications"
+        static let enableTimingCalibration = "enableTimingCalibration"
         static let dailyCheckInTime = "dailyCheckInTime"
         static let timeToTake = "timeToTake"
         static let reminderTimes = "reminderTimes"
@@ -51,6 +52,8 @@ final class CloudKitMedicationSync {
         static let reminderIndex = "reminderIndex"
         static let focusRating = "focusRating"
         static let sideEffectSeverity = "sideEffectSeverity"
+        static let reportedOnsetMinutes = "reportedOnsetMinutes"
+        static let reportedWearOffMinutes = "reportedWearOffMinutes"
         static let notesLog = "notes"
         static let hiddenFromMyMeds = "hiddenFromMyMeds"
         static let medicationDosageText = "medicationDosageText"
@@ -227,6 +230,7 @@ final class CloudKitMedicationSync {
         }
         record[Field.enableDailyCheckIn] = medication.enableDailyCheckIn as CKRecordValue
         record[Field.enableStimulantPhaseNotifications] = medication.enableStimulantPhaseNotifications as CKRecordValue
+        record[Field.enableTimingCalibration] = medication.enableTimingCalibration as CKRecordValue
         if let dailyCheckInTime = medication.dailyCheckInTime {
             record[Field.dailyCheckInTime] = dailyCheckInTime as CKRecordValue
         }
@@ -286,6 +290,12 @@ final class CloudKitMedicationSync {
         if let sideEffectSeverity = log.sideEffectSeverity {
             record[Field.sideEffectSeverity] = sideEffectSeverity as CKRecordValue
         }
+        if let reportedOnsetMinutes = log.reportedOnsetMinutes {
+            record[Field.reportedOnsetMinutes] = reportedOnsetMinutes as CKRecordValue
+        }
+        if let reportedWearOffMinutes = log.reportedWearOffMinutes {
+            record[Field.reportedWearOffMinutes] = reportedWearOffMinutes as CKRecordValue
+        }
         let reference = CKRecord.Reference(recordID: CKRecord.ID(recordName: medication.id.uuidString), action: .none)
         record[Field.medicationReference] = reference
         return record
@@ -329,6 +339,7 @@ final class CloudKitMedicationSync {
         }
         let enableDailyCheckIn = record[Field.enableDailyCheckIn] as? Bool ?? false
         let enableStimulantPhaseNotifications = record[Field.enableStimulantPhaseNotifications] as? Bool ?? false
+        let enableTimingCalibration = record[Field.enableTimingCalibration] as? Bool ?? false
         let isExtendedRelease = record[Field.isExtendedRelease] as? Bool ?? false
         let onsetMinutes = record[Field.onsetMinutes] as? Int
         let durationMinutes = record[Field.durationMinutes] as? Int
@@ -365,6 +376,7 @@ final class CloudKitMedicationSync {
             durationMinutes: durationMinutes,
             enableDailyCheckIn: enableDailyCheckIn,
             enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
+            enableTimingCalibration: enableTimingCalibration,
             dailyCheckInTime: dailyCheckInTime,
             timeToTake: timeToTake,
             reminderTimes: reminderTimes,
@@ -396,6 +408,8 @@ final class CloudKitMedicationSync {
         let reminderIndex = record[Field.reminderIndex] as? Int
         let focusRating = record[Field.focusRating] as? Int
         let sideEffectSeverity = record[Field.sideEffectSeverity] as? Int
+        let reportedOnsetMinutes = record[Field.reportedOnsetMinutes] as? Int
+        let reportedWearOffMinutes = record[Field.reportedWearOffMinutes] as? Int
         let hiddenFromMyMeds = record[Field.hiddenFromMyMeds] as? Bool ?? false
         let medicationDosageText = record[Field.medicationDosageText] as? String ?? ""
         let medicationIconName = record[Field.medicationIconName] as? String ?? "pill"
@@ -412,6 +426,8 @@ final class CloudKitMedicationSync {
             reminderIndex: reminderIndex,
             focusRating: focusRating,
             sideEffectSeverity: sideEffectSeverity,
+            reportedOnsetMinutes: reportedOnsetMinutes,
+            reportedWearOffMinutes: reportedWearOffMinutes,
             hiddenFromMyMeds: hiddenFromMyMeds,
             medicationDosageText: medicationDosageText,
             medicationIconName: medicationIconName,
