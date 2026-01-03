@@ -227,6 +227,7 @@ struct MedicationsListView: View {
             }
             .sheet(item: $store.dailyCheckInContext, onDismiss: {
                 store.dailyCheckInContext = nil
+                store.presentNextPendingCheckInIfNeeded()
             }) { context in
                 LogMedicationView(
                     medicationToLog: context.medication,
@@ -238,6 +239,7 @@ struct MedicationsListView: View {
             }
             .sheet(item: $store.timingCheckInContext, onDismiss: {
                 store.timingCheckInContext = nil
+                store.presentNextPendingCheckInIfNeeded()
             }) { context in
                 StimulantTimingCheckInView(context: context)
                     .environmentObject(store)

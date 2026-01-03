@@ -312,7 +312,8 @@ class NotificationManager: ObservableObject {
         let content = UNMutableNotificationContent()
         
         content.title = "Medications Follow Up"
-        content.body = "Time to log your THE MAIN TIME medications."
+        let formattedTime = formatTimeOnly(time)
+        content.body = "Time to log your \(formattedTime) medications."
         
         content.sound = UNNotificationSound.default
         content.userInfo = [
@@ -798,6 +799,89 @@ class NotificationManager: ObservableObject {
             identifierSuffix: "checkin",
             fireDate: fireDate
         )
+    }
+
+    func surfaceDeliveredStimulantCheckInsIfNeeded() {
+        let center = UNUserNotificationCenter.current()
+        center.getDeliveredNotifications { [weak self] notifications in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                let candidates = notifications
+                    .filter { $0.request.content.categoryIdentifier == NotificationCategoryIdentifier.stimulantReminder }
+                    .sorted { $0.date < $1.date }
+
+                guard !candidates.isEmpty else { return }
+
+                var pending: [PendingCheckIn] = []
+                var identifiersToRemove: [String] = []
+
+                for notification in candidates {
+                    let result = self.pendingCheckIn(from: notification)
+                    if let checkIn = result.checkIn {
+                        pending.append(checkIn)
+                    }
+                    if result.shouldRemove {
+                        identifiersToRemove.append(notification.request.identifier)
+                    }
+                }
+
+                if !pending.isEmpty {
+                    MedicationStore.shared.enqueuePendingCheckIns(pending)
+                }
+
+                if !identifiersToRemove.isEmpty {
+                    center.removeDeliveredNotifications(withIdentifiers: identifiersToRemove)
+                }
+            }
+        }
+    }
+
+    private struct DeliveredCheckInResult {
+        let checkIn: PendingCheckIn?
+        let shouldRemove: Bool
+    }
+
+    private func pendingCheckIn(from notification: UNNotification) -> DeliveredCheckInResult {
+        let userInfo = notification.request.content.userInfo
+        guard let medicationIDString = userInfo["medicationID"] as? String,
+              let medicationID = UUID(uuidString: medicationIDString) else {
+            return DeliveredCheckInResult(checkIn: nil, shouldRemove: true)
+        }
+
+        guard let medication = MedicationStore.shared.findMedication(with: medicationID) else {
+            cancelMedicationNotifications(for: medicationID)
+            return DeliveredCheckInResult(checkIn: nil, shouldRemove: true)
+        }
+
+        guard let phase = userInfo["phase"] as? String else {
+            return DeliveredCheckInResult(checkIn: nil, shouldRemove: true)
+        }
+
+        if phase == "checkin" {
+            guard medication.enableDailyCheckIn else {
+                return DeliveredCheckInResult(checkIn: nil, shouldRemove: true)
+            }
+            let context = DailyCheckInContext(medication: medication)
+            return DeliveredCheckInResult(checkIn: .daily(context), shouldRemove: true)
+        }
+
+        guard let timingPhase = TimingCheckInPhase(rawValue: phase),
+              let logIDString = userInfo["logID"] as? String,
+              let logID = UUID(uuidString: logIDString) else {
+            return DeliveredCheckInResult(checkIn: nil, shouldRemove: true)
+        }
+
+        if timingPhase == .fade, medication.enableDailyCheckIn {
+            let context = DailyCheckInContext(medication: medication, logID: logID)
+            return DeliveredCheckInResult(checkIn: .daily(context), shouldRemove: true)
+        } else {
+            let context = StimulantTimingCheckInContext(
+                medication: medication,
+                logID: logID,
+                phase: timingPhase
+            )
+            return DeliveredCheckInResult(checkIn: .timing(context), shouldRemove: true)
+        }
     }
 }
 

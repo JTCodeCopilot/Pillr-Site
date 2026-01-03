@@ -52,6 +52,21 @@ struct DailyCheckInContext: Identifiable {
     }
 }
 
+enum PendingCheckIn {
+    case timing(StimulantTimingCheckInContext)
+    case daily(DailyCheckInContext)
+
+    var key: String {
+        switch self {
+        case .timing(let context):
+            return "timing-\(context.medication.id.uuidString)-\(context.logID.uuidString)-\(context.phase.rawValue)"
+        case .daily(let context):
+            let logKey = context.logID?.uuidString ?? "none"
+            return "daily-\(context.medication.id.uuidString)-\(logKey)"
+        }
+    }
+}
+
 struct TimingCalibrationSuggestion: Identifiable {
     let id = UUID()
     let medicationID: UUID
@@ -104,6 +119,7 @@ class MedicationStore: ObservableObject {
     private var cloudSyncPreferenceCancellable: AnyCancellable?
     private var lastCloudSyncPreferenceState: Bool = false
     private var lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
+    private var pendingCheckIns: [PendingCheckIn] = []
     
     // Shared instance for access from notification handlers
     static let shared = MedicationStore()
@@ -577,6 +593,51 @@ class MedicationStore: ObservableObject {
     // Public method that can be called from app delegate/scene
     func checkAndResetBadge() {
         resetBadgeIfNeeded()
+    }
+
+    func enqueuePendingCheckIns(_ checkIns: [PendingCheckIn]) {
+        guard !checkIns.isEmpty else { return }
+
+        var seenKeys = Set(pendingCheckIns.map { $0.key })
+        if let timingCheckInContext {
+            seenKeys.insert(PendingCheckIn.timing(timingCheckInContext).key)
+        }
+        if let dailyCheckInContext {
+            seenKeys.insert(PendingCheckIn.daily(dailyCheckInContext).key)
+        }
+
+        var newItems: [PendingCheckIn] = []
+        for item in checkIns {
+            let key = item.key
+            guard !seenKeys.contains(key) else { continue }
+            seenKeys.insert(key)
+            newItems.append(item)
+        }
+
+        guard !newItems.isEmpty else { return }
+        pendingCheckIns.append(contentsOf: newItems)
+        presentNextPendingCheckInIfNeeded()
+    }
+
+    func presentNextPendingCheckInIfNeeded() {
+        guard timingCheckInContext == nil,
+              dailyCheckInContext == nil else {
+            return
+        }
+
+        while !pendingCheckIns.isEmpty {
+            let next = pendingCheckIns.removeFirst()
+            switch next {
+            case .timing(let context):
+                guard findMedication(with: context.medication.id) != nil else { continue }
+                timingCheckInContext = context
+                return
+            case .daily(let context):
+                guard findMedication(with: context.medication.id) != nil else { continue }
+                dailyCheckInContext = context
+                return
+            }
+        }
     }
     
     @discardableResult

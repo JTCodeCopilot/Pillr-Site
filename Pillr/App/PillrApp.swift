@@ -24,6 +24,7 @@ class PillrAppDelegate: NSObject, UIApplicationDelegate {
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Reset badge when app becomes active
         MedicationStore.shared.checkAndResetBadge()
+        NotificationManager.shared.surfaceDeliveredStimulantCheckInsIfNeeded()
     }
     
     func applicationWillEnterForeground(_ application: UIApplication) {
