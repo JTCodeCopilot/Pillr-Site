@@ -44,15 +44,22 @@ struct MedicationsListView: View {
     @State private var showingInteractionResultSheet = false
     @State private var showingPremiumUpgrade = false
     @State private var showingFocusTimeline = false
-        @State private var showingCabinetSheet = false
-        @State private var showCabinetIntroOverlay = false
-        @State private var referenceDate = Date()
-        private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
-        private let healthRefreshTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
-        @State private var undoToastAction: MedicationStore.LogUndoAction?
-        @State private var undoToastDismissWorkItem: DispatchWorkItem?
-        private let undoToastDuration: TimeInterval = 5.0
-        @State private var isViewActive = false
+    @State private var showingCabinetSheet = false
+    @State private var activeCustomLogRequest: CustomLogRequest?
+    @State private var showCabinetIntroOverlay = false
+    @State private var referenceDate = Date()
+    private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+    private let healthRefreshTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+    @State private var undoToastAction: MedicationStore.LogUndoAction?
+    @State private var undoToastDismissWorkItem: DispatchWorkItem?
+    private let undoToastDuration: TimeInterval = 5.0
+    @State private var isViewActive = false
+
+    private struct CustomLogRequest: Identifiable {
+        let id = UUID()
+        let medication: Medication
+        let reminderIndex: Int?
+    }
 
     private var reminderMedications: [Medication] {
         store.activeMedications.filter { !$0.isCabinetMedication }
@@ -91,7 +98,6 @@ struct MedicationsListView: View {
                     store: store,
                     showingAddSheet: $showingAddSheet,
                     scrolledOffset: $scrolledOffset,
-                    showingLogSheetFor: $showingLogSheetFor,
                     selectedMedicationToEdit: $selectedMedicationToEdit,
                     medicationToDelete: $medicationToDelete,
                     logToDelete: $logToDelete,
@@ -102,27 +108,13 @@ struct MedicationsListView: View {
                     onAddMedication: handleAddMedication,
                     onShowFocusTimeline: { showingFocusTimeline = true },
                     onPresentUndoToast: presentUndoToast,
+                    onRequestCustomLogTimeAction: requestCustomLogTime,
                     displayedMedications: displayedMedications,
                     cabinetMedications: cabinetMedications,
                     onShowCabinet: handleCabinetTap,
                     healthKitManager: healthKitManager,
                     referenceDate: referenceDate
                 )
-                .alert(item: $store.timingCalibrationSuggestion) { suggestion in
-                    Alert(
-                        title: Text("Update focus timing?"),
-                        message: Text(
-                            "Based on \(suggestion.sampleCount) check-ins, update \(suggestion.medicationName) to start in ~\(formatMinutes(suggestion.onsetMinutes)) and wear off in ~\(formatMinutes(suggestion.durationMinutes))?"
-                        ),
-                        primaryButton: .default(Text("Update")) {
-                            store.applyTimingSuggestion(suggestion)
-                            store.timingCalibrationSuggestion = nil
-                        },
-                        secondaryButton: .cancel(Text("Keep current")) {
-                            store.timingCalibrationSuggestion = nil
-                        }
-                    )
-                }
                 .overlay(alignment: .bottom) {
                     if let action = undoToastAction {
                         LogUndoToastView(
@@ -151,6 +143,21 @@ struct MedicationsListView: View {
             .sheet(item: $showingLogSheetFor) { med in
                 LogMedicationView(medicationToLog: med, onLogAction: presentUndoToast)
                     .environmentObject(store)
+            }
+            .sheet(item: $activeCustomLogRequest) { request in
+                MedicationLogTimePickerSheet(
+                    medication: request.medication,
+                    onCancel: {
+                        activeCustomLogRequest = nil
+                    },
+                    onConfirm: { selectedTime in
+                        logMedication(request.medication, at: selectedTime, reminderIndex: request.reminderIndex)
+                        activeCustomLogRequest = nil
+                    }
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color(hex: "#1E201A").opacity(0.35))
             }
             .fullScreenCover(item: $selectedMedicationToEdit) { med in
                 NavigationView {
@@ -236,13 +243,6 @@ struct MedicationsListView: View {
                     onLogAction: presentUndoToast
                 )
                 .environmentObject(store)
-            }
-            .sheet(item: $store.timingCheckInContext, onDismiss: {
-                store.timingCheckInContext = nil
-                store.presentNextPendingCheckInIfNeeded()
-            }) { context in
-                StimulantTimingCheckInView(context: context)
-                    .environmentObject(store)
             }
             .sheet(item: $store.recentADHDDoseTimeline, onDismiss: {
                 store.recentADHDDoseTimeline = nil
@@ -400,45 +400,62 @@ struct MedicationsListView: View {
             showingLogSheetFor = medication
         }
     }
-    
+
     private func shouldAutoLogCabinetMedication(_ medication: Medication) -> Bool {
         guard medication.isCabinetMedication else { return false }
         return medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "as needed".lowercased()
     }
-    
-	    private func quickLogCabinetMedication(_ medication: Medication) {
-	        showingCabinetSheet = false
-	        let resolvedMedication = store.findMedication(with: medication.id) ?? medication
-	        if let action = store.logMedicationTaken(
-	            medication: resolvedMedication,
-	            actualTime: Date(),
-	            notes: nil,
-	            skipped: false,
-	            reminderIndex: nil
-	        ) {
-	            presentUndoToast(action)
-	        }
-	    }
-    
-	    private func presentEditSheet(for medication: Medication) {
-	        showingCabinetSheet = false
-	        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-	            selectedMedicationToEdit = medication
-	        }
-	    }
 
-	    private func presentUndoToast(_ action: MedicationStore.LogUndoAction) {
-	        undoToastDismissWorkItem?.cancel()
-	        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-	            undoToastAction = action
-	        }
+    private func requestCustomLogTime(for medication: Medication, reminderIndex: Int? = nil) {
+        activeCustomLogRequest = CustomLogRequest(medication: medication, reminderIndex: reminderIndex)
+    }
 
-	        let workItem = DispatchWorkItem {
-	            dismissUndoToast()
-	        }
-	        undoToastDismissWorkItem = workItem
-	        DispatchQueue.main.asyncAfter(deadline: .now() + undoToastDuration, execute: workItem)
-	    }
+    private func logMedication(_ medication: Medication, at time: Date, reminderIndex: Int? = nil) {
+        let resolvedMedication = store.findMedication(with: medication.id) ?? medication
+        if let action = store.logMedicationTaken(
+            medication: resolvedMedication,
+            actualTime: time,
+            notes: nil,
+            skipped: false,
+            reminderIndex: reminderIndex
+        ) {
+            presentUndoToast(action)
+        }
+    }
+
+    private func quickLogCabinetMedication(_ medication: Medication) {
+        showingCabinetSheet = false
+        let resolvedMedication = store.findMedication(with: medication.id) ?? medication
+        if let action = store.logMedicationTaken(
+            medication: resolvedMedication,
+            actualTime: Date(),
+            notes: nil,
+            skipped: false,
+            reminderIndex: nil
+        ) {
+            presentUndoToast(action)
+        }
+    }
+
+    private func presentEditSheet(for medication: Medication) {
+        showingCabinetSheet = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            selectedMedicationToEdit = medication
+        }
+    }
+
+    private func presentUndoToast(_ action: MedicationStore.LogUndoAction) {
+        undoToastDismissWorkItem?.cancel()
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            undoToastAction = action
+        }
+
+        let workItem = DispatchWorkItem {
+            dismissUndoToast()
+        }
+        undoToastDismissWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + undoToastDuration, execute: workItem)
+    }
 
 	    private func dismissUndoToast() {
 	        undoToastDismissWorkItem?.cancel()
@@ -767,7 +784,6 @@ fileprivate func MedicationsListContent(
 	    showingAddSheet: Binding<Bool>,
 	    scrolledOffset: Binding<CGFloat>,
 	    horizontalInsets: CGFloat,
-	    showingLogSheetFor: Binding<Medication?>,
 	    selectedMedicationToEdit: Binding<Medication?>,
 	    medicationToDelete: Binding<Medication?>,
 	    logToDelete: Binding<MedicationLog?>,
@@ -778,23 +794,24 @@ fileprivate func MedicationsListContent(
 	    onAddMedication: @escaping () -> Void,
 	    onShowFocusTimeline: @escaping () -> Void,
 	    onPresentUndoToast: @escaping (MedicationStore.LogUndoAction) -> Void,
+	    onRequestCustomLogTimeAction: @escaping (Medication, Int?) -> Void,
 	    medications: [Medication],
 	    referenceDate: Date
 	) -> some View {
 	    VStack(alignment: .leading, spacing: 16) {
 	        ForEach(sortedMedications(medications, logs: store.logs, referenceDate: referenceDate)) { med in
-	            MedicationRow(
-	                medication: med,
-	                referenceDate: referenceDate,
-	                onPresentUndoToast: onPresentUndoToast,
-	                onLogTap: {
-	                    HapticManager.shared.lightImpact()
-	                    showingLogSheetFor.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-	                },
-	                onEditTap: {
-	                    HapticManager.shared.lightImpact()
-	                    selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
-	                },
+            MedicationRow(
+                medication: med,
+                referenceDate: referenceDate,
+                onPresentUndoToast: onPresentUndoToast,
+                onRequestCustomLogTime: { resolvedMedication, resolvedIndex in
+                    HapticManager.shared.lightImpact()
+                    onRequestCustomLogTimeAction(resolvedMedication, resolvedIndex)
+                },
+                onEditTap: {
+                    HapticManager.shared.lightImpact()
+                    selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
+                },
                 onDeleteTap: {
                     HapticManager.shared.warningNotification()
                     if let logEntryID = med.logEntryID,
@@ -1637,7 +1654,6 @@ fileprivate struct MedicationsListMainContent: View {
     @ObservedObject var store: MedicationStore
     @Binding var showingAddSheet: Bool
     @Binding var scrolledOffset: CGFloat
-    @Binding var showingLogSheetFor: Medication?
     @Binding var selectedMedicationToEdit: Medication?
     @Binding var medicationToDelete: Medication?
     @Binding var logToDelete: MedicationLog?
@@ -1646,8 +1662,9 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
     let onAddMedication: () -> Void
-        let onShowFocusTimeline: () -> Void
+    let onShowFocusTimeline: () -> Void
     let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
+    let onRequestCustomLogTimeAction: (Medication, Int?) -> Void
     let displayedMedications: [Medication]
     let cabinetMedications: [Medication]
     let onShowCabinet: () -> Void
@@ -1697,25 +1714,25 @@ fileprivate struct MedicationsListMainContent: View {
                             )
                             .padding(.horizontal, horizontalInset)
                         } else {
-	                            MedicationsListContent(
-	                                store: store,
-	                                showingAddSheet: $showingAddSheet,
-	                                scrolledOffset: $scrolledOffset,
-	                                horizontalInsets: horizontalInset,
-	                                showingLogSheetFor: $showingLogSheetFor,
-	                                selectedMedicationToEdit: $selectedMedicationToEdit,
-	                                medicationToDelete: $medicationToDelete,
-	                                logToDelete: $logToDelete,
-	                                showDeleteAlert: $showDeleteAlert,
-	                                showingInteractionSheet: $showingInteractionSheet,
-	                                isCheckingInteractions: $isCheckingInteractions,
-	                                onCheckAllInteractions: onCheckAllInteractions,
-	                                onAddMedication: onAddMedication,
-	                                onShowFocusTimeline: onShowFocusTimeline,
-	                                onPresentUndoToast: onPresentUndoToast,
-	                                medications: displayedMedications,
-	                                referenceDate: referenceDate
-	                            )
+                            MedicationsListContent(
+                                store: store,
+                                showingAddSheet: $showingAddSheet,
+                                scrolledOffset: $scrolledOffset,
+                                horizontalInsets: horizontalInset,
+                                selectedMedicationToEdit: $selectedMedicationToEdit,
+                                medicationToDelete: $medicationToDelete,
+                                logToDelete: $logToDelete,
+                                showDeleteAlert: $showDeleteAlert,
+                                showingInteractionSheet: $showingInteractionSheet,
+                                isCheckingInteractions: $isCheckingInteractions,
+                                onCheckAllInteractions: onCheckAllInteractions,
+                                onAddMedication: onAddMedication,
+                                onShowFocusTimeline: onShowFocusTimeline,
+                                onPresentUndoToast: onPresentUndoToast,
+                                onRequestCustomLogTimeAction: onRequestCustomLogTimeAction,
+                                medications: displayedMedications,
+                                referenceDate: referenceDate
+                            )
 
                         }
                         
@@ -1890,9 +1907,8 @@ fileprivate struct MedicationRowHeaderView: View {
     let medication: Medication
     let cycleStatus: MedicationCycleStatus
     @Binding var showDetails: Bool
-    let onLogTap: () -> Void
     let doseStates: [DoseButtonState]
-    let onDoseTap: (Int) -> Void
+    let onRequestCustomLogTime: (Int?) -> Void
     let onSkipDose: (Int) -> Void
     let highlightedDoseIndex: Int?
     let compactLayout: Bool
@@ -2459,7 +2475,7 @@ fileprivate struct MedicationRowHeaderView: View {
         case .asNeeded: // Add .asNeeded case
             HapticManager.shared.lightImpact()
         }
-        onLogTap()
+        onRequestCustomLogTime(nil)
     }
 
     private func handleDoseButtonTap(for state: DoseButtonState) {
@@ -2467,7 +2483,7 @@ fileprivate struct MedicationRowHeaderView: View {
 
         HapticManager.shared.successNotification()
         withAnimation(.interactiveSpring(response: 0.45, dampingFraction: 0.75)) {
-            onDoseTap(state.index)
+            onRequestCustomLogTime(state.index)
         }
     }
 }
@@ -2476,7 +2492,7 @@ struct MedicationRow: View {
     let medication: Medication
     let referenceDate: Date
     let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
-    let onLogTap: () -> Void
+    let onRequestCustomLogTime: (Medication, Int?) -> Void
     let onEditTap: () -> Void
     let onDeleteTap: (() -> Void)?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -2770,10 +2786,9 @@ struct MedicationRow: View {
                 medication: medication,
                 cycleStatus: cycleStatus, // Pass the calculated cycleStatus
                 showDetails: detailBinding,
-                onLogTap: onLogTap,
                 doseStates: doseButtonStates,
-                onDoseTap: { doseIndex in
-                    logDose(at: doseIndex)
+                onRequestCustomLogTime: { reminderIndex in
+                    onRequestCustomLogTime(medication, reminderIndex)
                 },
                 onSkipDose: { doseIndex in
                     skipDose(at: doseIndex)
@@ -2824,11 +2839,11 @@ struct MedicationRow: View {
         .accessibilityAction(.default) {
             switch cycleStatus {
             case .due(_), .overdue(_):
-                onLogTap()
+                onRequestCustomLogTime(medication, nil)
             case .taken, .skipped:
                 toggleExpansion()
             case .asNeeded:
-                onLogTap()
+                onRequestCustomLogTime(medication, nil)
             }
         }
         .accessibilityAction(named: accessibilityActionName()) {
@@ -3047,35 +3062,6 @@ struct MedicationRow: View {
 	        }
 	    }
     
-	    private func logDose(at index: Int) {
-	        if medication.reminderTimes.isEmpty {
-	            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
-	            if let action = store.logMedicationTaken(
-	                medication: medication,
-	                actualTime: Date(),
-	                notes: nil,
-	                skipped: false,
-	                reminderIndex: nil
-	            ) {
-	                onPresentUndoToast(action)
-	            }
-	            return
-	        }
-        
-        guard medication.reminderTimes.indices.contains(index) else { return }
-        guard !todaysLogsForMedication.contains(where: { $0.reminderIndex == index }) else { return }
-        
-	        if let action = store.logMedicationTaken(
-	            medication: medication,
-	            actualTime: Date(),
-	            notes: nil,
-	            skipped: false,
-	            reminderIndex: index
-	        ) {
-	            onPresentUndoToast(action)
-	        }
-	    }
-
 	    private func skipDose(at index: Int) {
 	        if medication.reminderTimes.isEmpty {
 	            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
@@ -3456,6 +3442,102 @@ fileprivate struct MedicationRowDetailsView: View {
             self.lineLimit = lineLimit
             self.placeValueOnNewLine = placeValueOnNewLine
         }
+    }
+}
+
+fileprivate struct MedicationLogTimePickerSheet: View {
+    let medication: Medication
+    let onConfirm: (Date) -> Void
+    let onCancel: () -> Void
+    @State private var selectedTime: Date
+
+    init(
+        medication: Medication,
+        onCancel: @escaping () -> Void,
+        onConfirm: @escaping (Date) -> Void
+    ) {
+        self.medication = medication
+        self.onCancel = onCancel
+        self.onConfirm = onConfirm
+        _selectedTime = State(initialValue: MedicationLogTimePickerSheet.roundToMinute(Date()))
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Capsule()
+                .fill(Color.white.opacity(0.5))
+                .frame(width: 42, height: 4)
+                .padding(.top, 8)
+
+            VStack(spacing: 4) {
+                Text("When did you take \(medication.name)?")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .multilineTextAlignment(.center)
+
+                Text("Drag to adjust the time you logged")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+            }
+            .padding(.horizontal, 12)
+
+            DatePicker(
+                "",
+                selection: $selectedTime,
+                displayedComponents: [.hourAndMinute]
+            )
+            .datePickerStyle(.wheel)
+            .labelsHidden()
+            .frame(height: 180)
+            .clipped()
+
+            Text(selectedTime, style: .time)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(Color(hex: "#F5F7F4"))
+
+            HStack(spacing: 12) {
+                Button(action: {
+                    HapticManager.shared.lightImpact()
+                    onCancel()
+                }) {
+                    Text("Cancel")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                        )
+                }
+
+                Button(action: {
+                    HapticManager.shared.successNotification()
+                    onConfirm(selectedTime)
+                }) {
+                    Text("Log time")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .foregroundColor(Color(hex: "#2F352F"))
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color(hex: "#F5F7F4"))
+                        )
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(20)
+        .background(Color.clear)
+    }
+
+    private static func roundToMinute(_ date: Date) -> Date {
+        let components = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: date
+        )
+        return Calendar.current.date(from: components) ?? date
     }
 }
 

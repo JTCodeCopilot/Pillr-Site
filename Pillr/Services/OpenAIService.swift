@@ -69,6 +69,14 @@ struct OpenAIService {
         // Try the request with retry logic
         return try await performRequestWithRetry(medications: medications, prompt: prompt)
     }
+
+    func getFocusTimingGuidance(for medicationName: String) async throws -> FocusTimingGuidance {
+        guard UserSettings.shared.hasAIAccess() else {
+            throw OpenAIError.premiumRequired
+        }
+
+        return try await performFocusTimingRequest(medicationName: medicationName)
+    }
     
     private func performRequestWithRetry(medications: [String], prompt: String, attempt: Int = 1) async throws -> [DrugInteraction] {
         let maxAttempts = 3
@@ -156,7 +164,95 @@ struct OpenAIService {
     }
     
     // MARK: - Helper Methods
-    
+
+    private func performFocusTimingRequest(medicationName: String, attempt: Int = 1) async throws -> FocusTimingGuidance {
+        let maxAttempts = 3
+        let prompt = focusTimingPrompt(for: medicationName)
+
+        do {
+            let response = try await openAIService.chatCompletionRequest(body: .init(
+                model: "gpt-4o-mini",
+                messages: [
+                    .system(content: .text("You are a medical AI that only responds with JSON. Do not add any text before or after the JSON object.")),
+                    .user(content: .text(prompt))
+                ],
+                temperature: 0.2
+            ))
+
+            guard let content = response.choices.first?.message.content else {
+                if attempt < maxAttempts {
+                    try await Task.sleep(nanoseconds: UInt64(attempt * 1_000_000_000))
+                    return try await performFocusTimingRequest(medicationName: medicationName, attempt: attempt + 1)
+                }
+                throw OpenAIError.noContent
+            }
+
+            let cleanedContent = extractJSON(from: content)
+            guard let jsonData = cleanedContent.data(using: .utf8) else {
+                if attempt < maxAttempts {
+                    try await Task.sleep(nanoseconds: UInt64(attempt * 1_000_000_000))
+                    return try await performFocusTimingRequest(medicationName: medicationName, attempt: attempt + 1)
+                }
+                throw OpenAIError.invalidJSONResponse
+            }
+
+            do {
+                let suggestion = try JSONDecoder().decode(OpenAIFocusTimingGuidanceResponse.self, from: jsonData)
+                guard let onsetMinutes = suggestion.onsetMinutes,
+                      let durationMinutes = suggestion.durationMinutes else {
+                    throw OpenAIError.invalidResponse
+                }
+
+                let typeString = suggestion.medicationType?.lowercased() ?? ""
+                let medicationType = MedicationType(rawValue: typeString) ?? .stimulant
+                return FocusTimingGuidance(
+                    medicationType: medicationType,
+                    isExtendedRelease: suggestion.isExtendedRelease ?? false,
+                    typicalOnsetMinutes: onsetMinutes,
+                    typicalDurationMinutes: durationMinutes,
+                    source: .ai,
+                    note: suggestion.notes ?? suggestion.confidence
+                )
+            } catch {
+                if attempt < maxAttempts {
+                    try await Task.sleep(nanoseconds: UInt64(attempt * 1_000_000_000))
+                    return try await performFocusTimingRequest(medicationName: medicationName, attempt: attempt + 1)
+                }
+                throw OpenAIError.invalidJSONResponse
+            }
+
+        } catch AIProxyError.unsuccessfulRequest(let statusCode, _) {
+            if statusCode == 429 && attempt < maxAttempts {
+                try await Task.sleep(nanoseconds: UInt64(attempt * 2_000_000_000))
+                return try await performFocusTimingRequest(medicationName: medicationName, attempt: attempt + 1)
+            }
+            throw OpenAIError.invalidResponse
+        } catch {
+            if attempt < maxAttempts {
+                try await Task.sleep(nanoseconds: UInt64(attempt * 1_000_000_000))
+                return try await performFocusTimingRequest(medicationName: medicationName, attempt: attempt + 1)
+            }
+            throw error
+        }
+    }
+
+    private func focusTimingPrompt(for medicationName: String) -> String {
+        """
+        The user is tracking focus windows for the medication "\(medicationName)". Provide a JSON object with the structure:
+        {
+          "medicationName": "Medication name",
+          "medicationType": "stimulant" | "nonStimulant" | "other",
+          "isExtendedRelease": true or false,
+          "onsetMinutes": 45,
+          "durationMinutes": 360,
+          "notes": "Optional guidance text",
+          "confidence": "Optional confidence label"
+        }
+
+        Use integer values for the minutes and only respond with the JSON object.
+        """
+    }
+
     private func extractJSON(from content: String) -> String {
         // Remove any markdown code blocks
         var cleaned = content.replacingOccurrences(of: "```json", with: "")
@@ -261,7 +357,9 @@ struct OpenAIService {
             "description": "Brief description of the medication, its purpose, and important information",
             "commonDosage": "Common dosage information without using 'The' at the beginning (e.g., 'typical starting dose is' instead of 'The typical starting dose is')",
             "needToKnow": "Important administration information such as whether to take with/without food, specific timing requirements, storage needs, side effects to watch for, etc.",
-            "distinguishingNote": "Why this option was chosen (for example why it matches the query or how it differs from other candidates)"
+            "distinguishingNote": "Why this option was chosen (for example why it matches the query or how it differs from other candidates)",
+            "confidence": "Optional short label describing how certain you are (e.g., high, medium, low)",
+            "requiresConfirmation": true or false (set to true whenever you are not 100% sure this is the medication the user meant)
           }
         ]
 
@@ -296,6 +394,8 @@ struct OpenAIService {
                 let commonDosage: String?
                 let needToKnow: String?
                 let distinguishingNote: String?
+                let confidence: String?
+                let requiresConfirmation: Bool?
             }
 
             let medicationInfo = try JSONDecoder().decode([MedicationInfoResponse].self, from: jsonData)
@@ -312,7 +412,9 @@ struct OpenAIService {
                     description: info.description,
                     commonDosage: info.commonDosage,
                     needToKnow: info.needToKnow,
-                    distinguishingNote: info.distinguishingNote
+                    distinguishingNote: info.distinguishingNote,
+                    confidence: info.confidence,
+                    requiresConfirmation: info.requiresConfirmation ?? false
                 )
             }
 
@@ -364,6 +466,16 @@ struct OpenAIInteraction: Codable {
     let recommendedAction: String
 }
 
+struct OpenAIFocusTimingGuidanceResponse: Codable {
+    let medicationName: String?
+    let medicationType: String?
+    let isExtendedRelease: Bool?
+    let onsetMinutes: Int?
+    let durationMinutes: Int?
+    let notes: String?
+    let confidence: String?
+}
+
 // MARK: - Error Types
 
 enum OpenAIError: LocalizedError {
@@ -406,4 +518,3 @@ enum OpenAIError: LocalizedError {
         }
     }
 } 
-

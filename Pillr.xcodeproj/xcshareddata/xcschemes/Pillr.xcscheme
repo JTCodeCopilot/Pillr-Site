@@ -56,6 +56,11 @@
             value = "439b0bc5-18b1-44b7-8adb-1af0fb44c5cb"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "PILLR_ENABLE_TEST_PREMIUM"
+            value = "1"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction

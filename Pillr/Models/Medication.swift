@@ -107,8 +107,6 @@ struct Medication: Identifiable, Codable, Hashable {
     var enableDailyCheckIn: Bool = false
     /// When enabled, Pillr will surface the start/wear-off reminders that drive focus windows.
     var enableStimulantPhaseNotifications: Bool = false
-    /// When enabled, Pillr will ask short check-ins to refine stimulant timing.
-    var enableTimingCalibration: Bool = false
     /// Optional custom time-of-day for the check-in reminder.
     var dailyCheckInTime: Date? = nil
     
@@ -161,7 +159,6 @@ struct Medication: Identifiable, Codable, Hashable {
         case logReferenceID
         case logEntryID
         case enableStimulantPhaseNotifications
-        case enableTimingCalibration
         case cloudLastModified
         case isDeleted
     }
@@ -180,7 +177,6 @@ struct Medication: Identifiable, Codable, Hashable {
         durationMinutes: Int? = nil,
         enableDailyCheckIn: Bool = false,
         enableStimulantPhaseNotifications: Bool = false,
-        enableTimingCalibration: Bool = false,
         dailyCheckInTime: Date? = nil,
         timeToTake: Date,
         reminderTimes: [Date] = [],
@@ -210,7 +206,6 @@ struct Medication: Identifiable, Codable, Hashable {
         self.durationMinutes = durationMinutes
         self.enableDailyCheckIn = enableDailyCheckIn
         self.enableStimulantPhaseNotifications = enableStimulantPhaseNotifications
-        self.enableTimingCalibration = enableTimingCalibration
         self.dailyCheckInTime = dailyCheckInTime
         self.timeToTake = timeToTake
         self.reminderTimes = reminderTimes
@@ -246,7 +241,6 @@ struct Medication: Identifiable, Codable, Hashable {
         self.durationMinutes = try container.decodeIfPresent(Int.self, forKey: .durationMinutes)
         self.enableDailyCheckIn = try container.decodeIfPresent(Bool.self, forKey: .enableDailyCheckIn) ?? false
         self.enableStimulantPhaseNotifications = try container.decodeIfPresent(Bool.self, forKey: .enableStimulantPhaseNotifications) ?? false
-        self.enableTimingCalibration = try container.decodeIfPresent(Bool.self, forKey: .enableTimingCalibration) ?? false
         self.dailyCheckInTime = try container.decodeIfPresent(Date.self, forKey: .dailyCheckInTime)
 
         self.timeToTake = try container.decode(Date.self, forKey: .timeToTake)
@@ -280,7 +274,6 @@ struct Medication: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(durationMinutes, forKey: .durationMinutes)
         try container.encode(enableDailyCheckIn, forKey: .enableDailyCheckIn)
         try container.encode(enableStimulantPhaseNotifications, forKey: .enableStimulantPhaseNotifications)
-        try container.encode(enableTimingCalibration, forKey: .enableTimingCalibration)
         try container.encodeIfPresent(dailyCheckInTime, forKey: .dailyCheckInTime)
         try container.encode(timeToTake, forKey: .timeToTake)
         try container.encode(reminderTimes, forKey: .reminderTimes)
@@ -316,8 +309,6 @@ struct MedicationLog: Identifiable, Codable, Hashable {
     var reminderIndex: Int? // Which reminder this log corresponds to (if multiple reminders)
     var focusRating: Int? // 1–5 focus quality rating
     var sideEffectSeverity: Int? // 1–5 overall side-effect severity
-    var reportedOnsetMinutes: Int? // User-reported minutes until effects start
-    var reportedWearOffMinutes: Int? // User-reported minutes until effects wear off
     var hiddenFromMyMeds: Bool = false // Hide from My Meds list while keeping it in history
     var medicationDosageText: String = ""
     var medicationIconName: String = "pill"
@@ -334,8 +325,6 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         case reminderIndex
         case focusRating
         case sideEffectSeverity
-        case reportedOnsetMinutes
-        case reportedWearOffMinutes
         case hiddenFromMyMeds
         case medicationDosageText
         case medicationIconName
@@ -353,8 +342,6 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         reminderIndex: Int? = nil,
         focusRating: Int? = nil,
         sideEffectSeverity: Int? = nil,
-        reportedOnsetMinutes: Int? = nil,
-        reportedWearOffMinutes: Int? = nil,
         hiddenFromMyMeds: Bool = false,
         medicationDosageText: String = "",
         medicationIconName: String = "pill",
@@ -370,8 +357,6 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.reminderIndex = reminderIndex
         self.focusRating = focusRating
         self.sideEffectSeverity = sideEffectSeverity
-        self.reportedOnsetMinutes = reportedOnsetMinutes
-        self.reportedWearOffMinutes = reportedWearOffMinutes
         self.hiddenFromMyMeds = hiddenFromMyMeds
         self.medicationDosageText = medicationDosageText
         self.medicationIconName = medicationIconName
@@ -391,8 +376,6 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.reminderIndex = try container.decodeIfPresent(Int.self, forKey: .reminderIndex)
         self.focusRating = try container.decodeIfPresent(Int.self, forKey: .focusRating)
         self.sideEffectSeverity = try container.decodeIfPresent(Int.self, forKey: .sideEffectSeverity)
-        self.reportedOnsetMinutes = try container.decodeIfPresent(Int.self, forKey: .reportedOnsetMinutes)
-        self.reportedWearOffMinutes = try container.decodeIfPresent(Int.self, forKey: .reportedWearOffMinutes)
         self.hiddenFromMyMeds = try container.decodeIfPresent(Bool.self, forKey: .hiddenFromMyMeds) ?? false
         self.medicationDosageText = try container.decodeIfPresent(String.self, forKey: .medicationDosageText) ?? ""
         self.medicationIconName = try container.decodeIfPresent(String.self, forKey: .medicationIconName) ?? "pill"
@@ -411,8 +394,6 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(reminderIndex, forKey: .reminderIndex)
         try container.encodeIfPresent(focusRating, forKey: .focusRating)
         try container.encodeIfPresent(sideEffectSeverity, forKey: .sideEffectSeverity)
-        try container.encodeIfPresent(reportedOnsetMinutes, forKey: .reportedOnsetMinutes)
-        try container.encodeIfPresent(reportedWearOffMinutes, forKey: .reportedWearOffMinutes)
         try container.encode(hiddenFromMyMeds, forKey: .hiddenFromMyMeds)
         try container.encode(medicationDosageText, forKey: .medicationDosageText)
         try container.encode(medicationIconName, forKey: .medicationIconName)

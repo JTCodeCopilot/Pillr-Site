@@ -9,6 +9,7 @@ struct AISearchMedicationView: View {
     @State private var searchOptions: [MedicationSearchResult] = []
     @State private var errorMessage: String? = nil
     @State private var showingPremiumUpgrade = false
+    @State private var confirmationTexts: [String: String] = [:]
     
     var onSelectMedication: (MedicationSearchResult) -> Void
     
@@ -214,6 +215,7 @@ struct AISearchMedicationView: View {
             if newValue.isEmpty {
                 searchOptions = []
                 errorMessage = nil
+                confirmationTexts = [:]
             }
         }
         .toolbar {
@@ -289,6 +291,7 @@ struct AISearchMedicationView: View {
     private func medicationResultCard(_ result: MedicationSearchResult, index: Int, total: Int) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             // Medication name and add button
+            let canAdd = hasValidConfirmation(for: result)
             HStack {
                 Image(systemName: "pill.fill")
                     .foregroundColor(Color(hex: "#C7C7BD"))
@@ -301,6 +304,7 @@ struct AISearchMedicationView: View {
                 Spacer()
                 
                 Button(action: {
+                    guard canAdd else { return }
                     HapticManager.shared.mediumImpact()
                     onSelectMedication(result)
                     dismiss()
@@ -320,6 +324,7 @@ struct AISearchMedicationView: View {
                     )
                     .foregroundColor(Color(hex: "#404C42"))
                 }
+                .disabled(!canAdd)
                 .buttonStyle(ScaleButtonStyle(hapticStyle: .medium))
                 .accessibilityLabel("Add \(result.name)")
                 .accessibilityHint("Adds this medication to your list")
@@ -374,6 +379,36 @@ struct AISearchMedicationView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+
+            if result.requiresConfirmation {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Pillr isn't fully certain this matches your medication. Please re-type the name below to confirm before adding.")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+
+                    if let confidence = result.confidence, !confidence.isEmpty {
+                        Text("Confidence: \(confidence.capitalized)")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                    }
+
+                    TextField("Re-type the medication name to confirm", text: confirmationBinding(for: result))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .font(.system(size: 14, weight: .medium))
+                        .disableAutocorrection(true)
+                        .autocapitalization(.words)
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.black.opacity(0.25))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 1)
+                                )
+                        )
+                }
+                .padding(.top, 6)
+            }
         }
         .padding()
         .background(
@@ -410,6 +445,7 @@ struct AISearchMedicationView: View {
 
                 await MainActor.run {
                     searchOptions = results
+                    confirmationTexts = [:]
                     isSearching = false
                 }
             } catch OpenAIError.premiumRequired {
@@ -417,15 +453,32 @@ struct AISearchMedicationView: View {
                     isSearching = false
                     showingPremiumUpgrade = true
                     searchOptions = []
+                    confirmationTexts = [:]
                 }
             } catch {
                 await MainActor.run {
                     isSearching = false
                     searchOptions = []
+                    confirmationTexts = [:]
                     errorMessage = "No medications found matching '\(searchQuery)'. Try a different search term or add your medication manually."
                 }
             }
         }
+    }
+
+    private func confirmationBinding(for result: MedicationSearchResult) -> Binding<String> {
+        Binding<String>(
+            get: { confirmationTexts[result.id] ?? "" },
+            set: { confirmationTexts[result.id] = $0 }
+        )
+    }
+
+    private func hasValidConfirmation(for result: MedicationSearchResult) -> Bool {
+        guard result.requiresConfirmation else {
+            return true
+        }
+        let typed = confirmationTexts[result.id]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return !typed.isEmpty && typed.caseInsensitiveCompare(result.name) == .orderedSame
     }
 }
 
@@ -437,6 +490,8 @@ struct MedicationSearchResult: Identifiable {
     let commonDosage: String?
     let needToKnow: String?
     let distinguishingNote: String?
+    let confidence: String?
+    let requiresConfirmation: Bool
 }
 
 // Preview

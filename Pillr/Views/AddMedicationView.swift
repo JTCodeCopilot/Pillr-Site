@@ -49,7 +49,6 @@ struct AddMedicationView: View {
     @State private var durationMinutesString: String = ""
     @State private var enableDailyCheckIn: Bool = false
     @State private var enableStimulantPhaseNotifications: Bool = false
-    @State private var enableTimingCalibration: Bool = false
     @State private var useCustomDailyCheckInTime: Bool = false
     @State private var customDailyCheckInTime: Date = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var onsetMinutesError: String? = nil
@@ -58,6 +57,13 @@ struct AddMedicationView: View {
     // AI search / premium
     @State private var showingAISearch: Bool = false
     @State private var showingPremiumUpgrade: Bool = false
+
+    // Stimulant timing guidance
+    @State private var showingFocusTimingGuidanceSheet: Bool = false
+    @State private var focusTimingGuidanceMedicationName: String = ""
+    @State private var focusTimingGuidance: FocusTimingGuidance? = nil
+    @State private var focusTimingError: String? = nil
+    @State private var isFocusTimingLoading: Bool = false
 
     // Keyboard / focus
     @State private var keyboardHeight: CGFloat = 0
@@ -273,6 +279,21 @@ struct AddMedicationView: View {
                     .foregroundColor(Color(hex: "#C7C7BD"))
                 }
             }
+        }
+        .sheet(isPresented: $showingFocusTimingGuidanceSheet) {
+            FocusTimingGuidanceSheet(
+                medicationName: focusTimingGuidanceMedicationName,
+                guidance: focusTimingGuidance,
+                isLoading: isFocusTimingLoading,
+                errorMessage: focusTimingError,
+                onApply: {
+                    if let guidance = focusTimingGuidance {
+                        applyFocusTimingGuidance(guidance)
+                    }
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingAISearch) {
             NavigationView {
@@ -693,12 +714,9 @@ struct AddMedicationView: View {
                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                             .onChange(of: enableStimulantPhaseNotifications) { enabled in
                                 if !enabled {
-                                    onsetMinutesString = ""
-                                    durationMinutesString = ""
                                     onsetMinutesError = nil
                                     durationMinutesError = nil
                                     enableDailyCheckIn = false
-                                    enableTimingCalibration = false
                                     useCustomDailyCheckInTime = false
                                 }
                             }
@@ -707,59 +725,40 @@ struct AddMedicationView: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                 .padding(.leading, 6)
+
+                            if enableStimulantPhaseNotifications {
+                                HStack(spacing: 6) {
+                                    Text("Need help matching typical timing?")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(Color(hex: "#C7C7BD"))
+
+                                    Spacer()
+
+                                    Button(action: handleFocusTimingGuidanceTap) {
+                                        Image(systemName: "brain.head.profile")
+                                            .font(.system(size: 20, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                            .frame(width: 40, height: 40)
+                                            .background(
+                                                Circle()
+                                                    .fill(Color(hex: "#C7C7BD").opacity(0.25))
+                                            )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .accessibilityLabel("Lookup typical focus timing for this medication")
+                                }
+                                .padding(.horizontal, 6)
+                            }
                         }
 
                         if enableStimulantPhaseNotifications {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Toggle(isOn: $enableTimingCalibration) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Refine focus timing with 7-day check-ins")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
-                                        Text("Optional. Pillr will ask short questions about when it kicks in and wears off.")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                    }
-                                }
-                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#FFB74D")))
-                                .onChange(of: enableTimingCalibration) { _ in
-                                    validateField(.onsetMinutes, value: onsetMinutesString)
-                                    validateField(.durationMinutes, value: durationMinutesString)
-                                }
-
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("How it works")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                    Text("1) We collect when it kicks in and wears off for 7 days.")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                        .lineLimit(nil)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    Text("2) After 7 days, Pillr averages your check-ins to estimate the typical duration from the time you log them.")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                        .lineLimit(nil)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                .padding(12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.black.opacity(0.15))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
-                                        )
-                                )
-                            }
-
-                            if !enableTimingCalibration {
+                            VStack(alignment: .leading, spacing: 12) {
                                 minuteWheelPickerField(
                                     title: "Starts working after",
                                     selection: $onsetMinutesString,
                                     range: focusOnsetRange,
                                     field: .onsetMinutes,
-                                    isRequired: !enableTimingCalibration,
+                                    isRequired: true,
                                     errorMessage: onsetMinutesError
                                 )
 
@@ -768,7 +767,7 @@ struct AddMedicationView: View {
                                     selection: $durationMinutesString,
                                     range: focusDurationRange,
                                     field: .durationMinutes,
-                                    isRequired: !enableTimingCalibration,
+                                    isRequired: true,
                                     errorMessage: durationMinutesError
                                 )
                             }
@@ -870,7 +869,6 @@ struct AddMedicationView: View {
                 onsetMinutesError = nil
                 durationMinutesError = nil
                 enableStimulantPhaseNotifications = false
-                enableTimingCalibration = false
                 if enableDailyCheckIn {
                     useCustomDailyCheckInTime = true
                 }
@@ -885,7 +883,6 @@ struct AddMedicationView: View {
                 onsetMinutesError = nil
                 durationMinutesError = nil
                 enableStimulantPhaseNotifications = false
-                enableTimingCalibration = false
                 if enableDailyCheckIn {
                     useCustomDailyCheckInTime = true
                 }
@@ -1391,9 +1388,14 @@ struct AddMedicationView: View {
         let hours = Double(minutes) / 60.0
         let isWhole = hours.truncatingRemainder(dividingBy: 1) == 0
         let formatted = isWhole ? String(format: "%.0f", hours) : String(format: "%.2f", hours)
-        let trimmed = formatted
-            .replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
-            .replacingOccurrences(of: "\\.$", with: "", options: .regularExpression)
+        let trimmed: String
+        if formatted.contains(".") {
+            trimmed = formatted
+                .replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
+                .replacingOccurrences(of: "\\.$", with: "", options: .regularExpression)
+        } else {
+            trimmed = formatted
+        }
         return "\(trimmed) hr"
     }
 
@@ -1544,6 +1546,73 @@ struct AddMedicationView: View {
         }
     }
 
+    private func handleFocusTimingGuidanceTap() {
+        triggerStrongHaptic()
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        focusTimingGuidanceMedicationName = trimmedName
+        focusTimingGuidance = nil
+        focusTimingError = nil
+        isFocusTimingLoading = false
+        showingFocusTimingGuidanceSheet = true
+
+        guard !trimmedName.isEmpty else {
+            return
+        }
+
+        if userSettings.hasAIAccess() {
+            isFocusTimingLoading = true
+            Task {
+                do {
+                    let guidance = try await OpenAIService.shared.getFocusTimingGuidance(for: trimmedName)
+                    await MainActor.run {
+                        focusTimingGuidance = guidance
+                        focusTimingError = nil
+                    }
+                } catch {
+                    await MainActor.run {
+                        focusTimingError = error.localizedDescription
+                    }
+                    if let fallback = ADHDMedicationGuidelines.guideline(for: trimmedName) {
+                        let fallbackGuidance = FocusTimingGuidance.fromGuideline(
+                            fallback,
+                            source: .local,
+                            note: "Using local guidance while AI timing suggestions are unavailable."
+                        )
+                        await MainActor.run {
+                            focusTimingGuidance = fallbackGuidance
+                        }
+                    }
+                }
+                await MainActor.run {
+                    isFocusTimingLoading = false
+                }
+            }
+        } else if let guideline = ADHDMedicationGuidelines.guideline(for: trimmedName) {
+            focusTimingGuidance = FocusTimingGuidance.fromGuideline(
+                guideline,
+                source: .local,
+                note: "Upgrade to Pillr Premium to unlock AI-powered timing suggestions."
+            )
+        } else {
+            focusTimingError = "Upgrade to Pillr Premium to unlock AI-powered timing guidance or enter the timing manually."
+        }
+    }
+
+    private func applyFocusTimingGuidance(_ guidance: FocusTimingGuidance) {
+        isADHDMedication = true
+        medicationType = guidance.medicationType
+        isExtendedRelease = guidance.isExtendedRelease
+        enableStimulantPhaseNotifications = true
+        onsetMinutesString = "\(guidance.typicalOnsetMinutes)"
+        durationMinutesString = "\(guidance.typicalDurationMinutes)"
+        onsetMinutesError = nil
+        durationMinutesError = nil
+        if guidance.medicationType == .stimulant && userSettings.isPremiumUser {
+            enableDailyCheckIn = true
+            useCustomDailyCheckInTime = false
+        }
+    }
+
     private func validateField(_ field: Field?, value: String) {
         switch field {
         case .name:
@@ -1586,7 +1655,7 @@ struct AddMedicationView: View {
             }
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty {
-                onsetMinutesError = enableTimingCalibration ? nil : "Onset time is required"
+                onsetMinutesError = "Onset time is required"
             } else if let minutes = Int(trimmed), minutes > 0 {
                 onsetMinutesError = nil
             } else {
@@ -1599,7 +1668,7 @@ struct AddMedicationView: View {
             }
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty {
-                durationMinutesError = enableTimingCalibration ? nil : "Wear-off time is required"
+                durationMinutesError = "Wear-off time is required"
             } else if let minutes = Int(trimmed), minutes > 0 {
                 durationMinutesError = nil
             } else {
@@ -1826,12 +1895,8 @@ struct AddMedicationView: View {
         if isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications {
             let trimmedOnset = onsetMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedDuration = durationMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
-            let onsetValid = trimmedOnset.isEmpty
-                ? enableTimingCalibration
-                : (Int(trimmedOnset) ?? 0) > 0
-            let durationValid = trimmedDuration.isEmpty
-                ? enableTimingCalibration
-                : (Int(trimmedDuration) ?? 0) > 0
+            let onsetValid = !trimmedOnset.isEmpty && (Int(trimmedOnset) ?? 0) > 0
+            let durationValid = !trimmedDuration.isEmpty && (Int(trimmedDuration) ?? 0) > 0
             return basicValid && customUnitValid && onsetValid && durationValid
         }
 
@@ -1861,7 +1926,6 @@ struct AddMedicationView: View {
         durationMinutesString = ""
         enableDailyCheckIn = false
         enableStimulantPhaseNotifications = false
-        enableTimingCalibration = false
         useCustomDailyCheckInTime = false
         customDailyCheckInTime = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
         onsetMinutesError = nil
@@ -1915,7 +1979,6 @@ struct AddMedicationView: View {
         isADHDMedication = medication.medicationType != .other
         isExtendedRelease = medication.isExtendedRelease
         enableStimulantPhaseNotifications = medication.enableStimulantPhaseNotifications
-        enableTimingCalibration = medication.enableTimingCalibration
         onsetMinutesString = medication.onsetMinutes.map { "\($0)" } ?? ""
         durationMinutesString = medication.durationMinutes.map { "\($0)" } ?? ""
         enableDailyCheckIn = userSettings.isPremiumUser ? medication.enableDailyCheckIn : false
@@ -1943,9 +2006,8 @@ struct AddMedicationView: View {
 
         let hasFocusWindow = isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications
         let supportsGeneralCheckIn = medicationType != .stimulant
-        let shouldEnableTimingCalibration = hasFocusWindow && enableTimingCalibration
-        let onsetMinutes = (hasFocusWindow && !shouldEnableTimingCalibration) ? Int(onsetMinutesString) : nil
-        let durationMinutes = (hasFocusWindow && !shouldEnableTimingCalibration) ? Int(durationMinutesString) : nil
+        let onsetMinutes = hasFocusWindow ? Int(onsetMinutesString) : nil
+        let durationMinutes = hasFocusWindow ? Int(durationMinutesString) : nil
         let shouldEnableDailyCheckIn = userSettings.isPremiumUser && enableDailyCheckIn && (hasFocusWindow || supportsGeneralCheckIn)
         let shouldUseCustomCheckInTime = supportsGeneralCheckIn || useCustomDailyCheckInTime
         let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && shouldUseCustomCheckInTime) ? customDailyCheckInTime : nil
@@ -1978,7 +2040,6 @@ struct AddMedicationView: View {
                     updatedMedication.dailyCheckInTime = nil
                 }
                 updatedMedication.enableStimulantPhaseNotifications = enableStimulantPhaseNotifications
-                updatedMedication.enableTimingCalibration = shouldEnableTimingCalibration
             } else {
                 updatedMedication.medicationType = medicationType
                 updatedMedication.isExtendedRelease = false
@@ -1987,7 +2048,6 @@ struct AddMedicationView: View {
                 updatedMedication.enableDailyCheckIn = shouldEnableDailyCheckIn
                 updatedMedication.dailyCheckInTime = shouldEnableDailyCheckIn ? selectedDailyCheckInTime : nil
                 updatedMedication.enableStimulantPhaseNotifications = false
-                updatedMedication.enableTimingCalibration = false
             }
 
             if trackPillCount {
@@ -2026,7 +2086,6 @@ struct AddMedicationView: View {
                 durationMinutes: durationMinutes,
                 enableDailyCheckIn: shouldEnableDailyCheckIn,
                 enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
-                enableTimingCalibration: shouldEnableTimingCalibration,
                 dailyCheckInTime: selectedDailyCheckInTime
             )
 
@@ -2136,6 +2195,158 @@ struct TimePickerRow: View {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+}
+
+struct FocusTimingGuidanceSheet: View {
+    let medicationName: String
+    let guidance: FocusTimingGuidance?
+    let isLoading: Bool
+    let errorMessage: String?
+    let onApply: (() -> Void)?
+    @Environment(\.dismiss) private var dismiss
+
+    private var displayName: String {
+        let trimmed = medicationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "this medication" : trimmed
+    }
+
+    private func formattedMinutesLabel(for minutes: Int) -> String {
+        let hours = minutes / 60
+        let remainder = minutes % 60
+        if hours > 0 && remainder > 0 {
+            return "\(minutes) min (~\(hours)h \(remainder)m)"
+        } else if hours > 0 {
+            return "\(minutes) min (~\(hours)h)"
+        } else {
+            return "\(minutes) min"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Focus timing guidance")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            Text("Use Pillr's timing guidance to copy a typical onset and wear-off window for \(displayName).")
+                .font(.system(size: 14))
+                .foregroundColor(Color(hex: "#C7C7BD"))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Group {
+                if isLoading {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#C7C7BD")))
+                        Text("Asking Pillr AI for a typical focus window. This requires a premium subscription.")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.black.opacity(0.2))
+                    )
+                } else if let guidance = guidance {
+                    VStack(alignment: .leading, spacing: 12) {
+                        timingRow(title: "Starts working after", value: formattedMinutesLabel(for: guidance.typicalOnsetMinutes))
+                        timingRow(title: "Wears off after", value: formattedMinutesLabel(for: guidance.typicalDurationMinutes))
+                    }
+
+                    Text(guidance.isExtendedRelease ? "Extended-release average" : "Immediate-release average")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+
+                    Text(guidance.source == .ai ? "Suggested by Pillr AI" : "Built-in guidance")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+
+                    if let note = guidance.note, !note.isEmpty {
+                        Text(note)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Button(action: {
+                        onApply?()
+                        dismiss()
+                    }) {
+                        Text("Apply these values")
+                            .font(.system(size: 16, weight: .bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color(hex: "#1E201A"))
+                            .cornerRadius(12)
+                    }
+                    .padding(.top, 8)
+                } else if let error = errorMessage {
+                    Text(error)
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if medicationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text("Type the medication name above so we can look up guidance.")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("No guidance matches \(displayName). Double-check the spelling or enter the timing manually.")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity)
+        .background(Color(hex: "#1F211A"))
+    }
+
+    @ViewBuilder
+    private func timingRow(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+            Text(value)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Color(hex: "#F5F7F4"))
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.2))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                )
+        )
+    }
+}
+
+struct FocusTimingGuidanceSheet_Previews: PreviewProvider {
+    static var previews: some View {
+        FocusTimingGuidanceSheet(
+            medicationName: "Adderall XR",
+            guidance: FocusTimingGuidance(
+                medicationType: .stimulant,
+                isExtendedRelease: true,
+                typicalOnsetMinutes: 60,
+                typicalDurationMinutes: 720,
+                source: .ai,
+                note: "Extended release info from Pillr AI."
+            ),
+            isLoading: false,
+            errorMessage: nil,
+            onApply: {}
+        )
+        .preferredColorScheme(.dark)
     }
 }
 
