@@ -2205,6 +2205,7 @@ struct FocusTimingGuidanceSheet: View {
     let errorMessage: String?
     let onApply: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
+    @State private var isLoadingPulseOn = false
 
     private var displayName: String {
         let trimmed = medicationName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2229,60 +2230,83 @@ struct FocusTimingGuidanceSheet: View {
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
-            Text("Use Pillr's timing guidance to copy a typical onset and wear-off window for \(displayName).")
-                .font(.system(size: 14))
-                .foregroundColor(Color(hex: "#C7C7BD"))
-                .fixedSize(horizontal: false, vertical: true)
-
             Group {
                 if isLoading {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#C7C7BD")))
-                        Text("Asking Pillr AI for a typical focus window. This requires a premium subscription.")
+                    VStack(spacing: 14) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(hex: "#C7C7BD").opacity(0.18))
+                                .frame(width: 64, height: 64)
+                                .scaleEffect(isLoadingPulseOn ? 1.2 : 0.85)
+                                .opacity(isLoadingPulseOn ? 0.2 : 0.7)
+                            Circle()
+                                .fill(Color(hex: "#C7C7BD").opacity(0.8))
+                                .frame(width: 22, height: 22)
+                                .shadow(color: Color(hex: "#C7C7BD").opacity(0.35), radius: 10, x: 0, y: 0)
+                        }
+                        .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: isLoadingPulseOn)
+                        .accessibilityHidden(true)
+
+                        Text("Finding a typical focus window…")
                             .font(.system(size: 14))
                             .foregroundColor(Color(hex: "#C7C7BD"))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding()
+                    .padding(24)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.black.opacity(0.2))
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .onAppear {
+                        isLoadingPulseOn = true
+                    }
                 } else if let guidance = guidance {
-                    VStack(alignment: .leading, spacing: 12) {
-                        timingRow(title: "Starts working after", value: formattedMinutesLabel(for: guidance.typicalOnsetMinutes))
-                        timingRow(title: "Wears off after", value: formattedMinutesLabel(for: guidance.typicalDurationMinutes))
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Typical focus window")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+
+                        HStack(spacing: 12) {
+                            timingCard(
+                                title: "Starts working",
+                                value: formattedMinutesLabel(for: guidance.typicalOnsetMinutes),
+                                symbol: "sparkle"
+                            )
+                            timingCard(
+                                title: "Wears off",
+                                value: formattedMinutesLabel(for: guidance.typicalDurationMinutes),
+                                symbol: "moon.zzz"
+                            )
+                        }
+
+                        HStack(spacing: 8) {
+                            badge(text: guidance.isExtendedRelease ? "Extended-release average" : "Immediate-release average")
+                            badge(text: guidance.source == .ai ? "Suggested by Pillr AI" : "Built-in guidance")
+                        }
+
+                        if let note = guidance.note, !note.isEmpty {
+                            Text(note)
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Spacer(minLength: 12)
+
+                        Button(action: {
+                            onApply?()
+                            dismiss()
+                        }) {
+                            Text("Apply these values")
+                                .font(.system(size: 16, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color(hex: "#C7C7BD"))
+                                .foregroundColor(Color(hex: "#1E201A"))
+                                .cornerRadius(12)
+                        }
                     }
-
-                    Text(guidance.isExtendedRelease ? "Extended-release average" : "Immediate-release average")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-
-                    Text(guidance.source == .ai ? "Suggested by Pillr AI" : "Built-in guidance")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-
-                    if let note = guidance.note, !note.isEmpty {
-                        Text(note)
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    Button(action: {
-                        onApply?()
-                        dismiss()
-                    }) {
-                        Text("Apply these values")
-                            .font(.system(size: 16, weight: .bold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color(hex: "#C7C7BD"))
-                            .foregroundColor(Color(hex: "#1E201A"))
-                            .cornerRadius(12)
-                    }
-                    .padding(.top, 8)
                 } else if let error = errorMessage {
                     Text(error)
                         .font(.system(size: 14))
@@ -2309,24 +2333,52 @@ struct FocusTimingGuidanceSheet: View {
     }
 
     @ViewBuilder
-    private func timingRow(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+    private func timingCard(title: String, value: String, symbol: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+            }
             Text(value)
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(Color(hex: "#F5F7F4"))
         }
-        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.2))
+            RoundedRectangle(cornerRadius: 14)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.black.opacity(0.32),
+                            Color.black.opacity(0.18)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color(hex: "#C7C7BD").opacity(0.18), lineWidth: 1)
                 )
         )
+    }
+
+    @ViewBuilder
+    private func badge(text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(Color.black.opacity(0.22))
+            )
     }
 }
 
