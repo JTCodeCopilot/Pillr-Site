@@ -590,17 +590,12 @@ class NotificationManager: ObservableObject {
     // MARK: - Stimulant phase notifications
 
     private func resolvedStimulantTiming(for medication: Medication) -> (onset: Int, duration: Int)? {
-        if let onset = medication.onsetMinutes,
-           let duration = medication.durationMinutes {
-            return (onset, duration)
-        }
-
-        guard medication.medicationType == .stimulant,
-              let guideline = ADHDMedicationGuidelines.guideline(for: medication.name) else {
+        guard let onset = medication.onsetMinutes,
+              let duration = medication.durationMinutes else {
             return nil
         }
 
-        return (guideline.typicalOnsetMinutes, guideline.typicalDurationMinutes)
+        return (onset, duration)
     }
 
     func scheduleStimulantPhaseNotifications(for medication: Medication, doseTime: Date, logID: UUID) {

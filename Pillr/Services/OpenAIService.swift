@@ -164,7 +164,6 @@ struct OpenAIService {
     }
     
     // MARK: - Helper Methods
-
     private func performFocusTimingRequest(medicationName: String, attempt: Int = 1) async throws -> FocusTimingGuidance {
         let maxAttempts = 3
         let prompt = focusTimingPrompt(for: medicationName)
@@ -198,20 +197,38 @@ struct OpenAIService {
 
             do {
                 let suggestion = try JSONDecoder().decode(OpenAIFocusTimingGuidanceResponse.self, from: jsonData)
-                guard let onsetMinutes = suggestion.onsetMinutes,
-                      let durationMinutes = suggestion.durationMinutes else {
-                    throw OpenAIError.invalidResponse
+                let typeString = suggestion.medicationType?.lowercased() ?? ""
+                let medicationType: MedicationType
+                switch typeString.replacingOccurrences(of: "-", with: "").replacingOccurrences(of: " ", with: "") {
+                case "stimulant":
+                    medicationType = .stimulant
+                case "nonstimulant":
+                    medicationType = .nonStimulant
+                default:
+                    medicationType = .other
                 }
 
-                let typeString = suggestion.medicationType?.lowercased() ?? ""
-                let medicationType = MedicationType(rawValue: typeString) ?? .stimulant
+                let note = suggestion.notes ?? suggestion.confidence
+                let isExtendedRelease = suggestion.isExtendedRelease ?? false
+
+                if medicationType == .stimulant,
+                   let onsetMinutes = suggestion.onsetMinutes,
+                   let durationMinutes = suggestion.durationMinutes {
+                    return FocusTimingGuidance(
+                        medicationType: medicationType,
+                        isExtendedRelease: isExtendedRelease,
+                        typicalOnsetMinutes: onsetMinutes,
+                        typicalDurationMinutes: durationMinutes,
+                        note: note
+                    )
+                }
+
                 return FocusTimingGuidance(
                     medicationType: medicationType,
-                    isExtendedRelease: suggestion.isExtendedRelease ?? false,
-                    typicalOnsetMinutes: onsetMinutes,
-                    typicalDurationMinutes: durationMinutes,
-                    source: .ai,
-                    note: suggestion.notes ?? suggestion.confidence
+                    isExtendedRelease: isExtendedRelease,
+                    typicalOnsetMinutes: nil,
+                    typicalDurationMinutes: nil,
+                    note: note
                 )
             } catch {
                 if attempt < maxAttempts {
@@ -248,6 +265,8 @@ struct OpenAIService {
           "notes": "Optional guidance text",
           "confidence": "Optional confidence label"
         }
+
+        If the medication name is unknown, incomplete, misspelled, or not an ADHD medication, set "medicationType" to "other" and set "onsetMinutes" and "durationMinutes" to null.
 
         Use integer values for the minutes and only respond with the JSON object.
         """

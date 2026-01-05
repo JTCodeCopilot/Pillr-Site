@@ -689,67 +689,66 @@ struct EditMedicationView: View {
 
     private func handleFocusTimingGuidanceTap() {
         HapticManager.shared.lightImpact()
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        showingFocusTimingGuidanceSheet = true
+        requestFocusTimingGuidance(for: name)
+    }
+
+    private func requestFocusTimingGuidance(for query: String) {
+        let trimmedName = query.trimmingCharacters(in: .whitespacesAndNewlines)
         focusTimingGuidanceMedicationName = trimmedName
         focusTimingGuidance = nil
         focusTimingError = nil
         isFocusTimingLoading = false
-        showingFocusTimingGuidanceSheet = true
 
         guard !trimmedName.isEmpty else {
             return
         }
 
-        if userSettings.hasAIAccess() {
-            isFocusTimingLoading = true
-            Task {
-                do {
-                    let guidance = try await OpenAIService.shared.getFocusTimingGuidance(for: trimmedName)
-                    await MainActor.run {
-                        focusTimingGuidance = guidance
-                        focusTimingError = nil
-                    }
-                } catch {
-                    await MainActor.run {
-                        focusTimingError = error.localizedDescription
-                    }
-                    if let fallback = ADHDMedicationGuidelines.guideline(for: trimmedName) {
-                        let fallbackGuidance = FocusTimingGuidance.fromGuideline(
-                            fallback,
-                            source: .local,
-                            note: "Using local guidance while AI timing suggestions are unavailable."
-                        )
-                        await MainActor.run {
-                            focusTimingGuidance = fallbackGuidance
-                        }
-                    }
-                }
+        guard userSettings.hasAIAccess() else {
+            focusTimingError = "Upgrade to Pillr Premium to unlock AI-powered timing guidance or enter the timing manually."
+            return
+        }
+        isFocusTimingLoading = true
+        Task {
+            do {
+                let guidance = try await OpenAIService.shared.getFocusTimingGuidance(for: trimmedName)
                 await MainActor.run {
-                    isFocusTimingLoading = false
+                    focusTimingGuidance = guidance
+                    focusTimingError = nil
+                }
+            } catch {
+                await MainActor.run {
+                    focusTimingError = error.localizedDescription
                 }
             }
-        } else if let guideline = ADHDMedicationGuidelines.guideline(for: trimmedName) {
-            focusTimingGuidance = FocusTimingGuidance.fromGuideline(
-                guideline,
-                source: .local,
-                note: "Upgrade to Pillr Premium to unlock AI-powered timing suggestions."
-            )
-        } else {
-            focusTimingError = "Upgrade to Pillr Premium to unlock AI-powered timing guidance or enter the timing manually."
+            await MainActor.run {
+                isFocusTimingLoading = false
+            }
         }
     }
 
     private func applyFocusTimingGuidance(_ guidance: FocusTimingGuidance) {
-        isADHDMedication = true
+        isADHDMedication = guidance.medicationType != .other
         medicationType = guidance.medicationType
         isExtendedRelease = guidance.isExtendedRelease
-        enableStimulantPhaseNotifications = true
-        onsetMinutesString = "\(guidance.typicalOnsetMinutes)"
-        durationMinutesString = "\(guidance.typicalDurationMinutes)"
         onsetMinutesError = nil
         durationMinutesError = nil
-        if guidance.medicationType == .stimulant && userSettings.isPremiumUser {
-            enableDailyCheckIn = true
+
+        if guidance.hasStimulantTiming,
+           let onsetMinutes = guidance.typicalOnsetMinutes,
+           let durationMinutes = guidance.typicalDurationMinutes {
+            enableStimulantPhaseNotifications = true
+            onsetMinutesString = "\(onsetMinutes)"
+            durationMinutesString = "\(durationMinutes)"
+            if userSettings.isPremiumUser {
+                enableDailyCheckIn = true
+                useCustomDailyCheckInTime = false
+            }
+        } else {
+            enableStimulantPhaseNotifications = false
+            onsetMinutesString = ""
+            durationMinutesString = ""
+            enableDailyCheckIn = false
             useCustomDailyCheckInTime = false
         }
     }
