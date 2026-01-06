@@ -127,6 +127,14 @@ struct AddMedicationView: View {
         return .asymmetric(insertion: insertion, removal: removal)
     }
 
+    private var isFocusTimingSheetVisible: Bool {
+#if DEBUG
+        return showingFocusTimingGuidanceSheet || showingFocusTimingPreviewSheet
+#else
+        return showingFocusTimingGuidanceSheet
+#endif
+    }
+
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
     let dosageUnits = ["mg", "ml", "tablets", "capsules", "custom"]
     @State private var customUnit: String = ""
@@ -282,6 +290,7 @@ struct AddMedicationView: View {
                     .foregroundColor(Color(hex: "#C7C7BD"))
                 }
             }
+
         }
         .sheet(isPresented: $showingFocusTimingGuidanceSheet) {
             FocusTimingGuidanceSheet(
@@ -297,6 +306,7 @@ struct AddMedicationView: View {
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
+            .presentationBackground(Color(hex: "#58655A"))
         }
 #if DEBUG
         .sheet(isPresented: $showingFocusTimingPreviewSheet) {
@@ -315,6 +325,7 @@ struct AddMedicationView: View {
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
+            .presentationBackground(Color(hex: "#58655A"))
         }
 #endif
         .sheet(isPresented: $showingAISearch) {
@@ -777,24 +788,6 @@ struct AddMedicationView: View {
                                                 .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
                                         )
                                 )
-#if DEBUG
-                                Button(action: {
-                                    triggerStrongHaptic()
-                                    showingFocusTimingPreviewSheet = true
-                                }) {
-                                    Text("Preview AI sheet")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 6)
-                                        .background(
-                                            Capsule()
-                                                .fill(Color.black.opacity(0.25))
-                                        )
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .padding(.top, 8)
-#endif
                             }
                         }
 
@@ -817,6 +810,11 @@ struct AddMedicationView: View {
                                     isRequired: true,
                                     errorMessage: durationMinutesError
                                 )
+
+                                Text("Average stimulant timing: onset in 30–60 minutes, wear-off around 8–12 hours.")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .padding(.leading, 6)
                             }
                         }
                     }
@@ -2252,6 +2250,7 @@ struct FocusTimingGuidanceSheet: View {
     let onApply: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var isLoadingPulseOn = false
+    @State private var loadingHapticTimer: Timer? = nil
 
     private var displayName: String {
         let trimmed = medicationName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2271,10 +2270,18 @@ struct FocusTimingGuidanceSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Pillr AI: Focus timing guidance")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Timing guidance")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                badge(text: "Via Pillr AI")
+            }
+            .padding(.top, 20)
+
+            Rectangle()
+                .fill(Color(hex: "#C7C7BD").opacity(0.15))
+                .frame(height: 1)
 
             Group {
                 if isLoading {
@@ -2302,6 +2309,7 @@ struct FocusTimingGuidanceSheet: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .onAppear {
                         isLoadingPulseOn = true
+                        startLoadingHapticsIfNeeded()
                     }
                 } else if let guidance = guidance {
                     VStack(alignment: .leading, spacing: 16) {
@@ -2310,7 +2318,16 @@ struct FocusTimingGuidanceSheet: View {
                         if isValidStimulantMedication,
                            let onsetMinutes = guidance.typicalOnsetMinutes,
                            let durationMinutes = guidance.typicalDurationMinutes {
-                            HStack(spacing: 12) {
+                            let columns = [
+                                GridItem(.flexible(), spacing: 12),
+                                GridItem(.flexible(), spacing: 12)
+                            ]
+
+                            Text("Suggested timing")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+
+                            LazyVGrid(columns: columns, spacing: 12) {
                                 timingCard(
                                     title: "Starts working after",
                                     value: formattedTimingLabel(for: onsetMinutes, preferMinutesUnderHour: true),
@@ -2321,10 +2338,6 @@ struct FocusTimingGuidanceSheet: View {
                                     value: formattedTimingLabel(for: durationMinutes, preferMinutesUnderHour: false),
                                     symbol: "moon.zzz"
                                 )
-                            }
-
-                            HStack(spacing: 8) {
-                                badge(text: guidance.isExtendedRelease ? "Extended-release average" : "Immediate-release average")
                             }
                         } else {
                             VStack(alignment: .center, spacing: 10) {
@@ -2356,21 +2369,35 @@ struct FocusTimingGuidanceSheet: View {
                         }
 
                         if let note = guidance.note, !note.isEmpty {
-                            Text(note)
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                                .multilineTextAlignment(isValidStimulantMedication ? .leading : .center)
-                                .frame(maxWidth: .infinity, alignment: isValidStimulantMedication ? .leading : .center)
-                                .fixedSize(horizontal: false, vertical: true)
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Notes")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+
+                                Text(note)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white.opacity(0.06))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                    )
+                            )
                         }
 
-                        Spacer(minLength: 12)
+                        Spacer(minLength: 8)
 
                         Button(action: {
                             onApply?()
                             dismiss()
                         }) {
-                            Text("Apply these values")
+                            Text("Apply times")
                                 .font(.system(size: 16, weight: .bold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
@@ -2396,47 +2423,50 @@ struct FocusTimingGuidanceSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(.top, 8)
+            .padding(.top, 4)
 
-            Spacer()
+            Spacer(minLength: 0)
+
+            Text("AI guidance only. Not medical advice. Always consult a qualified professional.")
+                .font(.system(size: 11))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding(20)
         .frame(maxWidth: .infinity)
-        .background(Color(hex: "#1F211A"))
+        .background(Color(hex: "#2D3329"))
+        .onChange(of: isLoading) { _, newValue in
+            if newValue {
+                startLoadingHapticsIfNeeded()
+            } else {
+                stopLoadingHaptics()
+            }
+        }
+        .onDisappear {
+            stopLoadingHaptics()
+        }
     }
 
     @ViewBuilder
     private func timingCard(title: String, value: String, symbol: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: symbol)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                Text(title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
-            }
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+
             Text(value)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 34, weight: .light))
                 .foregroundColor(Color(hex: "#F5F7F4"))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.black.opacity(0.32),
-                            Color.black.opacity(0.18)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(Color.white.opacity(0.1))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color(hex: "#C7C7BD").opacity(0.18), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
                 )
         )
     }
@@ -2444,27 +2474,37 @@ struct FocusTimingGuidanceSheet: View {
     @ViewBuilder
     private func badge(text: String) -> some View {
         Text(text)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: 16, weight: .semibold))
             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(Color.black.opacity(0.22))
-            )
+    }
+
+    private func startLoadingHapticsIfNeeded() {
+        guard isLoading, loadingHapticTimer == nil else { return }
+        let generator = UIImpactFeedbackGenerator(style: .rigid)
+        generator.prepare()
+        generator.impactOccurred(intensity: 0.9)
+        loadingHapticTimer = Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { _ in
+            generator.impactOccurred(intensity: 0.9)
+            generator.prepare()
+        }
+    }
+
+    private func stopLoadingHaptics() {
+        loadingHapticTimer?.invalidate()
+        loadingHapticTimer = nil
     }
 }
 
 struct FocusTimingGuidanceSheet_Previews: PreviewProvider {
     static var previews: some View {
         FocusTimingGuidanceSheet(
-            medicationName: "Adderall XR",
+            medicationName: "Vyvanse",
             guidance: FocusTimingGuidance(
                 medicationType: .stimulant,
                 isExtendedRelease: true,
-                typicalOnsetMinutes: 60,
+                typicalOnsetMinutes: 45,
                 typicalDurationMinutes: 720,
-                note: "Extended release info from Pillr AI."
+                note: "Pillr AI provided timing guidance for this medication."
             ),
             isLoading: false,
             errorMessage: nil,

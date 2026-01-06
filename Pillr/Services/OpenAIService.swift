@@ -255,20 +255,36 @@ struct OpenAIService {
 
     private func focusTimingPrompt(for medicationName: String) -> String {
         """
-        The user is tracking focus windows for the medication "\(medicationName)". Provide a JSON object with the structure:
+        The user is tracking focus windows for the medication "\(medicationName)".
+
+        Your task is to return the most clinically realistic average onset time and average effective duration for this medication when used for ADHD.
+
+        Base your values on real world prescribing information, pharmacokinetic data, and commonly reported clinical averages.
+        If ranges are found, infer the most typical midpoint that would represent an average user experience.
+
+        Account for formulation differences such as immediate release vs extended release.
+        If the formulation cannot be determined, assume the most commonly prescribed form and mention this in notes.
+
+        Return a single JSON object in exactly this structure:
+
         {
           "medicationName": "Medication name",
           "medicationType": "stimulant" | "nonStimulant" | "other",
           "isExtendedRelease": true or false,
-          "onsetMinutes": 45,
-          "durationMinutes": 360,
-          "notes": "Optional guidance text",
-          "confidence": "Optional confidence label"
+          "onsetMinutes": integer minutes or null,
+          "durationMinutes": integer minutes or null,
+          "notes": "Brief clinical context such as typical formulation, variability, or assumptions made",
+          "confidence": "high | medium | low"
         }
 
-        If the medication name is unknown, incomplete, misspelled, or not an ADHD medication, set "medicationType" to "other" and set "onsetMinutes" and "durationMinutes" to null.
+        Rules
 
-        Use integer values for the minutes and only respond with the JSON object.
+        - onsetMinutes must reflect the average time until noticeable effect begins, not the fastest possible onset
+        - durationMinutes must reflect the average effective focus window, not maximum label claims
+        - Use only whole integers
+        - Avoid rounded placeholder values unless they are clinically supported
+        - If the medication name is unknown, misspelled, incomplete, or not used for ADHD, set medicationType to "other" and set onsetMinutes and durationMinutes to null
+        - Respond with JSON only. No commentary.
         """
     }
 
