@@ -40,6 +40,7 @@ struct EditMedicationView: View {
     @State private var isExtendedRelease: Bool = false
     @State private var onsetMinutesString: String = ""
     @State private var durationMinutesString: String = ""
+    @State private var effectsGoneMinutesString: String = ""
     @State private var enableDailyCheckIn: Bool = false
     @State private var enableStimulantPhaseNotifications: Bool = false
     @State private var useCustomDailyCheckInTime: Bool = false
@@ -66,11 +67,12 @@ struct EditMedicationView: View {
     @State private var refillThresholdError: String? = nil
     @State private var onsetMinutesError: String? = nil
     @State private var durationMinutesError: String? = nil
+    @State private var effectsGoneMinutesError: String? = nil
     @State private var frequencyError: String? = nil
     @State private var scrollTargetField: Field? = nil
 
     enum Field {
-        case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold, onsetMinutes, durationMinutes
+        case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold, onsetMinutes, durationMinutes, effectsGoneMinutes
     }
 
     let frequencies = ["Once daily", "Twice daily", "Three times daily", "As needed"]
@@ -80,6 +82,7 @@ struct EditMedicationView: View {
     private let timePickerHeight: CGFloat = 140
     private let focusOnsetRange: ClosedRange<Int> = 30...1440
     private let focusDurationRange: ClosedRange<Int> = 30...1440
+    private let focusEffectsGoneRange: ClosedRange<Int> = 30...1440
     
     // Computed properties
     private var needsMultipleReminders: Bool {
@@ -163,6 +166,11 @@ struct EditMedicationView: View {
             _durationMinutesString = State(initialValue: "\(duration)")
         } else {
             _durationMinutesString = State(initialValue: "")
+        }
+        if let effectsGoneMinutes = medication.effectsGoneMinutes {
+            _effectsGoneMinutesString = State(initialValue: "\(effectsGoneMinutes)")
+        } else {
+            _effectsGoneMinutesString = State(initialValue: "")
         }
     }
 
@@ -403,8 +411,10 @@ struct EditMedicationView: View {
                                     isExtendedRelease = false
                                     onsetMinutesString = ""
                                     durationMinutesString = ""
+                                    effectsGoneMinutesString = ""
                                     onsetMinutesError = nil
                                     durationMinutesError = nil
+                                    effectsGoneMinutesError = nil
                 enableStimulantPhaseNotifications = false
                 if enableDailyCheckIn {
                     useCustomDailyCheckInTime = true
@@ -416,8 +426,10 @@ struct EditMedicationView: View {
                                     isExtendedRelease = false
                                     onsetMinutesString = ""
                                     durationMinutesString = ""
+                                    effectsGoneMinutesString = ""
                                     onsetMinutesError = nil
                                     durationMinutesError = nil
+                                    effectsGoneMinutesError = nil
                 enableStimulantPhaseNotifications = false
                 if enableDailyCheckIn {
                     useCustomDailyCheckInTime = true
@@ -676,7 +688,7 @@ struct EditMedicationView: View {
                     }
                 }
             )
-            .presentationDetents([.medium])
+            .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
@@ -733,6 +745,7 @@ struct EditMedicationView: View {
         isExtendedRelease = guidance.isExtendedRelease
         onsetMinutesError = nil
         durationMinutesError = nil
+        effectsGoneMinutesError = nil
 
         if guidance.hasStimulantTiming,
            let onsetMinutes = guidance.typicalOnsetMinutes,
@@ -740,6 +753,7 @@ struct EditMedicationView: View {
             enableStimulantPhaseNotifications = true
             onsetMinutesString = "\(onsetMinutes)"
             durationMinutesString = "\(durationMinutes)"
+            effectsGoneMinutesString = guidance.typicalEffectsGoneMaxMinutes.map { "\($0)" } ?? ""
             if userSettings.isPremiumUser {
                 enableDailyCheckIn = true
                 useCustomDailyCheckInTime = false
@@ -748,6 +762,7 @@ struct EditMedicationView: View {
             enableStimulantPhaseNotifications = false
             onsetMinutesString = ""
             durationMinutesString = ""
+            effectsGoneMinutesString = ""
             enableDailyCheckIn = false
             useCustomDailyCheckInTime = false
         }
@@ -877,14 +892,16 @@ struct EditMedicationView: View {
                                   if !enabled {
                                       onsetMinutesString = ""
                                       durationMinutesString = ""
+                                      effectsGoneMinutesString = ""
                                       onsetMinutesError = nil
                                       durationMinutesError = nil
+                                      effectsGoneMinutesError = nil
                                       enableDailyCheckIn = false
                                       useCustomDailyCheckInTime = false
                                   }
                               }
 
-                                Text("Use these times to map your focus sessions. Pillr uses the start and wear-off windows to help you plan when you’ll be at your sharpest and when to ease into breaks.")
+                                Text("Use these times to map your focus sessions. Pillr uses the start and fade windows to help you plan when you’ll be at your sharpest and when to ease into breaks.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                     .padding(.leading, 6)
@@ -932,6 +949,16 @@ struct EditMedicationView: View {
                                         errorMessage: durationMinutesError
                                     )
                                     .id(Field.durationMinutes)
+
+                                    minuteWheelPickerField(
+                                        title: "Most effects gone after",
+                                        selection: $effectsGoneMinutesString,
+                                        range: focusEffectsGoneRange,
+                                        field: .effectsGoneMinutes,
+                                        isRequired: true,
+                                        errorMessage: effectsGoneMinutesError
+                                    )
+                                    .id(Field.effectsGoneMinutes)
                                 }
                             }
                         }
@@ -958,7 +985,7 @@ struct EditMedicationView: View {
                                     }
                                 }
                                 Text(userSettings.isPremiumUser ?
-                                     "At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication." :
+                                     "At the start of the fading window, Pillr will remind you to log focus and side effects for this medication." :
                                         "Daily check-ins require a premium subscription.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
@@ -980,7 +1007,7 @@ struct EditMedicationView: View {
 
                         if enableDailyCheckIn && userSettings.isPremiumUser {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
+                                Text("Default reminder arrives around when the medication starts to wear off. Prefer a different time? Pick one below.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
 
@@ -1115,7 +1142,7 @@ struct EditMedicationView: View {
             }
             
             let showError = showValidationErrors && errorMessage != nil
-            let numericFields: [Field] = [.dosage, .pillCount, .pillsPerDose, .refillThreshold, .onsetMinutes, .durationMinutes]
+            let numericFields: [Field] = [.dosage, .pillCount, .pillsPerDose, .refillThreshold, .onsetMinutes, .durationMinutes, .effectsGoneMinutes]
 
             TextField(placeholder, text: text)
                 .keyboardType(keyboardType)
@@ -1354,6 +1381,9 @@ struct EditMedicationView: View {
             if durationMinutesError != nil {
                 return .durationMinutes
             }
+            if effectsGoneMinutesError != nil {
+                return .effectsGoneMinutes
+            }
         }
         return nil
     }
@@ -1363,7 +1393,7 @@ struct EditMedicationView: View {
         guard let currentField = focusedField else { return false }
         switch currentField {
         case .name: return false
-        case .dosage, .frequency, .notes, .pillCount, .pillsPerDose, .refillThreshold, .durationMinutes: return true
+        case .dosage, .frequency, .notes, .pillCount, .pillsPerDose, .refillThreshold, .durationMinutes, .effectsGoneMinutes: return true
         case .onsetMinutes: return false
         }
     }
@@ -1376,7 +1406,8 @@ struct EditMedicationView: View {
         case .pillCount, .pillsPerDose: return trackPillCount
         case .refillThreshold: return false
         case .onsetMinutes: return true
-        case .durationMinutes: return false
+        case .durationMinutes: return true
+        case .effectsGoneMinutes: return false
         }
     }
 
@@ -1391,6 +1422,7 @@ struct EditMedicationView: View {
         case .pillsPerDose: focusedField = .pillCount
         case .refillThreshold: focusedField = .pillsPerDose
         case .durationMinutes: focusedField = .onsetMinutes
+        case .effectsGoneMinutes: focusedField = .durationMinutes
         case .onsetMinutes: focusedField = nil
         }
     }
@@ -1407,7 +1439,8 @@ struct EditMedicationView: View {
         case .pillsPerDose: focusedField = .refillThreshold
         case .refillThreshold: focusedField = .notes
         case .onsetMinutes: focusedField = .durationMinutes
-        case .durationMinutes: focusedField = nil
+        case .durationMinutes: focusedField = .effectsGoneMinutes
+        case .effectsGoneMinutes: focusedField = nil
         }
     }
 
@@ -1451,6 +1484,7 @@ struct EditMedicationView: View {
         let supportsGeneralCheckIn = medicationType != .stimulant
         let onsetMinutes = hasFocusWindow ? Int(onsetMinutesString) : nil
         let durationMinutes = hasFocusWindow ? Int(durationMinutesString) : nil
+        let effectsGoneMinutes = hasFocusWindow ? Int(effectsGoneMinutesString) : nil
         let shouldEnableDailyCheckIn = userSettings.isPremiumUser && enableDailyCheckIn && (hasFocusWindow || supportsGeneralCheckIn)
         let shouldUseCustomDailyCheckInTime = supportsGeneralCheckIn || useCustomDailyCheckInTime
         let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && shouldUseCustomDailyCheckInTime) ? customDailyCheckInTime : nil
@@ -1459,11 +1493,13 @@ struct EditMedicationView: View {
             if hasFocusWindow {
                 updatedMedication.onsetMinutes = onsetMinutes
                 updatedMedication.durationMinutes = durationMinutes
+                updatedMedication.effectsGoneMinutes = effectsGoneMinutes
                 updatedMedication.enableDailyCheckIn = shouldEnableDailyCheckIn
                 updatedMedication.dailyCheckInTime = shouldEnableDailyCheckIn ? selectedDailyCheckInTime : nil
             } else {
                 updatedMedication.onsetMinutes = nil
                 updatedMedication.durationMinutes = nil
+                updatedMedication.effectsGoneMinutes = nil
                 updatedMedication.enableDailyCheckIn = false
                 updatedMedication.dailyCheckInTime = nil
             }
@@ -1472,6 +1508,7 @@ struct EditMedicationView: View {
             updatedMedication.isExtendedRelease = false
             updatedMedication.onsetMinutes = nil
             updatedMedication.durationMinutes = nil
+            updatedMedication.effectsGoneMinutes = nil
             updatedMedication.enableDailyCheckIn = shouldEnableDailyCheckIn
             updatedMedication.dailyCheckInTime = shouldEnableDailyCheckIn ? selectedDailyCheckInTime : nil
             updatedMedication.enableStimulantPhaseNotifications = false
@@ -1528,9 +1565,11 @@ struct EditMedicationView: View {
 
         let trimmedOnset = onsetMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDuration = durationMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedEffectsGone = effectsGoneMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
         let onsetValid = !trimmedOnset.isEmpty && (Int(trimmedOnset) ?? 0) > 0
         let durationValid = !trimmedDuration.isEmpty && (Int(trimmedDuration) ?? 0) > 0
-        return onsetValid && durationValid
+        let effectsGoneValid = !trimmedEffectsGone.isEmpty && (Int(trimmedEffectsGone) ?? 0) > 0
+        return onsetValid && durationValid && effectsGoneValid
     }
 
     private func validateField(_ field: Field?, value: String) {
@@ -1598,11 +1637,23 @@ struct EditMedicationView: View {
                 break
             }
             if trimmed.isEmpty {
-                durationMinutesError = "Wear-off time is required"
+                durationMinutesError = "Fade start time is required"
             } else if let minutes = Int(trimmed), minutes > 0 {
                 durationMinutesError = nil
             } else {
                 durationMinutesError = "Enter a valid number"
+            }
+        case .effectsGoneMinutes:
+            if !(isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications) {
+                effectsGoneMinutesError = nil
+                break
+            }
+            if trimmed.isEmpty {
+                effectsGoneMinutesError = "Effects gone time is required"
+            } else if let minutes = Int(trimmed), minutes > 0 {
+                effectsGoneMinutesError = nil
+            } else {
+                effectsGoneMinutesError = "Enter a valid number"
             }
         default:
             break
@@ -1628,12 +1679,14 @@ struct EditMedicationView: View {
         guard isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications else {
             onsetMinutesError = nil
             durationMinutesError = nil
+            effectsGoneMinutesError = nil
             return true
         }
 
         validateField(.onsetMinutes, value: onsetMinutesString)
         validateField(.durationMinutes, value: durationMinutesString)
+        validateField(.effectsGoneMinutes, value: effectsGoneMinutesString)
 
-        return onsetMinutesError == nil && durationMinutesError == nil
+        return onsetMinutesError == nil && durationMinutesError == nil && effectsGoneMinutesError == nil
     }
 } 

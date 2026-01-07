@@ -95,17 +95,19 @@ struct Medication: Identifiable, Codable, Hashable {
     var isExtendedRelease: Bool = false
     /// Approximate minutes after taking when effects start to be felt
     var onsetMinutes: Int? = nil
-    /// Approximate total duration in minutes that the medication is effective
+    /// Approximate minutes after taking when peak effects start to fade
     var durationMinutes: Int? = nil
+    /// Approximate minutes after taking when most effects are gone
+    var effectsGoneMinutes: Int? = nil
     
     var hasStimulantTiming: Bool {
         medicationType == .stimulant && onsetMinutes != nil && durationMinutes != nil
     }
     
     /// When enabled for ADHD stimulants, Pillr will prompt
-    /// a daily check-in around the time the medication wears off.
+    /// a daily check-in around the time the medication starts wearing off.
     var enableDailyCheckIn: Bool = false
-    /// When enabled, Pillr will surface the start/wear-off reminders that drive focus windows.
+    /// When enabled, Pillr will surface the start/fade reminders that drive focus windows.
     var enableStimulantPhaseNotifications: Bool = false
     /// Optional custom time-of-day for the check-in reminder.
     var dailyCheckInTime: Date? = nil
@@ -144,6 +146,7 @@ struct Medication: Identifiable, Codable, Hashable {
         case isExtendedRelease
         case onsetMinutes
         case durationMinutes
+        case effectsGoneMinutes
         case enableDailyCheckIn
         case dailyCheckInTime
         case timeToTake
@@ -175,6 +178,7 @@ struct Medication: Identifiable, Codable, Hashable {
         isExtendedRelease: Bool = false,
         onsetMinutes: Int? = nil,
         durationMinutes: Int? = nil,
+        effectsGoneMinutes: Int? = nil,
         enableDailyCheckIn: Bool = false,
         enableStimulantPhaseNotifications: Bool = false,
         dailyCheckInTime: Date? = nil,
@@ -204,6 +208,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.isExtendedRelease = isExtendedRelease
         self.onsetMinutes = onsetMinutes
         self.durationMinutes = durationMinutes
+        self.effectsGoneMinutes = effectsGoneMinutes
         self.enableDailyCheckIn = enableDailyCheckIn
         self.enableStimulantPhaseNotifications = enableStimulantPhaseNotifications
         self.dailyCheckInTime = dailyCheckInTime
@@ -239,6 +244,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.isExtendedRelease = try container.decodeIfPresent(Bool.self, forKey: .isExtendedRelease) ?? false
         self.onsetMinutes = try container.decodeIfPresent(Int.self, forKey: .onsetMinutes)
         self.durationMinutes = try container.decodeIfPresent(Int.self, forKey: .durationMinutes)
+        self.effectsGoneMinutes = try container.decodeIfPresent(Int.self, forKey: .effectsGoneMinutes)
         self.enableDailyCheckIn = try container.decodeIfPresent(Bool.self, forKey: .enableDailyCheckIn) ?? false
         self.enableStimulantPhaseNotifications = try container.decodeIfPresent(Bool.self, forKey: .enableStimulantPhaseNotifications) ?? false
         self.dailyCheckInTime = try container.decodeIfPresent(Date.self, forKey: .dailyCheckInTime)
@@ -272,6 +278,7 @@ struct Medication: Identifiable, Codable, Hashable {
         try container.encode(isExtendedRelease, forKey: .isExtendedRelease)
         try container.encodeIfPresent(onsetMinutes, forKey: .onsetMinutes)
         try container.encodeIfPresent(durationMinutes, forKey: .durationMinutes)
+        try container.encodeIfPresent(effectsGoneMinutes, forKey: .effectsGoneMinutes)
         try container.encode(enableDailyCheckIn, forKey: .enableDailyCheckIn)
         try container.encode(enableStimulantPhaseNotifications, forKey: .enableStimulantPhaseNotifications)
         try container.encodeIfPresent(dailyCheckInTime, forKey: .dailyCheckInTime)

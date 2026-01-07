@@ -210,6 +210,8 @@ struct OpenAIService {
 
                 let note = suggestion.notes ?? suggestion.confidence
                 let isExtendedRelease = suggestion.isExtendedRelease ?? false
+                let effectsGoneMin = suggestion.effectsGoneMinMinutes
+                let effectsGoneMax = suggestion.effectsGoneMaxMinutes
 
                 if medicationType == .stimulant,
                    let onsetMinutes = suggestion.onsetMinutes,
@@ -219,6 +221,8 @@ struct OpenAIService {
                         isExtendedRelease: isExtendedRelease,
                         typicalOnsetMinutes: onsetMinutes,
                         typicalDurationMinutes: durationMinutes,
+                        typicalEffectsGoneMinMinutes: effectsGoneMin,
+                        typicalEffectsGoneMaxMinutes: effectsGoneMax,
                         note: note
                     )
                 }
@@ -228,6 +232,8 @@ struct OpenAIService {
                     isExtendedRelease: isExtendedRelease,
                     typicalOnsetMinutes: nil,
                     typicalDurationMinutes: nil,
+                    typicalEffectsGoneMinMinutes: effectsGoneMin,
+                    typicalEffectsGoneMaxMinutes: effectsGoneMax,
                     note: note
                 )
             } catch {
@@ -257,13 +263,14 @@ struct OpenAIService {
         """
         The user is tracking focus windows for the medication "\(medicationName)".
 
-        Your task is to return the most clinically realistic average onset time and average effective duration for this medication when used for ADHD.
+        Your task is to return the most clinically realistic average onset time and the average time when peak effects begin to wear off for this medication when used for ADHD, plus a realistic window for when most effects are gone.
 
         Base your values on real world prescribing information, pharmacokinetic data, and commonly reported clinical averages.
         If ranges are found, infer the most typical midpoint that would represent an average user experience.
 
         Account for formulation differences such as immediate release vs extended release.
-        If the formulation cannot be determined, assume the most commonly prescribed form and mention this in notes.
+        If the formulation cannot be determined from the medication name, assume extended release (XR) and mention this in notes.
+        If the name includes indicators like "IR", "immediate release", "SR", "ER", "XR", "LA", or "CR", follow that formulation.
 
         Return a single JSON object in exactly this structure:
 
@@ -273,6 +280,8 @@ struct OpenAIService {
           "isExtendedRelease": true or false,
           "onsetMinutes": integer minutes or null,
           "durationMinutes": integer minutes or null,
+          "effectsGoneMinMinutes": integer minutes or null,
+          "effectsGoneMaxMinutes": integer minutes or null,
           "notes": "Brief clinical context such as typical formulation, variability, or assumptions made",
           "confidence": "high | medium | low"
         }
@@ -280,10 +289,15 @@ struct OpenAIService {
         Rules
 
         - onsetMinutes must reflect the average time until noticeable effect begins, not the fastest possible onset
-        - durationMinutes must reflect the average effective focus window, not maximum label claims
+        - durationMinutes must reflect when peak effects start to decline, not maximum label claims
+        - If a clinically supported range is found for onsetMinutes or durationMinutes, use the upper bound for those fields
+        - effectsGoneMinMinutes and effectsGoneMaxMinutes should reflect when most clinically noticeable effects have dissipated for the typical patient, not the extreme tail end
+        - Use prescribing/PK averages and common clinical practice; avoid rounded placeholder values (e.g., 4h, 6h, 8h) unless strongly supported
+        - The effects-gone window should usually be later than durationMinutes, but not drastically beyond typical total duration
+        - effectsGoneMinMinutes and effectsGoneMaxMinutes should describe a realistic window with max >= min
         - Use only whole integers
         - Avoid rounded placeholder values unless they are clinically supported
-        - If the medication name is unknown, misspelled, incomplete, or not used for ADHD, set medicationType to "other" and set onsetMinutes and durationMinutes to null
+        - If the medication name is unknown, misspelled, incomplete, or not used for ADHD, set medicationType to "other" and set onsetMinutes, durationMinutes, effectsGoneMinMinutes, and effectsGoneMaxMinutes to null
         - Respond with JSON only. No commentary.
         """
     }
@@ -507,6 +521,8 @@ struct OpenAIFocusTimingGuidanceResponse: Codable {
     let isExtendedRelease: Bool?
     let onsetMinutes: Int?
     let durationMinutes: Int?
+    let effectsGoneMinMinutes: Int?
+    let effectsGoneMaxMinutes: Int?
     let notes: String?
     let confidence: String?
 }

@@ -611,9 +611,7 @@ class NotificationManager: ObservableObject {
         let calendar = Calendar.current
         let descriptor = medicationDescriptor(for: medication)
         let duration = timing.duration
-        let fadeOffset = duration > 10 ? duration - 10 : duration
-
-        if let fadeWarningDate = calendar.date(byAdding: .minute, value: fadeOffset, to: doseTime) {
+        if let fadeWarningDate = calendar.date(byAdding: .minute, value: duration, to: doseTime) {
             let fadeTitle = "Check in as your medication fades"
             let fadeBody = "How was your focus and side effects today? Tap to log when \(descriptor) starts wearing off."
 

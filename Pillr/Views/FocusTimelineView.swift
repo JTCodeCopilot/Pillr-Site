@@ -206,7 +206,7 @@ struct FocusTimelineView: View {
             return "Starts around \(formatTime(nextWindow.onsetTime))"
         }
         
-        return "Ends around \(formatTime(nextWindow.fadeTime))"
+        return "Fades around \(formatTime(nextWindow.fadeTime))"
     }
     
     private func formatTime(_ date: Date) -> String {
@@ -410,10 +410,167 @@ private struct FocusWindowRow: View {
     let group: FocusTimelineView.FocusWindowGroup
     let formatTime: (Date) -> String
     let onSelectMedication: () -> Void
-    
-    private var now: Date { Date() }
+
+    private func aiEffectsGoneTiming(for medication: Medication) -> (label: String, minMinutes: Int?, maxMinutes: Int?)? {
+        if let effectsGoneMinutes = medication.effectsGoneMinutes {
+            return (formatDurationLabel(minutes: effectsGoneMinutes), effectsGoneMinutes, effectsGoneMinutes)
+        }
+
+        guard medication.medicationType == .stimulant,
+              let notes = medication.notes,
+              !notes.isEmpty else {
+            return nil
+        }
+
+        for rawLine in notes.components(separatedBy: .newlines) {
+            let trimmed = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
+            let prefix = "- Most effect gone around:"
+            let altPrefix = "Most effect gone around:"
+
+            if trimmed.hasPrefix(prefix) {
+                let rawLabel = trimmed.replacingOccurrences(of: prefix, with: "").trimmingCharacters(in: .whitespaces)
+                let range = effectsGoneRangeMinutes(from: rawLabel)
+                let displayLabel = range.map { formatDurationLabel(minutes: $0.max) } ?? rawLabel
+                return (displayLabel, range?.min, range?.max)
+            }
+            if trimmed.hasPrefix(altPrefix) {
+                let rawLabel = trimmed.replacingOccurrences(of: altPrefix, with: "").trimmingCharacters(in: .whitespaces)
+                let range = effectsGoneRangeMinutes(from: rawLabel)
+                let displayLabel = range.map { formatDurationLabel(minutes: $0.max) } ?? rawLabel
+                return (displayLabel, range?.min, range?.max)
+            }
+        }
+
+        return nil
+    }
+
+    private func effectsGoneRangeMinutes(from label: String) -> (min: Int, max: Int)? {
+        let normalized = label
+            .lowercased()
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
+
+        let defaultUnit: String? = normalized.contains("hr") || normalized.contains("h") ? "hr" :
+            (normalized.contains("min") || normalized.contains("m") ? "min" : nil)
+
+        let parts = normalized.split(separator: "-").map { $0.trimmingCharacters(in: .whitespaces) }
+        guard let firstPart = parts.first else { return nil }
+
+        let firstValue = parseDurationMinutes(part: String(firstPart), defaultUnit: defaultUnit)
+        let secondValue = parts.count > 1 ? parseDurationMinutes(part: String(parts[1]), defaultUnit: defaultUnit) : nil
+
+        if let first = firstValue, let second = secondValue {
+            return (min: min(first, second), max: max(first, second))
+        }
+
+        if let first = firstValue {
+            return (min: first, max: first)
+        }
+
+        return nil
+    }
+
+    private func parseDurationMinutes(part: String, defaultUnit: String?) -> Int? {
+        let trimmed = part.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return nil }
+
+        let unit: String? = {
+            if trimmed.contains("hr") || trimmed.contains("hour") || trimmed.contains("h") {
+                return "hr"
+            }
+            if trimmed.contains("min") || trimmed.contains("minute") || trimmed.contains("m") {
+                return "min"
+            }
+            return defaultUnit
+        }()
+
+        let numberString = trimmed
+            .replacingOccurrences(of: "hours", with: "")
+            .replacingOccurrences(of: "hour", with: "")
+            .replacingOccurrences(of: "hrs", with: "")
+            .replacingOccurrences(of: "hr", with: "")
+            .replacingOccurrences(of: "minutes", with: "")
+            .replacingOccurrences(of: "minute", with: "")
+            .replacingOccurrences(of: "mins", with: "")
+            .replacingOccurrences(of: "min", with: "")
+            .replacingOccurrences(of: "h", with: "")
+            .replacingOccurrences(of: "m", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let value = Double(numberString) else { return nil }
+
+        if unit == "hr" {
+            return Int((value * 60).rounded())
+        }
+        if unit == "min" {
+            return Int(value.rounded())
+        }
+
+        return nil
+    }
+
+    private func formatDurationLabel(minutes: Int) -> String {
+        if minutes < 60 {
+            return "\(minutes) min"
+        }
+        let hours = Double(minutes) / 60.0
+        let roundedHours = (hours * 10).rounded() / 10
+        if roundedHours.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(Int(roundedHours)) hr"
+        }
+        return String(format: "%.1f hr", roundedHours)
+    }
+
+    private func effectsGoneCountdownLabel(
+        for window: FocusTimelineView.FocusWindow,
+        now: Date
+    ) -> String? {
+        guard let timing = aiEffectsGoneTiming(for: window.medication),
+              let maxMinutes = timing.maxMinutes else {
+            return nil
+        }
+
+        let baseDoseTime: Date
+        switch window.status {
+        case .logged(let loggedAt):
+            baseDoseTime = loggedAt
+        case .skipped(let skippedAt):
+            baseDoseTime = skippedAt
+        case .pending:
+            baseDoseTime = window.doseTime
+        }
+
+        guard let target = Calendar.current.date(byAdding: .minute, value: maxMinutes, to: baseDoseTime) else {
+            return nil
+        }
+
+        let remainingMinutes = Int(target.timeIntervalSince(now) / 60)
+        if remainingMinutes <= 0 {
+            return "All effects likely gone"
+        }
+
+        return formatRemainingMinutes(remainingMinutes)
+    }
+
+    private func formatRemainingMinutes(_ minutes: Int) -> String {
+        if minutes < 60 {
+            return "\(minutes) min"
+        }
+        let hours = minutes / 60
+        let remainder = minutes % 60
+        if remainder == 0 {
+            return "\(hours)h"
+        }
+        return "\(hours)h \(remainder)m"
+    }
     
     var body: some View {
+        TimelineView(.periodic(from: Date(), by: 60)) { context in
+            content(now: context.date)
+        }
+    }
+
+    private func content(now: Date) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .center, spacing: 14) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -436,6 +593,7 @@ private struct FocusWindowRow: View {
             ForEach(Array(group.windows.enumerated()), id: \.element.id) { index, window in
                 let isNowInsideWindow = now >= window.onsetTime && now <= window.fadeTime
                 let isAsNeededWithoutReminder = window.medication.frequency == "As needed" && window.medication.reminderTimes.isEmpty
+                let effectsGoneTiming = aiEffectsGoneTiming(for: window.medication)
                 
                 if index > 0 {
                     Divider()
@@ -484,6 +642,15 @@ private struct FocusWindowRow: View {
                     }
                     .padding(.top, 6)
 
+                    if let effectsGoneTiming {
+                        let countdownLabel = effectsGoneCountdownLabel(for: window, now: now)
+                        let displayValue = countdownLabel ?? effectsGoneTiming.label
+                        HStack {
+                            infoRow(title: "Most effects gone", value: displayValue)
+                        }
+                        .padding(.top, 6)
+                    }
+
                     if let scheduledReminder = window.scheduledDoseTime {
                         Text("Based on the \(formatTime(scheduledReminder)) reminder")
                             .font(.system(size: 12))
@@ -522,6 +689,7 @@ private struct FocusWindowRow: View {
         let parts = value.split(separator: " ")
         let timeComponent = parts.first.map(String.init) ?? value
         let meridiemComponent = parts.count > 1 ? String(parts.last!).lowercased() : ""
+        let isMeridiem = meridiemComponent == "am" || meridiemComponent == "pm"
         
         return VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
@@ -530,15 +698,19 @@ private struct FocusWindowRow: View {
                 .tracking(0.6)
             
             HStack(alignment: .lastTextBaseline, spacing: 4) {
-                Text(timeComponent)
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(Color(hex: "#F8F8F1"))
-                
-                if !meridiemComponent.isEmpty {
+                if isMeridiem {
+                    Text(timeComponent)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(Color(hex: "#F8F8F1"))
+                    
                     Text(meridiemComponent)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(hex: "#E8E8E0").opacity(0.8))
                         .padding(.leading, 2)
+                } else {
+                    Text(value)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(Color(hex: "#F8F8F1"))
                 }
             }
         }
@@ -583,8 +755,8 @@ private struct FocusBar: View {
     private let hourLabelOpacity: Double = 0.65
     private let trackCornerRadius: CGFloat = 12
     private let trackFillOpacity: Double = 0.14
-    private let handleWidth: CGFloat = 14
-    private let handleHeight: CGFloat = 22
+    private let handleWidth: CGFloat = 6
+    private let handleHeight: CGFloat = 30
     private let handleShadowRadius: CGFloat = 4
     
     private func minutesSinceMidnight(_ date: Date) -> CGFloat {

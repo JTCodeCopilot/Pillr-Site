@@ -5,6 +5,8 @@ struct FocusTimingGuidance {
     let isExtendedRelease: Bool
     let typicalOnsetMinutes: Int?
     let typicalDurationMinutes: Int?
+    let typicalEffectsGoneMinMinutes: Int?
+    let typicalEffectsGoneMaxMinutes: Int?
     let note: String?
 
     var hasStimulantTiming: Bool {

@@ -159,6 +159,7 @@ class MedicationStore: ObservableObject {
         isExtendedRelease: Bool = false,
         onsetMinutes: Int? = nil,
         durationMinutes: Int? = nil,
+        effectsGoneMinutes: Int? = nil,
         enableDailyCheckIn: Bool = false,
         enableStimulantPhaseNotifications: Bool = false,
         dailyCheckInTime: Date? = nil
@@ -190,6 +191,7 @@ class MedicationStore: ObservableObject {
             isExtendedRelease: isExtendedRelease,
             onsetMinutes: onsetMinutes,
             durationMinutes: durationMinutes,
+            effectsGoneMinutes: effectsGoneMinutes,
             enableDailyCheckIn: finalEnableDailyCheckIn,
             enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
             dailyCheckInTime: finalDailyCheckInTime,

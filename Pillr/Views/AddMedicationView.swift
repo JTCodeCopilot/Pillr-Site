@@ -47,12 +47,14 @@ struct AddMedicationView: View {
     @State private var isExtendedRelease: Bool = false
     @State private var onsetMinutesString: String = ""
     @State private var durationMinutesString: String = ""
+    @State private var effectsGoneMinutesString: String = ""
     @State private var enableDailyCheckIn: Bool = false
     @State private var enableStimulantPhaseNotifications: Bool = false
     @State private var useCustomDailyCheckInTime: Bool = false
     @State private var customDailyCheckInTime: Date = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var onsetMinutesError: String? = nil
     @State private var durationMinutesError: String? = nil
+    @State private var effectsGoneMinutesError: String? = nil
 
     // AI search / premium
     @State private var showingAISearch: Bool = false
@@ -93,7 +95,7 @@ struct AddMedicationView: View {
     @State private var stepAnimationDirection: StepTransitionDirection = .forward
 
     enum Field: Hashable {
-        case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold, onsetMinutes, durationMinutes
+        case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold, onsetMinutes, durationMinutes, effectsGoneMinutes
     }
 
     private let standardFieldHeight: CGFloat = 52
@@ -101,6 +103,7 @@ struct AddMedicationView: View {
     private let focusPickerHeight: CGFloat = 140
     private let focusOnsetRange: ClosedRange<Int> = 30...1440
     private let focusDurationRange: ClosedRange<Int> = 30...1440
+    private let focusEffectsGoneRange: ClosedRange<Int> = 30...1440
 
     private enum ScrollAnchor {
         static let bottom = "AddMedicationViewBottomAnchor"
@@ -304,7 +307,7 @@ struct AddMedicationView: View {
                     }
                 }
             )
-            .presentationDetents([.medium])
+            .presentationDetents([.large])
             .presentationDragIndicator(.visible)
             .presentationBackground(Color(hex: "#58655A"))
         }
@@ -317,6 +320,8 @@ struct AddMedicationView: View {
                     isExtendedRelease: true,
                     typicalOnsetMinutes: 45,
                     typicalDurationMinutes: 360,
+                    typicalEffectsGoneMinMinutes: 600,
+                    typicalEffectsGoneMaxMinutes: 720,
                     note: "Vyvanse is a medication used to treat ADHD and is known for its long duration of action."
                 ),
                 isLoading: false,
@@ -737,12 +742,13 @@ struct AddMedicationView: View {
                                 if !enabled {
                                     onsetMinutesError = nil
                                     durationMinutesError = nil
+                                    effectsGoneMinutesError = nil
                                     enableDailyCheckIn = false
                                     useCustomDailyCheckInTime = false
                                 }
                             }
 
-                            Text("Use these times to map your focus sessions. Pillr uses the start and wear-off windows to help you plan when you’ll be at your sharpest and when to ease into breaks.")
+                            Text("Use these times to map your focus sessions. Pillr uses the start and fade windows to help you plan when you’ll be at your sharpest and when to ease into breaks.")
                                 .font(.system(size: 12))
                                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                 .padding(.leading, 6)
@@ -750,12 +756,15 @@ struct AddMedicationView: View {
                             if enableStimulantPhaseNotifications {
                                 HStack(spacing: 12) {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("Need help matching typical timing?")
+                                        Text("Help with timing?")
                                             .font(.system(size: 13, weight: .semibold))
                                             .foregroundColor(Color(hex: "#E8E8E0"))
-                                        Text("Let Pillr AI suggest a starting point you can tweak.")
+                                        Text("Pillr AI suggests a starting point you can adjust.")
                                             .font(.system(size: 12))
                                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                            .lineLimit(nil)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                            .multilineTextAlignment(.leading)
                                     }
 
                                     Spacer()
@@ -803,7 +812,7 @@ struct AddMedicationView: View {
                                 )
 
                                 minuteWheelPickerField(
-                                    title: "Lasts about",
+                                    title: "Starts fading after",
                                     selection: $durationMinutesString,
                                     range: focusDurationRange,
                                     field: .durationMinutes,
@@ -811,10 +820,14 @@ struct AddMedicationView: View {
                                     errorMessage: durationMinutesError
                                 )
 
-                                Text("Average stimulant timing: onset in 30–60 minutes, wear-off around 8–12 hours.")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                                    .padding(.leading, 6)
+                                minuteWheelPickerField(
+                                    title: "Most effects gone after",
+                                    selection: $effectsGoneMinutesString,
+                                    range: focusEffectsGoneRange,
+                                    field: .effectsGoneMinutes,
+                                    isRequired: true,
+                                    errorMessage: effectsGoneMinutesError
+                                )
                             }
                         }
                     }
@@ -840,7 +853,7 @@ struct AddMedicationView: View {
                                         }
                                     }
                                     Text(userSettings.isPremiumUser ?
-                                         "At the end of the wear-off window, Pillr will remind you to log focus and side effects for this medication." :
+                                         "At the start of the fading window, Pillr will remind you to log focus and side effects for this medication." :
                                             "Daily check-ins require a premium subscription.")
                                         .font(.system(size: 12))
                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
@@ -871,7 +884,7 @@ struct AddMedicationView: View {
 
                             if enableDailyCheckIn && userSettings.isPremiumUser {
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("Default reminder arrives ~10 minutes before the medication wears off. Prefer a different time? Pick one below.")
+                                    Text("Default reminder arrives around when the medication starts to wear off. Prefer a different time? Pick one below.")
                                         .font(.system(size: 12))
                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
 
@@ -911,8 +924,10 @@ struct AddMedicationView: View {
                 isExtendedRelease = false
                 onsetMinutesString = ""
                 durationMinutesString = ""
+                effectsGoneMinutesString = ""
                 onsetMinutesError = nil
                 durationMinutesError = nil
+                effectsGoneMinutesError = nil
                 enableStimulantPhaseNotifications = false
                 if enableDailyCheckIn {
                     useCustomDailyCheckInTime = true
@@ -925,8 +940,10 @@ struct AddMedicationView: View {
                 isExtendedRelease = false
                 onsetMinutesString = ""
                 durationMinutesString = ""
+                effectsGoneMinutesString = ""
                 onsetMinutesError = nil
                 durationMinutesError = nil
+                effectsGoneMinutesError = nil
                 enableStimulantPhaseNotifications = false
                 if enableDailyCheckIn {
                     useCustomDailyCheckInTime = true
@@ -1382,7 +1399,7 @@ struct AddMedicationView: View {
                 .onChange(of: text.wrappedValue) { _, newValue in
                     var processedValue = newValue
 
-                    if field == .dosage || field == .onsetMinutes || field == .durationMinutes {
+                    if field == .dosage || field == .onsetMinutes || field == .durationMinutes || field == .effectsGoneMinutes {
                         let filtered = newValue.filter { $0.isNumber }
                         if filtered != newValue {
                             processedValue = filtered
@@ -1571,7 +1588,8 @@ struct AddMedicationView: View {
         case .name, .dosage: return .next
         case .pillCount, .pillsPerDose: return .next
         case .onsetMinutes: return .next
-        case .durationMinutes: return .done
+        case .durationMinutes: return .next
+        case .effectsGoneMinutes: return .done
         default: return .done
         }
     }
@@ -1586,7 +1604,8 @@ struct AddMedicationView: View {
         case .pillCount: focusedField = .pillsPerDose
         case .pillsPerDose: focusedField = .refillThreshold
         case .onsetMinutes: focusedField = .durationMinutes
-        case .durationMinutes: focusedField = nil
+        case .durationMinutes: focusedField = .effectsGoneMinutes
+        case .effectsGoneMinutes: focusedField = nil
         default: focusedField = nil
         }
     }
@@ -1637,6 +1656,7 @@ struct AddMedicationView: View {
         isExtendedRelease = guidance.isExtendedRelease
         onsetMinutesError = nil
         durationMinutesError = nil
+        effectsGoneMinutesError = nil
 
         if guidance.hasStimulantTiming,
            let onsetMinutes = guidance.typicalOnsetMinutes,
@@ -1644,6 +1664,7 @@ struct AddMedicationView: View {
             enableStimulantPhaseNotifications = true
             onsetMinutesString = "\(onsetMinutes)"
             durationMinutesString = "\(durationMinutes)"
+            effectsGoneMinutesString = guidance.typicalEffectsGoneMaxMinutes.map { "\($0)" } ?? ""
             if userSettings.isPremiumUser {
                 enableDailyCheckIn = true
                 useCustomDailyCheckInTime = false
@@ -1652,9 +1673,89 @@ struct AddMedicationView: View {
             enableStimulantPhaseNotifications = false
             onsetMinutesString = ""
             durationMinutesString = ""
+            effectsGoneMinutesString = ""
             enableDailyCheckIn = false
             useCustomDailyCheckInTime = false
         }
+
+        if let timingNotes = timingGuidanceNotesBlock(from: guidance) {
+            notes = replacingTimingNotes(in: notes, with: timingNotes)
+        }
+    }
+
+    private func formattedTimingLabel(for minutes: Int, preferMinutesUnderHour: Bool) -> String {
+        if preferMinutesUnderHour && minutes < 60 {
+            return "\(minutes) min"
+        }
+        let hours = Double(minutes) / 60.0
+        let roundedHours = (hours * 10).rounded() / 10
+        if roundedHours.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(Int(roundedHours)) hr"
+        }
+        return String(format: "%.1f hr", roundedHours)
+    }
+
+    private func effectsGoneRangeString(from guidance: FocusTimingGuidance) -> String? {
+        guard let minMinutes = guidance.typicalEffectsGoneMinMinutes,
+              let maxMinutes = guidance.typicalEffectsGoneMaxMinutes,
+              maxMinutes >= minMinutes else {
+            return nil
+        }
+
+        let minLabel = formattedTimingLabel(for: minMinutes, preferMinutesUnderHour: false)
+        let maxLabel = formattedTimingLabel(for: maxMinutes, preferMinutesUnderHour: false)
+        return "\(minLabel)–\(maxLabel)"
+    }
+
+    private func timingGuidanceNotesBlock(from guidance: FocusTimingGuidance) -> String? {
+        var lines: [String] = []
+
+        if let onsetMinutes = guidance.typicalOnsetMinutes {
+            lines.append("- Starts working after: \(formattedTimingLabel(for: onsetMinutes, preferMinutesUnderHour: true))")
+        }
+        if let durationMinutes = guidance.typicalDurationMinutes {
+            lines.append("- Starts fading after: \(formattedTimingLabel(for: durationMinutes, preferMinutesUnderHour: false))")
+        }
+        if let effectsGoneRange = effectsGoneRangeString(from: guidance) {
+            lines.append("- Most effect gone around: \(effectsGoneRange)")
+        }
+        if let note = guidance.note, !note.isEmpty {
+            lines.append("- Notes: \(note)")
+        }
+
+        guard !lines.isEmpty else { return nil }
+        return ([ "AI timing guidance:" ] + lines).joined(separator: "\n")
+    }
+
+    private func replacingTimingNotes(in existingNotes: String, with newBlock: String) -> String {
+        let header = "AI timing guidance:"
+        let trimmedExisting = existingNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedExisting.isEmpty else {
+            return newBlock
+        }
+
+        var lines = trimmedExisting.components(separatedBy: "\n")
+        if let headerIndex = lines.firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == header }) {
+            var endIndex = headerIndex + 1
+            while endIndex < lines.count {
+                if lines[endIndex].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    break
+                }
+                endIndex += 1
+            }
+            lines.removeSubrange(headerIndex..<endIndex)
+            if headerIndex < lines.count,
+               lines[headerIndex].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                lines.remove(at: headerIndex)
+            }
+        }
+
+        let cleanedExisting = lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleanedExisting.isEmpty {
+            return newBlock
+        }
+        return "\(cleanedExisting)\n\n\(newBlock)"
     }
 
     private func validateField(_ field: Field?, value: String) {
@@ -1712,11 +1813,24 @@ struct AddMedicationView: View {
             }
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty {
-                durationMinutesError = "Wear-off time is required"
+                durationMinutesError = "Fade start time is required"
             } else if let minutes = Int(trimmed), minutes > 0 {
                 durationMinutesError = nil
             } else {
                 durationMinutesError = "Enter a valid number"
+            }
+        case .effectsGoneMinutes:
+            guard isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications else {
+                effectsGoneMinutesError = nil
+                return
+            }
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty {
+                effectsGoneMinutesError = "Effects gone time is required"
+            } else if let minutes = Int(trimmed), minutes > 0 {
+                effectsGoneMinutesError = nil
+            } else {
+                effectsGoneMinutesError = "Enter a valid number"
             }
         default:
             break
@@ -1729,6 +1843,7 @@ struct AddMedicationView: View {
         if isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications {
             validateField(.onsetMinutes, value: onsetMinutesString)
             validateField(.durationMinutes, value: durationMinutesString)
+            validateField(.effectsGoneMinutes, value: effectsGoneMinutesString)
         }
         return isFormValid
     }
@@ -1750,13 +1865,15 @@ struct AddMedicationView: View {
         guard isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications else {
             onsetMinutesError = nil
             durationMinutesError = nil
+            effectsGoneMinutesError = nil
             return true
         }
 
         validateField(.onsetMinutes, value: onsetMinutesString)
         validateField(.durationMinutes, value: durationMinutesString)
+        validateField(.effectsGoneMinutes, value: effectsGoneMinutesString)
 
-        return onsetMinutesError == nil && durationMinutesError == nil
+        return onsetMinutesError == nil && durationMinutesError == nil && effectsGoneMinutesError == nil
     }
 
     private func validateBasicsStep() -> Bool {
@@ -1801,7 +1918,7 @@ struct AddMedicationView: View {
         switch currentField {
         case .name: return false
         case .dosage, .frequency, .notes, .pillCount, .pillsPerDose, .refillThreshold: return true
-        case .durationMinutes: return true
+        case .durationMinutes, .effectsGoneMinutes: return true
         case .onsetMinutes: return false
         }
     }
@@ -1814,7 +1931,8 @@ struct AddMedicationView: View {
         case .pillCount, .pillsPerDose: return trackPillCount
         case .refillThreshold: return false
         case .onsetMinutes: return true
-        case .durationMinutes: return false
+        case .durationMinutes: return true
+        case .effectsGoneMinutes: return false
         }
     }
 
@@ -1829,6 +1947,7 @@ struct AddMedicationView: View {
         case .pillsPerDose: focusedField = .pillCount
         case .refillThreshold: focusedField = .pillsPerDose
         case .durationMinutes: focusedField = .onsetMinutes
+        case .effectsGoneMinutes: focusedField = .durationMinutes
         case .onsetMinutes: focusedField = nil
         }
     }
@@ -1846,7 +1965,8 @@ struct AddMedicationView: View {
         case .pillsPerDose: focusedField = .refillThreshold
         case .refillThreshold: focusedField = nil
         case .onsetMinutes: focusedField = .durationMinutes
-        case .durationMinutes: focusedField = nil
+        case .durationMinutes: focusedField = .effectsGoneMinutes
+        case .effectsGoneMinutes: focusedField = nil
         }
     }
 
@@ -1939,9 +2059,11 @@ struct AddMedicationView: View {
         if isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications {
             let trimmedOnset = onsetMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedDuration = durationMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedEffectsGone = effectsGoneMinutesString.trimmingCharacters(in: .whitespacesAndNewlines)
             let onsetValid = !trimmedOnset.isEmpty && (Int(trimmedOnset) ?? 0) > 0
             let durationValid = !trimmedDuration.isEmpty && (Int(trimmedDuration) ?? 0) > 0
-            return basicValid && customUnitValid && onsetValid && durationValid
+            let effectsGoneValid = !trimmedEffectsGone.isEmpty && (Int(trimmedEffectsGone) ?? 0) > 0
+            return basicValid && customUnitValid && onsetValid && durationValid && effectsGoneValid
         }
 
         return basicValid && customUnitValid
@@ -1968,12 +2090,14 @@ struct AddMedicationView: View {
         isExtendedRelease = false
         onsetMinutesString = ""
         durationMinutesString = ""
+        effectsGoneMinutesString = ""
         enableDailyCheckIn = false
         enableStimulantPhaseNotifications = false
         useCustomDailyCheckInTime = false
         customDailyCheckInTime = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
         onsetMinutesError = nil
         durationMinutesError = nil
+        effectsGoneMinutesError = nil
         showingAISearch = false
         showingPremiumUpgrade = false
         keyboardHeight = 0
@@ -2025,6 +2149,7 @@ struct AddMedicationView: View {
         enableStimulantPhaseNotifications = medication.enableStimulantPhaseNotifications
         onsetMinutesString = medication.onsetMinutes.map { "\($0)" } ?? ""
         durationMinutesString = medication.durationMinutes.map { "\($0)" } ?? ""
+        effectsGoneMinutesString = medication.effectsGoneMinutes.map { "\($0)" } ?? ""
         enableDailyCheckIn = userSettings.isPremiumUser ? medication.enableDailyCheckIn : false
         let defaultCheckInTime = Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
         customDailyCheckInTime = medication.dailyCheckInTime ?? defaultCheckInTime
@@ -2036,6 +2161,7 @@ struct AddMedicationView: View {
         refillThresholdError = nil
         onsetMinutesError = nil
         durationMinutesError = nil
+        effectsGoneMinutesError = nil
         focusedField = nil
         keyboardHeight = 0
         onProgressStateChange(false)
@@ -2052,6 +2178,7 @@ struct AddMedicationView: View {
         let supportsGeneralCheckIn = medicationType != .stimulant
         let onsetMinutes = hasFocusWindow ? Int(onsetMinutesString) : nil
         let durationMinutes = hasFocusWindow ? Int(durationMinutesString) : nil
+        let effectsGoneMinutes = hasFocusWindow ? Int(effectsGoneMinutesString) : nil
         let shouldEnableDailyCheckIn = userSettings.isPremiumUser && enableDailyCheckIn && (hasFocusWindow || supportsGeneralCheckIn)
         let shouldUseCustomCheckInTime = supportsGeneralCheckIn || useCustomDailyCheckInTime
         let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && shouldUseCustomCheckInTime) ? customDailyCheckInTime : nil
@@ -2075,11 +2202,13 @@ struct AddMedicationView: View {
                 if hasFocusWindow {
                     updatedMedication.onsetMinutes = onsetMinutes
                     updatedMedication.durationMinutes = durationMinutes
+                    updatedMedication.effectsGoneMinutes = effectsGoneMinutes
                     updatedMedication.enableDailyCheckIn = shouldEnableDailyCheckIn
                     updatedMedication.dailyCheckInTime = shouldEnableDailyCheckIn ? selectedDailyCheckInTime : nil
                 } else {
                     updatedMedication.onsetMinutes = nil
                     updatedMedication.durationMinutes = nil
+                    updatedMedication.effectsGoneMinutes = nil
                     updatedMedication.enableDailyCheckIn = false
                     updatedMedication.dailyCheckInTime = nil
                 }
@@ -2089,6 +2218,7 @@ struct AddMedicationView: View {
                 updatedMedication.isExtendedRelease = false
                 updatedMedication.onsetMinutes = nil
                 updatedMedication.durationMinutes = nil
+                updatedMedication.effectsGoneMinutes = nil
                 updatedMedication.enableDailyCheckIn = shouldEnableDailyCheckIn
                 updatedMedication.dailyCheckInTime = shouldEnableDailyCheckIn ? selectedDailyCheckInTime : nil
                 updatedMedication.enableStimulantPhaseNotifications = false
@@ -2128,6 +2258,7 @@ struct AddMedicationView: View {
                 isExtendedRelease: isExtendedRelease,
                 onsetMinutes: onsetMinutes,
                 durationMinutes: durationMinutes,
+                effectsGoneMinutes: effectsGoneMinutes,
                 enableDailyCheckIn: shouldEnableDailyCheckIn,
                 enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
                 dailyCheckInTime: selectedDailyCheckInTime
@@ -2269,6 +2400,18 @@ struct FocusTimingGuidanceSheet: View {
         return String(format: "%.1f hr", roundedHours)
     }
 
+    private func effectsGoneRangeString(from guidance: FocusTimingGuidance) -> String? {
+        guard let minMinutes = guidance.typicalEffectsGoneMinMinutes,
+              let maxMinutes = guidance.typicalEffectsGoneMaxMinutes,
+              maxMinutes >= minMinutes else {
+            return nil
+        }
+
+        let minLabel = formattedTimingLabel(for: minMinutes, preferMinutesUnderHour: false)
+        let maxLabel = formattedTimingLabel(for: maxMinutes, preferMinutesUnderHour: false)
+        return "\(minLabel)–\(maxLabel)"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
@@ -2334,9 +2477,33 @@ struct FocusTimingGuidanceSheet: View {
                                     symbol: "sparkle"
                                 )
                                 timingCard(
-                                    title: "Lasts about",
+                                    title: "Starts fading after",
                                     value: formattedTimingLabel(for: durationMinutes, preferMinutesUnderHour: false),
                                     symbol: "moon.zzz"
+                                )
+                            }
+                            if let effectsGoneRange = effectsGoneRangeString(from: guidance) {
+                                VStack(alignment: .center, spacing: 6) {
+                                    Text("Most effect gone around")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                                        .multilineTextAlignment(.center)
+
+                                    Text("\(effectsGoneRange)")
+                                        .font(.system(size: 18, weight: .medium))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.white.opacity(0.08))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                        )
                                 )
                             }
                         } else {
@@ -2427,11 +2594,13 @@ struct FocusTimingGuidanceSheet: View {
 
             Spacer(minLength: 0)
 
-            Text("AI guidance only. Not medical advice. Always consult a qualified professional.")
-                .font(.system(size: 11))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, alignment: .center)
+            if !isLoading {
+                Text("AI guidance only. Not medical advice. Always consult a qualified professional.")
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
         }
         .padding(20)
         .frame(maxWidth: .infinity)
@@ -2480,12 +2649,9 @@ struct FocusTimingGuidanceSheet: View {
 
     private func startLoadingHapticsIfNeeded() {
         guard isLoading, loadingHapticTimer == nil else { return }
-        let generator = UIImpactFeedbackGenerator(style: .rigid)
-        generator.prepare()
-        generator.impactOccurred(intensity: 0.9)
-        loadingHapticTimer = Timer.scheduledTimer(withTimeInterval: 0.45, repeats: true) { _ in
-            generator.impactOccurred(intensity: 0.9)
-            generator.prepare()
+        HapticManager.shared.successNotification()
+        loadingHapticTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { _ in
+            HapticManager.shared.successNotification()
         }
     }
 
@@ -2504,6 +2670,8 @@ struct FocusTimingGuidanceSheet_Previews: PreviewProvider {
                 isExtendedRelease: true,
                 typicalOnsetMinutes: 45,
                 typicalDurationMinutes: 720,
+                typicalEffectsGoneMinMinutes: 900,
+                typicalEffectsGoneMaxMinutes: 1080,
                 note: "Pillr AI provided timing guidance for this medication."
             ),
             isLoading: false,

@@ -3251,7 +3251,7 @@ fileprivate struct MedicationRowDetailsView: View {
             let onsetString = commonFormatTime(onsetDate)
             let fadeString = commonFormatTime(fadeDate)
             let labelPrefix = entries.count > 1 ? "Dose \(index + 1) • " : ""
-            let summary = "\(labelPrefix)Starts ~\(onsetString), wears off ~\(fadeString)"
+            let summary = "\(labelPrefix)Starts ~\(onsetString), starts fading ~\(fadeString)"
             return FocusWindowDescription(summary: summary, source: entry.source)
         }
     }
@@ -3402,7 +3402,7 @@ fileprivate struct MedicationRowDetailsView: View {
                 if let customTime = medication.dailyCheckInTime {
                     checkInDescription = "Custom: \(commonFormatTime(customTime))"
                 } else {
-                    checkInDescription = "~10 min before wear-off"
+                    checkInDescription = "around fade start"
                 }
             } else if let customTime = medication.dailyCheckInTime {
                 checkInDescription = "Wellness: \(commonFormatTime(customTime))"
