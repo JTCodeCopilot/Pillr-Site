@@ -107,7 +107,7 @@ import UIKit
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("Log Medication")
+                                    Text(isDailyCheckIn ? "Daily Check-In" : "Log Medication")
                                         .font(.system(size: 32, weight: .bold, design: .rounded))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                 }
@@ -424,37 +424,151 @@ import UIKit
                                     }
                                 }
                             } else {
-                                FormSection(title: "DAILY CHECK-IN NOTE", icon: "note.text.fill") {
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        Text("Tell us anything you noticed about taking \(medicationToLog.name) today.")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
-
-                                        ZStack(alignment: .topLeading) {
-                                            TextEditor(text: $logNotes)
-                                                .frame(minHeight: 120)
-                                                .font(.system(size: 16, weight: .medium))
+                                FormSection(title: "DAILY CHECK-IN", icon: "note.text.fill") {
+                                    VStack(alignment: .leading, spacing: 20) {
+                                        VStack(alignment: .leading, spacing: 12) {
+                                            Text("How did you feel today?")
+                                                .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
-                                                .scrollContentBackground(.hidden)
-                                                .background(Color.clear)
-                                                .padding(.horizontal, 16)
-                                                .padding(.vertical, 12)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 12)
-                                                        .fill(Color.black.opacity(0.2))
-                                                        .overlay(
-                                                            RoundedRectangle(cornerRadius: 12)
-                                                                .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
-                                                        )
-                                                )
 
-                                            if logNotes.isEmpty {
-                                                Text("Add any notes you want to remember about this medication.")
-                                                    .font(.system(size: 16))
-                                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
-                                                    .padding(.leading, 20)
-                                                    .padding(.top, 20)
-                                                    .allowsHitTesting(false)
+                                            RatingControl(
+                                                title: "Overall",
+                                                value: $focusRating,
+                                                lowLabel: "Rough",
+                                                highLabel: "Great"
+                                            )
+
+                                            Text("How strong were side effects?")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
+
+                                            RatingControl(
+                                                title: "Side effects",
+                                                value: $sideEffectSeverity,
+                                                lowLabel: "Barely noticed",
+                                                highLabel: "Very strong"
+                                            )
+                                        }
+
+                                        VStack(alignment: .leading, spacing: 12) {
+                                            Text("Any side effects? (optional)")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
+
+                                            if !sideEffectTags.isEmpty {
+                                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                                                    ForEach(Array(sideEffectTags), id: \.self) { effect in
+                                                        HStack {
+                                                            Text(effect)
+                                                                .font(.system(size: 14, weight: .medium))
+                                                                .foregroundColor(Color(hex: "#404C42"))
+
+                                                            Button(action: {
+                                                                HapticManager.shared.lightImpact()
+                                                                sideEffectTags.remove(effect)
+                                                            }) {
+                                                                Image(systemName: "xmark.circle.fill")
+                                                                    .font(.system(size: 16))
+                                                                    .foregroundColor(Color(hex: "#404C42").opacity(0.7))
+                                                            }
+                                                        }
+                                                        .padding(.horizontal, 12)
+                                                        .padding(.vertical, 8)
+                                                        .background(
+                                                            RoundedRectangle(cornerRadius: 20)
+                                                                .fill(Color(hex: "#FFB74D"))
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            ScrollView(.horizontal, showsIndicators: false) {
+                                                HStack(spacing: 8) {
+                                                    ForEach(commonSideEffects.filter { !sideEffectTags.contains($0) }, id: \.self) { effect in
+                                                        Button(action: {
+                                                            HapticManager.shared.lightImpact()
+                                                            sideEffectTags.insert(effect)
+                                                        }) {
+                                                            Text(effect)
+                                                                .font(.system(size: 14, weight: .medium))
+                                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                                                .padding(.horizontal, 12)
+                                                                .padding(.vertical, 8)
+                                                                .background(
+                                                                    RoundedRectangle(cornerRadius: 20)
+                                                                        .fill(Color.black.opacity(0.2))
+                                                                        .overlay(
+                                                                            RoundedRectangle(cornerRadius: 20)
+                                                                                .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                                        )
+                                                                )
+                                                        }
+                                                        .buttonStyle(ScaleButtonStyle())
+                                                    }
+
+                                                    Button(action: {
+                                                        showingAddCustomSideEffect = true
+                                                    }) {
+                                                        HStack(spacing: 6) {
+                                                            Image(systemName: "plus.circle")
+                                                                .font(.system(size: 14))
+                                                            Text("Add custom")
+                                                                .font(.system(size: 14, weight: .medium))
+                                                        }
+                                                        .foregroundColor(Color(hex: "#F5F5F5"))
+                                                        .padding(.horizontal, 12)
+                                                        .padding(.vertical, 8)
+                                                        .background(
+                                                            RoundedRectangle(cornerRadius: 20)
+                                                                .fill(Color.black.opacity(0.2))
+                                                                .overlay(
+                                                                    RoundedRectangle(cornerRadius: 20)
+                                                                        .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
+                                                                )
+                                                        )
+                                                    }
+                                                    .buttonStyle(ScaleButtonStyle())
+                                                }
+                                                .padding(.horizontal, 1)
+                                            }
+                                        }
+
+                                        VStack(alignment: .leading, spacing: 12) {
+                                            HStack {
+                                                Image(systemName: "square.and.pencil")
+                                                    .foregroundColor(Color(hex: "#F5F5F5"))
+                                                    .font(.system(size: 18))
+                                                Text("Additional notes (optional)")
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                            }
+
+                                            ZStack(alignment: .topLeading) {
+                                                TextEditor(text: $logNotes)
+                                                    .frame(minHeight: 80, maxHeight: 150)
+                                                    .font(.system(size: 16, weight: .medium))
+                                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                                    .scrollContentBackground(.hidden)
+                                                    .background(Color.clear)
+                                                    .padding(.horizontal, 16)
+                                                    .padding(.vertical, 12)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 12)
+                                                            .fill(Color.black.opacity(0.2))
+                                                            .overlay(
+                                                                RoundedRectangle(cornerRadius: 12)
+                                                                    .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                            )
+                                                    )
+
+                                                if logNotes.isEmpty {
+                                                    Text("How did you feel? Any observations?")
+                                                        .font(.system(size: 16))
+                                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                                                        .padding(.leading, 20)
+                                                        .padding(.top, 20)
+                                                        .allowsHitTesting(false)
+                                                }
                                             }
                                         }
                                     }

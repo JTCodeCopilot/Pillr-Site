@@ -229,6 +229,7 @@ class MedicationStore: ObservableObject {
         medications.append(newMed)
         saveMedications()
         syncMedicationWithCloud(newMed)
+        scheduleDailyCheckInReminderIfNeeded(for: newMed)
         return true // Successfully added medication
     }
     
@@ -292,6 +293,8 @@ class MedicationStore: ObservableObject {
             medications[index] = updatedMedication
             saveMedications()
             syncMedicationWithCloud(updatedMedication)
+            notificationManager.cancelPendingDailyCheckInNotifications(for: updatedMedication.id)
+            scheduleDailyCheckInReminderIfNeeded(for: updatedMedication)
 
         }
     }
@@ -461,7 +464,7 @@ class MedicationStore: ObservableObject {
             preservingIdentifiers: identifiersToKeep
         )
         
-        // Reset application badge if no more pending medications for today
+        // Update application badge based on overdue medications
         resetBadgeIfNeeded()
 
         // If this is an ADHD stimulant with timing metadata and not skipped, prepare a focus timeline entry
@@ -511,6 +514,10 @@ class MedicationStore: ObservableObject {
             notificationManager.scheduleDailyCheckInReminder(for: medication, referenceDate: actualTime)
         }
 
+        if isDailyCheckIn {
+            notificationManager.cancelDailyCheckInNotification(for: medication.id, on: actualTime)
+        }
+
         return LogUndoAction(
             newLog: newLog,
             replacedLog: previousLog,
@@ -519,42 +526,177 @@ class MedicationStore: ObservableObject {
         )
     }
     
-    // Helper method to check if badge should be reset
+    // Helper method to update badge count based on overdue medications
     public func resetBadgeIfNeeded() {
-        // Check if there are any remaining medications to be taken today
-        let today = Calendar.current.startOfDay(for: Date())
-        let hasPendingMedications = medications.contains { medication in
-            
-            // Get today's logs for this medication
-            let medicationLogs = logs.filter { log in
-                log.medicationID == medication.id &&
-                Calendar.current.isDate(log.takenAt, inSameDayAs: today)
-            }
-            
-            // For "As needed" medications, we don't count them as pending
-            if medication.frequency == "As needed" {
-                return false
-            }
-            
-            // For medications with multiple reminders
-            if !medication.reminderTimes.isEmpty {
-                // Check if all reminders have been taken or skipped
-                return medicationLogs.count < medication.reminderTimes.count
-            } else {
-                // For single reminder medications
-                return medicationLogs.isEmpty
-            }
-        }
-        
-        // If no pending medications, reset badge
-        if !hasPendingMedications {
-            notificationManager.resetApplicationBadge()
-        }
+        let overdueCount = overdueDoseCount(referenceDate: Date())
+        notificationManager.setApplicationBadge(count: overdueCount)
     }
     
     // Public method that can be called from app delegate/scene
     func checkAndResetBadge() {
         resetBadgeIfNeeded()
+    }
+
+    private func overdueDoseCount(referenceDate: Date) -> Int {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: referenceDate)
+        let now = referenceDate
+        var overdueCount = 0
+
+        for medication in activeMedications {
+            if medication.frequency == "As needed" {
+                continue
+            }
+
+            let medicationLogs = logs.filter { log in
+                log.medicationID == medication.id &&
+                calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
+            }
+
+            let takenIndices = resolvedTakenReminderIndices(
+                medication: medication,
+                dayStart: dayStart,
+                logs: medicationLogs
+            )
+
+            if medication.reminderTimes.isEmpty {
+                let dueTime = scheduledReminderTime(
+                    medication: medication,
+                    reminderIndex: nil,
+                    dayStart: dayStart,
+                    referenceDate: referenceDate
+                )
+
+                let wasTaken = !medicationLogs.isEmpty
+                if !wasTaken,
+                   dueTime < now,
+                   calendar.isDate(dueTime, inSameDayAs: now) {
+                    overdueCount += 1
+                }
+                continue
+            }
+
+            for (index, _) in medication.reminderTimes.enumerated() {
+                if takenIndices.contains(index) {
+                    continue
+                }
+                let dueTime = scheduledReminderTime(
+                    medication: medication,
+                    reminderIndex: index,
+                    dayStart: dayStart,
+                    referenceDate: referenceDate
+                )
+                if dueTime < now,
+                   calendar.isDate(dueTime, inSameDayAs: now) {
+                    overdueCount += 1
+                }
+            }
+        }
+
+        return overdueCount
+    }
+
+    private func resolvedTakenReminderIndices(
+        medication: Medication,
+        dayStart: Date,
+        logs: [MedicationLog]
+    ) -> Set<Int> {
+        guard !medication.reminderTimes.isEmpty else { return [] }
+
+        var takenIndices = Set(logs.compactMap { $0.reminderIndex })
+
+        if medication.reminderTimes.count <= 1,
+           logs.contains(where: { $0.reminderIndex == nil }) {
+            takenIndices.insert(0)
+            return takenIndices
+        }
+
+        let calendar = Calendar.current
+        let anchoredTimes: [(index: Int, time: Date)] = medication.reminderTimes.enumerated().compactMap { index, reminder in
+            let components = calendar.dateComponents([.hour, .minute], from: reminder)
+            guard let time = calendar.date(
+                bySettingHour: components.hour ?? 8,
+                minute: components.minute ?? 0,
+                second: 0,
+                of: dayStart
+            ) else {
+                return nil
+            }
+            return (index, time)
+        }
+
+        let nilIndexLogs = logs.filter { $0.reminderIndex == nil }.sorted { $0.takenAt < $1.takenAt }
+        guard !nilIndexLogs.isEmpty, !anchoredTimes.isEmpty else {
+            return takenIndices
+        }
+
+        var available = Set(anchoredTimes.map { $0.index }).subtracting(takenIndices)
+        for log in nilIndexLogs {
+            if available.isEmpty { break }
+            let closest = anchoredTimes
+                .filter { available.contains($0.index) }
+                .min(by: { lhs, rhs in
+                    abs(lhs.time.timeIntervalSince(log.takenAt)) < abs(rhs.time.timeIntervalSince(log.takenAt))
+                })
+            if let closest {
+                takenIndices.insert(closest.index)
+                available.remove(closest.index)
+            }
+        }
+
+        return takenIndices
+    }
+
+    private func scheduledReminderTime(
+        medication: Medication,
+        reminderIndex: Int?,
+        dayStart: Date,
+        referenceDate: Date
+    ) -> Date {
+        let calendar = Calendar.current
+        let reminderTime: Date
+
+        if let reminderIndex,
+           medication.reminderTimes.indices.contains(reminderIndex) {
+            reminderTime = medication.reminderTimes[reminderIndex]
+        } else {
+            reminderTime = medication.timeToTake
+        }
+
+        let components = calendar.dateComponents([.hour, .minute], from: reminderTime)
+        var scheduled = calendar.date(
+            bySettingHour: components.hour ?? 8,
+            minute: components.minute ?? 0,
+            second: 0,
+            of: dayStart
+        ) ?? reminderTime
+
+        if let creationDate = medication.createdAt,
+           calendar.isDate(creationDate, inSameDayAs: referenceDate),
+           scheduled < creationDate {
+            scheduled = calendar.date(byAdding: .day, value: 1, to: scheduled) ?? scheduled
+        }
+
+        return scheduled
+    }
+
+    private func scheduleDailyCheckInReminders(referenceDate: Date) {
+        guard !isPreviewMode else { return }
+
+        for medication in medications where medication.enableDailyCheckIn {
+            scheduleDailyCheckInReminderIfNeeded(for: medication, referenceDate: referenceDate)
+        }
+    }
+
+    private func scheduleDailyCheckInReminderIfNeeded(
+        for medication: Medication,
+        referenceDate: Date = Date()
+    ) {
+        guard !isPreviewMode else { return }
+        guard medication.enableDailyCheckIn,
+              medication.dailyCheckInTime != nil else { return }
+
+        notificationManager.scheduleDailyCheckInReminder(for: medication, referenceDate: referenceDate)
     }
 
     func enqueuePendingCheckIns(_ checkIns: [PendingCheckIn]) {
@@ -932,9 +1074,10 @@ class MedicationStore: ObservableObject {
                     medications[index] = refreshNotificationSchedule(for: medications[index])
                 }
                 saveMedications()
+                scheduleDailyCheckInReminders(referenceDate: Date())
                 lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
                 
-                // Reset badge on app launch if needed
+                // Update badge on app launch if needed
                 resetBadgeIfNeeded()
                 
                 return
@@ -948,10 +1091,12 @@ class MedicationStore: ObservableObject {
         if let savedLogs = UserDefaults.standard.data(forKey: logsKey) {
             if let decodedLogs = try? JSONDecoder().decode([MedicationLog].self, from: savedLogs) {
                 self.logs = decodedLogs
+                scheduleDailyCheckInReminders(referenceDate: Date())
                 return
             }
         }
         self.logs = []
+        scheduleDailyCheckInReminders(referenceDate: Date())
     }
 
     private func startObservingDayChanges() {
@@ -1014,6 +1159,8 @@ class MedicationStore: ObservableObject {
             medications = updatedMedications
             saveMedications()
         }
+
+        scheduleDailyCheckInReminders(referenceDate: Date())
     }
 
     private func refreshNotificationSchedule(for medication: Medication) -> Medication {

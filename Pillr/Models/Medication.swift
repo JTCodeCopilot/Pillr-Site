@@ -121,7 +121,7 @@ struct Medication: Identifiable, Codable, Hashable {
     var pillsPerDose: Int = 1 // Number of pills taken per dose
     var refillThreshold: Int? // Threshold to trigger refill reminder
     var isSkipped: Bool = false // Whether to skip this medication for now
-    var isOneTimeWithFollowUp: Bool = false // If true, only schedule a one-time notification and a follow up
+    var isOneTimeWithFollowUp: Bool = false // If true, only schedule a one-time notification (non-repeating)
     var isDeleted: Bool = false // Whether this medication has been deleted across devices
     var logReferenceID: UUID? = nil // Tracks the original medication when this card is derived from a cabinet log
     var logEntryID: UUID? = nil // Links the card to a specific log when present

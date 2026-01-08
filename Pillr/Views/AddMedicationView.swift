@@ -647,7 +647,7 @@ struct AddMedicationView: View {
                                     Toggle(isOn: $isOneTimeWithFollowUp.animation(.easeInOut)) {
                                         VStack(alignment: .leading, spacing: 4) {
                                             HStack {
-                                                Text("One-time with Follow-up")
+                                                Text("Remind me again")
                                                     .font(.system(size: 15, weight: .semibold))
                                                     .foregroundColor(Color(hex: "#E8E8E0"))
                                                 if !userSettings.isPremiumUser {
@@ -661,8 +661,8 @@ struct AddMedicationView: View {
                                                 }
                                             }
                                             Text(userSettings.isPremiumUser ?
-                                                 "Single reminder + 30-min follow-up if not taken" :
-                                                    "Follow-up reminders require premium subscription")
+                                                 "Get another reminder after 30 minutes if not taken" :
+                                                 "One-time reminders require premium subscription")
                                                 .font(.system(size: 12))
                                                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                         }
@@ -1013,7 +1013,7 @@ struct AddMedicationView: View {
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                                 TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
-                                Text("If you log a medication after the check in time, the daily check in will be skipped. Log your medication before the listed time to ensure the check in is completed.")
+                                Text("Daily check-ins fire at the scheduled time, even if you log later.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                                     .fixedSize(horizontal: false, vertical: true)

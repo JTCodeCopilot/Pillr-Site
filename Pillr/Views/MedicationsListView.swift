@@ -27,6 +27,7 @@ struct MedicationsListView: View {
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var addFlowCoordinator: AddMedicationFlowCoordinator
     @State private var showingLogSheetFor: Medication?
+    @State private var showingDailyCheckInFor: Medication?
     @State private var selectedMedicationToEdit: Medication?
     @State private var showingAddSheet = false
     @State private var scrolledOffset: CGFloat = 0
@@ -109,6 +110,7 @@ struct MedicationsListView: View {
                     onShowFocusTimeline: { showingFocusTimeline = true },
                     onPresentUndoToast: presentUndoToast,
                     onRequestCustomLogTimeAction: requestCustomLogTime,
+                    onPresentDailyCheckIn: presentDailyCheckIn,
                     displayedMedications: displayedMedications,
                     cabinetMedications: cabinetMedications,
                     onShowCabinet: handleCabinetTap,
@@ -143,6 +145,17 @@ struct MedicationsListView: View {
             .sheet(item: $showingLogSheetFor) { med in
                 LogMedicationView(medicationToLog: med, onLogAction: presentUndoToast)
                     .environmentObject(store)
+            }
+            .sheet(item: $showingDailyCheckInFor, onDismiss: {
+                showingDailyCheckInFor = nil
+            }) { med in
+                LogMedicationView(
+                    medicationToLog: med,
+                    isDailyCheckIn: true,
+                    checkInLogID: nil,
+                    onLogAction: presentUndoToast
+                )
+                .environmentObject(store)
             }
             .sheet(item: $activeCustomLogRequest) { request in
                 MedicationLogTimePickerSheet(
@@ -399,6 +412,15 @@ struct MedicationsListView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             showingLogSheetFor = medication
         }
+    }
+
+    private func presentDailyCheckIn(for medication: Medication) {
+        let resolvedMedication = store.findMedication(with: medication.logReferenceID ?? medication.id) ?? medication
+        showingLogSheetFor = nil
+        activeCustomLogRequest = nil
+        showingCabinetSheet = false
+        store.dailyCheckInContext = nil
+        showingDailyCheckInFor = resolvedMedication
     }
 
     private func shouldAutoLogCabinetMedication(_ medication: Medication) -> Bool {
@@ -795,6 +817,7 @@ fileprivate func MedicationsListContent(
 	    onShowFocusTimeline: @escaping () -> Void,
 	    onPresentUndoToast: @escaping (MedicationStore.LogUndoAction) -> Void,
 	    onRequestCustomLogTimeAction: @escaping (Medication, Int?) -> Void,
+	    onPresentDailyCheckIn: @escaping (Medication) -> Void,
 	    medications: [Medication],
 	    referenceDate: Date
 	) -> some View {
@@ -808,6 +831,7 @@ fileprivate func MedicationsListContent(
                     HapticManager.shared.lightImpact()
                     onRequestCustomLogTimeAction(resolvedMedication, resolvedIndex)
                 },
+                onDailyCheckInTap: { onPresentDailyCheckIn(med) },
                 onEditTap: {
                     HapticManager.shared.lightImpact()
                     selectedMedicationToEdit.wrappedValue = store.findMedication(with: med.logReferenceID ?? med.id) ?? med
@@ -1665,6 +1689,7 @@ fileprivate struct MedicationsListMainContent: View {
     let onShowFocusTimeline: () -> Void
     let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
     let onRequestCustomLogTimeAction: (Medication, Int?) -> Void
+    let onPresentDailyCheckIn: (Medication) -> Void
     let displayedMedications: [Medication]
     let cabinetMedications: [Medication]
     let onShowCabinet: () -> Void
@@ -1730,6 +1755,7 @@ fileprivate struct MedicationsListMainContent: View {
                                 onShowFocusTimeline: onShowFocusTimeline,
                                 onPresentUndoToast: onPresentUndoToast,
                                 onRequestCustomLogTimeAction: onRequestCustomLogTimeAction,
+                                onPresentDailyCheckIn: onPresentDailyCheckIn,
                                 medications: displayedMedications,
                                 referenceDate: referenceDate
                             )
@@ -2493,6 +2519,7 @@ struct MedicationRow: View {
     let referenceDate: Date
     let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
     let onRequestCustomLogTime: (Medication, Int?) -> Void
+    let onDailyCheckInTap: () -> Void
     let onEditTap: () -> Void
     let onDeleteTap: (() -> Void)?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -2812,6 +2839,30 @@ struct MedicationRow: View {
         .cornerRadius(14)
         .overlay(loggedCheckmarkOverlay, alignment: .topTrailing)
         .overlay(notificationGlowOverlay)
+        .overlay(alignment: .bottomTrailing) {
+            if medication.enableDailyCheckIn && hasTakenDoseToday {
+                Button(action: {
+                    onDailyCheckInTap()
+                }) {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4").opacity(0.85))
+                        .padding(6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(hex: "#F5F7F4").opacity(0.12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                                )
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.trailing, 10)
+                .padding(.bottom, 10)
+                .accessibilityLabel("Log daily check-in")
+            }
+        }
         .overlay(alignment: .topTrailing) {
             Button(action: {
                 toggleExpansion()
@@ -3061,7 +3112,7 @@ struct MedicationRow: View {
 	            onPresentUndoToast(action)
 	        }
 	    }
-    
+
 	    private func skipDose(at index: Int) {
 	        if medication.reminderTimes.isEmpty {
 	            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }

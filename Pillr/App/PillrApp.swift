@@ -14,15 +14,12 @@ class PillrAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         // Set notification delegate to handle user responses
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
-        
-        // Reset badge on launch
-        UIApplication.shared.applicationIconBadgeNumber = 0
-        
+
         return true
     }
     
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Reset badge when app becomes active
+        // Update badge when app becomes active
         MedicationStore.shared.checkAndResetBadge()
         NotificationManager.shared.surfaceDeliveredStimulantCheckInsIfNeeded()
     }
@@ -125,7 +122,7 @@ struct PillrApp: App {
                 .environmentObject(storeManager)
                 .preferredColorScheme(.dark)
                 .onAppear {
-                    // Reset badge when ContentView appears
+                    // Update badge when ContentView appears
                     store.checkAndResetBadge()
                 }
                 .task {
