@@ -192,7 +192,7 @@ class NotificationManager: ObservableObject {
         guard ensureMedicationIsTracked(medication.id) else {
             return nil
         }
-        
+
         let content = UNMutableNotificationContent()
         content.title = "Medication Reminder"
         let reminderTime = formatTimeOnly(medication.timeToTake)
@@ -287,11 +287,11 @@ class NotificationManager: ObservableObject {
     
     private func scheduleNotificationForTime(medication: Medication, time: Date, index: Int, total: Int) -> UUID {
         let content = UNMutableNotificationContent()
-        
+
         let formattedTime = formatTimeOnly(time)
         content.title = "Medication Reminder"
         content.body = "Take your \(formattedTime) medications."
-        
+
         content.sound = UNNotificationSound.default
         content.userInfo = [
             "medicationID": medication.id.uuidString,
@@ -299,7 +299,7 @@ class NotificationManager: ObservableObject {
         ]
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
-        
+
         // Set the notification icon badge
         content.badge = 1
         prioritizeMedicationReminder(content)
@@ -396,11 +396,11 @@ class NotificationManager: ObservableObject {
             return
         }
         let content = UNMutableNotificationContent()
-        
+
         content.title = "Medications Follow Up"
         let formattedTime = formatTimeOnly(time)
         content.body = "Time to log your \(formattedTime) medications."
-        
+
         content.sound = UNNotificationSound.default
         content.userInfo = [
             "medicationID": medication.id.uuidString,
@@ -448,7 +448,6 @@ class NotificationManager: ObservableObject {
         guard ensureMedicationIsTracked(medication.id) else {
             return
         }
-
         let content = UNMutableNotificationContent()
         content.title = "Reminder: Take Your Medication"
         content.body = "It's time to take your medication."

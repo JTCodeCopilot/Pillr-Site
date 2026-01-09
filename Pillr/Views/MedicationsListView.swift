@@ -267,6 +267,7 @@ struct MedicationsListView: View {
             .onReceive(referenceTimer) { output in
                 guard scenePhase == .active else { return }
                 referenceDate = output
+                store.refreshOverdueMedicationIDs(referenceDate: output)
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 refreshReferenceDate(resetBadge: false)
@@ -344,6 +345,7 @@ struct MedicationsListView: View {
 
     private func refreshReferenceDate(resetBadge: Bool) {
         referenceDate = Date()
+        store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
         if resetBadge {
             store.checkAndResetBadge()
         }
@@ -1932,6 +1934,8 @@ fileprivate struct DoseButtonState: Identifiable {
 fileprivate struct MedicationRowHeaderView: View {
     let medication: Medication
     let cycleStatus: MedicationCycleStatus
+    let overdueMinutes: Int?
+    let overdueBadgeActive: Bool
     @Binding var showDetails: Bool
     let doseStates: [DoseButtonState]
     let onRequestCustomLogTime: (Int?) -> Void
@@ -2004,6 +2008,9 @@ fileprivate struct MedicationRowHeaderView: View {
     private var statusDisplay: (text: String, color: Color, show: Bool) {
         if medication.frequency == "As needed" {
             return ("", .clear, false) // No status text for "As needed" meds
+        }
+        if overdueBadgeActive, let minutesPast = overdueMinutes {
+            return ("Overdue by \(formatTimeText(minutes: minutesPast))", Color(hex: "#FFA726"), true)
         }
         switch cycleStatus {
         case .taken:
@@ -2664,6 +2671,19 @@ struct MedicationRow: View {
         let now = referenceDate
         return Calendar.current.dateComponents([.minute], from: now, to: effectiveDueTime).minute ?? 0
     }
+
+    private var overdueMinutesForBadge: Int? {
+        let minutes = minutesToEffectiveDueTime
+        return minutes < 0 ? abs(minutes) : nil
+    }
+
+    private var overdueBadgeMedicationID: UUID {
+        medication.logReferenceID ?? medication.id
+    }
+
+    private var isOverdueBadgeActive: Bool {
+        store.overdueMedicationIDs.contains(overdueBadgeMedicationID)
+    }
     
     private var cycleStatus: MedicationCycleStatus {
         if !hasRemainingDoseToday {
@@ -2812,6 +2832,8 @@ struct MedicationRow: View {
             MedicationRowHeaderView(
                 medication: medication,
                 cycleStatus: cycleStatus, // Pass the calculated cycleStatus
+                overdueMinutes: overdueMinutesForBadge,
+                overdueBadgeActive: isOverdueBadgeActive,
                 showDetails: detailBinding,
                 doseStates: doseButtonStates,
                 onRequestCustomLogTime: { reminderIndex in

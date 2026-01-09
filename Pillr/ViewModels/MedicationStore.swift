@@ -76,6 +76,7 @@ class MedicationStore: ObservableObject {
     @Published var expandedMedicationID: UUID?
     /// Allows any view to request a specific tab to show (e.g., jump back to My Meds).
     @Published var requestedMainTab: MainTab?
+    @Published private(set) var overdueMedicationIDs: Set<UUID> = []
     private let notificationManager = NotificationManager.shared
     private let hapticManager = HapticManager.shared
     private let cloudSync = CloudKitMedicationSync.shared
@@ -528,8 +529,10 @@ class MedicationStore: ObservableObject {
     
     // Helper method to update badge count based on overdue medications
     public func resetBadgeIfNeeded() {
-        let overdueCount = overdueDoseCount(referenceDate: Date())
-        notificationManager.setApplicationBadge(count: overdueCount)
+        let referenceDate = Date()
+        let overdueIDs = overdueMedicationIDsSnapshot(referenceDate: referenceDate)
+        updateOverdueMedicationIDs(overdueIDs)
+        notificationManager.setApplicationBadge(count: overdueIDs.count)
     }
     
     // Public method that can be called from app delegate/scene
@@ -538,10 +541,18 @@ class MedicationStore: ObservableObject {
     }
 
     private func overdueDoseCount(referenceDate: Date) -> Int {
+        overdueMedicationIDsSnapshot(referenceDate: referenceDate).count
+    }
+
+    func refreshOverdueMedicationIDs(referenceDate: Date = Date()) {
+        updateOverdueMedicationIDs(overdueMedicationIDsSnapshot(referenceDate: referenceDate))
+    }
+
+    private func overdueMedicationIDsSnapshot(referenceDate: Date) -> Set<UUID> {
         let calendar = Calendar.current
         let dayStart = calendar.startOfDay(for: referenceDate)
         let now = referenceDate
-        var overdueCount = 0
+        var overdueIDs = Set<UUID>()
 
         for medication in activeMedications {
             if medication.frequency == "As needed" {
@@ -571,11 +582,12 @@ class MedicationStore: ObservableObject {
                 if !wasTaken,
                    dueTime < now,
                    calendar.isDate(dueTime, inSameDayAs: now) {
-                    overdueCount += 1
+                    overdueIDs.insert(medication.id)
                 }
                 continue
             }
 
+            var isOverdue = false
             for (index, _) in medication.reminderTimes.enumerated() {
                 if takenIndices.contains(index) {
                     continue
@@ -588,12 +600,31 @@ class MedicationStore: ObservableObject {
                 )
                 if dueTime < now,
                    calendar.isDate(dueTime, inSameDayAs: now) {
-                    overdueCount += 1
+                    isOverdue = true
+                    break
                 }
+            }
+
+            if isOverdue {
+                overdueIDs.insert(medication.id)
             }
         }
 
-        return overdueCount
+        return overdueIDs
+    }
+
+    private func updateOverdueMedicationIDs(_ overdueIDs: Set<UUID>) {
+        let apply = {
+            if self.overdueMedicationIDs != overdueIDs {
+                self.overdueMedicationIDs = overdueIDs
+            }
+        }
+
+        if Thread.isMainThread {
+            apply()
+        } else {
+            DispatchQueue.main.async(execute: apply)
+        }
     }
 
     private func resolvedTakenReminderIndices(
@@ -1079,12 +1110,14 @@ class MedicationStore: ObservableObject {
                 
                 // Update badge on app launch if needed
                 resetBadgeIfNeeded()
+                refreshOverdueMedicationIDs(referenceDate: Date())
                 
                 return
             }
         }
         self.medications = []
         notificationManager.updateTrackedMedicationIDs([])
+        refreshOverdueMedicationIDs(referenceDate: Date())
     }
 
     public func loadLogs() {
@@ -1092,11 +1125,13 @@ class MedicationStore: ObservableObject {
             if let decodedLogs = try? JSONDecoder().decode([MedicationLog].self, from: savedLogs) {
                 self.logs = decodedLogs
                 scheduleDailyCheckInReminders(referenceDate: Date())
+                refreshOverdueMedicationIDs(referenceDate: Date())
                 return
             }
         }
         self.logs = []
         scheduleDailyCheckInReminders(referenceDate: Date())
+        refreshOverdueMedicationIDs(referenceDate: Date())
     }
 
     private func startObservingDayChanges() {
