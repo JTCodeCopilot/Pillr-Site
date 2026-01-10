@@ -144,6 +144,9 @@ class StoreManager: ObservableObject {
         if purchasedIDs.contains(premiumIdentifier) {
             // If the user has purchased premium, update the UserSettings
             OpenAIService.shared.setPremiumPurchased()
+        } else {
+            OpenAIService.shared.setPremiumStatus(false)
+            OpenAIService.shared.setSubscriptionType(nil)
         }
     }
     

@@ -24,7 +24,7 @@ struct OpenAIService {
         return UserSettings.shared.subscriptionType
     }
     
-    func setSubscriptionType(_ type: String) {
+    func setSubscriptionType(_ type: String?) {
         UserSettings.shared.setSubscriptionType(type)
     }
     

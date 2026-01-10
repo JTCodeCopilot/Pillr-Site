@@ -305,6 +305,9 @@ struct AddMedicationView: View {
                     if let guidance = focusTimingGuidance {
                         applyFocusTimingGuidance(guidance)
                     }
+                },
+                onClose: {
+                    handleNonStimulantTimingClose()
                 }
             )
             .presentationDetents([.large])
@@ -326,7 +329,8 @@ struct AddMedicationView: View {
                 ),
                 isLoading: false,
                 errorMessage: nil,
-                onApply: nil
+                onApply: nil,
+                onClose: nil
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
@@ -1683,6 +1687,20 @@ struct AddMedicationView: View {
         }
     }
 
+    private func handleNonStimulantTimingClose() {
+        isADHDMedication = false
+        medicationType = .other
+        enableStimulantPhaseNotifications = false
+        onsetMinutesString = ""
+        durationMinutesString = ""
+        effectsGoneMinutesString = ""
+        onsetMinutesError = nil
+        durationMinutesError = nil
+        effectsGoneMinutesError = nil
+        enableDailyCheckIn = false
+        useCustomDailyCheckInTime = false
+    }
+
     private func formattedTimingLabel(for minutes: Int, preferMinutesUnderHour: Bool) -> String {
         if preferMinutesUnderHour && minutes < 60 {
             return "\(minutes) min"
@@ -2379,6 +2397,7 @@ struct FocusTimingGuidanceSheet: View {
     let isLoading: Bool
     let errorMessage: String?
     let onApply: (() -> Void)?
+    let onClose: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var isLoadingPulseOn = false
     @State private var loadingHapticTimer: Timer? = nil
@@ -2386,6 +2405,10 @@ struct FocusTimingGuidanceSheet: View {
     private var displayName: String {
         let trimmed = medicationName.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "this medication" : trimmed
+    }
+
+    private var canApplyTiming: Bool {
+        guidance?.hasStimulantTiming == true
     }
 
     private func formattedTimingLabel(for minutes: Int, preferMinutesUnderHour: Bool) -> String {
@@ -2561,10 +2584,14 @@ struct FocusTimingGuidanceSheet: View {
                         Spacer(minLength: 8)
 
                         Button(action: {
-                            onApply?()
+                            if canApplyTiming {
+                                onApply?()
+                            } else {
+                                onClose?()
+                            }
                             dismiss()
                         }) {
-                            Text("Apply times")
+                            Text(canApplyTiming ? "Apply times" : "Close")
                                 .font(.system(size: 16, weight: .bold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
@@ -2676,7 +2703,8 @@ struct FocusTimingGuidanceSheet_Previews: PreviewProvider {
             ),
             isLoading: false,
             errorMessage: nil,
-            onApply: {}
+            onApply: {},
+            onClose: {}
         )
         .preferredColorScheme(.dark)
     }

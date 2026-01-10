@@ -964,9 +964,9 @@ fileprivate struct HealthSummaryWidget: View {
 
     private var metrics: [Metric] {
         [
+            Metric(title: "Heart Rate", unit: "bpm / 1 hr avg", value: formattedHeartRate(manager.hourlyAverageHeartRate)),
             Metric(title: "Steps", unit: "steps", value: formattedSteps(manager.dailySteps)),
-            Metric(title: "Distance", unit: distanceUnit.rawValue, value: formattedDistance(manager.dailyDistanceMiles)),
-            Metric(title: "Heart Rate", unit: "bpm / 1 hr avg", value: formattedHeartRate(manager.hourlyAverageHeartRate))
+            Metric(title: "Distance", unit: distanceUnit.rawValue, value: formattedDistance(manager.dailyDistanceMiles))
         ]
     }
 

@@ -36,6 +36,7 @@ class NotificationManager: ObservableObject {
     )
     private var trackedMedicationIDs = Set<UUID>()
     private let dailyCheckInSchedulingWindowDays = 90
+    private let followUpSchedulingWindowDays = 30
     private static let dailyCheckInIDFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -216,34 +217,6 @@ class NotificationManager: ObservableObject {
         dateComponents.hour = hour
         dateComponents.minute = minute
         
-        if medication.isOneTimeWithFollowUp {
-            // Schedule a one-time notification
-            let now = Date()
-            var fireDate = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: now) ?? now
-            // Always add a day if the time has already passed for today
-            if fireDate < now { fireDate = Calendar.current.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate }
-            applyBadge(content, fireDate: fireDate)
-            let interval = fireDate.timeIntervalSince(now)
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-            let request = UNNotificationRequest(identifier: notificationID.uuidString, content: content, trigger: trigger)
-            UNUserNotificationCenter.current().add(request) { error in
-                if let error = error {
-                    print("Error scheduling one-time notification: \(error.localizedDescription)")
-                }
-            }
-            if UserSettings.shared.isPremiumUser {
-                scheduleFollowUpNotification(
-                    for: medication,
-                    time: fireDate,
-                    index: 0,
-                    after: 30,
-                    originalID: notificationID,
-                    repeats: false
-                )
-            }
-            return notificationID
-        }
-        
         // Default: schedule repeating notification
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: notificationID.uuidString, content: content, trigger: trigger)
@@ -252,15 +225,14 @@ class NotificationManager: ObservableObject {
                 print("Error scheduling notification: \(error.localizedDescription)")
             }
         }
-        // Schedule a repeating follow-up notification when enabled.
+        // Schedule one-time follow-ups for upcoming reminders when enabled.
         if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
-            scheduleFollowUpNotification(
+            scheduleFollowUpNotificationsWindow(
                 for: medication,
                 time: medication.timeToTake,
                 index: 0,
                 after: 30,
-                originalID: notificationID,
-                repeats: true
+                originalID: notificationID
             )
         }
         return notificationID
@@ -335,13 +307,12 @@ class NotificationManager: ObservableObject {
         
         // Schedule a repeating follow-up notification when enabled.
         if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
-            scheduleFollowUpNotification(
+            scheduleFollowUpNotificationsWindow(
                 for: medication,
                 time: time,
                 index: index,
                 after: 30,
-                originalID: notificationID,
-                repeats: true
+                originalID: notificationID
             )
         }
         
@@ -361,7 +332,13 @@ class NotificationManager: ObservableObject {
             return
         }
 
-        scheduleFollowUpNotification(for: medication, time: medication.timeToTake, index: 0, after: minutes, originalID: originalID)
+        scheduleFollowUpNotificationsWindow(
+            for: medication,
+            time: medication.timeToTake,
+            index: 0,
+            after: minutes,
+            originalID: originalID
+        )
     }
 
     func scheduleFollowUpNotification(
@@ -421,6 +398,58 @@ class NotificationManager: ObservableObject {
                 if let error = error {
                     print("Error scheduling follow-up notification: \(error.localizedDescription)")
                 }
+            }
+        }
+    }
+
+    private func scheduleFollowUpNotificationsWindow(
+        for medication: Medication,
+        time: Date,
+        index: Int,
+        after minutes: Int,
+        originalID: UUID
+    ) {
+        guard ensureMedicationIsTracked(medication.id) else {
+            return
+        }
+
+        let calendar = Calendar.current
+        let timeComponents = calendar.dateComponents([.hour, .minute], from: time)
+        guard let hour = timeComponents.hour,
+              let minute = timeComponents.minute else {
+            return
+        }
+
+        let center = UNUserNotificationCenter.current()
+        center.getPendingNotificationRequests { [weak self] requests in
+            guard let self = self else { return }
+            let existingIdentifiers = Set(requests.map { $0.identifier })
+            let now = Date()
+            let startOfDay = calendar.startOfDay(for: now)
+
+            for dayOffset in 0..<self.followUpSchedulingWindowDays {
+                guard let day = calendar.date(byAdding: .day, value: dayOffset, to: startOfDay),
+                      let baseDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day),
+                      let followUpDate = calendar.date(byAdding: .minute, value: minutes, to: baseDate),
+                      followUpDate > now else {
+                    continue
+                }
+
+                let identifier = self.followUpIdentifier(
+                    originalID: originalID,
+                    fireDate: followUpDate,
+                    repeats: false
+                )
+                guard !existingIdentifiers.contains(identifier) else { continue }
+
+                self.scheduleFollowUpNotification(
+                    for: medication,
+                    time: baseDate,
+                    index: index,
+                    after: minutes,
+                    originalID: originalID,
+                    repeats: false
+                )
             }
         }
     }

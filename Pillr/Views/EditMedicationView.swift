@@ -686,7 +686,8 @@ struct EditMedicationView: View {
                     if let guidance = focusTimingGuidance {
                         applyFocusTimingGuidance(guidance)
                     }
-                }
+                },
+                onClose: nil
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)

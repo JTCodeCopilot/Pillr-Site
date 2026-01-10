@@ -503,20 +503,23 @@ class MedicationStore: ObservableObject {
             syncMedicationWithCloud(medications[index])
         }
         
-        // Clear the delivered notification without removing future reminders.
+        // Clear the delivered notification and cancel any follow-up for today without touching future reminders.
+        let followUpBaseTime = scheduledTimeForToday(
+            medication: medication,
+            actualTime: actualTime,
+            reminderIndex: resolvedReminderIndex
+        ) ?? actualTime
+        let followUpCancelDate = Calendar.current.date(byAdding: .minute, value: 30, to: followUpBaseTime) ?? actualTime
+
         if let specificIndex = resolvedReminderIndex,
            let referenceMedication = storedMedication,
            !referenceMedication.notificationIDs.isEmpty,
            specificIndex < referenceMedication.notificationIDs.count {
             let notificationID = referenceMedication.notificationIDs[specificIndex]
-            if medication.isOneTimeWithFollowUp {
-                notificationManager.cancelNotification(with: notificationID)
-            }
+            notificationManager.cancelFollowUpNotification(for: notificationID, on: followUpCancelDate)
             notificationManager.clearDeliveredNotifications(for: notificationID)
         } else if let notificationID = storedMedication?.notificationID ?? medication.notificationID {
-            if medication.isOneTimeWithFollowUp {
-                notificationManager.cancelNotification(with: notificationID)
-            }
+            notificationManager.cancelFollowUpNotification(for: notificationID, on: followUpCancelDate)
             notificationManager.clearDeliveredNotifications(for: notificationID)
         }
 
