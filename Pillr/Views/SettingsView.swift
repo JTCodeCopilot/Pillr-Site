@@ -15,7 +15,6 @@ struct SettingsView: View {
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
     @State private var iCloudAccountStatus: CKAccountStatus?
     @State private var isHealthSettingsExpanded = false
-    @State private var isNotificationSettingsExpanded = false
     @State private var isPremiumSettingsExpanded = false
     @State private var showingCloudSyncChoiceAgain = false
     @State private var showingCloudSyncConfirmationAgain = false
@@ -39,6 +38,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         interactionsSection
                         iCloudSyncSection
+                        notificationPermissionsSection
                         generalSettingsSection
                         supportLinksSection
                         Color.clear.frame(height: 20)
@@ -183,34 +183,6 @@ struct SettingsView: View {
                 }
                 
                 collapsibleSettingsSection(
-                    title: "Notifications",
-                    isExpanded: $isNotificationSettingsExpanded,
-                    titleFont: .system(size: 16, weight: .medium, design: .rounded),
-                    titleColor: SettingsPalette.mainText
-                ) {
-                    Text("Medication reminders depend on system notifications. Tap below to open the Settings app where you can enable or disable Pillr reminders.")
-                        .font(.system(size: 14, design: .rounded))
-                        .foregroundColor(SettingsPalette.secondaryText)
-                        .lineSpacing(4)
-                        .padding(.horizontal, 4)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Status: \(notificationStatusValue)")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundColor(SettingsPalette.mainText)
-                        Text(notificationStatusContext)
-                            .font(.system(size: 14, weight: .regular, design: .rounded))
-                            .foregroundColor(SettingsPalette.secondaryText)
-                    }
-
-                    settingsActionRow(
-                        title: "Open iOS Settings",
-                        subtitle: "Manage Pillr notification permissions",
-                        action: openAppSettings
-                    )
-                }
-
-                collapsibleSettingsSection(
                     title: premiumActive ? "Premium" : "Upgrade to Premium",
                     isExpanded: $isPremiumSettingsExpanded,
                     titleFont: .system(size: 16, weight: .medium, design: .rounded),
@@ -249,6 +221,31 @@ struct SettingsView: View {
         }
     }
 
+    private var notificationPermissionsSection: some View {
+        settingsSection(title: "Notifications") {
+            Text("Medication reminders depend on system notifications. Use the link below to update permissions.")
+                .font(.system(size: 14, design: .rounded))
+                .foregroundColor(SettingsPalette.secondaryText)
+                .lineSpacing(4)
+                .padding(.horizontal, 4)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Status: \(notificationStatusValue)")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundColor(notificationStatusColor)
+                Text(notificationStatusContext)
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .foregroundColor(SettingsPalette.secondaryText)
+            }
+
+            settingsActionRow(
+                title: "Manage Notifications",
+                subtitle: "Open the iOS notification settings for Pillr",
+                action: openNotificationSettings
+            )
+        }
+    }
+
     private func refreshNotificationSettings() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
@@ -257,8 +254,12 @@ struct SettingsView: View {
         }
     }
 
-    private func openAppSettings() {
-        openLink(UIApplication.openSettingsURLString)
+    private func openNotificationSettings() {
+        if #available(iOS 16.0, *) {
+            openLink(UIApplication.openNotificationSettingsURLString)
+        } else {
+            openLink(UIApplication.openSettingsURLString)
+        }
     }
     
     private var appleHealthVisibilityBinding: Binding<Bool> {
@@ -449,12 +450,10 @@ struct SettingsView: View {
         switch status {
         case .authorized, .provisional, .ephemeral:
             return "Enabled"
-        case .denied:
+        case .denied, .notDetermined:
             return "Disabled"
-        case .notDetermined:
-            return "Not requested yet"
         @unknown default:
-            return "Unknown"
+            return "Disabled"
         }
     }
 
@@ -469,9 +468,24 @@ struct SettingsView: View {
         case .denied:
             return "Open Settings to turn reminders back on."
         case .notDetermined:
-            return "Reminders will arrive once you allow them."
+            return "Permissions have not been granted yet."
         @unknown default:
             return "Status currently unavailable."
+        }
+    }
+
+    private var notificationStatusColor: Color {
+        guard let status = notificationAuthorizationStatus else {
+            return SettingsPalette.mainText
+        }
+
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            return Color(hex: "#C8F365")
+        case .denied, .notDetermined:
+            return Color(hex: "#F87171")
+        @unknown default:
+            return SettingsPalette.mainText
         }
     }
 

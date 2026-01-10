@@ -28,6 +28,8 @@ class NotificationManager: ObservableObject {
         setupNotificationActions()
     }
     
+    var badgeCountProvider: ((Date) -> Int)?
+    
     private let trackedMedicationIDsQueue = DispatchQueue(
         label: "NotificationManager.trackedMedicationIDsQueue",
         attributes: .concurrent
@@ -158,15 +160,16 @@ class NotificationManager: ObservableObject {
         }
     }
 
-    private func nextFireDate(for time: Date, from reference: Date = Date()) -> Date {
+    private func nextFireDate(for time: Date) -> Date {
         let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: time)
-        let minute = calendar.component(.minute, from: time)
-        var fireDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: reference) ?? reference
-        if fireDate <= reference {
-            fireDate = calendar.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate
-        }
-        return fireDate
+        let now = Date()
+        let components = calendar.dateComponents([.hour, .minute], from: time)
+        return calendar.nextDate(after: now, matching: components, matchingPolicy: .nextTime) ?? now
+    }
+
+    private func applyBadge(_ content: UNMutableNotificationContent, fireDate: Date) {
+        let count = badgeCountProvider?(fireDate) ?? 0
+        content.badge = NSNumber(value: count)
     }
 
     private func followUpIdentifier(originalID: UUID, fireDate: Date, repeats: Bool) -> String {
@@ -186,6 +189,7 @@ class NotificationManager: ObservableObject {
         }
         return "\(medication.name) (\(medication.medicationType.displayName))"
     }
+
     
     // Legacy support for single notification
     func scheduleNotification(for medication: Medication) -> UUID? {
@@ -201,7 +205,7 @@ class NotificationManager: ObservableObject {
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
-        content.badge = 1
+        applyBadge(content, fireDate: nextFireDate(for: medication.timeToTake))
         prioritizeMedicationReminder(content)
         
         let notificationID = UUID()
@@ -218,6 +222,7 @@ class NotificationManager: ObservableObject {
             var fireDate = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: now) ?? now
             // Always add a day if the time has already passed for today
             if fireDate < now { fireDate = Calendar.current.date(byAdding: .day, value: 1, to: fireDate) ?? fireDate }
+            applyBadge(content, fireDate: fireDate)
             let interval = fireDate.timeIntervalSince(now)
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
             let request = UNNotificationRequest(identifier: notificationID.uuidString, content: content, trigger: trigger)
@@ -247,15 +252,15 @@ class NotificationManager: ObservableObject {
                 print("Error scheduling notification: \(error.localizedDescription)")
             }
         }
-        // Schedule the follow-up notification for 30 minutes later (premium only)
-        if UserSettings.shared.isPremiumUser {
-            scheduleRollingFollowUpNotifications(
+        // Schedule a repeating follow-up notification when enabled.
+        if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
+            scheduleFollowUpNotification(
                 for: medication,
                 time: medication.timeToTake,
                 index: 0,
                 after: 30,
                 originalID: notificationID,
-                days: 7
+                repeats: true
             )
         }
         return notificationID
@@ -301,7 +306,7 @@ class NotificationManager: ObservableObject {
         content.threadIdentifier = "medication-reminders"
 
         // Set the notification icon badge
-        content.badge = 1
+        applyBadge(content, fireDate: nextFireDate(for: time))
         prioritizeMedicationReminder(content)
         
         // Extract hour and minute
@@ -328,15 +333,15 @@ class NotificationManager: ObservableObject {
             }
         }
         
-        // Schedule the follow-up notification for 30 minutes later (premium only)
-        if UserSettings.shared.isPremiumUser {
-            scheduleRollingFollowUpNotifications(
+        // Schedule a repeating follow-up notification when enabled.
+        if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
+            scheduleFollowUpNotification(
                 for: medication,
                 time: time,
                 index: index,
                 after: 30,
                 originalID: notificationID,
-                days: 7
+                repeats: true
             )
         }
         
@@ -357,31 +362,6 @@ class NotificationManager: ObservableObject {
         }
 
         scheduleFollowUpNotification(for: medication, time: medication.timeToTake, index: 0, after: minutes, originalID: originalID)
-    }
-
-    private func scheduleRollingFollowUpNotifications(
-        for medication: Medication,
-        time: Date,
-        index: Int,
-        after minutes: Int,
-        originalID: UUID,
-        days: Int
-    ) {
-        guard days > 0 else { return }
-        let calendar = Calendar.current
-        let firstFireDate = nextFireDate(for: time)
-
-        for offset in 0..<days {
-            guard let fireDate = calendar.date(byAdding: .day, value: offset, to: firstFireDate) else { continue }
-            scheduleFollowUpNotification(
-                for: medication,
-                time: fireDate,
-                index: index,
-                after: minutes,
-                originalID: originalID,
-                repeats: false
-            )
-        }
     }
 
     func scheduleFollowUpNotification(
@@ -410,12 +390,13 @@ class NotificationManager: ObservableObject {
         ]
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
-        content.badge = 1
         prioritizeMedicationReminder(content)
         
         // Create a time-based trigger for the follow-up (30 minutes after scheduled time)
         let calendar = Calendar.current
         if let followUpTime = calendar.date(byAdding: .minute, value: minutes, to: time) {
+            let badgeFireDate = repeats ? nextFireDate(for: followUpTime) : followUpTime
+            applyBadge(content, fireDate: badgeFireDate)
             let followUpHour = calendar.component(.hour, from: followUpTime)
             let followUpMinute = calendar.component(.minute, from: followUpTime)
             
@@ -452,12 +433,13 @@ class NotificationManager: ObservableObject {
         content.title = "Reminder: Take Your Medication"
         content.body = "It's time to take your medication."
         content.sound = UNNotificationSound.default
+        let fireDate = Date().addingTimeInterval(TimeInterval(afterMinutes * 60))
         content.userInfo = ["medicationID": medication.id.uuidString]
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
-        content.badge = 1
+        applyBadge(content, fireDate: fireDate)
         prioritizeMedicationReminder(content)
-        
+
         // Create a time-based trigger for one-time reminder
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(afterMinutes * 60), repeats: false)
         
@@ -492,6 +474,26 @@ class NotificationManager: ObservableObject {
             }
             if !extraIdentifiers.isEmpty {
                 center.removePendingNotificationRequests(withIdentifiers: extraIdentifiers)
+            }
+        }
+    }
+
+    func clearDeliveredNotifications(for id: UUID) {
+        let baseID = id.uuidString
+        let center = UNUserNotificationCenter.current()
+        let identifiers = [
+            baseID,
+            "\(baseID)_followup"
+        ]
+        center.removeDeliveredNotifications(withIdentifiers: identifiers)
+
+        center.getDeliveredNotifications { notifications in
+            let followUpPrefix = "\(baseID)_followup_"
+            let extraIdentifiers = notifications.compactMap { notification -> String? in
+                notification.request.identifier.hasPrefix(followUpPrefix) ? notification.request.identifier : nil
+            }
+            if !extraIdentifiers.isEmpty {
+                center.removeDeliveredNotifications(withIdentifiers: extraIdentifiers)
             }
         }
     }
@@ -733,7 +735,7 @@ class NotificationManager: ObservableObject {
         content.userInfo = userInfo
         content.categoryIdentifier = category
         content.threadIdentifier = "medication-reminders"
-        content.badge = 1
+        applyBadge(content, fireDate: fireDate)
         if #available(iOS 15.0, *) {
             content.interruptionLevel = .timeSensitive
             content.relevanceScore = 1.0
@@ -783,7 +785,6 @@ class NotificationManager: ObservableObject {
         ]
         content.categoryIdentifier = NotificationCategoryIdentifier.stimulantReminder
         content.threadIdentifier = "medication-reminders"
-        content.badge = 1
         if #available(iOS 15.0, *) {
             content.interruptionLevel = .timeSensitive
             content.relevanceScore = 1.0
@@ -805,6 +806,7 @@ class NotificationManager: ObservableObject {
                 let identifier = self.dailyCheckInIdentifier(for: medication.id, date: fireDate)
                 guard !existingIdentifiers.contains(identifier) else { continue }
 
+                self.applyBadge(content, fireDate: fireDate)
                 let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
                 let request = UNNotificationRequest(

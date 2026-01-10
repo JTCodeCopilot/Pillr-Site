@@ -115,6 +115,9 @@ class MedicationStore: ObservableObject {
     init(isPreview: Bool = false) {
         self.isPreviewMode = isPreview
         self.lastCloudSyncPreferenceState = shouldUseCloudSync
+        notificationManager.badgeCountProvider = { [weak self] date in
+            self?.overdueReminderCount(referenceDate: date) ?? 0
+        }
         if !isPreview {
             loadMedications()
             loadLogs()
@@ -210,17 +213,18 @@ class MedicationStore: ObservableObject {
         // Schedule notifications only if enabled
         if enableNotification {
             notificationManager.requestAuthorizationIfNeeded()
-            if isOneTimeWithFollowUp {
+            if !newMed.reminderTimes.isEmpty {
+                // Multiple notifications support
+                let notificationIDs = notificationManager.scheduleMultipleNotifications(for: newMed)
+                newMed.notificationIDs = notificationIDs
+                newMed.notificationID = nil
+            } else if isOneTimeWithFollowUp {
                 newMed.notificationID = notificationManager.scheduleNotification(for: newMed)
                 newMed.notificationIDs = []
             } else if reminderTimes.isEmpty {
                 // Legacy single notification support
                 newMed.notificationID = notificationManager.scheduleNotification(for: newMed)
                 newMed.notificationIDs = []
-            } else {
-                // Multiple notifications support
-                let notificationIDs = notificationManager.scheduleMultipleNotifications(for: newMed)
-                newMed.notificationIDs = notificationIDs
             }
         } else {
             newMed.notificationID = nil
@@ -236,15 +240,8 @@ class MedicationStore: ObservableObject {
     
     func updateMedication(_ medication: Medication, enableNotification: Bool = true) {
         if let index = medications.firstIndex(where: { $0.id == medication.id }) {
-            // Cancel old notifications if they exist
-            if let oldNotificationID = medications[index].notificationID {
-                notificationManager.cancelNotification(with: oldNotificationID)
-            }
-            
-            if !medications[index].notificationIDs.isEmpty {
-                notificationManager.cancelMultipleNotifications(ids: medications[index].notificationIDs)
-            }
-            
+            let oldMedication = medications[index]
+
             // Create a mutable copy
             var updatedMedication = medication
             
@@ -262,30 +259,58 @@ class MedicationStore: ObservableObject {
             }
             
             // Schedule new notifications if enabled
-            if enableNotification {
+            let wantsNotifications = enableNotification && updatedMedication.frequency != "As needed"
+            let reminderSettingsChanged = medicationReminderSettingsChanged(
+                old: oldMedication,
+                updated: updatedMedication
+            )
+            let shouldRescheduleMedicationReminders = wantsNotifications
+                && (!oldMedication.hasActiveReminder || reminderSettingsChanged)
+
+            if wantsNotifications {
                 notificationManager.registerTrackedMedicationID(updatedMedication.id)
                 notificationManager.requestAuthorizationIfNeeded()
-                if updatedMedication.isOneTimeWithFollowUp {
-                    updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
-                    updatedMedication.notificationIDs = []
-                } else if updatedMedication.reminderTimes.isEmpty {
-                    // Legacy single notification
-                    updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
-                    updatedMedication.notificationIDs = []
+                if shouldRescheduleMedicationReminders {
+                    if let oldNotificationID = oldMedication.notificationID {
+                        notificationManager.cancelNotification(with: oldNotificationID)
+                    }
+
+                    if !oldMedication.notificationIDs.isEmpty {
+                        notificationManager.cancelMultipleNotifications(ids: oldMedication.notificationIDs)
+                    }
+
+                    if !updatedMedication.reminderTimes.isEmpty {
+                        // Multiple notifications
+                        let newNotificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
+                        updatedMedication.notificationIDs = newNotificationIDs
+                        updatedMedication.notificationID = nil
+                    } else if updatedMedication.isOneTimeWithFollowUp {
+                        updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
+                        updatedMedication.notificationIDs = []
+                    } else if updatedMedication.reminderTimes.isEmpty {
+                        // Legacy single notification
+                        updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
+                        updatedMedication.notificationIDs = []
+                    }
                 } else {
-                    // Multiple notifications
-                    let newNotificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
-                    updatedMedication.notificationIDs = newNotificationIDs
-                    updatedMedication.notificationID = nil
+                    updatedMedication.notificationID = oldMedication.notificationID
+                    updatedMedication.notificationIDs = oldMedication.notificationIDs
                 }
             } else {
+                if let oldNotificationID = oldMedication.notificationID {
+                    notificationManager.cancelNotification(with: oldNotificationID)
+                }
+
+                if !oldMedication.notificationIDs.isEmpty {
+                    notificationManager.cancelMultipleNotifications(ids: oldMedication.notificationIDs)
+                }
+
                 updatedMedication.notificationID = nil
                 updatedMedication.notificationIDs = []
                 notificationManager.cancelMedicationNotifications(for: updatedMedication.id)
             }
             
             // Update medication name in existing logs if it changed
-            let oldMedication = medications[index]
             if oldMedication.name != updatedMedication.name {
                 updateMedicationNameInLogs(medicationID: updatedMedication.id, newName: updatedMedication.name)
             }
@@ -294,10 +319,45 @@ class MedicationStore: ObservableObject {
             medications[index] = updatedMedication
             saveMedications()
             syncMedicationWithCloud(updatedMedication)
-            notificationManager.cancelPendingDailyCheckInNotifications(for: updatedMedication.id)
-            scheduleDailyCheckInReminderIfNeeded(for: updatedMedication)
+            let dailyCheckInSettingsChanged = oldMedication.enableDailyCheckIn != updatedMedication.enableDailyCheckIn
+                || oldMedication.dailyCheckInTime != updatedMedication.dailyCheckInTime
+            if dailyCheckInSettingsChanged {
+                notificationManager.cancelPendingDailyCheckInNotifications(for: updatedMedication.id)
+                scheduleDailyCheckInReminderIfNeeded(for: updatedMedication)
+            }
 
         }
+    }
+
+    private func medicationReminderSettingsChanged(old: Medication, updated: Medication) -> Bool {
+        if old.isOneTimeWithFollowUp != updated.isOneTimeWithFollowUp {
+            return true
+        }
+
+        let calendar = Calendar.current
+        let oldTime = calendar.dateComponents([.hour, .minute], from: old.timeToTake)
+        let newTime = calendar.dateComponents([.hour, .minute], from: updated.timeToTake)
+        if oldTime.hour != newTime.hour || oldTime.minute != newTime.minute {
+            return true
+        }
+
+        return !reminderTimesMatch(old.reminderTimes, updated.reminderTimes)
+    }
+
+    private func reminderTimesMatch(_ lhs: [Date], _ rhs: [Date]) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        let calendar = Calendar.current
+
+        for (left, right) in zip(lhs, rhs) {
+            let leftComponents = calendar.dateComponents([.hour, .minute], from: left)
+            let rightComponents = calendar.dateComponents([.hour, .minute], from: right)
+            if leftComponents.hour != rightComponents.hour
+                || leftComponents.minute != rightComponents.minute {
+                return false
+            }
+        }
+
+        return true
     }
 
     @discardableResult
@@ -443,22 +503,27 @@ class MedicationStore: ObservableObject {
             syncMedicationWithCloud(medications[index])
         }
         
-        // Cancel the specific notification that triggered this log
+        // Clear the delivered notification without removing future reminders.
         if let specificIndex = resolvedReminderIndex,
            let referenceMedication = storedMedication,
            !referenceMedication.notificationIDs.isEmpty,
            specificIndex < referenceMedication.notificationIDs.count {
-            // Cancel the specific notification if we know which one
-            notificationManager.cancelNotification(with: referenceMedication.notificationIDs[specificIndex])
+            let notificationID = referenceMedication.notificationIDs[specificIndex]
+            if medication.isOneTimeWithFollowUp {
+                notificationManager.cancelNotification(with: notificationID)
+            }
+            notificationManager.clearDeliveredNotifications(for: notificationID)
         } else if let notificationID = storedMedication?.notificationID ?? medication.notificationID {
-            // Legacy support - cancel the single notification
-            notificationManager.cancelNotification(with: notificationID)
+            if medication.isOneTimeWithFollowUp {
+                notificationManager.cancelNotification(with: notificationID)
+            }
+            notificationManager.clearDeliveredNotifications(for: notificationID)
         }
 
         let identifiersToKeep = preservedReminderIdentifiers(
             for: medication,
-            excludingReminderIndex: resolvedReminderIndex,
-            excludeSingleReminder: resolvedReminderIndex == nil
+            excludingReminderIndex: nil,
+            excludeSingleReminder: false
         )
         notificationManager.removeUntrackedMedicationReminders(
             for: medication.id,
@@ -527,12 +592,13 @@ class MedicationStore: ObservableObject {
         )
     }
     
-    // Helper method to update badge count based on overdue medications
+    // Helper method to update badge count based on overdue medication reminders
     public func resetBadgeIfNeeded() {
         let referenceDate = Date()
         let overdueIDs = overdueMedicationIDsSnapshot(referenceDate: referenceDate)
         updateOverdueMedicationIDs(overdueIDs)
-        notificationManager.setApplicationBadge(count: overdueIDs.count)
+        let overdueCount = overdueReminderCountSnapshot(referenceDate: referenceDate)
+        notificationManager.setApplicationBadge(count: overdueCount)
     }
     
     // Public method that can be called from app delegate/scene
@@ -541,7 +607,7 @@ class MedicationStore: ObservableObject {
     }
 
     private func overdueDoseCount(referenceDate: Date) -> Int {
-        overdueMedicationIDsSnapshot(referenceDate: referenceDate).count
+        overdueReminderCountSnapshot(referenceDate: referenceDate)
     }
 
     func refreshOverdueMedicationIDs(referenceDate: Date = Date()) {
@@ -552,6 +618,11 @@ class MedicationStore: ObservableObject {
         let calendar = Calendar.current
         let dayStart = calendar.startOfDay(for: referenceDate)
         let now = referenceDate
+        func startOfMinute(_ date: Date) -> Date {
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+            return calendar.date(from: components) ?? date
+        }
+        let nowMinute = startOfMinute(now)
         var overdueIDs = Set<UUID>()
 
         for medication in activeMedications {
@@ -561,7 +632,8 @@ class MedicationStore: ObservableObject {
 
             let medicationLogs = logs.filter { log in
                 log.medicationID == medication.id &&
-                calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
+                calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
+                log.takenAt <= referenceDate
             }
 
             let takenIndices = resolvedTakenReminderIndices(
@@ -580,7 +652,7 @@ class MedicationStore: ObservableObject {
 
                 let wasTaken = !medicationLogs.isEmpty
                 if !wasTaken,
-                   dueTime < now,
+                   nowMinute > startOfMinute(dueTime),
                    calendar.isDate(dueTime, inSameDayAs: now) {
                     overdueIDs.insert(medication.id)
                 }
@@ -598,7 +670,7 @@ class MedicationStore: ObservableObject {
                     dayStart: dayStart,
                     referenceDate: referenceDate
                 )
-                if dueTime < now,
+                if nowMinute > startOfMinute(dueTime),
                    calendar.isDate(dueTime, inSameDayAs: now) {
                     isOverdue = true
                     break
@@ -611,6 +683,75 @@ class MedicationStore: ObservableObject {
         }
 
         return overdueIDs
+    }
+
+    func overdueReminderCount(referenceDate: Date = Date()) -> Int {
+        overdueReminderCountSnapshot(referenceDate: referenceDate)
+    }
+
+    private func overdueReminderCountSnapshot(referenceDate: Date) -> Int {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: referenceDate)
+        let now = referenceDate
+        func startOfMinute(_ date: Date) -> Date {
+            let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+            return calendar.date(from: components) ?? date
+        }
+        let nowMinute = startOfMinute(now)
+        var overdueCount = 0
+
+        for medication in activeMedications {
+            if medication.frequency == "As needed" {
+                continue
+            }
+
+            let medicationLogs = logs.filter { log in
+                log.medicationID == medication.id &&
+                calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
+                log.takenAt <= referenceDate
+            }
+
+            let takenIndices = resolvedTakenReminderIndices(
+                medication: medication,
+                dayStart: dayStart,
+                logs: medicationLogs
+            )
+
+            if medication.reminderTimes.isEmpty {
+                let dueTime = scheduledReminderTime(
+                    medication: medication,
+                    reminderIndex: nil,
+                    dayStart: dayStart,
+                    referenceDate: referenceDate
+                )
+
+                let wasTaken = !medicationLogs.isEmpty
+                if !wasTaken,
+                   nowMinute > startOfMinute(dueTime),
+                   calendar.isDate(dueTime, inSameDayAs: now) {
+                    overdueCount += 1
+                }
+                continue
+            }
+
+            for (index, _) in medication.reminderTimes.enumerated() {
+                if takenIndices.contains(index) {
+                    continue
+                }
+                let dueTime = scheduledReminderTime(
+                    medication: medication,
+                    reminderIndex: index,
+                    dayStart: dayStart,
+                    referenceDate: referenceDate
+                )
+                if nowMinute > startOfMinute(dueTime),
+                   calendar.isDate(dueTime, inSameDayAs: now) {
+                    overdueCount += 1
+                }
+            }
+        }
+
+        return overdueCount
     }
 
     private func updateOverdueMedicationIDs(_ overdueIDs: Set<UUID>) {
@@ -865,8 +1006,6 @@ class MedicationStore: ObservableObject {
         if !medication.notificationIDs.isEmpty {
             notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
         }
-
-            notificationManager.cancelMedicationNotifications(for: medication.id)
         syncDeleteMedication(medication)
     }
 
@@ -1212,16 +1351,30 @@ class MedicationStore: ObservableObject {
 
             notificationManager.cancelMedicationNotifications(for: medication.id)
 
-        if updatedMedication.isOneTimeWithFollowUp {
-            updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
-            updatedMedication.notificationIDs = []
-        } else if !updatedMedication.reminderTimes.isEmpty {
+        if !updatedMedication.reminderTimes.isEmpty {
             let notificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
             updatedMedication.notificationIDs = notificationIDs
             updatedMedication.notificationID = nil
+        } else if updatedMedication.isOneTimeWithFollowUp {
+            updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
+            updatedMedication.notificationIDs = []
         } else if updatedMedication.notificationID != nil {
             updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
             updatedMedication.notificationIDs = []
+        }
+
+        var identifiersToKeep = Set<String>()
+        if let notificationID = updatedMedication.notificationID {
+            identifiersToKeep.insert(notificationID.uuidString)
+        }
+        if !updatedMedication.notificationIDs.isEmpty {
+            identifiersToKeep.formUnion(updatedMedication.notificationIDs.map { $0.uuidString })
+        }
+        if !identifiersToKeep.isEmpty {
+            notificationManager.removeUntrackedMedicationReminders(
+                for: updatedMedication.id,
+                preservingIdentifiers: identifiersToKeep
+            )
         }
 
         return updatedMedication

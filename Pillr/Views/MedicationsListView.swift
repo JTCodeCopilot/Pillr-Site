@@ -635,6 +635,10 @@ fileprivate func sortedMedications(
 ) -> [Medication] {
     let calendar = Calendar.current
     let now = referenceDate
+    func startOfMinute(_ date: Date) -> Date {
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        return calendar.date(from: components) ?? date
+    }
     let logsByMedication = Dictionary(grouping: logs, by: { $0.medicationID })
     let logsByID = Dictionary(uniqueKeysWithValues: logs.map { ($0.id, $0) })
 
@@ -665,10 +669,12 @@ fileprivate func sortedMedications(
         let wasTakenToday = medLogs.contains { log in
             calendar.isDate(log.takenAt, inSameDayAs: now)
         }
+        let nowMinute = startOfMinute(now)
+        let dueMinute = startOfMinute(dueTime)
         let isOverdue = !wasTakenToday &&
-            dueTime < now &&
-            calendar.isDate(dueTime, inSameDayAs: now)
-        let overdueDuration = isOverdue ? now.timeIntervalSince(dueTime) : 0
+            nowMinute > dueMinute &&
+            calendar.isDate(dueMinute, inSameDayAs: now)
+        let overdueDuration = isOverdue ? nowMinute.timeIntervalSince(dueMinute) : 0
         let lastLogDate = medLogs
             .max(by: { $0.takenAt < $1.takenAt })?
             .takenAt
@@ -926,7 +932,6 @@ fileprivate func MedicationsListHeader(
 
 fileprivate struct HealthSummaryWidget: View {
     @ObservedObject var manager: HealthKitManager
-    @EnvironmentObject private var userSettings: UserSettings
     private static var defaultDistanceUnit: HealthDistanceUnit {
         Locale.current.usesMetricSystem ? .kilometers : .miles
     }
@@ -960,20 +965,28 @@ fileprivate struct HealthSummaryWidget: View {
     private var metrics: [Metric] {
         [
             Metric(title: "Steps", unit: "steps", value: formattedSteps(manager.dailySteps)),
-            Metric(title: "Distance", unit: distanceUnit.rawValue, value: formattedDistance(manager.dailyDistanceMiles))
+            Metric(title: "Distance", unit: distanceUnit.rawValue, value: formattedDistance(manager.dailyDistanceMiles)),
+            Metric(title: "Heart Rate", unit: "bpm / 1 hr avg", value: formattedHeartRate(manager.hourlyAverageHeartRate))
         ]
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            header
+            if shouldShowHeader {
+                header
+            }
 
             if !manager.isHealthDataAvailable {
                 Text("Apple Health is not available on this device.")
                     .font(.system(size: 13))
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
             } else if manager.hasConnected || manager.hasAnyPermission || manager.hasMetricValues {
-                metricGrid
+                VStack(alignment: .leading, spacing: 8) {
+                    metricGrid
+                    if shouldShowHeartRatePrompt {
+                        heartRatePermissionPrompt
+                    }
+                }
             } else {
                 permissionPrompt
             }
@@ -992,6 +1005,14 @@ fileprivate struct HealthSummaryWidget: View {
         )
         .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
         .accessibilityElement(children: .combine)
+    }
+
+    private var shouldShowHeader: Bool {
+        !(manager.hasConnected || manager.hasAnyPermission || manager.hasMetricValues)
+    }
+
+    private var shouldShowHeartRatePrompt: Bool {
+        manager.isHealthDataAvailable && manager.hasAnyPermission && !manager.hasHeartRatePermission
     }
 
     private var header: some View {
@@ -1023,7 +1044,7 @@ fileprivate struct HealthSummaryWidget: View {
             Text(
                 manager.hasDeniedPermission
                     ? "Health permissions are currently denied. Open Settings to re-allow fitness data."
-                    : "Allow access to Apple Health to show your daily steps and distance."
+                    : "Allow access to Apple Health to show your daily steps, distance, and heart rate."
             )
             .font(.system(size: 13))
             .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
@@ -1046,23 +1067,41 @@ fileprivate struct HealthSummaryWidget: View {
                     )
             }
             .buttonStyle(ScaleButtonStyle())
+        }
+    }
+
+    private var heartRatePermissionPrompt: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(
+                manager.hasDeniedHeartRatePermission
+                    ? "Heart rate access is denied. Open Settings to re-allow heart rate data."
+                    : "Allow access to Apple Health heart rate to show your average over the last hour."
+            )
+            .font(.system(size: 12))
+            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+            .lineLimit(2)
 
             Button {
-                withAnimation {
-                    userSettings.shouldShowAppleHealthData = false
+                if manager.hasDeniedHeartRatePermission {
+                    manager.openHealthSettings()
+                } else {
+                    Task {
+                        await manager.requestHeartRateAuthorizationIfNeeded()
+                        await manager.refreshMetrics()
+                    }
                 }
             } label: {
-                Text("Do not show Apple Health data")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
-                    .frame(maxWidth: .infinity)
+                Text(manager.hasDeniedHeartRatePermission ? "Open Settings" : "Enable Heart Rate")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color(hex: "#2F352F"))
                     .padding(.vertical, 8)
-                    .overlay(
+                    .frame(maxWidth: .infinity)
+                    .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#F5F7F4").opacity(0.5), lineWidth: 1)
+                            .fill(Color(hex: "#F5F7F4"))
                     )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ScaleButtonStyle())
         }
     }
 
@@ -1105,6 +1144,14 @@ fileprivate struct HealthSummaryWidget: View {
             return "--"
         }
         return Self.decimalFormatter.string(from: NSNumber(value: converted)) ?? String(format: "%.1f", converted)
+    }
+
+    private func formattedHeartRate(_ value: Double?) -> String {
+        guard let value = value else {
+            return "--"
+        }
+        let rounded = Int(value.rounded())
+        return Self.integerFormatter.string(from: NSNumber(value: rounded)) ?? "\(rounded)"
     }
     
     private func convertedDistance(fromMiles milesValue: Double?) -> Double? {
@@ -2020,7 +2067,10 @@ fileprivate struct MedicationRowHeaderView: View {
         case .overdue(let minutesPast):
             return ("Overdue by \(formatTimeText(minutes: minutesPast))", Color(hex: "#FFA726"), true)
         case .due(let minutesRemaining):
-            return ("Due in \(formatTimeText(minutes: minutesRemaining))", Color(hex: "#D7CCC8"), true)
+            if minutesRemaining > 0 {
+                return ("Due in \(formatTimeText(minutes: minutesRemaining))", Color(hex: "#D7CCC8"), true)
+            }
+            return ("Due now", Color(hex: "#D7CCC8"), true)
         case .asNeeded: // Add .asNeeded case
             return ("", .clear, false)
         }
@@ -2666,10 +2716,19 @@ struct MedicationRow: View {
         return calculateEffectiveDueTime(for: medication, at: now)
     }
 
+    private func startOfMinute(_ date: Date) -> Date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        return calendar.date(from: components) ?? date
+    }
+
     // Calculates minutes to the effective due time
     private var minutesToEffectiveDueTime: Int {
         let now = referenceDate
-        return Calendar.current.dateComponents([.minute], from: now, to: effectiveDueTime).minute ?? 0
+        let calendar = Calendar.current
+        let nowMinute = startOfMinute(now)
+        let dueMinute = startOfMinute(effectiveDueTime)
+        return calendar.dateComponents([.minute], from: nowMinute, to: dueMinute).minute ?? 0
     }
 
     private var overdueMinutesForBadge: Int? {
