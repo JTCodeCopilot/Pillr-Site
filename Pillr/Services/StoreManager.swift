@@ -216,7 +216,7 @@ class StoreManager: ObservableObject {
             return safe
         }
     }
-    
+
     // Check if the user has purchased premium
     func isPremiumPurchased() -> Bool {
         if isTestMode {

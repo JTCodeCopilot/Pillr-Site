@@ -8,16 +8,28 @@
 import SwiftUI
 import UserNotifications
 import TelemetryDeck
+import TikTokBusinessSDK
 
 // App Delegate to handle application lifecycle events
-class PillrAppDelegate: NSObject, UIApplicationDelegate {
+final class PillrAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         // Set notification delegate to handle user responses
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+        
+        let config = TikTokConfig(
+            appId: "6746717689",
+            tiktokAppId: "7593781364499988488"
+        
+        )
+        TikTokBusiness.initializeSdk(config) { _, error in
+            if let error = error {
+                print("TikTok SDK init error: \(error)")
+            }
+        }
 
         return true
     }
-    
+
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Update badge when app becomes active
         MedicationStore.shared.checkAndResetBadge()
@@ -28,6 +40,7 @@ class PillrAppDelegate: NSObject, UIApplicationDelegate {
         // Refresh data when returning to foreground
         MedicationStore.shared.loadMedications()
     }
+
 }
 
 @main
