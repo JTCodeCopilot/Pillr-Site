@@ -1009,6 +1009,7 @@ class MedicationStore: ObservableObject {
         if !medication.notificationIDs.isEmpty {
             notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
         }
+        notificationManager.cancelMedicationNotifications(for: medication.id)
         syncDeleteMedication(medication)
     }
 
