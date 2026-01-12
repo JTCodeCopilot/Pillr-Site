@@ -1017,7 +1017,7 @@ struct AddMedicationView: View {
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                                 TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
-                                Text("Daily check-ins fire at the scheduled time, even if you log later.")
+                                Text("If the medication isn't taken before the check-in time, the daily wellness check-in will not trigger.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                                     .fixedSize(horizontal: false, vertical: true)

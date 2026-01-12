@@ -35,7 +35,6 @@ class NotificationManager: ObservableObject {
         attributes: .concurrent
     )
     private var trackedMedicationIDs = Set<UUID>()
-    private let dailyCheckInSchedulingWindowDays = 90
     private let followUpSchedulingWindowDays = 30
     private static let dailyCheckInIDFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -788,13 +787,15 @@ class NotificationManager: ObservableObject {
             return
         }
 
-        guard medication.enableDailyCheckIn,
-              let customCheckInTime = medication.dailyCheckInTime else {
+        guard medication.enableDailyCheckIn else {
             return
         }
 
         let calendar = Calendar.current
-        let checkInComponents = calendar.dateComponents([.hour, .minute], from: customCheckInTime)
+        let checkInTime = medication.dailyCheckInTime
+            ?? calendar.date(bySettingHour: 19, minute: 0, second: 0, of: referenceDate)
+            ?? referenceDate
+        let checkInComponents = calendar.dateComponents([.hour, .minute], from: checkInTime)
 
         guard let hour = checkInComponents.hour,
               let minute = checkInComponents.minute else {
@@ -824,30 +825,26 @@ class NotificationManager: ObservableObject {
             let existingIdentifiers = Set(requests.map { $0.identifier })
             let now = Date()
             let startOfDay = calendar.startOfDay(for: referenceDate)
+            guard let fireDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: startOfDay),
+                  fireDate > now else {
+                return
+            }
 
-            for dayOffset in 0..<self.dailyCheckInSchedulingWindowDays {
-                guard let day = calendar.date(byAdding: .day, value: dayOffset, to: startOfDay),
-                      let fireDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day),
-                      fireDate > now else {
-                    continue
-                }
+            let identifier = self.dailyCheckInIdentifier(for: medication.id, date: fireDate)
+            guard !existingIdentifiers.contains(identifier) else { return }
 
-                let identifier = self.dailyCheckInIdentifier(for: medication.id, date: fireDate)
-                guard !existingIdentifiers.contains(identifier) else { continue }
+            self.applyBadge(content, fireDate: fireDate)
+            let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+            let request = UNNotificationRequest(
+                identifier: identifier,
+                content: content,
+                trigger: trigger
+            )
 
-                self.applyBadge(content, fireDate: fireDate)
-                let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
-                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
-                let request = UNNotificationRequest(
-                    identifier: identifier,
-                    content: content,
-                    trigger: trigger
-                )
-
-                center.add(request) { error in
-                    if let error = error {
-                        print("Error scheduling daily check-in notification: \(error.localizedDescription)")
-                    }
+            center.add(request) { error in
+                if let error = error {
+                    print("Error scheduling daily check-in notification: \(error.localizedDescription)")
                 }
             }
         }

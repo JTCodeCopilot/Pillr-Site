@@ -2637,6 +2637,10 @@ struct MedicationRow: View {
     private var hasSkippedDoseToday: Bool {
         todaysLogsForMedication.contains { $0.skipped }
     }
+
+    private var isDailyCheckInOverdue: Bool {
+        store.isDailyCheckInOverdue(for: medication, referenceDate: referenceDate)
+    }
     
     private var doseButtonStates: [DoseButtonState] {
         if medication.frequency == "As needed" && medication.reminderTimes.isEmpty {
@@ -2925,18 +2929,32 @@ struct MedicationRow: View {
                 Button(action: {
                     onDailyCheckInTap()
                 }) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F5F7F4").opacity(0.85))
-                        .padding(6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(hex: "#F5F7F4").opacity(0.12))
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F5F7F4").opacity(0.85))
+                            .padding(6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(hex: "#F5F7F4").opacity(0.12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                                    )
+                            )
+
+                        if isDailyCheckInOverdue {
+                            Circle()
+                                .fill(Color(hex: "#FF5A5A"))
+                                .frame(width: 8, height: 8)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.9), lineWidth: 1)
                                 )
-                        )
+                                .offset(x: 4, y: -4)
+                                .accessibilityHidden(true)
+                        }
+                    }
                 }
                 .buttonStyle(PlainButtonStyle())
                 .padding(.trailing, 10)

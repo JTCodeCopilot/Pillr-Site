@@ -312,6 +312,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
     var takenAt: Date
     var notes: String?
     var skipped: Bool = false // Whether this log represents a skipped dose
+    var isDailyCheckIn: Bool = false
     var pillsConsumed: Int? // Number of pills consumed in this dose
     var reminderIndex: Int? // Which reminder this log corresponds to (if multiple reminders)
     var focusRating: Int? // 1–5 focus quality rating
@@ -328,6 +329,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         case takenAt
         case notes
         case skipped
+        case isDailyCheckIn
         case pillsConsumed
         case reminderIndex
         case focusRating
@@ -345,6 +347,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         takenAt: Date,
         notes: String? = nil,
         skipped: Bool = false,
+        isDailyCheckIn: Bool = false,
         pillsConsumed: Int? = nil,
         reminderIndex: Int? = nil,
         focusRating: Int? = nil,
@@ -360,6 +363,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.takenAt = takenAt
         self.notes = notes
         self.skipped = skipped
+        self.isDailyCheckIn = isDailyCheckIn
         self.pillsConsumed = pillsConsumed
         self.reminderIndex = reminderIndex
         self.focusRating = focusRating
@@ -379,6 +383,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.takenAt = try container.decode(Date.self, forKey: .takenAt)
         self.notes = try container.decodeIfPresent(String.self, forKey: .notes)
         self.skipped = try container.decodeIfPresent(Bool.self, forKey: .skipped) ?? false
+        self.isDailyCheckIn = try container.decodeIfPresent(Bool.self, forKey: .isDailyCheckIn) ?? false
         self.pillsConsumed = try container.decodeIfPresent(Int.self, forKey: .pillsConsumed)
         self.reminderIndex = try container.decodeIfPresent(Int.self, forKey: .reminderIndex)
         self.focusRating = try container.decodeIfPresent(Int.self, forKey: .focusRating)
@@ -397,6 +402,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         try container.encode(takenAt, forKey: .takenAt)
         try container.encodeIfPresent(notes, forKey: .notes)
         try container.encode(skipped, forKey: .skipped)
+        try container.encode(isDailyCheckIn, forKey: .isDailyCheckIn)
         try container.encodeIfPresent(pillsConsumed, forKey: .pillsConsumed)
         try container.encodeIfPresent(reminderIndex, forKey: .reminderIndex)
         try container.encodeIfPresent(focusRating, forKey: .focusRating)

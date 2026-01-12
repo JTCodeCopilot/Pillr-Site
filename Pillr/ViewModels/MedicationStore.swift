@@ -437,6 +437,7 @@ class MedicationStore: ObservableObject {
             takenAt: actualTime,
             notes: notes,
             skipped: skipped,
+            isDailyCheckIn: isDailyCheckIn,
             pillsConsumed: pillsConsumed,
             reminderIndex: resolvedReminderIndex,
             focusRating: focusRating,
@@ -580,7 +581,7 @@ class MedicationStore: ObservableObject {
         }
         
         if !skipped && !isDailyCheckIn {
-            notificationManager.scheduleDailyCheckInReminder(for: medication, referenceDate: actualTime)
+            scheduleDailyCheckInReminderIfNeeded(for: medication, referenceDate: actualTime)
         }
 
         if isDailyCheckIn {
@@ -868,8 +869,9 @@ class MedicationStore: ObservableObject {
         referenceDate: Date = Date()
     ) {
         guard !isPreviewMode else { return }
-        guard medication.enableDailyCheckIn,
-              medication.dailyCheckInTime != nil else { return }
+        guard shouldScheduleDailyCheckInReminder(for: medication, referenceDate: referenceDate) else {
+            return
+        }
 
         notificationManager.scheduleDailyCheckInReminder(for: medication, referenceDate: referenceDate)
     }
@@ -1179,6 +1181,7 @@ class MedicationStore: ObservableObject {
         sideEffectSeverity: Int?
     ) {
         var logEntry = logs[index]
+        logEntry.isDailyCheckIn = true
         if let mergedNotes = mergeNotes(existing: logEntry.notes, with: notes) {
             logEntry.notes = mergedNotes
         }
@@ -1191,6 +1194,158 @@ class MedicationStore: ObservableObject {
         logs[index] = logEntry
         saveLogs()
         hapticManager.successNotification()
+    }
+
+    func isDailyCheckInOverdue(for medication: Medication, referenceDate: Date = Date()) -> Bool {
+        guard medication.enableDailyCheckIn else { return false }
+        guard let triggerDate = dailyCheckInTriggerDate(for: medication, referenceDate: referenceDate) else {
+            return false
+        }
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: referenceDate)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return false }
+        guard triggerDate >= dayStart, triggerDate < dayEnd else { return false }
+        guard referenceDate >= triggerDate else { return false }
+        if isStandaloneDailyCheckIn(medication),
+           !hasTakenDoseBeforeCheckInTime(for: medication, triggerDate: triggerDate, referenceDate: referenceDate) {
+            return false
+        }
+        return !hasCompletedDailyCheckIn(for: medication, referenceDate: referenceDate)
+    }
+
+    private func dailyCheckInTriggerDate(for medication: Medication, referenceDate: Date) -> Date? {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: referenceDate)
+
+        if let customCheckInTime = medication.dailyCheckInTime {
+            let components = calendar.dateComponents([.hour, .minute], from: customCheckInTime)
+            guard let hour = components.hour,
+                  let minute = components.minute,
+                  let triggerDate = calendar.date(
+                    bySettingHour: hour,
+                    minute: minute,
+                    second: 0,
+                    of: dayStart
+                  ) else {
+                return nil
+            }
+
+            if let createdAt = medication.createdAt,
+               calendar.isDate(createdAt, inSameDayAs: referenceDate),
+               triggerDate < createdAt {
+                return nil
+            }
+            return triggerDate
+        }
+
+        if isStimulantPhaseDailyCheckIn(medication),
+           medication.hasStimulantTiming,
+           let durationMinutes = medication.durationMinutes {
+            let medicationID = medication.logIdentifier
+            guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart),
+                  let previousDayStart = calendar.date(byAdding: .day, value: -1, to: dayStart) else {
+                return nil
+            }
+
+            let candidateLogs = logs.filter { log in
+                log.medicationID == medicationID &&
+                !log.skipped &&
+                log.takenAt >= previousDayStart &&
+                log.takenAt < dayEnd
+            }
+
+            let triggerDates = candidateLogs.compactMap { log in
+                calendar.date(byAdding: .minute, value: durationMinutes, to: log.takenAt)
+            }.filter { triggerDate in
+                triggerDate >= dayStart && triggerDate < dayEnd
+            }
+
+            return triggerDates.min()
+        }
+
+        guard shouldUseDefaultDailyCheckInTime(for: medication),
+              let triggerDate = calendar.date(
+                bySettingHour: 19,
+                minute: 0,
+                second: 0,
+                of: dayStart
+              ) else {
+            return nil
+        }
+
+        if let createdAt = medication.createdAt,
+           calendar.isDate(createdAt, inSameDayAs: referenceDate),
+           triggerDate < createdAt {
+            return nil
+        }
+
+        return triggerDate
+    }
+
+    private func hasCompletedDailyCheckIn(for medication: Medication, referenceDate: Date) -> Bool {
+        let calendar = Calendar.current
+        let medicationID = medication.logIdentifier
+        return logs.contains { log in
+            log.medicationID == medicationID &&
+            calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
+            isDailyCheckInLog(log)
+        }
+    }
+
+    private func isDailyCheckInLog(_ log: MedicationLog) -> Bool {
+        if log.isDailyCheckIn {
+            return true
+        }
+        if log.focusRating != nil || log.sideEffectSeverity != nil {
+            return true
+        }
+        if let notes = log.notes,
+           notes.range(of: "Side effects:", options: [.caseInsensitive]) != nil {
+            return true
+        }
+        return false
+    }
+
+    private func shouldScheduleDailyCheckInReminder(for medication: Medication, referenceDate: Date) -> Bool {
+        guard medication.enableDailyCheckIn,
+              isStandaloneDailyCheckIn(medication),
+              let triggerDate = dailyCheckInTriggerDate(for: medication, referenceDate: referenceDate) else {
+            return false
+        }
+
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: referenceDate)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return false }
+        guard triggerDate >= dayStart, triggerDate < dayEnd else { return false }
+        guard referenceDate <= triggerDate else { return false }
+        return hasTakenDoseBeforeCheckInTime(for: medication, triggerDate: triggerDate, referenceDate: referenceDate)
+    }
+
+    private func hasTakenDoseBeforeCheckInTime(
+        for medication: Medication,
+        triggerDate: Date,
+        referenceDate: Date
+    ) -> Bool {
+        let calendar = Calendar.current
+        let medicationID = medication.logIdentifier
+        return logs.contains { log in
+            log.medicationID == medicationID &&
+            !log.skipped &&
+            calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
+            log.takenAt <= triggerDate
+        }
+    }
+
+    private func shouldUseDefaultDailyCheckInTime(for medication: Medication) -> Bool {
+        medication.enableDailyCheckIn && medication.dailyCheckInTime == nil && !isStimulantPhaseDailyCheckIn(medication)
+    }
+
+    private func isStandaloneDailyCheckIn(_ medication: Medication) -> Bool {
+        medication.dailyCheckInTime != nil || !isStimulantPhaseDailyCheckIn(medication)
+    }
+
+    private func isStimulantPhaseDailyCheckIn(_ medication: Medication) -> Bool {
+        medication.enableStimulantPhaseNotifications && medication.medicationType == .stimulant && medication.dailyCheckInTime == nil
     }
 
 

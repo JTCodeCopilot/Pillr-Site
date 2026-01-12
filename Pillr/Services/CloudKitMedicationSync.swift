@@ -51,6 +51,7 @@ final class CloudKitMedicationSync {
         static let reminderIndex = "reminderIndex"
         static let focusRating = "focusRating"
         static let sideEffectSeverity = "sideEffectSeverity"
+        static let isDailyCheckIn = "isDailyCheckIn"
         static let notesLog = "notes"
         static let hiddenFromMyMeds = "hiddenFromMyMeds"
         static let medicationDosageText = "medicationDosageText"
@@ -286,6 +287,7 @@ final class CloudKitMedicationSync {
         if let sideEffectSeverity = log.sideEffectSeverity {
             record[Field.sideEffectSeverity] = sideEffectSeverity as CKRecordValue
         }
+        record[Field.isDailyCheckIn] = log.isDailyCheckIn as CKRecordValue
         let reference = CKRecord.Reference(recordID: CKRecord.ID(recordName: medication.id.uuidString), action: .none)
         record[Field.medicationReference] = reference
         return record
@@ -396,6 +398,7 @@ final class CloudKitMedicationSync {
         let reminderIndex = record[Field.reminderIndex] as? Int
         let focusRating = record[Field.focusRating] as? Int
         let sideEffectSeverity = record[Field.sideEffectSeverity] as? Int
+        let isDailyCheckIn = record[Field.isDailyCheckIn] as? Bool ?? false
         let hiddenFromMyMeds = record[Field.hiddenFromMyMeds] as? Bool ?? false
         let medicationDosageText = record[Field.medicationDosageText] as? String ?? ""
         let medicationIconName = record[Field.medicationIconName] as? String ?? "pill"
@@ -408,6 +411,7 @@ final class CloudKitMedicationSync {
             takenAt: takenAt,
             notes: notes,
             skipped: skipped,
+            isDailyCheckIn: isDailyCheckIn,
             pillsConsumed: pillsConsumed,
             reminderIndex: reminderIndex,
             focusRating: focusRating,
