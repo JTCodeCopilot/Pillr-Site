@@ -66,7 +66,7 @@ class MedicationStore: ObservableObject {
     @Published private(set) var lastCloudSyncDate: Date?
     @Published var recentADHDDoseTimeline: ADHDDoseTimelineEntry?
     /// When set (typically from a notification tap), the UI
-    /// should present a daily check-in logging sheet for this medication.
+    /// should present a Reflect logging sheet for this medication.
     @Published var dailyCheckInContext: DailyCheckInContext?
     /// When set, the medications list should highlight / expand this medication card.
     @Published var highlightedMedicationID: UUID?
@@ -367,6 +367,7 @@ class MedicationStore: ObservableObject {
         notes: String?,
         skipped: Bool = false,
         reminderIndex: Int? = nil,
+        feelingRating: Int? = nil,
         focusRating: Int? = nil,
         sideEffectSeverity: Int? = nil,
         showFocusTimeline: Bool = true,
@@ -404,6 +405,7 @@ class MedicationStore: ObservableObject {
                         applyDailyCheckInUpdates(
                             at: existingIndex,
                             notes: notes,
+                            feelingRating: feelingRating,
                             focusRating: focusRating,
                             sideEffectSeverity: sideEffectSeverity
                         )
@@ -440,6 +442,7 @@ class MedicationStore: ObservableObject {
             isDailyCheckIn: isDailyCheckIn,
             pillsConsumed: pillsConsumed,
             reminderIndex: resolvedReminderIndex,
+            feelingRating: feelingRating,
             focusRating: focusRating,
             sideEffectSeverity: sideEffectSeverity,
             medicationDosageText: medication.dosageWithUnit,
@@ -918,6 +921,7 @@ class MedicationStore: ObservableObject {
         actualTime: Date,
         notes: String?,
         reminderIndex: Int? = nil,
+        feelingRating: Int? = nil,
         focusRating: Int? = nil,
         sideEffectSeverity: Int? = nil,
         showFocusTimeline: Bool = true
@@ -928,6 +932,7 @@ class MedicationStore: ObservableObject {
             notes: notes,
             skipped: true,
             reminderIndex: reminderIndex,
+            feelingRating: feelingRating,
             focusRating: focusRating,
             sideEffectSeverity: sideEffectSeverity,
             showFocusTimeline: showFocusTimeline
@@ -1177,6 +1182,7 @@ class MedicationStore: ObservableObject {
     private func applyDailyCheckInUpdates(
         at index: Int,
         notes: String?,
+        feelingRating: Int?,
         focusRating: Int?,
         sideEffectSeverity: Int?
     ) {
@@ -1184,6 +1190,9 @@ class MedicationStore: ObservableObject {
         logEntry.isDailyCheckIn = true
         if let mergedNotes = mergeNotes(existing: logEntry.notes, with: notes) {
             logEntry.notes = mergedNotes
+        }
+        if let feelingRating {
+            logEntry.feelingRating = feelingRating
         }
         if let focusRating {
             logEntry.focusRating = focusRating
@@ -1296,7 +1305,7 @@ class MedicationStore: ObservableObject {
         if log.isDailyCheckIn {
             return true
         }
-        if log.focusRating != nil || log.sideEffectSeverity != nil {
+        if log.feelingRating != nil || log.focusRating != nil || log.sideEffectSeverity != nil {
             return true
         }
         if let notes = log.notes,

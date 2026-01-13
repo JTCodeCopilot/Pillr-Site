@@ -423,7 +423,7 @@ struct MedicationLogView: View {
             log.takenAt >= thirtyDaysAgo &&
             log.takenAt <= now &&
             !log.skipped &&
-            (log.focusRating != nil || log.sideEffectSeverity != nil)
+            (log.feelingRating != nil || log.focusRating != nil || log.sideEffectSeverity != nil)
         }
         
         guard !recentLogs.isEmpty else { return nil }
@@ -749,6 +749,9 @@ struct MedicationLogView: View {
                     lines.append("Check-in Notes: \(checkInText)")
                 }
                 
+                if let feeling = log.feelingRating {
+                    lines.append("Feeling Rating: \(feeling)/5")
+                }
                 if let sideEffects = log.sideEffectSeverity {
                     lines.append("Side Effects Rating: \(sideEffects)/5")
                 }
@@ -868,7 +871,7 @@ struct MedicationLogView: View {
             generalNote = paragraphs.first
             checkInNote = paragraphs.dropFirst().joined(separator: "\n\n")
         } else if let first = paragraphs.first {
-            if log.focusRating != nil || log.sideEffectSeverity != nil {
+            if log.feelingRating != nil || log.focusRating != nil || log.sideEffectSeverity != nil {
                 checkInNote = first
             } else {
                 generalNote = first

@@ -4,6 +4,7 @@ import UserNotifications
 enum MainTab: String, Hashable, CaseIterable {
     case meds
     case history
+    case checkIns
     case focus
     case more
 }
@@ -25,13 +26,21 @@ struct MainTabView: View {
     @State private var showNotificationOnboardingPrompt = false
     @State private var needsOnboardingAfterNotificationPrompt = false
     @State private var isRequestingNotificationAuthorization = false
+    @State private var showingPremiumUpgrade = false
     
     private static let cloudSyncOnboardingKey = "cloudSyncChoice"
+    private var isPremiumActive: Bool {
+        storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
+    }
 
     private var tabSelection: Binding<MainTab> {
         Binding(
             get: { selectedTab },
             set: { newValue in
+                if newValue == .checkIns && !isPremiumActive {
+                    showingPremiumUpgrade = true
+                    return
+                }
                 if selectedTab == .meds && newValue != .meds && addFlowCoordinator.isShowing {
                     pendingTabSelection = newValue
                     showDiscardAlert = true
@@ -56,19 +65,26 @@ struct MainTabView: View {
                     }
                     .tag(MainTab.meds)
                 
-                MedicationHistoryView()
+                DailyCheckInHistoryView()
                     .tabItem {
-                        Image(systemName: "calendar")
-                            .accessibilityLabel("History")
+                        Image(systemName: "book.pages")
+                            .accessibilityLabel("Check-Ins")
                     }
-                    .tag(MainTab.history)
-                
+                    .tag(MainTab.checkIns)
+
                 FocusTimelineView(isModal: false)
                     .tabItem {
                         Image(systemName: "hourglass")
                             .accessibilityLabel("Focus")
                     }
                     .tag(MainTab.focus)
+
+                MedicationHistoryView()
+                    .tabItem {
+                        Image(systemName: "calendar")
+                            .accessibilityLabel("History")
+                    }
+                    .tag(MainTab.history)
                 
                 SettingsView()
                     .tabItem {
@@ -123,6 +139,10 @@ struct MainTabView: View {
             }
         } message: {
             Text("Any progress you've made on this medication will be discarded.")
+        }
+        .sheet(isPresented: $showingPremiumUpgrade) {
+            PremiumUpgradeView()
+                .environmentObject(StoreManager.shared)
         }
         .onAppear {
             scheduleOnboarding(for: selectedTab)
@@ -400,6 +420,24 @@ private extension MainTab {
                     icon: .system(name: "calendar"),
                     accentColor: Color(hex: "#81C784"),
                     buttonAccessibilityLabel: "Continue to History"
+                )
+        case .checkIns:
+                return OnboardingStageInfo(
+                    title: "Reflect",
+                    description: AnyView(
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Capture a short daily note about how you are feeling.")
+                                .multilineTextAlignment(.leading)
+                            Text("Your check-ins stay tied to the medications you logged that day.")
+                                .multilineTextAlignment(.leading)
+                        }
+                    ),
+                    benefits: [
+
+                    ],
+                    icon: .system(name: "book.pages"),
+                    accentColor: Color(hex: "#9FBBA5"),
+                    buttonAccessibilityLabel: "Continue to Reflect"
                 )
         case .focus:
                 return OnboardingStageInfo(

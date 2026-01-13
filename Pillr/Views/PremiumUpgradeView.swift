@@ -24,6 +24,7 @@ struct PremiumUpgradeView: View {
         FeatureComparison(title: "Once-Daily Reminder", freeIncludes: true, premiumIncludes: true),
         FeatureComparison(title: "Focus Timeline", freeIncludes: true, premiumIncludes: true),
         FeatureComparison(title: "History", freeIncludes: true, premiumIncludes: true),
+        FeatureComparison(title: "Reflect (daily wellness check-ins)", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "iCloud Sync & Backup", freeIncludes: true, premiumIncludes: true),
         FeatureComparison(title: "Unlimited Medications", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "Multiple Daily Reminders", freeIncludes: false, premiumIncludes: true),

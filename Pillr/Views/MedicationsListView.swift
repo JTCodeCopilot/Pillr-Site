@@ -2959,7 +2959,7 @@ struct MedicationRow: View {
                 .buttonStyle(PlainButtonStyle())
                 .padding(.trailing, 10)
                 .padding(.bottom, 10)
-                .accessibilityLabel("Log daily check-in")
+                .accessibilityLabel("Log Reflect")
             }
         }
         .overlay(alignment: .topTrailing) {

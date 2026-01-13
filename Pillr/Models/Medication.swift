@@ -105,7 +105,7 @@ struct Medication: Identifiable, Codable, Hashable {
     }
     
     /// When enabled for ADHD stimulants, Pillr will prompt
-    /// a daily check-in around the time the medication starts wearing off.
+    /// a Reflect prompt around the time the medication starts wearing off.
     var enableDailyCheckIn: Bool = false
     /// When enabled, Pillr will surface the start/fade reminders that drive focus windows.
     var enableStimulantPhaseNotifications: Bool = false
@@ -315,6 +315,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
     var isDailyCheckIn: Bool = false
     var pillsConsumed: Int? // Number of pills consumed in this dose
     var reminderIndex: Int? // Which reminder this log corresponds to (if multiple reminders)
+    var feelingRating: Int? // 1–5 overall feeling rating
     var focusRating: Int? // 1–5 focus quality rating
     var sideEffectSeverity: Int? // 1–5 overall side-effect severity
     var hiddenFromMyMeds: Bool = false // Hide from My Meds list while keeping it in history
@@ -332,6 +333,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         case isDailyCheckIn
         case pillsConsumed
         case reminderIndex
+        case feelingRating
         case focusRating
         case sideEffectSeverity
         case hiddenFromMyMeds
@@ -350,6 +352,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         isDailyCheckIn: Bool = false,
         pillsConsumed: Int? = nil,
         reminderIndex: Int? = nil,
+        feelingRating: Int? = nil,
         focusRating: Int? = nil,
         sideEffectSeverity: Int? = nil,
         hiddenFromMyMeds: Bool = false,
@@ -366,6 +369,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.isDailyCheckIn = isDailyCheckIn
         self.pillsConsumed = pillsConsumed
         self.reminderIndex = reminderIndex
+        self.feelingRating = feelingRating
         self.focusRating = focusRating
         self.sideEffectSeverity = sideEffectSeverity
         self.hiddenFromMyMeds = hiddenFromMyMeds
@@ -386,6 +390,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.isDailyCheckIn = try container.decodeIfPresent(Bool.self, forKey: .isDailyCheckIn) ?? false
         self.pillsConsumed = try container.decodeIfPresent(Int.self, forKey: .pillsConsumed)
         self.reminderIndex = try container.decodeIfPresent(Int.self, forKey: .reminderIndex)
+        self.feelingRating = try container.decodeIfPresent(Int.self, forKey: .feelingRating)
         self.focusRating = try container.decodeIfPresent(Int.self, forKey: .focusRating)
         self.sideEffectSeverity = try container.decodeIfPresent(Int.self, forKey: .sideEffectSeverity)
         self.hiddenFromMyMeds = try container.decodeIfPresent(Bool.self, forKey: .hiddenFromMyMeds) ?? false
@@ -405,6 +410,7 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         try container.encode(isDailyCheckIn, forKey: .isDailyCheckIn)
         try container.encodeIfPresent(pillsConsumed, forKey: .pillsConsumed)
         try container.encodeIfPresent(reminderIndex, forKey: .reminderIndex)
+        try container.encodeIfPresent(feelingRating, forKey: .feelingRating)
         try container.encodeIfPresent(focusRating, forKey: .focusRating)
         try container.encodeIfPresent(sideEffectSeverity, forKey: .sideEffectSeverity)
         try container.encode(hiddenFromMyMeds, forKey: .hiddenFromMyMeds)

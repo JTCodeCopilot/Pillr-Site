@@ -648,6 +648,14 @@ private struct MedicationTimelineRow: View {
                     }
                 }
                 
+                if let feeling = log.feelingRating {
+                    HistoryChip(
+                        icon: "heart.fill",
+                        text: "Feeling \(feeling)/5",
+                        tint: Color(hex: "#D7CCC8").opacity(0.95)
+                    )
+                }
+
                 if let focus = log.focusRating {
                     HistoryChip(
                         icon: "hourglass",
@@ -904,6 +912,9 @@ extension MedicationHistoryView {
                     lines.append("Check-in Notes: \(checkInText)")
                 }
 
+                if let feeling = log.feelingRating {
+                    lines.append("Feeling Rating: \(feeling)/5")
+                }
                 if let sideEffects = log.sideEffectSeverity {
                     lines.append("Side Effects Rating: \(sideEffects)/5")
                 }
@@ -1003,7 +1014,7 @@ extension MedicationHistoryView {
             generalNote = paragraphs.first
             checkInNote = paragraphs.dropFirst().joined(separator: "\n\n")
         } else if let first = paragraphs.first {
-            if log.focusRating != nil || log.sideEffectSeverity != nil {
+            if log.feelingRating != nil || log.focusRating != nil || log.sideEffectSeverity != nil {
                 checkInNote = first
             } else {
                 generalNote = first

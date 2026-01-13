@@ -15,10 +15,11 @@ import UIKit
 	    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	    @Environment(\.colorScheme) private var colorScheme
 
-	    let medicationToLog: Medication
-	    var isDailyCheckIn: Bool = false
-        var checkInLogID: UUID? = nil
-	    var onLogAction: ((MedicationStore.LogUndoAction) -> Void)? = nil
+	    @State private var medicationToLog: Medication
+	    var isDailyCheckIn: Bool
+        var checkInLogID: UUID?
+        var allowsMedicationSelection: Bool
+	    var onLogAction: ((MedicationStore.LogUndoAction) -> Void)?
 	    @State private var actualTimeTaken: Date = Date()
 	    @State private var logNotes: String = ""
 	    @State private var keyboardHeight: CGFloat = 0
@@ -31,7 +32,22 @@ import UIKit
     @State private var customSideEffect: String = ""
     @State private var showingAddCustomSideEffect: Bool = false
     @State private var focusRating: Int = 0 // 1–5, 0 = not set
+    @State private var feelingRating: Int = 0 // 1–5, 0 = not set
     @State private var sideEffectSeverity: Int = 0 // 1–5, 0 = not set
+    init(
+        medicationToLog: Medication,
+        isDailyCheckIn: Bool = false,
+        checkInLogID: UUID? = nil,
+        allowsMedicationSelection: Bool = false,
+        onLogAction: ((MedicationStore.LogUndoAction) -> Void)? = nil
+    ) {
+        self._medicationToLog = State(initialValue: medicationToLog)
+        self.isDailyCheckIn = isDailyCheckIn
+        self.checkInLogID = checkInLogID
+        self.allowsMedicationSelection = allowsMedicationSelection
+        self.onLogAction = onLogAction
+    }
+
     // Quick time options for easier logging
     enum QuickTimeOption: String, CaseIterable {
         case now = "Now"
@@ -62,6 +78,50 @@ import UIKit
     // Whether this medication has multiple doses
     private var hasMultipleDoses: Bool {
         return !medicationToLog.reminderTimes.isEmpty
+    }
+
+    private var selectableMedications: [Medication] {
+        store.activeMedications.filter { !$0.isDeleted }
+    }
+
+    private var shouldShowMedicationSelection: Bool {
+        isDailyCheckIn && allowsMedicationSelection
+    }
+
+    private var medicationSelectionLabel: some View {
+        HStack(spacing: 12) {
+            Image(systemName: medicationToLog.iconName.isEmpty ? "pill" : medicationToLog.iconName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(medicationToLog.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+
+                if !medicationToLog.dosageWithUnit.isEmpty {
+                    Text(medicationToLog.dosageWithUnit)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(hex: "#F5F5F5").opacity(0.2))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
+                )
+        )
     }
     
     // Computed property for dose selection label to avoid complex expression
@@ -107,7 +167,7 @@ import UIKit
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(isDailyCheckIn ? "Daily Check-In" : "Log Medication")
+                                    Text(isDailyCheckIn ? "Reflect" : "Log Medication")
                                         .font(.system(size: 32, weight: .bold, design: .rounded))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                 }
@@ -136,6 +196,29 @@ import UIKit
                                             .fill(Color(hex: "#C7C7BD"))
                                             .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                                     )
+                                }
+                            }
+
+                            if shouldShowMedicationSelection {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Medication")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .tracking(0.6)
+
+                                    Menu {
+                                        ForEach(selectableMedications) { medication in
+                                            Button {
+                                                applyMedicationSelection(medication)
+                                            } label: {
+                                                Text(medication.name)
+                                            }
+                                        }
+                                    } label: {
+                                        medicationSelectionLabel
+                                    }
+                                    .buttonStyle(ScaleButtonStyle())
+                                    .disabled(selectableMedications.isEmpty)
                                 }
                             }
                             
@@ -194,7 +277,7 @@ import UIKit
                             }
                         }
                         
-                        // Enhanced Time Section with quick options (hidden for daily check-ins)
+                        // Enhanced Time Section with quick options (hidden for Reflect)
                         if !isDailyCheckIn {
                             FormSection(title: "TIME TAKEN", icon: "") {
                                 VStack(alignment: .leading, spacing: 20) {
@@ -274,6 +357,18 @@ import UIKit
                                     VStack(alignment: .leading, spacing: 20) {
                                         // Quick check-in sliders
                                         VStack(alignment: .leading, spacing: 12) {
+                                            Text("How did you feel today?")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
+
+                                            RatingControl(
+                                                title: "Feeling",
+                                                value: $feelingRating,
+                                                lowLabel: "Rough",
+                                                highLabel: "Great",
+                                                activeColor: Color(hex: "#B5926F")
+                                            )
+
                                             Text("How was your focus?")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
@@ -424,12 +519,20 @@ import UIKit
                                     }
                                 }
                             } else {
-                                FormSection(title: "DAILY CHECK-IN", icon: "note.text.fill") {
+                                FormSection(title: "REFLECT", icon: "note.text.fill") {
                                     VStack(alignment: .leading, spacing: 20) {
                                         VStack(alignment: .leading, spacing: 12) {
                                             Text("How did you feel today?")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
+
+                                            RatingControl(
+                                                title: "Feeling",
+                                                value: $feelingRating,
+                                                lowLabel: "Rough",
+                                                highLabel: "Great",
+                                                activeColor: Color(hex: "#B5926F")
+                                            )
 
                                             RatingControl(
                                                 title: "Overall",
@@ -655,6 +758,10 @@ import UIKit
                     remainingPills = pillCount
                 }
             }
+            .onChange(of: medicationToLog.id) { _ in
+                selectedDoseIndex = 0
+                remainingPills = medicationToLog.pillCount
+            }
             .alert("Add Custom Side Effect", isPresented: $showingAddCustomSideEffect) {
                 TextField("Side effect", text: $customSideEffect)
                 Button("Add") {
@@ -703,6 +810,12 @@ import UIKit
             )
         }
     }
+
+    private func applyMedicationSelection(_ medication: Medication) {
+        medicationToLog = medication
+        selectedDoseIndex = 0
+        remainingPills = medication.pillCount
+    }
     
     private func setupKeyboardObservers() {
         // Add keyboard observers
@@ -734,6 +847,7 @@ import UIKit
         let finalNotes = combinedNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         let notesToSave = finalNotes.isEmpty ? nil : finalNotes
         
+        let feelingToSave = isDailyCheckIn && feelingRating > 0 ? feelingRating : nil
         let focusToSave = isDailyCheckIn && focusRating > 0 ? focusRating : nil
         let sideEffectToSave = isDailyCheckIn && sideEffectSeverity > 0 ? sideEffectSeverity : nil
         
@@ -743,6 +857,7 @@ import UIKit
 	                actualTime: timeToUse,
 	                notes: notesToSave,
 	                reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
+	                feelingRating: feelingToSave,
 	                focusRating: focusToSave,
 	                sideEffectSeverity: sideEffectToSave,
 	                showFocusTimeline: !isDailyCheckIn
@@ -756,6 +871,7 @@ import UIKit
 	                notes: notesToSave,
 	                skipped: false,
 	                reminderIndex: hasMultipleDoses ? selectedDoseIndex : nil,
+	                feelingRating: feelingToSave,
 	                focusRating: focusToSave,
 	                sideEffectSeverity: sideEffectToSave,
 	                showFocusTimeline: !isDailyCheckIn,
@@ -790,9 +906,24 @@ struct RatingControl: View {
     @Binding var value: Int
     let lowLabel: String
     let highLabel: String
+    let activeColor: Color
     
     private let range = 1...5
     
+    init(
+        title: String,
+        value: Binding<Int>,
+        lowLabel: String,
+        highLabel: String,
+        activeColor: Color = Color(hex: "#D7CCC8")
+    ) {
+        self.title = title
+        self._value = value
+        self.lowLabel = lowLabel
+        self.highLabel = highLabel
+        self.activeColor = activeColor
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -831,7 +962,7 @@ struct RatingControl: View {
                         Circle()
                             .fill(
                                 index <= value
-                                ? Color(hex: "#D7CCC8")
+                                ? activeColor
                                 : Color.black.opacity(0.3)
                             )
                             .frame(width: 22, height: 22)
