@@ -34,6 +34,8 @@ import UIKit
     @State private var focusRating: Int = 0 // 1–5, 0 = not set
     @State private var feelingRating: Int = 0 // 1–5, 0 = not set
     @State private var sideEffectSeverity: Int = 0 // 1–5, 0 = not set
+    @State private var checkInDate: Date = Date()
+    @State private var didLoadExistingCheckIn: Bool = false
     init(
         medicationToLog: Medication,
         isDailyCheckIn: Bool = false,
@@ -116,10 +118,10 @@ import UIKit
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(hex: "#F5F5F5").opacity(0.2))
+                .fill(Color.white.opacity(0.06))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
                 )
         )
     }
@@ -139,10 +141,10 @@ import UIKit
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(hex: "#F5F5F5").opacity(0.2))
+                .fill(Color.white.opacity(0.06))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
                 )
         )
     }
@@ -150,51 +152,55 @@ import UIKit
     var body: some View {
         NavigationView {
             ZStack {
-                // Enhanced background with subtle gradient
+                // Background
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(hex: "#404C42"),
-                        Color(hex: "#3A443D")
+                        Color(hex: "#3C463E"),
+                        Color(hex: "#343D36")
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 .ignoresSafeArea()
                 
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 24) {
-                        // Enhanced Header with progress indicator
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 24) {
+                        // Header
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(isDailyCheckIn ? "Reflect" : "Log Medication")
-                                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                                        .font(.system(size: 28, weight: .semibold))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                 }
                                 
                                 Spacer()
                                 
-                                // Enhanced pill count indicator
+                                // Pill count indicator
                                 if let pillCount = remainingPills {
                                     VStack(spacing: 4) {
                                         HStack(spacing: 6) {
                                             Image(systemName: "pills.circle.fill")
-                                                .font(.system(size: 16))
-                                                .foregroundColor(Color(hex: "#404C42"))
+                                                .font(.system(size: 14))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
                                             Text("\(pillCount)")
-                                                .font(.system(size: 18, weight: .bold))
-                                                .foregroundColor(Color(hex: "#404C42"))
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
                                         }
                                         Text("remaining")
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(Color(hex: "#404C42").opacity(0.8))
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                     }
                                     .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
+                                    .padding(.vertical, 10)
                                     .background(
                                         RoundedRectangle(cornerRadius: 16)
-                                            .fill(Color(hex: "#C7C7BD"))
-                                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                            .fill(Color.white.opacity(0.06))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 16)
+                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                            )
                                     )
                                 }
                             }
@@ -222,33 +228,8 @@ import UIKit
                                 }
                             }
                             
-                            // Medication preview card
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(medicationToLog.name)
-                                    .font(.system(size: 22, weight: .bold))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                    .lineLimit(2)
-                                
-                                Text("\(medicationToLog.dosage) \(medicationToLog.dosageUnit)")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#F5F5F5"))
-                                
-                                Text(medicationToLog.frequency)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(20)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(Color.black.opacity(0.2))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                        }
-                        .padding(.top, 20)
+                    }
+                    .padding(.top, 20)
                         
                         // Multiple doses selector (if applicable)
                         if hasMultipleDoses {
@@ -256,8 +237,8 @@ import UIKit
                                 VStack(alignment: .leading, spacing: 16) {
                                     HStack {
                                         Image(systemName: "clock.badge.checkmark")
-                                            .foregroundColor(Color(hex: "#FFB74D"))
-                                            .font(.system(size: 20))
+                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                            .font(.system(size: 18))
                                         Text("Which dose are you logging?")
                                             .font(.system(size: 16, weight: .semibold))
                                             .foregroundColor(Color(hex: "#E8E8E0"))
@@ -296,16 +277,16 @@ import UIKit
                                             }) {
                                                 Text(option.rawValue)
                                                     .font(.system(size: 14, weight: .semibold))
-                                                    .foregroundColor(selectedQuickTime == option ? Color(hex: "#404C42") : Color(hex: "#E8E8E0"))
+                                                    .foregroundColor(selectedQuickTime == option ? Color(hex: "#E8E8E0") : Color(hex: "#C7C7BD"))
                                                     .padding(.vertical, 12)
                                                     .padding(.horizontal, 8)
                                                     .frame(maxWidth: .infinity)
                                                     .background(
                                                         RoundedRectangle(cornerRadius: 12)
-                                                            .fill(selectedQuickTime == option ? Color(hex: "#F5F5F5") : Color.black.opacity(0.2))
+                                                            .fill(selectedQuickTime == option ? Color.white.opacity(0.08) : Color.white.opacity(0.02))
                                                             .overlay(
                                                                 RoundedRectangle(cornerRadius: 12)
-                                                                    .stroke(selectedQuickTime == option ? Color(hex: "#F5F5F5") : Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                                    .stroke(Color.white.opacity(selectedQuickTime == option ? 0.2 : 0.12), lineWidth: 1)
                                                             )
                                                     )
                                             }
@@ -318,11 +299,11 @@ import UIKit
                                         VStack(alignment: .leading, spacing: 12) {
                                             HStack {
                                                 Image(systemName: "clock.arrow.circlepath")
-                                                    .foregroundColor(Color(hex: "#F5F5F5"))
+                                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                                     .font(.system(size: 16))
                                                 Text("Select custom time")
-                                                    .font(.system(size: 14, weight: .semibold))
-                                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                             }
                                             
                                             DatePicker("", selection: $actualTimeTaken, displayedComponents: [.date, .hourAndMinute])
@@ -332,16 +313,16 @@ import UIKit
                                                 .accentColor(Color(hex: "#F5F5F5"))
                                                 .background(
                                                     RoundedRectangle(cornerRadius: 12)
-                                                        .fill(Color.black.opacity(0.1))
+                                                        .fill(Color.white.opacity(0.05))
                                                 )
                                         }
                                         .padding(16)
                                         .background(
                                             RoundedRectangle(cornerRadius: 12)
-                                                .fill(Color.black.opacity(0.1))
+                                                .fill(Color.white.opacity(0.04))
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 12)
-                                                        .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
+                                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                                 )
                                         )
                                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
@@ -349,41 +330,65 @@ import UIKit
                                 }
                             }
                         }
-                        
-                        // Enhanced Notes & Side Effects Section
+
                         if isDailyCheckIn {
-                            if medicationToLog.medicationType == .stimulant {
-                                FormSection(title: "NOTES & SIDE EFFECTS", icon: "note.text.fill") {
-                                    VStack(alignment: .leading, spacing: 20) {
-                                        // Quick check-in sliders
-                                        VStack(alignment: .leading, spacing: 12) {
-                                            Text("How did you feel today?")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                            VStack(alignment: .leading, spacing: 14) {
+                                ReflectCard {
+                                    Text("Which day are you reflecting on?")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#E8E8E0"))
 
-                                            RatingControl(
-                                                title: "Feeling",
-                                                value: $feelingRating,
-                                                lowLabel: "Rough",
-                                                highLabel: "Great",
-                                                activeColor: Color(hex: "#B5926F")
-                                            )
+                                    DatePicker(
+                                        "",
+                                        selection: $checkInDate,
+                                        in: ...Date(),
+                                        displayedComponents: [.date]
+                                    )
+                                    .datePickerStyle(.compact)
+                                    .labelsHidden()
+                                    .colorScheme(.dark)
+                                    .accentColor(Color(hex: "#F5F5F5"))
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.white.opacity(0.05))
+                                    )
+                                }
 
+                                if medicationToLog.medicationType == .stimulant {
+                                    ReflectCard {
+                                        Text("How did you feel today?")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+
+                                        RatingControl(
+                                            title: "Feeling",
+                                            value: $feelingRating,
+                                            lowLabel: "Rough",
+                                            highLabel: "Great"
+                                        )
+                                    }
+
+                                    if feelingRating > 0 {
+                                        ReflectCard {
                                             Text("How was your focus?")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
-                                            
+
                                             RatingControl(
                                                 title: "Focus",
                                                 value: $focusRating,
                                                 lowLabel: "Foggy",
                                                 highLabel: "Very focused"
                                             )
-                                            
+                                        }
+                                    }
+
+                                    if focusRating > 0 {
+                                        ReflectCard {
                                             Text("How strong were side effects?")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
-                                            
+
                                             RatingControl(
                                                 title: "Side effects",
                                                 value: $sideEffectSeverity,
@@ -391,40 +396,47 @@ import UIKit
                                                 highLabel: "Very strong"
                                             )
                                         }
-                                        
-                                        // Side effects quick selection
-                                        VStack(alignment: .leading, spacing: 12) {
+                                    }
+
+                                    if sideEffectSeverity > 0 || !sideEffectTags.isEmpty {
+                                        ReflectCard {
                                             Text("Any side effects? (optional)")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
-                                            
+
                                             if !sideEffectTags.isEmpty {
-                                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
                                                     ForEach(Array(sideEffectTags), id: \.self) { effect in
-                                                        HStack {
+                                                        HStack(spacing: 8) {
                                                             Text(effect)
                                                                 .font(.system(size: 14, weight: .medium))
-                                                                .foregroundColor(Color(hex: "#404C42"))
-                                                            
+                                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                                                .lineLimit(1)
+                                                                .truncationMode(.tail)
+
                                                             Button(action: {
                                                                 HapticManager.shared.lightImpact()
                                                                 sideEffectTags.remove(effect)
                                                             }) {
                                                                 Image(systemName: "xmark.circle.fill")
                                                                     .font(.system(size: 16))
-                                                                    .foregroundColor(Color(hex: "#404C42").opacity(0.7))
+                                                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                                             }
                                                         }
                                                         .padding(.horizontal, 12)
                                                         .padding(.vertical, 8)
                                                         .background(
-                                                            RoundedRectangle(cornerRadius: 20)
-                                                                .fill(Color(hex: "#FFB74D"))
+                                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                                .fill(Color.white.opacity(0.08))
+                                                                .overlay(
+                                                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                                                                )
                                                         )
                                                     }
                                                 }
                                             }
-                                            
+
                                             ScrollView(.horizontal, showsIndicators: false) {
                                                 HStack(spacing: 8) {
                                                     ForEach(commonSideEffects.filter { !sideEffectTags.contains($0) }, id: \.self) { effect in
@@ -439,17 +451,16 @@ import UIKit
                                                                 .padding(.vertical, 8)
                                                                 .background(
                                                                     RoundedRectangle(cornerRadius: 20)
-                                                                        .fill(Color.black.opacity(0.2))
+                                                                        .fill(Color.white.opacity(0.04))
                                                                         .overlay(
                                                                             RoundedRectangle(cornerRadius: 20)
-                                                                                .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                                                         )
                                                                 )
                                                         }
                                                         .buttonStyle(ScaleButtonStyle())
                                                     }
-                                                    
-                                                    // Add custom side effect button
+
                                                     Button(action: {
                                                         showingAddCustomSideEffect = true
                                                     }) {
@@ -464,10 +475,10 @@ import UIKit
                                                         .padding(.vertical, 8)
                                                         .background(
                                                             RoundedRectangle(cornerRadius: 20)
-                                                                .fill(Color.black.opacity(0.2))
+                                                                .fill(Color.white.opacity(0.04))
                                                                 .overlay(
                                                                     RoundedRectangle(cornerRadius: 20)
-                                                                        .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
+                                                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
                                                                 )
                                                         )
                                                     }
@@ -476,18 +487,14 @@ import UIKit
                                                 .padding(.horizontal, 1)
                                             }
                                         }
-                                        
-                                        // General notes
-                                        VStack(alignment: .leading, spacing: 12) {
-                                            HStack {
-                                                Image(systemName: "square.and.pencil")
-                                                    .foregroundColor(Color(hex: "#F5F5F5"))
-                                                    .font(.system(size: 18))
-                                                Text("Additional notes (optional)")
-                                                    .font(.system(size: 16, weight: .semibold))
-                                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                            }
-                                            
+                                    }
+
+                                    if sideEffectSeverity > 0 || !logNotes.isEmpty {
+                                        ReflectCard {
+                                            Text("Additional notes (optional)")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
+
                                             ZStack(alignment: .topLeading) {
                                                 TextEditor(text: $logNotes)
                                                     .frame(minHeight: 80, maxHeight: 150)
@@ -499,10 +506,10 @@ import UIKit
                                                     .padding(.vertical, 12)
                                                     .background(
                                                         RoundedRectangle(cornerRadius: 12)
-                                                            .fill(Color.black.opacity(0.2))
+                                                            .fill(Color.white.opacity(0.05))
                                                             .overlay(
                                                                 RoundedRectangle(cornerRadius: 12)
-                                                                    .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                                             )
                                                     )
 
@@ -517,22 +524,25 @@ import UIKit
                                             }
                                         }
                                     }
-                                }
-                            } else {
-                                FormSection(title: "REFLECT", icon: "note.text.fill") {
-                                    VStack(alignment: .leading, spacing: 20) {
-                                        VStack(alignment: .leading, spacing: 12) {
-                                            Text("How did you feel today?")
+                                } else {
+                                    ReflectCard {
+                                        Text("How did you feel today?")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(Color(hex: "#E8E8E0"))
+
+                                        RatingControl(
+                                            title: "Feeling",
+                                            value: $feelingRating,
+                                            lowLabel: "Rough",
+                                            highLabel: "Great"
+                                        )
+                                    }
+
+                                    if feelingRating > 0 {
+                                        ReflectCard {
+                                            Text("Overall, how was your day?")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                            RatingControl(
-                                                title: "Feeling",
-                                                value: $feelingRating,
-                                                lowLabel: "Rough",
-                                                highLabel: "Great",
-                                                activeColor: Color(hex: "#B5926F")
-                                            )
 
                                             RatingControl(
                                                 title: "Overall",
@@ -540,7 +550,11 @@ import UIKit
                                                 lowLabel: "Rough",
                                                 highLabel: "Great"
                                             )
+                                        }
+                                    }
 
+                                    if focusRating > 0 {
+                                        ReflectCard {
                                             Text("How strong were side effects?")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
@@ -552,19 +566,23 @@ import UIKit
                                                 highLabel: "Very strong"
                                             )
                                         }
+                                    }
 
-                                        VStack(alignment: .leading, spacing: 12) {
+                                    if sideEffectSeverity > 0 || !sideEffectTags.isEmpty {
+                                        ReflectCard {
                                             Text("Any side effects? (optional)")
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(Color(hex: "#E8E8E0"))
 
                                             if !sideEffectTags.isEmpty {
-                                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
                                                     ForEach(Array(sideEffectTags), id: \.self) { effect in
-                                                        HStack {
+                                                        HStack(spacing: 8) {
                                                             Text(effect)
                                                                 .font(.system(size: 14, weight: .medium))
-                                                                .foregroundColor(Color(hex: "#404C42"))
+                                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                                                .lineLimit(1)
+                                                                .truncationMode(.tail)
 
                                                             Button(action: {
                                                                 HapticManager.shared.lightImpact()
@@ -572,14 +590,18 @@ import UIKit
                                                             }) {
                                                                 Image(systemName: "xmark.circle.fill")
                                                                     .font(.system(size: 16))
-                                                                    .foregroundColor(Color(hex: "#404C42").opacity(0.7))
+                                                                    .foregroundColor(Color(hex: "#C7C7BD"))
                                                             }
                                                         }
                                                         .padding(.horizontal, 12)
                                                         .padding(.vertical, 8)
                                                         .background(
-                                                            RoundedRectangle(cornerRadius: 20)
-                                                                .fill(Color(hex: "#FFB74D"))
+                                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                                .fill(Color.white.opacity(0.08))
+                                                                .overlay(
+                                                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                                                                )
                                                         )
                                                     }
                                                 }
@@ -599,10 +621,10 @@ import UIKit
                                                                 .padding(.vertical, 8)
                                                                 .background(
                                                                     RoundedRectangle(cornerRadius: 20)
-                                                                        .fill(Color.black.opacity(0.2))
+                                                                        .fill(Color.white.opacity(0.04))
                                                                         .overlay(
                                                                             RoundedRectangle(cornerRadius: 20)
-                                                                                .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                                                         )
                                                                 )
                                                         }
@@ -623,10 +645,10 @@ import UIKit
                                                         .padding(.vertical, 8)
                                                         .background(
                                                             RoundedRectangle(cornerRadius: 20)
-                                                                .fill(Color.black.opacity(0.2))
+                                                                .fill(Color.white.opacity(0.04))
                                                                 .overlay(
                                                                     RoundedRectangle(cornerRadius: 20)
-                                                                        .stroke(Color(hex: "#F5F5F5").opacity(0.3), lineWidth: 1)
+                                                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
                                                                 )
                                                         )
                                                     }
@@ -635,16 +657,13 @@ import UIKit
                                                 .padding(.horizontal, 1)
                                             }
                                         }
+                                    }
 
-                                        VStack(alignment: .leading, spacing: 12) {
-                                            HStack {
-                                                Image(systemName: "square.and.pencil")
-                                                    .foregroundColor(Color(hex: "#F5F5F5"))
-                                                    .font(.system(size: 18))
-                                                Text("Additional notes (optional)")
-                                                    .font(.system(size: 16, weight: .semibold))
-                                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                            }
+                                    if sideEffectSeverity > 0 || !logNotes.isEmpty {
+                                        ReflectCard {
+                                            Text("Additional notes (optional)")
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#E8E8E0"))
 
                                             ZStack(alignment: .topLeading) {
                                                 TextEditor(text: $logNotes)
@@ -657,10 +676,10 @@ import UIKit
                                                     .padding(.vertical, 12)
                                                     .background(
                                                         RoundedRectangle(cornerRadius: 12)
-                                                            .fill(Color.black.opacity(0.2))
+                                                            .fill(Color.white.opacity(0.05))
                                                             .overlay(
                                                                 RoundedRectangle(cornerRadius: 12)
-                                                                    .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                                             )
                                                     )
 
@@ -691,10 +710,10 @@ import UIKit
                                             .padding(.vertical, 12)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 12)
-                                                    .fill(Color.black.opacity(0.2))
+                                                    .fill(Color.white.opacity(0.05))
                                                     .overlay(
                                                         RoundedRectangle(cornerRadius: 12)
-                                                            .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                                     )
                                             )
                                         
@@ -718,27 +737,57 @@ import UIKit
                                 processDoseAction(skipped: false)
                             } label: {
                                 Text("Log Medication")
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    .foregroundColor(Color(hex: "#404C42"))
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#2C332D"))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 18)
                                     .background(
                                         RoundedRectangle(cornerRadius: 20)
                                             .fill(Color(hex: "#E8E8E0"))
                                     )
-                                    .cornerRadius(20)
-                                    .shadow(color: Color(hex: "#C7C7BD").opacity(0.3), radius: 8, x: 0, y: 4)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 20)
-                                            .stroke(Color(hex: "#C7C7BD").opacity(0.5), lineWidth: 1)
+                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                     )
                             }
                             .buttonStyle(ScaleButtonStyle())
                         }
                         .padding(.vertical, 20)
                         .padding(.bottom, keyboardHeight > 0 ? keyboardHeight + 20 : 40)
+                        }
+                        .padding(.horizontal, 20)
+                        .id("reflectScrollAnchor")
                     }
-                    .padding(.horizontal, 20)
+                    .onChange(of: feelingRating) { _ in
+                        guard isDailyCheckIn else { return }
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
+                        }
+                    }
+                    .onChange(of: focusRating) { _ in
+                        guard isDailyCheckIn else { return }
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
+                        }
+                    }
+                    .onChange(of: sideEffectSeverity) { _ in
+                        guard isDailyCheckIn else { return }
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
+                        }
+                    }
+                    .onChange(of: sideEffectTags) { _ in
+                        guard isDailyCheckIn else { return }
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
+                        }
+                    }
+                    .onChange(of: logNotes) { _ in
+                        guard isDailyCheckIn, !logNotes.isEmpty else { return }
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
+                        }
+                    }
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -757,6 +806,7 @@ import UIKit
                 if let pillCount = medicationToLog.pillCount {
                     remainingPills = pillCount
                 }
+                loadExistingCheckInIfNeeded()
             }
             .onChange(of: medicationToLog.id) { _ in
                 selectedDoseIndex = 0
@@ -781,19 +831,47 @@ import UIKit
     
     // MARK: - Helper Views
     
+    private struct ReflectCard<Content: View>: View {
+        let content: Content
+
+        init(@ViewBuilder content: () -> Content) {
+            self.content = content()
+        }
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                content
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.white.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
     @ViewBuilder
     private func FormSection<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                if !icon.isEmpty {
-                    Image(systemName: icon)
-                        .foregroundColor(Color(hex: "#C7C7BD"))
-                        .font(.system(size: 16, weight: .semibold))
+            if !title.isEmpty || !icon.isEmpty {
+                HStack {
+                    if !icon.isEmpty {
+                        Image(systemName: icon)
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    if !title.isEmpty {
+                        Text(title)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                            .tracking(0.6)
+                    }
                 }
-                Text(title)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                    .tracking(0.5)
             }
             
             VStack(alignment: .leading, spacing: 16) {
@@ -802,10 +880,10 @@ import UIKit
             .padding(20)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.black.opacity(0.15))
+                    .fill(Color.white.opacity(0.05))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
                     )
             )
         }
@@ -830,7 +908,12 @@ import UIKit
     
 	    private func processDoseAction(skipped: Bool) {
         // Use the selected time instead of current time
-        let timeToUse = selectedQuickTime == .custom ? actualTimeTaken : Date().addingTimeInterval(selectedQuickTime.timeOffset)
+        let timeToUse: Date
+        if isDailyCheckIn {
+            timeToUse = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: checkInDate) ?? checkInDate
+        } else {
+            timeToUse = selectedQuickTime == .custom ? actualTimeTaken : Date().addingTimeInterval(selectedQuickTime.timeOffset)
+        }
         
         // Combine notes with side effects
         var combinedNotes = logNotes.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -897,6 +980,67 @@ import UIKit
             return size.height < 700 ? 80 : 100
         }
     }
+
+    private func loadExistingCheckInIfNeeded() {
+        guard isDailyCheckIn, !didLoadExistingCheckIn, let checkInLogID else { return }
+        guard let log = store.logs.first(where: { $0.id == checkInLogID }) else {
+            didLoadExistingCheckIn = true
+            return
+        }
+
+        checkInDate = log.takenAt
+        feelingRating = log.feelingRating ?? 0
+        focusRating = log.focusRating ?? 0
+        sideEffectSeverity = log.sideEffectSeverity ?? 0
+
+        let noteParts = splitNotesAndSideEffects(from: log.notes)
+        logNotes = noteParts.checkInNotes ?? noteParts.notes ?? ""
+        sideEffectTags = Set(noteParts.sideEffectsList)
+
+        didLoadExistingCheckIn = true
+    }
+
+    private func splitNotesAndSideEffects(from notes: String?) -> (notes: String?, checkInNotes: String?, sideEffectsList: [String]) {
+        guard var raw = notes?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return (nil, nil, [])
+        }
+
+        var sideEffectsPart: String?
+        if let range = raw.range(of: "Side effects:", options: [.caseInsensitive]) {
+            let after = raw[range.upperBound...]
+            sideEffectsPart = after.trimmingCharacters(in: .whitespacesAndNewlines)
+            raw = String(raw[..<range.lowerBound])
+        }
+
+        let paragraphs = raw
+            .components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        var generalNote: String?
+        var checkInNote: String?
+        if paragraphs.count > 1 {
+            generalNote = paragraphs.first
+            checkInNote = paragraphs.dropFirst().joined(separator: "\n\n")
+        } else if let first = paragraphs.first {
+            if feelingRating > 0 || focusRating > 0 || sideEffectSeverity > 0 {
+                checkInNote = first
+            } else {
+                generalNote = first
+            }
+        }
+
+        let sideEffectsList = sideEffectsPart?
+            .components(separatedBy: CharacterSet(charactersIn: ",\n"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty } ?? []
+
+        return (
+            generalNote?.isEmpty == true ? nil : generalNote,
+            checkInNote?.isEmpty == true ? nil : checkInNote,
+            sideEffectsList
+        )
+    }
 }
 
 // MARK: - Rating Control
@@ -926,27 +1070,18 @@ struct RatingControl: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(title)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
-                if value > 0 {
-                    Text("\(value)/5")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+            if value == 0 {
+                HStack(spacing: 8) {
+                    Text(lowLabel)
+                        .font(.system(size: 11))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+
+                    Spacer()
+
+                    Text(highLabel)
+                        .font(.system(size: 11))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                 }
-            }
-            
-            HStack(spacing: 8) {
-                Text(lowLabel)
-                    .font(.system(size: 11))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                
-                Spacer()
-                
-                Text(highLabel)
-                    .font(.system(size: 11))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
             }
             
             HStack(spacing: 8) {
@@ -959,17 +1094,27 @@ struct RatingControl: View {
                             value = index
                         }
                     }) {
-                        Circle()
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(
                                 index <= value
                                 ? activeColor
-                                : Color.black.opacity(0.3)
+                                : Color.white.opacity(0.06)
                             )
-                            .frame(width: 22, height: 22)
                             .overlay(
-                                Circle()
-                                    .stroke(Color(hex: "#C7C7BD").opacity(0.5), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 1)
                             )
+                            .overlay(
+                                Group {
+                                    if index == value {
+                                        Text("\(index)")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(Color.black.opacity(0.35))
+                                    }
+                                }
+                            )
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 28)
                     }
                     .buttonStyle(ScaleButtonStyle())
                 }

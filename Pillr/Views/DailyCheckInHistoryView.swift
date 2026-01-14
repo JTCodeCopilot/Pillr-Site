@@ -5,7 +5,90 @@
 //  Created by Codex on 2025-XX-XX.
 //
 
+
 import SwiftUI
+
+// MARK: - Premium journal styling
+private enum ReflectJournalTheme {
+    // Base palette
+    static let pageTop = Color(hex: "#3E483F")
+    static let pageBottom = Color(hex: "#303830")
+
+    static let textPrimary = Color(hex: "#E8E8E0")
+    static let textSecondary = Color(hex: "#C7C7BD").opacity(0.78)
+    static let textTertiary = Color(hex: "#C7C7BD").opacity(0.55)
+
+    // Paper
+    static let sheetFill = Color.white.opacity(0.055)
+    static let sheetFillExpanded = Color.white.opacity(0.065)
+    static let sheetHighlight = Color.white.opacity(0.08)
+
+    // Accents
+    static let accent = Color(hex: "#E1D6C5")
+    static let progressTrack = Color.white.opacity(0.10)
+
+    static var pageBackground: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [pageTop, pageBottom]),
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+}
+
+private struct JournalTitle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 30, weight: .semibold))
+            .foregroundColor(ReflectJournalTheme.textPrimary)
+            .tracking(0.2)
+    }
+}
+
+private struct JournalSubtitle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 15, weight: .regular))
+            .foregroundColor(ReflectJournalTheme.textTertiary)
+    }
+}
+
+private struct JournalSectionHeader: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(ReflectJournalTheme.textTertiary)
+            .textCase(.uppercase)
+            .tracking(0.9)
+    }
+}
+
+private struct JournalSheet: ViewModifier {
+    let isExpanded: Bool
+
+    func body(content: Content) -> some View {
+        let cornerRadius: CGFloat = 20
+        content
+            .padding(.horizontal, 16)
+            .padding(.vertical, isExpanded ? 16 : 14)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(isExpanded ? ReflectJournalTheme.sheetFillExpanded : ReflectJournalTheme.sheetFill)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .stroke(ReflectJournalTheme.sheetHighlight.opacity(0.6), lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(isExpanded ? 0.12 : 0.08), radius: isExpanded ? 10 : 8, x: 0, y: isExpanded ? 6 : 5)
+    }
+}
+
+private extension View {
+    func journalTitle() -> some View { modifier(JournalTitle()) }
+    func journalSubtitle() -> some View { modifier(JournalSubtitle()) }
+    func journalSectionHeader() -> some View { modifier(JournalSectionHeader()) }
+    func journalSheet(isExpanded: Bool) -> some View { modifier(JournalSheet(isExpanded: isExpanded)) }
+}
 
 struct DailyCheckInHistoryView: View {
     @EnvironmentObject var store: MedicationStore
@@ -58,7 +141,7 @@ struct DailyCheckInHistoryView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#424C43")
+                ReflectJournalTheme.pageBackground
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
@@ -79,15 +162,16 @@ struct DailyCheckInHistoryView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("Reflect")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(ReflectJournalTheme.textPrimary)
+                        .tracking(0.2)
                 }
                 if isModal {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button("Close") {
                             dismiss()
                         }
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(ReflectJournalTheme.textSecondary)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -96,7 +180,7 @@ struct DailyCheckInHistoryView: View {
                     }) {
                         Image(systemName: "plus")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(ReflectJournalTheme.textSecondary)
                     }
                     .disabled(defaultMedicationForCheckIn == nil)
                     .accessibilityLabel("New Reflect")
@@ -128,7 +212,7 @@ struct DailyCheckInHistoryView: View {
                     Text("Medication unavailable")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(Color(hex: "#E8E8E0"))
-                    Text("This check-in can't be edited right now.")
+                    Text("This Reflect entry can't be edited right now.")
                         .font(.system(size: 14))
                         .foregroundColor(Color(hex: "#C7C7BD"))
                 }
@@ -142,12 +226,10 @@ struct DailyCheckInHistoryView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text("Reflect")
-                .font(.system(size: 30, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .journalTitle()
 
             Text("\(checkInLogs.count) \(checkInLogs.count == 1 ? "entry" : "entries") logged")
-                .font(.system(size: 15, weight: .regular))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.65))
+                .journalSubtitle()
         }
         .padding(.top, 16)
     }
@@ -157,15 +239,8 @@ struct DailyCheckInHistoryView: View {
             ForEach(groupedCheckIns, id: \.date) { date, logs in
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 8) {
-                        let isToday = Calendar.current.isDateInToday(date)
-
                         Text(dayLabel(for: date))
-                            .font(.system(size: isToday ? 13 : 18, weight: isToday ? .semibold : .bold))
-                            .foregroundColor(
-                                isToday
-                                    ? Color(hex: "#C7C7BD").opacity(0.55)
-                                    : Color(hex: "#E8E8E0")
-                            )
+                            .journalSectionHeader()
                     }
 
                     VStack(spacing: 18) {
@@ -235,12 +310,12 @@ private struct DailyCheckInTimelineRow: View {
         HStack(alignment: .center, spacing: 12) {
             VStack(spacing: 6) {
                 Circle()
-                    .fill(Color.white.opacity(0.45))
+                    .fill(Color.white.opacity(0.32))
                     .frame(width: 12, height: 12)
                     .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
 
                 Rectangle()
-                    .fill(Color.white.opacity(0.035))
+                    .fill(Color.white.opacity(0.045))
                     .frame(width: 0.6)
                     .frame(maxHeight: .infinity)
                     .opacity(isLast ? 0 : 1)
@@ -249,21 +324,28 @@ private struct DailyCheckInTimelineRow: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 if isExpanded {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Reflection log")
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Reflection")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .foregroundColor(ReflectJournalTheme.textTertiary)
 
-                        Text(medicationName)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(medicationName)
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
 
-                        Text(timeText)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                            Spacer()
+
+                            Text(timeText)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(ReflectJournalTheme.textSecondary)
+                        }
                     }
 
-                    VStack(alignment: .leading, spacing: 12) {
+                    Divider()
+                        .overlay(Color.white.opacity(0.08))
+
+                    VStack(alignment: .leading, spacing: 10) {
                         DailyCheckInScaleView(
                             label: "Feeling",
                             value: log.feelingRating,
@@ -292,26 +374,17 @@ private struct DailyCheckInTimelineRow: View {
                             )
                         }
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.white.opacity(0.05))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                            )
-                    )
 
                     if let expandedNote {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Notes")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                                .foregroundColor(ReflectJournalTheme.textTertiary)
 
                             Text(expandedNote)
-                                .font(.system(size: 13, weight: .regular))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
+                                .lineSpacing(3)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -320,7 +393,7 @@ private struct DailyCheckInTimelineRow: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Side effects")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                                .foregroundColor(ReflectJournalTheme.textTertiary)
 
                             DailyCheckInFlowLayout(spacing: 6) {
                                 ForEach(sideEffectChips, id: \.self) { effect in
@@ -346,75 +419,110 @@ private struct DailyCheckInTimelineRow: View {
                     HStack(alignment: .firstTextBaseline) {
                         Text(medicationName)
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(ReflectJournalTheme.textPrimary)
 
                         Spacer()
 
                         Text(timeText)
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                            .foregroundColor(ReflectJournalTheme.textTertiary)
                     }
 
+                    // Feeling as the main, scannable metric
                     DailyCheckInScaleView(
                         label: "Feeling",
                         value: log.feelingRating,
                         isHero: true,
                         showValue: true,
-                        layout: .inline
+                        layout: .stacked
                     )
 
+                    // Secondary metrics in two concise columns
                     if log.focusRating != nil || log.sideEffectSeverity != nil {
-                        HStack(alignment: .top, spacing: 16) {
-                            if let focus = log.focusRating {
-                                DailyCheckInScaleView(
-                                    label: "Focus",
-                                    value: focus,
-                                    isHero: false,
-                                    showValue: false,
-                                    layout: .inline
-                                )
+                        HStack(alignment: .top, spacing: 14) {
+                            DailyCheckInMiniMetric(label: "Focus", value: log.focusRating)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            }
 
-                            if let sideEffects = log.sideEffectSeverity {
-                                DailyCheckInScaleView(
-                                    label: "Side effects",
-                                    value: sideEffects,
-                                    isHero: false,
-                                    showValue: false,
-                                    layout: .inline
-                                )
+                            DailyCheckInMiniMetric(label: "Side effects", value: log.sideEffectSeverity)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            }
                         }
                     }
 
+                    // Notes preview
                     if let expandedNote {
                         Text(expandedNote)
                             .font(.system(size: 12, weight: .regular))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                            .foregroundColor(ReflectJournalTheme.textSecondary)
                             .lineLimit(1)
                     }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, isExpanded ? 14 : 12)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.white.opacity(0.05))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                    )
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .journalSheet(isExpanded: isExpanded)
+            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .onTapGesture {
                 guard canExpand else { return }
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isExpanded.toggle()
                 }
             }
-            .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
+        }
+    }
+}
+
+// Compact metric bar for collapsed card
+private struct DailyCheckInMiniMetric: View {
+    let label: String
+    let value: Int?
+    let maxValue: Int
+
+    init(label: String, value: Int?, maxValue: Int = 5) {
+        self.label = label
+        self.value = value
+        self.maxValue = maxValue
+    }
+
+    var body: some View {
+        let clampedValue = max(0, min(value ?? 0, maxValue))
+        let fraction = CGFloat(clampedValue) / CGFloat(maxValue)
+
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(ReflectJournalTheme.textSecondary)
+
+                Spacer()
+
+                if let _ = value {
+                    Text("\(clampedValue)/\(maxValue)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(ReflectJournalTheme.textTertiary)
+                } else {
+                    Text("Complete")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(ReflectJournalTheme.textTertiary)
+                }
+            }
+
+            ZStack(alignment: .leading) {
+                Capsule(style: .continuous)
+                    .fill(ReflectJournalTheme.progressTrack)
+
+                Capsule(style: .continuous)
+                    .fill(ReflectJournalTheme.accent)
+                    .frame(width: max(0, fraction) * 1) // width set by GeometryReader below
+            }
+            .frame(height: 6)
+            .overlay(
+                GeometryReader { geo in
+                    Capsule(style: .continuous)
+                        .fill(ReflectJournalTheme.accent)
+                        .frame(width: max(0, geo.size.width * fraction), height: 6)
+                }
+            )
+            .mask(
+                Capsule(style: .continuous)
+            )
         }
     }
 }
@@ -430,47 +538,49 @@ private struct DailyCheckInScaleView: View {
 
     var body: some View {
         let clampedValue = max(0, min(value ?? 0, maxValue))
-        let indicatorWidth: CGFloat = isHero ? 22 : 16
-        let indicatorHeight: CGFloat = isHero ? 8 : 6
-        let indicatorSpacing: CGFloat = isHero ? 6 : 4
-        let labelColor = isHero ? Color(hex: "#E8E8E0") : Color(hex: "#C7C7BD").opacity(0.9)
+        let fraction = CGFloat(clampedValue) / CGFloat(maxValue)
+
+        let labelColor = isHero ? ReflectJournalTheme.textPrimary : ReflectJournalTheme.textSecondary
+        let lineHeight: CGFloat = isHero ? 8 : 6
 
         Group {
             if layout == .inline {
-                let labelWidth: CGFloat = 72
-                let valueWidth: CGFloat = 32
                 HStack(alignment: .center, spacing: isHero ? 10 : 8) {
                     Text(label)
                         .font(.system(size: isHero ? 12 : 11, weight: .semibold))
                         .foregroundColor(labelColor)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
-                        .frame(width: labelWidth, alignment: .leading)
+                        .frame(width: 72, alignment: .leading)
 
-                    HStack(spacing: indicatorSpacing) {
-                        ForEach(0..<maxValue, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                .fill(index < clampedValue ? Color(hex: "#E1D6C5") : Color.white.opacity(0.12))
-                                .frame(width: indicatorWidth, height: indicatorHeight)
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule(style: .continuous)
+                                .fill(ReflectJournalTheme.progressTrack)
+
+                            Capsule(style: .continuous)
+                                .fill(ReflectJournalTheme.accent)
+                                .frame(width: max(0, geo.size.width * fraction))
                         }
                     }
+                    .frame(height: lineHeight)
 
                     if showValue {
                         Spacer(minLength: 6)
                         if value != nil {
                             Text("\(clampedValue)/\(maxValue)")
-                                .font(.system(size: isHero ? 18 : 12, weight: isHero ? .bold : .semibold))
-                                .foregroundColor(Color(hex: "#E1D6C5"))
-                                .frame(minWidth: valueWidth, alignment: .trailing)
+                                .font(.system(size: isHero ? 17 : 12, weight: isHero ? .bold : .semibold))
+                                .foregroundColor(ReflectJournalTheme.accent)
+                                .frame(minWidth: 44, alignment: .trailing)
                         } else {
-                            Text("Not logged")
+                            Text("Complete")
                                 .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                .foregroundColor(ReflectJournalTheme.textTertiary)
                         }
                     }
                 }
             } else {
-                VStack(alignment: .leading, spacing: isHero ? 8 : 6) {
+                VStack(alignment: .leading, spacing: isHero ? 6 : 6) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(label)
                             .font(.system(size: isHero ? 12 : 11, weight: .semibold))
@@ -481,23 +591,27 @@ private struct DailyCheckInScaleView: View {
                         if showValue {
                             if value != nil {
                                 Text("\(clampedValue)/\(maxValue)")
-                                    .font(.system(size: isHero ? 19 : 12, weight: isHero ? .bold : .semibold))
-                                    .foregroundColor(Color(hex: "#E1D6C5"))
+                                    .font(.system(size: isHero ? 18 : 12, weight: isHero ? .bold : .semibold))
+                                    .foregroundColor(ReflectJournalTheme.accent)
                             } else {
-                                Text("Not logged")
+                                Text("Complete")
                                     .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                    .foregroundColor(ReflectJournalTheme.textTertiary)
                             }
                         }
                     }
 
-                    HStack(spacing: indicatorSpacing) {
-                        ForEach(0..<maxValue, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                .fill(index < clampedValue ? Color(hex: "#E1D6C5") : Color.white.opacity(0.12))
-                                .frame(width: indicatorWidth, height: indicatorHeight)
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule(style: .continuous)
+                                .fill(ReflectJournalTheme.progressTrack)
+
+                            Capsule(style: .continuous)
+                                .fill(ReflectJournalTheme.accent)
+                                .frame(width: max(0, geo.size.width * fraction))
                         }
                     }
+                    .frame(height: lineHeight)
                 }
             }
         }
@@ -515,15 +629,15 @@ private struct DailyCheckInTag: View {
     var body: some View {
         Text(text)
             .font(.system(size: 10, weight: .semibold))
-            .foregroundColor(Color(hex: "#C7C7BD"))
+            .foregroundColor(ReflectJournalTheme.textSecondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(
                 Capsule()
-                    .fill(Color.white.opacity(0.04))
+                    .fill(Color.white.opacity(0.035))
                     .overlay(
                         Capsule()
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(ReflectJournalTheme.sheetHighlight, lineWidth: 1)
                     )
             )
     }
@@ -533,12 +647,12 @@ private struct DailyCheckInRowButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(Color(hex: "#E8E8E0"))
+            .foregroundColor(ReflectJournalTheme.textPrimary)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(configuration.isPressed ? 0.08 : 0.04))
+                    .fill(Color.white.opacity(configuration.isPressed ? 0.07 : 0.035))
             )
     }
 }
@@ -597,25 +711,27 @@ private struct DailyCheckInEmptyState: View {
         VStack(spacing: 14) {
             Image(systemName: "note.text")
                 .font(.system(size: 42))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(ReflectJournalTheme.textTertiary)
 
-            Text("No check-ins yet")
+            Text("No Reflect entries yet")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(ReflectJournalTheme.textPrimary)
 
             Text("Your reflection notes will show up here after you log.")
                 .font(.system(size: 14))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(ReflectJournalTheme.textSecondary)
                 .multilineTextAlignment(.center)
         }
         .padding(20)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.04))
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.035))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(ReflectJournalTheme.sheetHighlight, lineWidth: 1)
+                        .blendMode(.overlay)
+                        .opacity(0.45)
                 )
         )
     }

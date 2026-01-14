@@ -968,12 +968,12 @@ struct EditMedicationView: View {
             }
 
             if medicationType == .stimulant && enableStimulantPhaseNotifications {
-                FormSection(title: "DAILY CHECK-IN") {
+                FormSection(title: "REFLECT") {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle(isOn: $enableDailyCheckIn) {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
-                                    Text("Daily check-in")
+                                    Text("Reflect")
                                         .font(.system(size: 15, weight: .semibold))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                     if !userSettings.isPremiumUser {
@@ -987,7 +987,7 @@ struct EditMedicationView: View {
                                 }
                                 Text(userSettings.isPremiumUser ?
                                      "At the start of the fading window, Pillr will remind you to log focus and side effects for this medication." :
-                                        "Daily check-ins require a premium subscription.")
+                                        "Reflect requires a premium subscription.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                             }
@@ -1013,14 +1013,14 @@ struct EditMedicationView: View {
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
 
                                 Toggle(isOn: $useCustomDailyCheckInTime) {
-                                    Text("Choose a custom check-in time")
+                                    Text("Choose a custom Reflect time")
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                 }
                                 .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
 
                                 if useCustomDailyCheckInTime {
-                                    TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
+                                    TimePickerRow(title: "Reflect time", time: $customDailyCheckInTime)
                                     Text("Tip: the custom reminder only schedules after you log a dose, so pick a time you expect to reach after logging; logging after that time means today’s reminder waits until tomorrow.")
                                         .font(.system(size: 12))
                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
@@ -1032,7 +1032,7 @@ struct EditMedicationView: View {
                     }
                 }
             } else if medicationType != .stimulant {
-                FormSection(title: "DAILY CHECK-IN") {
+                FormSection(title: "REFLECT") {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle(isOn: $enableDailyCheckIn) {
                             VStack(alignment: .leading, spacing: 4) {
@@ -1051,7 +1051,7 @@ struct EditMedicationView: View {
                                 }
                                 Text(userSettings.isPremiumUser ?
                                      "Get a daily reminder to reflect on how this medication felt." :
-                                        "Daily check-ins require a premium subscription.")
+                                        "Reflect requires a premium subscription.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                             }
@@ -1072,11 +1072,11 @@ struct EditMedicationView: View {
 
                         if enableDailyCheckIn && userSettings.isPremiumUser {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Choose a time for your check-in.")
+                                Text("Choose a time for Reflect.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
-                                TimePickerRow(title: "Check-in time", time: $customDailyCheckInTime)
-                                Text("If the medication isn't taken before the check-in time, Reflect will not trigger.")
+                                TimePickerRow(title: "Reflect time", time: $customDailyCheckInTime)
+                                Text("If the medication isn't taken before the Reflect time, the reminder will not trigger.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                                     .fixedSize(horizontal: false, vertical: true)

@@ -428,7 +428,7 @@ private extension MainTab {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Capture a short daily note about how you are feeling.")
                                 .multilineTextAlignment(.leading)
-                            Text("Your check-ins stay tied to the medications you logged that day.")
+                            Text("Your Reflect entries stay tied to the medications you logged that day.")
                                 .multilineTextAlignment(.leading)
                         }
                     ),

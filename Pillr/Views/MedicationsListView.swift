@@ -3555,14 +3555,14 @@ fileprivate struct MedicationRowDetailsView: View {
                     checkInDescription = "around fade start"
                 }
             } else if let customTime = medication.dailyCheckInTime {
-                checkInDescription = "Wellness: \(commonFormatTime(customTime))"
+                checkInDescription = "Reflect: \(commonFormatTime(customTime))"
             } else {
-                checkInDescription = "Daily reflection reminder"
+                checkInDescription = "Reflect reminder"
             }
 
             entries.append(
                 DetailEntry(
-                    label: "Daily Check-in",
+                    label: "Reflect",
                     value: checkInDescription,
                     lineLimit: 1
                 )
