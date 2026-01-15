@@ -252,6 +252,7 @@ struct MedicationsListView: View {
                 LogMedicationView(
                     medicationToLog: context.medication,
                     isDailyCheckIn: true,
+                    isNotificationEntry: context.entrySource == .notification,
                     checkInLogID: context.logID,
                     onLogAction: presentUndoToast
                 )

@@ -17,6 +17,7 @@ import UIKit
 
 	    @State private var medicationToLog: Medication
 	    var isDailyCheckIn: Bool
+        var isNotificationEntry: Bool
         var checkInLogID: UUID?
         var allowsMedicationSelection: Bool
 	    var onLogAction: ((MedicationStore.LogUndoAction) -> Void)?
@@ -36,15 +37,19 @@ import UIKit
     @State private var sideEffectSeverity: Int = 0 // 1–5, 0 = not set
     @State private var checkInDate: Date = Date()
     @State private var didLoadExistingCheckIn: Bool = false
+    @State private var currentReflectStepIndex: Int = 0
+    @State private var reflectStepAnimationDirection: ReflectStepTransitionDirection = .forward
     init(
         medicationToLog: Medication,
         isDailyCheckIn: Bool = false,
+        isNotificationEntry: Bool = false,
         checkInLogID: UUID? = nil,
         allowsMedicationSelection: Bool = false,
         onLogAction: ((MedicationStore.LogUndoAction) -> Void)? = nil
     ) {
         self._medicationToLog = State(initialValue: medicationToLog)
         self.isDailyCheckIn = isDailyCheckIn
+        self.isNotificationEntry = isNotificationEntry
         self.checkInLogID = checkInLogID
         self.allowsMedicationSelection = allowsMedicationSelection
         self.onLogAction = onLogAction
@@ -71,6 +76,20 @@ import UIKit
         }
     }
 
+    private enum ReflectStep {
+        case date
+        case feeling
+        case focusOrOverall
+        case sideEffectsSeverity
+        case sideEffectsTags
+        case notes
+    }
+
+    private enum ReflectStepTransitionDirection {
+        case forward
+        case backward
+    }
+
     // Common side effects for quick selection
     private let commonSideEffects = [
         "Nausea", "Drowsiness", "Headache", "Dizziness", "Stomach upset",
@@ -88,6 +107,52 @@ import UIKit
 
     private var shouldShowMedicationSelection: Bool {
         isDailyCheckIn && allowsMedicationSelection
+    }
+
+    private static let reflectDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
+
+    private var reflectSteps: [ReflectStep] {
+        var steps: [ReflectStep] = []
+        if !isNotificationEntry {
+            steps.append(.date)
+        }
+        steps.append(.feeling)
+        steps.append(.focusOrOverall)
+        steps.append(.sideEffectsSeverity)
+        steps.append(.sideEffectsTags)
+        steps.append(.notes)
+        return steps
+    }
+
+    private var clampedReflectStepIndex: Int {
+        guard !reflectSteps.isEmpty else { return 0 }
+        return min(max(currentReflectStepIndex, 0), reflectSteps.count - 1)
+    }
+
+    private var currentReflectStep: ReflectStep {
+        reflectSteps[clampedReflectStepIndex]
+    }
+
+    private var isLastReflectStep: Bool {
+        clampedReflectStepIndex >= reflectSteps.count - 1
+    }
+
+    private var reflectStepIndicatorText: String {
+        "Step \(clampedReflectStepIndex + 1) of \(reflectSteps.count)"
+    }
+
+    private var reflectStepTransition: AnyTransition {
+        let insertionEdge: Edge = reflectStepAnimationDirection == .forward ? .trailing : .leading
+        let removalEdge: Edge = reflectStepAnimationDirection == .forward ? .leading : .trailing
+        return .asymmetric(
+            insertion: .move(edge: insertionEdge).combined(with: .opacity),
+            removal: .move(edge: removalEdge).combined(with: .opacity)
+        )
     }
 
     private var medicationSelectionLabel: some View {
@@ -205,6 +270,22 @@ import UIKit
                                 }
                             }
 
+                            if isDailyCheckIn {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(reflectStepIndicatorText)
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .tracking(0.6)
+
+                                    ProgressView(
+                                        value: Double(clampedReflectStepIndex + 1),
+                                        total: Double(max(reflectSteps.count, 1))
+                                    )
+                                    .tint(Color(hex: "#C7C7BD"))
+                                    .scaleEffect(x: 1, y: 1.4, anchor: .center)
+                                }
+                            }
+
                             if shouldShowMedicationSelection {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Medication")
@@ -229,7 +310,7 @@ import UIKit
                             }
                             
                     }
-                    .padding(.top, 20)
+                    .padding(.top, isDailyCheckIn ? 8 : 20)
                         
                         // Multiple doses selector (if applicable)
                         if hasMultipleDoses {
@@ -332,370 +413,7 @@ import UIKit
                         }
 
                         if isDailyCheckIn {
-                            VStack(alignment: .leading, spacing: 14) {
-                                ReflectCard {
-                                    Text("Which day are you reflecting on?")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                    DatePicker(
-                                        "",
-                                        selection: $checkInDate,
-                                        in: ...Date(),
-                                        displayedComponents: [.date]
-                                    )
-                                    .datePickerStyle(.compact)
-                                    .labelsHidden()
-                                    .colorScheme(.dark)
-                                    .accentColor(Color(hex: "#F5F5F5"))
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.white.opacity(0.05))
-                                    )
-                                }
-
-                                if medicationToLog.medicationType == .stimulant {
-                                    ReflectCard {
-                                        Text("How did you feel today?")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                        RatingControl(
-                                            title: "Feeling",
-                                            value: $feelingRating,
-                                            lowLabel: "Rough",
-                                            highLabel: "Great"
-                                        )
-                                    }
-
-                                    if feelingRating > 0 {
-                                        ReflectCard {
-                                            Text("How was your focus?")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                            RatingControl(
-                                                title: "Focus",
-                                                value: $focusRating,
-                                                lowLabel: "Foggy",
-                                                highLabel: "Very focused"
-                                            )
-                                        }
-                                    }
-
-                                    if focusRating > 0 {
-                                        ReflectCard {
-                                            Text("How strong were side effects?")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                            RatingControl(
-                                                title: "Side effects",
-                                                value: $sideEffectSeverity,
-                                                lowLabel: "Barely noticed",
-                                                highLabel: "Very strong"
-                                            )
-                                        }
-                                    }
-
-                                    if sideEffectSeverity > 0 || !sideEffectTags.isEmpty {
-                                        ReflectCard {
-                                            Text("Any side effects? (optional)")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                            if !sideEffectTags.isEmpty {
-                                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
-                                                    ForEach(Array(sideEffectTags), id: \.self) { effect in
-                                                        HStack(spacing: 8) {
-                                                            Text(effect)
-                                                                .font(.system(size: 14, weight: .medium))
-                                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                                                .lineLimit(1)
-                                                                .truncationMode(.tail)
-
-                                                            Button(action: {
-                                                                HapticManager.shared.lightImpact()
-                                                                sideEffectTags.remove(effect)
-                                                            }) {
-                                                                Image(systemName: "xmark.circle.fill")
-                                                                    .font(.system(size: 16))
-                                                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                                            }
-                                                        }
-                                                        .padding(.horizontal, 12)
-                                                        .padding(.vertical, 8)
-                                                        .background(
-                                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                                .fill(Color.white.opacity(0.08))
-                                                                .overlay(
-                                                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                                                                )
-                                                        )
-                                                    }
-                                                }
-                                            }
-
-                                            ScrollView(.horizontal, showsIndicators: false) {
-                                                HStack(spacing: 8) {
-                                                    ForEach(commonSideEffects.filter { !sideEffectTags.contains($0) }, id: \.self) { effect in
-                                                        Button(action: {
-                                                            HapticManager.shared.lightImpact()
-                                                            sideEffectTags.insert(effect)
-                                                        }) {
-                                                            Text(effect)
-                                                                .font(.system(size: 14, weight: .medium))
-                                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                                                .padding(.horizontal, 12)
-                                                                .padding(.vertical, 8)
-                                                                .background(
-                                                                    RoundedRectangle(cornerRadius: 20)
-                                                                        .fill(Color.white.opacity(0.04))
-                                                                        .overlay(
-                                                                            RoundedRectangle(cornerRadius: 20)
-                                                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                                                        )
-                                                                )
-                                                        }
-                                                        .buttonStyle(ScaleButtonStyle())
-                                                    }
-
-                                                    Button(action: {
-                                                        showingAddCustomSideEffect = true
-                                                    }) {
-                                                        HStack(spacing: 6) {
-                                                            Image(systemName: "plus.circle")
-                                                                .font(.system(size: 14))
-                                                            Text("Add custom")
-                                                                .font(.system(size: 14, weight: .medium))
-                                                        }
-                                                        .foregroundColor(Color(hex: "#F5F5F5"))
-                                                        .padding(.horizontal, 12)
-                                                        .padding(.vertical, 8)
-                                                        .background(
-                                                            RoundedRectangle(cornerRadius: 20)
-                                                                .fill(Color.white.opacity(0.04))
-                                                                .overlay(
-                                                                    RoundedRectangle(cornerRadius: 20)
-                                                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                                                                )
-                                                        )
-                                                    }
-                                                    .buttonStyle(ScaleButtonStyle())
-                                                }
-                                                .padding(.horizontal, 1)
-                                            }
-                                        }
-                                    }
-
-                                    if sideEffectSeverity > 0 || !logNotes.isEmpty {
-                                        ReflectCard {
-                                            Text("Additional notes (optional)")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                            ZStack(alignment: .topLeading) {
-                                                TextEditor(text: $logNotes)
-                                                    .frame(minHeight: 80, maxHeight: 150)
-                                                    .font(.system(size: 16, weight: .medium))
-                                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                                    .scrollContentBackground(.hidden)
-                                                    .background(Color.clear)
-                                                    .padding(.horizontal, 16)
-                                                    .padding(.vertical, 12)
-                                                    .background(
-                                                        RoundedRectangle(cornerRadius: 12)
-                                                            .fill(Color.white.opacity(0.05))
-                                                            .overlay(
-                                                                RoundedRectangle(cornerRadius: 12)
-                                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                                            )
-                                                    )
-
-                                                if logNotes.isEmpty {
-                                                    Text("How did you feel? Any observations?")
-                                                        .font(.system(size: 16))
-                                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
-                                                        .padding(.leading, 20)
-                                                        .padding(.top, 20)
-                                                        .allowsHitTesting(false)
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    ReflectCard {
-                                        Text("How did you feel today?")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                        RatingControl(
-                                            title: "Feeling",
-                                            value: $feelingRating,
-                                            lowLabel: "Rough",
-                                            highLabel: "Great"
-                                        )
-                                    }
-
-                                    if feelingRating > 0 {
-                                        ReflectCard {
-                                            Text("Overall, how was your day?")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                            RatingControl(
-                                                title: "Overall",
-                                                value: $focusRating,
-                                                lowLabel: "Rough",
-                                                highLabel: "Great"
-                                            )
-                                        }
-                                    }
-
-                                    if focusRating > 0 {
-                                        ReflectCard {
-                                            Text("How strong were side effects?")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                            RatingControl(
-                                                title: "Side effects",
-                                                value: $sideEffectSeverity,
-                                                lowLabel: "Barely noticed",
-                                                highLabel: "Very strong"
-                                            )
-                                        }
-                                    }
-
-                                    if sideEffectSeverity > 0 || !sideEffectTags.isEmpty {
-                                        ReflectCard {
-                                            Text("Any side effects? (optional)")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                            if !sideEffectTags.isEmpty {
-                                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
-                                                    ForEach(Array(sideEffectTags), id: \.self) { effect in
-                                                        HStack(spacing: 8) {
-                                                            Text(effect)
-                                                                .font(.system(size: 14, weight: .medium))
-                                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                                                .lineLimit(1)
-                                                                .truncationMode(.tail)
-
-                                                            Button(action: {
-                                                                HapticManager.shared.lightImpact()
-                                                                sideEffectTags.remove(effect)
-                                                            }) {
-                                                                Image(systemName: "xmark.circle.fill")
-                                                                    .font(.system(size: 16))
-                                                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                                            }
-                                                        }
-                                                        .padding(.horizontal, 12)
-                                                        .padding(.vertical, 8)
-                                                        .background(
-                                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                                .fill(Color.white.opacity(0.08))
-                                                                .overlay(
-                                                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                                                                )
-                                                        )
-                                                    }
-                                                }
-                                            }
-
-                                            ScrollView(.horizontal, showsIndicators: false) {
-                                                HStack(spacing: 8) {
-                                                    ForEach(commonSideEffects.filter { !sideEffectTags.contains($0) }, id: \.self) { effect in
-                                                        Button(action: {
-                                                            HapticManager.shared.lightImpact()
-                                                            sideEffectTags.insert(effect)
-                                                        }) {
-                                                            Text(effect)
-                                                                .font(.system(size: 14, weight: .medium))
-                                                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                                                .padding(.horizontal, 12)
-                                                                .padding(.vertical, 8)
-                                                                .background(
-                                                                    RoundedRectangle(cornerRadius: 20)
-                                                                        .fill(Color.white.opacity(0.04))
-                                                                        .overlay(
-                                                                            RoundedRectangle(cornerRadius: 20)
-                                                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                                                        )
-                                                                )
-                                                        }
-                                                        .buttonStyle(ScaleButtonStyle())
-                                                    }
-
-                                                    Button(action: {
-                                                        showingAddCustomSideEffect = true
-                                                    }) {
-                                                        HStack(spacing: 6) {
-                                                            Image(systemName: "plus.circle")
-                                                                .font(.system(size: 14))
-                                                            Text("Add custom")
-                                                                .font(.system(size: 14, weight: .medium))
-                                                        }
-                                                        .foregroundColor(Color(hex: "#F5F5F5"))
-                                                        .padding(.horizontal, 12)
-                                                        .padding(.vertical, 8)
-                                                        .background(
-                                                            RoundedRectangle(cornerRadius: 20)
-                                                                .fill(Color.white.opacity(0.04))
-                                                                .overlay(
-                                                                    RoundedRectangle(cornerRadius: 20)
-                                                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                                                                )
-                                                        )
-                                                    }
-                                                    .buttonStyle(ScaleButtonStyle())
-                                                }
-                                                .padding(.horizontal, 1)
-                                            }
-                                        }
-                                    }
-
-                                    if sideEffectSeverity > 0 || !logNotes.isEmpty {
-                                        ReflectCard {
-                                            Text("Additional notes (optional)")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
-
-                                            ZStack(alignment: .topLeading) {
-                                                TextEditor(text: $logNotes)
-                                                    .frame(minHeight: 80, maxHeight: 150)
-                                                    .font(.system(size: 16, weight: .medium))
-                                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                                    .scrollContentBackground(.hidden)
-                                                    .background(Color.clear)
-                                                    .padding(.horizontal, 16)
-                                                    .padding(.vertical, 12)
-                                                    .background(
-                                                        RoundedRectangle(cornerRadius: 12)
-                                                            .fill(Color.white.opacity(0.05))
-                                                            .overlay(
-                                                                RoundedRectangle(cornerRadius: 12)
-                                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                                            )
-                                                    )
-
-                                                if logNotes.isEmpty {
-                                                    Text("How did you feel? Any observations?")
-                                                        .font(.system(size: 16))
-                                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
-                                                        .padding(.leading, 20)
-                                                        .padding(.top, 20)
-                                                        .allowsHitTesting(false)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            reflectPagedSection
                         } else {
                             FormSection(title: "NOTES (OPTIONAL)", icon: "note.text.fill") {
                                 VStack(alignment: .leading, spacing: 12) {
@@ -730,63 +448,34 @@ import UIKit
                             }
                         }
                         
-                        // Enhanced Action Buttons
-                        VStack(spacing: 16) {
-                            Button {
-                                HapticManager.shared.successNotification()
-                                processDoseAction(skipped: false)
-                            } label: {
-                                Text("Log Medication")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#2C332D"))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 18)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(Color(hex: "#E8E8E0"))
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                    )
+                        if !isDailyCheckIn {
+                            VStack(spacing: 16) {
+                                Button {
+                                    HapticManager.shared.successNotification()
+                                    processDoseAction(skipped: false)
+                                } label: {
+                                    Text("Log Medication")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(Color(hex: "#2C332D"))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 18)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 20)
+                                                .fill(Color(hex: "#E8E8E0"))
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 20)
+                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(ScaleButtonStyle())
                             }
-                            .buttonStyle(ScaleButtonStyle())
+                            .padding(.vertical, 20)
+                            .padding(.bottom, keyboardHeight > 0 ? keyboardHeight + 20 : 40)
                         }
-                        .padding(.vertical, 20)
-                        .padding(.bottom, keyboardHeight > 0 ? keyboardHeight + 20 : 40)
                         }
                         .padding(.horizontal, 20)
                         .id("reflectScrollAnchor")
-                    }
-                    .onChange(of: feelingRating) { _ in
-                        guard isDailyCheckIn else { return }
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
-                        }
-                    }
-                    .onChange(of: focusRating) { _ in
-                        guard isDailyCheckIn else { return }
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
-                        }
-                    }
-                    .onChange(of: sideEffectSeverity) { _ in
-                        guard isDailyCheckIn else { return }
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
-                        }
-                    }
-                    .onChange(of: sideEffectTags) { _ in
-                        guard isDailyCheckIn else { return }
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
-                        }
-                    }
-                    .onChange(of: logNotes) { _ in
-                        guard isDailyCheckIn, !logNotes.isEmpty else { return }
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            proxy.scrollTo("reflectScrollAnchor", anchor: .bottom)
-                        }
                     }
                 }
             }
@@ -805,6 +494,9 @@ import UIKit
                 // Initialize remaining pills if pill count is available
                 if let pillCount = medicationToLog.pillCount {
                     remainingPills = pillCount
+                }
+                if isDailyCheckIn, isNotificationEntry, checkInLogID == nil {
+                    checkInDate = Date()
                 }
                 loadExistingCheckInIfNeeded()
             }
@@ -830,7 +522,345 @@ import UIKit
     }
     
     // MARK: - Helper Views
-    
+
+    private var reflectPagedSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            reflectSummarySection
+
+            reflectQuestionCard
+
+            reflectNavigationButtons
+        }
+        .padding(.top, 6)
+        .padding(.bottom, keyboardHeight > 0 ? keyboardHeight + 20 : 40)
+    }
+
+    private var reflectSummarySection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("OVERVIEW")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .tracking(0.5)
+
+            reflectSummaryCard
+        }
+    }
+
+    private var reflectSummaryCard: some View {
+        let trimmedNotes = logNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        let focusLabel = medicationToLog.medicationType == .stimulant ? "Focus" : "Overall"
+        let focusValue = focusRating > 0 ? "\(focusRating)/5" : "Not set"
+        let effectsValue = sideEffectTags.isEmpty ? "Not set" : "\(sideEffectTags.count) selected"
+        let notesValue = trimmedNotes.isEmpty ? "Not set" : "Added"
+
+        return VStack(alignment: .leading, spacing: 14) {
+            reflectSummaryRow(title: "Medication", value: medicationToLog.name.isEmpty ? "Not set" : medicationToLog.name)
+            reflectSummaryRow(title: "Date", value: Self.reflectDateFormatter.string(from: checkInDate))
+            reflectSummaryRow(title: "Feeling", value: feelingRating > 0 ? "\(feelingRating)/5" : "Not set")
+            reflectSummaryRow(title: focusLabel, value: focusValue)
+            reflectSummaryRow(title: "Side effects", value: sideEffectSeverity > 0 ? "\(sideEffectSeverity)/5" : "Not set")
+            reflectSummaryRow(title: "Effects", value: effectsValue)
+            reflectSummaryRow(title: "Notes", value: notesValue)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.18))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
+                )
+        )
+    }
+
+    private var reflectQuestionCard: some View {
+        ZStack(alignment: .topLeading) {
+            switch currentReflectStep {
+            case .date:
+                reflectDateQuestion
+                    .transition(reflectStepTransition)
+            case .feeling:
+                reflectFeelingQuestion
+                    .transition(reflectStepTransition)
+            case .focusOrOverall:
+                reflectFocusQuestion
+                    .transition(reflectStepTransition)
+            case .sideEffectsSeverity:
+                reflectSideEffectSeverityQuestion
+                    .transition(reflectStepTransition)
+            case .sideEffectsTags:
+                reflectSideEffectsTagsQuestion
+                    .transition(reflectStepTransition)
+            case .notes:
+                reflectNotesQuestion
+                    .transition(reflectStepTransition)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: clampedReflectStepIndex)
+    }
+
+    private var reflectDateQuestion: some View {
+        ReflectCard {
+            Text("Which day are you reflecting on?")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            DatePicker(
+                "",
+                selection: $checkInDate,
+                in: ...Date(),
+                displayedComponents: [.date]
+            )
+            .datePickerStyle(.compact)
+            .labelsHidden()
+            .colorScheme(.dark)
+            .accentColor(Color(hex: "#F5F5F5"))
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.05))
+            )
+        }
+    }
+
+    private var reflectFeelingQuestion: some View {
+        ReflectCard {
+            Text("How did you feel today?")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            RatingControl(
+                title: "Feeling",
+                value: $feelingRating,
+                lowLabel: "Rough",
+                highLabel: "Great"
+            )
+        }
+    }
+
+    private var reflectFocusQuestion: some View {
+        let isStimulant = medicationToLog.medicationType == .stimulant
+        return ReflectCard {
+            Text(isStimulant ? "How was your focus?" : "Overall, how was your day?")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            RatingControl(
+                title: isStimulant ? "Focus" : "Overall",
+                value: $focusRating,
+                lowLabel: isStimulant ? "Foggy" : "Rough",
+                highLabel: isStimulant ? "Very focused" : "Great"
+            )
+        }
+    }
+
+    private var reflectSideEffectSeverityQuestion: some View {
+        ReflectCard {
+            Text("How strong were side effects?")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            RatingControl(
+                title: "Side effects",
+                value: $sideEffectSeverity,
+                lowLabel: "Barely noticed",
+                highLabel: "Very strong"
+            )
+        }
+    }
+
+    private var reflectSideEffectsTagsQuestion: some View {
+        ReflectCard {
+            Text("Any side effects? (optional)")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            if !sideEffectTags.isEmpty {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
+                    ForEach(Array(sideEffectTags), id: \.self) { effect in
+                        HStack(spacing: 8) {
+                            Text(effect)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+
+                            Button(action: {
+                                HapticManager.shared.lightImpact()
+                                sideEffectTags.remove(effect)
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.white.opacity(0.08))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                                )
+                        )
+                    }
+                }
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(commonSideEffects.filter { !sideEffectTags.contains($0) }, id: \.self) { effect in
+                        Button(action: {
+                            HapticManager.shared.lightImpact()
+                            sideEffectTags.insert(effect)
+                        }) {
+                            Text(effect)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.white.opacity(0.04))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 20)
+                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                        )
+                                )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                    }
+
+                    Button(action: {
+                        showingAddCustomSideEffect = true
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus.circle")
+                                .font(.system(size: 14))
+                            Text("Add custom")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(Color(hex: "#F5F5F5"))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.white.opacity(0.04))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                                )
+                        )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+                .padding(.horizontal, 1)
+            }
+        }
+    }
+
+    private var reflectNotesQuestion: some View {
+        ReflectCard {
+            Text("Additional notes (optional)")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $logNotes)
+                    .frame(minHeight: 80, maxHeight: 150)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.05))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                            )
+                    )
+
+                if logNotes.isEmpty {
+                    Text("How did you feel? Any observations?")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .padding(.leading, 20)
+                        .padding(.top, 20)
+                        .allowsHitTesting(false)
+                }
+            }
+        }
+    }
+
+    private var reflectNavigationButtons: some View {
+        HStack(spacing: 12) {
+            if clampedReflectStepIndex > 0 {
+                Button {
+                    HapticManager.shared.lightImpact()
+                    goToPreviousReflectStep()
+                } label: {
+                    Text("Back")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(ScaleButtonStyle())
+            }
+
+            Spacer()
+
+            Button {
+                HapticManager.shared.lightImpact()
+                if isLastReflectStep {
+                    HapticManager.shared.successNotification()
+                    processDoseAction(skipped: false)
+                } else {
+                    goToNextReflectStep()
+                }
+            } label: {
+                Text(isLastReflectStep ? "Log Reflect" : "Next")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "#2C332D"))
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(Color(hex: "#E8E8E0"))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(ScaleButtonStyle())
+        }
+    }
+
+    private func goToNextReflectStep() {
+        guard currentReflectStepIndex < reflectSteps.count - 1 else { return }
+        reflectStepAnimationDirection = .forward
+        withAnimation(.easeInOut(duration: 0.25)) {
+            currentReflectStepIndex += 1
+        }
+    }
+
+    private func goToPreviousReflectStep() {
+        guard currentReflectStepIndex > 0 else { return }
+        reflectStepAnimationDirection = .backward
+        withAnimation(.easeInOut(duration: 0.25)) {
+            currentReflectStepIndex -= 1
+        }
+    }
+
     private struct ReflectCard<Content: View>: View {
         let content: Content
 
@@ -852,6 +882,19 @@ import UIKit
                             .stroke(Color.white.opacity(0.12), lineWidth: 1)
                     )
             )
+        }
+    }
+
+    private func reflectSummaryRow(title: String, value: String) -> some View {
+        let isUnset = value == "Not set"
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+            Text(value)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(isUnset ? Color(hex: "#C7C7BD").opacity(0.6) : Color(hex: "#E8E8E0"))
+            Spacer()
         }
     }
 
@@ -1070,18 +1113,16 @@ struct RatingControl: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if value == 0 {
-                HStack(spacing: 8) {
-                    Text(lowLabel)
-                        .font(.system(size: 11))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+            HStack(spacing: 8) {
+                Text(lowLabel)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
 
-                    Spacer()
+                Spacer()
 
-                    Text(highLabel)
-                        .font(.system(size: 11))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                }
+                Text(highLabel)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
             }
             
             HStack(spacing: 8) {

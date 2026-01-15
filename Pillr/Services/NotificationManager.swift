@@ -944,7 +944,7 @@ class NotificationManager: ObservableObject {
             guard medication.enableDailyCheckIn else {
                 return DeliveredCheckInResult(checkIn: nil, shouldRemove: true)
             }
-            let context = DailyCheckInContext(medication: medication)
+            let context = DailyCheckInContext(medication: medication, entrySource: .notification)
             return DeliveredCheckInResult(checkIn: .daily(context), shouldRemove: true)
         }
 
@@ -954,7 +954,11 @@ class NotificationManager: ObservableObject {
            let logIDString = userInfo["logID"] as? String,
            let logID = UUID(uuidString: logIDString),
            medication.enableDailyCheckIn {
-            let context = DailyCheckInContext(medication: medication, logID: logID)
+            let context = DailyCheckInContext(
+                medication: medication,
+                logID: logID,
+                entrySource: .notification
+            )
             return DeliveredCheckInResult(checkIn: .daily(context), shouldRemove: true)
         }
 
@@ -1114,7 +1118,10 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 if let phase = userInfo["phase"] as? String {
                     if phase == "checkin", medication.enableDailyCheckIn {
                         DispatchQueue.main.async {
-                            MedicationStore.shared.dailyCheckInContext = DailyCheckInContext(medication: medication)
+                            MedicationStore.shared.dailyCheckInContext = DailyCheckInContext(
+                                medication: medication,
+                                entrySource: .notification
+                            )
                         }
                     } else if phase == "fade",
                               let isDailyCheckIn = userInfo["isDailyCheckIn"] as? Bool,
@@ -1125,7 +1132,8 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                         DispatchQueue.main.async {
                             MedicationStore.shared.dailyCheckInContext = DailyCheckInContext(
                                 medication: medication,
-                                logID: logID
+                                logID: logID,
+                                entrySource: .notification
                             )
                         }
                     }

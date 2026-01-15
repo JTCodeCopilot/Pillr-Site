@@ -21,15 +21,26 @@ struct ADHDDoseTimelineEntry: Identifiable, Equatable {
     let fadeTime: Date
 }
 
+enum DailyCheckInEntrySource {
+    case manual
+    case notification
+}
+
 struct DailyCheckInContext: Identifiable {
     let id: UUID
     let medication: Medication
     let logID: UUID?
+    let entrySource: DailyCheckInEntrySource
 
-    init(medication: Medication, logID: UUID? = nil) {
+    init(
+        medication: Medication,
+        logID: UUID? = nil,
+        entrySource: DailyCheckInEntrySource = .manual
+    ) {
         self.id = logID ?? UUID()
         self.medication = medication
         self.logID = logID
+        self.entrySource = entrySource
     }
 }
 
