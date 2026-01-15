@@ -39,6 +39,10 @@ import UIKit
     @State private var didLoadExistingCheckIn: Bool = false
     @State private var currentReflectStepIndex: Int = 0
     @State private var reflectStepAnimationDirection: ReflectStepTransitionDirection = .forward
+    @State private var showingReflectionSummary = false
+    @State private var isGeneratingReflectionSummary = false
+    @State private var reflectionSummaryText: String = ""
+    @State private var reflectionSummaryError: String?
     init(
         medicationToLog: Medication,
         isDailyCheckIn: Bool = false,
@@ -122,7 +126,9 @@ import UIKit
             steps.append(.date)
         }
         steps.append(.feeling)
-        steps.append(.focusOrOverall)
+        if medicationToLog.medicationType == .stimulant {
+            steps.append(.focusOrOverall)
+        }
         steps.append(.sideEffectsSeverity)
         steps.append(.sideEffectsTags)
         steps.append(.notes)
@@ -286,27 +292,8 @@ import UIKit
                                 }
                             }
 
-                            if shouldShowMedicationSelection {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Medication")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                        .tracking(0.6)
-
-                                    Menu {
-                                        ForEach(selectableMedications) { medication in
-                                            Button {
-                                                applyMedicationSelection(medication)
-                                            } label: {
-                                                Text(medication.name)
-                                            }
-                                        }
-                                    } label: {
-                                        medicationSelectionLabel
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
-                                    .disabled(selectableMedications.isEmpty)
-                                }
+                            if shouldShowMedicationSelection && !isDailyCheckIn {
+                                medicationSelectionSection
                             }
                             
                     }
@@ -479,6 +466,11 @@ import UIKit
                     }
                 }
             }
+            .overlay {
+                if showingReflectionSummary {
+                    reflectionSummaryOverlay
+                }
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -526,6 +518,9 @@ import UIKit
     private var reflectPagedSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             reflectSummarySection
+            if shouldShowMedicationSelection && currentReflectStep == .date {
+                medicationSelectionSection
+            }
 
             reflectQuestionCard
 
@@ -547,20 +542,28 @@ import UIKit
     }
 
     private var reflectSummaryCard: some View {
-        let trimmedNotes = logNotes.trimmingCharacters(in: .whitespacesAndNewlines)
-        let focusLabel = medicationToLog.medicationType == .stimulant ? "Focus" : "Overall"
+        let focusLabel = "Focus"
         let focusValue = focusRating > 0 ? "\(focusRating)/5" : "Not set"
         let effectsValue = sideEffectTags.isEmpty ? "Not set" : "\(sideEffectTags.count) selected"
-        let notesValue = trimmedNotes.isEmpty ? "Not set" : "Added"
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 16) {
+                reflectSummaryRow(title: "Medication", value: medicationToLog.name.isEmpty ? "Not set" : medicationToLog.name)
+                reflectSummaryRow(title: "Date", value: Self.reflectDateFormatter.string(from: checkInDate))
+            }
 
-        return VStack(alignment: .leading, spacing: 14) {
-            reflectSummaryRow(title: "Medication", value: medicationToLog.name.isEmpty ? "Not set" : medicationToLog.name)
-            reflectSummaryRow(title: "Date", value: Self.reflectDateFormatter.string(from: checkInDate))
-            reflectSummaryRow(title: "Feeling", value: feelingRating > 0 ? "\(feelingRating)/5" : "Not set")
-            reflectSummaryRow(title: focusLabel, value: focusValue)
-            reflectSummaryRow(title: "Side effects", value: sideEffectSeverity > 0 ? "\(sideEffectSeverity)/5" : "Not set")
-            reflectSummaryRow(title: "Effects", value: effectsValue)
-            reflectSummaryRow(title: "Notes", value: notesValue)
+            if medicationToLog.medicationType == .stimulant {
+                HStack(alignment: .firstTextBaseline, spacing: 16) {
+                    reflectSummaryRow(title: "Feeling", value: feelingRating > 0 ? "\(feelingRating)/5" : "Not set")
+                    reflectSummaryRow(title: focusLabel, value: focusValue)
+                }
+            } else {
+                reflectSummaryRow(title: "Feeling", value: feelingRating > 0 ? "\(feelingRating)/5" : "Not set")
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 16) {
+                reflectSummaryRow(title: "Side effects", value: sideEffectSeverity > 0 ? "\(sideEffectSeverity)/5" : "Not set")
+                reflectSummaryRow(title: "Effects", value: effectsValue)
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -572,6 +575,29 @@ import UIKit
                         .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
                 )
         )
+    }
+
+    private var medicationSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Medication")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .tracking(0.6)
+
+            Menu {
+                ForEach(selectableMedications) { medication in
+                    Button {
+                        applyMedicationSelection(medication)
+                    } label: {
+                        Text(medication.name)
+                    }
+                }
+            } label: {
+                medicationSelectionLabel
+            }
+            .buttonStyle(ScaleButtonStyle())
+            .disabled(selectableMedications.isEmpty)
+        }
     }
 
     private var reflectQuestionCard: some View {
@@ -625,7 +651,7 @@ import UIKit
 
     private var reflectFeelingQuestion: some View {
         ReflectCard {
-            Text("How did you feel today?")
+            Text("Overall, how was your day today?")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
@@ -641,7 +667,7 @@ import UIKit
     private var reflectFocusQuestion: some View {
         let isStimulant = medicationToLog.medicationType == .stimulant
         return ReflectCard {
-            Text(isStimulant ? "How was your focus?" : "Overall, how was your day?")
+            Text(isStimulant ? "How was your focus today?" : "Overall, how was your day?")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
@@ -656,7 +682,7 @@ import UIKit
 
     private var reflectSideEffectSeverityQuestion: some View {
         ReflectCard {
-            Text("How strong were side effects?")
+            Text("How noticeable were your side effects?")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
@@ -821,13 +847,12 @@ import UIKit
             Button {
                 HapticManager.shared.lightImpact()
                 if isLastReflectStep {
-                    HapticManager.shared.successNotification()
-                    processDoseAction(skipped: false)
+                    presentReflectionSummary()
                 } else {
                     goToNextReflectStep()
                 }
             } label: {
-                Text(isLastReflectStep ? "Log Reflect" : "Next")
+                Text(isLastReflectStep ? "See Reflection & Log" : "Next")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(Color(hex: "#2C332D"))
                     .padding(.horizontal, 22)
@@ -842,6 +867,121 @@ import UIKit
                     )
             }
             .buttonStyle(ScaleButtonStyle())
+        }
+    }
+
+    private var reflectionSummaryOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Your Reflection Summary")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+
+                if isGeneratingReflectionSummary {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                            .tint(Color(hex: "#E8E8E0"))
+                        Text("Generating summary...")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                    }
+                } else if let reflectionSummaryError {
+                    Text(reflectionSummaryError)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "#F3D6D6"))
+                } else {
+                    Text(reflectionSummaryText)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                HStack(spacing: 12) {
+                    Button {
+                        HapticManager.shared.lightImpact()
+                        showingReflectionSummary = false
+                    } label: {
+                        Text("Edit")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+
+                    Button {
+                        HapticManager.shared.successNotification()
+                        processDoseAction(skipped: false)
+                    } label: {
+                        Text("Save Reflection")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "#2C332D"))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color(hex: "#E8E8E0"))
+                            )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .disabled(isGeneratingReflectionSummary)
+                }
+            }
+            .padding(20)
+            .frame(maxWidth: 320)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(hex: "#3B433C"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.35), radius: 18, x: 0, y: 12)
+        }
+    }
+
+    private func presentReflectionSummary() {
+        showingReflectionSummary = true
+        isGeneratingReflectionSummary = true
+        reflectionSummaryText = ""
+        reflectionSummaryError = nil
+
+        let trimmedNotes = logNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        let focusValue = medicationToLog.medicationType == .stimulant && focusRating > 0 ? focusRating : nil
+        let feelingValue = feelingRating > 0 ? feelingRating : nil
+        let sideEffectValue = sideEffectSeverity > 0 ? sideEffectSeverity : nil
+        let sideEffects = sideEffectTags.sorted()
+
+        Task {
+            do {
+                let summary = try await OpenAIService.shared.summarizeDailyReflection(
+                    medicationName: medicationToLog.name,
+                    date: checkInDate,
+                    feeling: feelingValue,
+                    focus: focusValue,
+                    sideEffectSeverity: sideEffectValue,
+                    sideEffects: sideEffects,
+                    notes: trimmedNotes.isEmpty ? nil : trimmedNotes
+                )
+                await MainActor.run {
+                    reflectionSummaryText = summary
+                    isGeneratingReflectionSummary = false
+                }
+            } catch {
+                await MainActor.run {
+                    reflectionSummaryError = error.localizedDescription
+                    isGeneratingReflectionSummary = false
+                }
+            }
         }
     }
 
@@ -1128,7 +1268,7 @@ struct RatingControl: View {
             HStack(spacing: 8) {
                 ForEach(range, id: \.self) { index in
                     Button(action: {
-                        HapticManager.shared.lightImpact()
+                        HapticManager.shared.strongImpact()
                         if value == index {
                             value = 0
                         } else {

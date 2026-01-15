@@ -9,6 +9,13 @@ let openAIService = AIProxy.openAIService(
 
 struct OpenAIService {
     static let shared = OpenAIService()
+
+    private static let reflectionDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
     
     private init() {}
     
@@ -76,6 +83,57 @@ struct OpenAIService {
         }
 
         return try await performFocusTimingRequest(medicationName: medicationName)
+    }
+
+    func summarizeDailyReflection(
+        medicationName: String,
+        date: Date,
+        feeling: Int?,
+        focus: Int?,
+        sideEffectSeverity: Int?,
+        sideEffects: [String],
+        notes: String?
+    ) async throws -> String {
+        guard UserSettings.shared.hasAIAccess() else {
+            throw OpenAIError.premiumRequired
+        }
+
+        let dateString = Self.reflectionDateFormatter.string(from: date)
+        let trimmedNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let sideEffectsText = sideEffects.isEmpty ? "None noted" : sideEffects.joined(separator: ", ")
+
+        let prompt = """
+        Summarize the overall sentiment of this reflection in one short sentence (max 30 words). Be neutral, supportive, and non-judgmental. No medical advice. No emojis. No quotes.
+
+        Reflection data:
+        Medication: \(medicationName)
+        Date: \(dateString)
+        Feeling: \(feeling.map { "\($0)/5" } ?? "Not set")
+        Focus: \(focus.map { "\($0)/5" } ?? "Not set")
+        Side effects severity: \(sideEffectSeverity.map { "\($0)/5" } ?? "Not set")
+        Side effects: \(sideEffectsText)
+        Notes: \(trimmedNotes.isEmpty ? "None" : trimmedNotes)
+        """
+
+        let response = try await openAIService.chatCompletionRequest(body: .init(
+            model: "gpt-4o-mini",
+            messages: [
+                .system(content: .text("You are a concise assistant. Respond with a single sentence only.")),
+                .user(content: .text(prompt))
+            ],
+            temperature: 0.2
+        ))
+
+        guard let content = response.choices.first?.message.content else {
+            throw OpenAIError.noContent
+        }
+
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw OpenAIError.noContent
+        }
+
+        return trimmed.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
     }
     
     private func performRequestWithRetry(medications: [String], prompt: String, attempt: Int = 1) async throws -> [DrugInteraction] {
