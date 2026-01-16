@@ -909,7 +909,7 @@ extension MedicationHistoryView {
                     if noteParts.notes != nil {
                         lines.append("---")
                     }
-                    lines.append("Reflect Notes: \(checkInText)")
+                    lines.append("Reflection Notes: \(checkInText)")
                 }
 
                 if let feeling = log.feelingRating {

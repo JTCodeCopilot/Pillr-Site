@@ -105,7 +105,7 @@ struct Medication: Identifiable, Codable, Hashable {
     }
     
     /// When enabled for ADHD stimulants, Pillr will prompt
-    /// a Reflect prompt around the time the medication starts wearing off.
+    /// a Reflection prompt around the time the medication starts wearing off.
     var enableDailyCheckIn: Bool = false
     /// When enabled, Pillr will surface the start/fade reminders that drive focus windows.
     var enableStimulantPhaseNotifications: Bool = false

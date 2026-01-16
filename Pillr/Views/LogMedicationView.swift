@@ -156,8 +156,8 @@ import UIKit
         }
         steps.append(.feeling)
         if medicationToLog.medicationType == .stimulant {
-            steps.append(.emotionalTone)
             steps.append(.focusOrOverall)
+            steps.append(.emotionalTone)
         }
         steps.append(.sideEffectsTags)
         steps.append(.sideEffectsSeverity)
@@ -180,6 +180,15 @@ import UIKit
 
     private var reflectStepIndicatorText: String {
         "Step \(clampedReflectStepIndex + 1) of \(reflectSteps.count)"
+    }
+
+    private var canAdvanceReflectStep: Bool {
+        switch currentReflectStep {
+        case .feeling:
+            return feelingRating > 0
+        default:
+            return true
+        }
     }
 
     private var reflectStepTransition: AnyTransition {
@@ -271,7 +280,7 @@ import UIKit
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(isDailyCheckIn ? "Reflect" : "Log Medication")
+                                    Text(isDailyCheckIn ? "Reflection" : "Log Medication")
                                         .font(.system(size: 28, weight: .semibold))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                 }
@@ -356,7 +365,7 @@ import UIKit
                             }
                         }
                         
-                        // Enhanced Time Section with quick options (hidden for Reflect)
+                        // Enhanced Time Section with quick options (hidden for Reflection)
                         if !isDailyCheckIn {
                             FormSection(title: "TIME TAKEN", icon: "") {
                                 VStack(alignment: .leading, spacing: 20) {
@@ -964,6 +973,8 @@ import UIKit
                     )
             }
             .buttonStyle(ScaleButtonStyle())
+            .disabled(!canAdvanceReflectStep)
+            .opacity(canAdvanceReflectStep ? 1 : 0.45)
         }
     }
 

@@ -423,12 +423,12 @@ private extension MainTab {
                 )
         case .checkIns:
                 return OnboardingStageInfo(
-                    title: "Reflect",
+                    title: "Reflection",
                     description: AnyView(
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Capture a short daily note about how you are feeling.")
                                 .multilineTextAlignment(.leading)
-                            Text("Your Reflect entries stay tied to the medications you logged that day.")
+                            Text("Your Reflection entries stay tied to the medications you logged that day.")
                                 .multilineTextAlignment(.leading)
                         }
                     ),
@@ -437,7 +437,7 @@ private extension MainTab {
                     ],
                     icon: .system(name: "book.pages"),
                     accentColor: Color(hex: "#9FBBA5"),
-                    buttonAccessibilityLabel: "Continue to Reflect"
+                    buttonAccessibilityLabel: "Continue to Reflection"
                 )
         case .focus:
                 return OnboardingStageInfo(

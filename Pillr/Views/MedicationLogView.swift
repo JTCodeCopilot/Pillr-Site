@@ -409,7 +409,7 @@ struct MedicationLogView: View {
         return streak
     }
     
-    // Simple aggregated trends for ADHD-focused Reflect entries
+    // Simple aggregated trends for ADHD-focused Reflection entries
     private var focusTrendsSummary: String? {
         let calendar = Calendar.current
         let now = Date()
@@ -472,7 +472,7 @@ struct MedicationLogView: View {
             let focusText: String
             if agg.focusCount > 0 {
                 let avgFocus = Double(agg.focusTotal) / Double(max(1, agg.focusCount))
-                focusText = String(format: "average focus ~%.1f/5 over %d Reflect entries", avgFocus, agg.focusCount)
+                focusText = String(format: "average focus ~%.1f/5 over %d Reflection entries", avgFocus, agg.focusCount)
             } else {
                 focusText = "no focus ratings yet"
             }
@@ -746,7 +746,7 @@ struct MedicationLogView: View {
                     if noteParts.notes != nil {
                         lines.append("---")
                     }
-                    lines.append("Reflect Notes: \(checkInText)")
+                    lines.append("Reflection Notes: \(checkInText)")
                 }
                 
                 if let feeling = log.feelingRating {

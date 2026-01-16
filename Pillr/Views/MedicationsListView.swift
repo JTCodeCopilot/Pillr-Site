@@ -2931,7 +2931,7 @@ struct MedicationRow: View {
                     onDailyCheckInTap()
                 }) {
                     ZStack(alignment: .topTrailing) {
-                        Image(systemName: "square.and.pencil")
+                        Image(systemName: "book.pages")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(Color(hex: "#F5F7F4").opacity(0.85))
                             .padding(6)
@@ -2960,7 +2960,7 @@ struct MedicationRow: View {
                 .buttonStyle(PlainButtonStyle())
                 .padding(.trailing, 10)
                 .padding(.bottom, 10)
-                .accessibilityLabel("Log Reflect")
+                .accessibilityLabel("Log Reflection")
             }
         }
         .overlay(alignment: .topTrailing) {
@@ -3556,14 +3556,14 @@ fileprivate struct MedicationRowDetailsView: View {
                     checkInDescription = "around fade start"
                 }
             } else if let customTime = medication.dailyCheckInTime {
-                checkInDescription = "Reflect: \(commonFormatTime(customTime))"
+                checkInDescription = "Reflection: \(commonFormatTime(customTime))"
             } else {
-                checkInDescription = "Reflect reminder"
+                checkInDescription = "Reflection reminder"
             }
 
             entries.append(
                 DetailEntry(
-                    label: "Reflect",
+                    label: "Reflection",
                     value: checkInDescription,
                     lineLimit: 1
                 )

@@ -805,7 +805,7 @@ class NotificationManager: ObservableObject {
         let noteBody = "Take a moment to reflect on how you felt today taking \(medication.name)."
 
         let content = UNMutableNotificationContent()
-        content.title = "Reflect"
+        content.title = "Reflection"
         content.body = noteBody
         content.sound = UNNotificationSound.default
         content.userInfo = [
@@ -844,7 +844,7 @@ class NotificationManager: ObservableObject {
 
             center.add(request) { error in
                 if let error = error {
-                    print("Error scheduling Reflect notification: \(error.localizedDescription)")
+                    print("Error scheduling Reflection notification: \(error.localizedDescription)")
                 }
             }
         }
@@ -1113,7 +1113,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                     }
                 }
                 
-                // If this is a stimulant fade notification with Reflect enabled,
+                // If this is a stimulant fade notification with Reflection enabled,
                 // surface the notes & side-effects logging sheet for this medication.
                 if let phase = userInfo["phase"] as? String {
                     if phase == "checkin", medication.enableDailyCheckIn {

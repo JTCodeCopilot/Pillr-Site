@@ -24,13 +24,13 @@ struct PremiumUpgradeView: View {
         FeatureComparison(title: "Once-Daily Reminder", freeIncludes: true, premiumIncludes: true),
         FeatureComparison(title: "Focus Timeline", freeIncludes: true, premiumIncludes: true),
         FeatureComparison(title: "History", freeIncludes: true, premiumIncludes: true),
-        FeatureComparison(title: "Reflect (daily wellness reflections)", freeIncludes: false, premiumIncludes: true),
+        FeatureComparison(title: "Reflection (daily wellness reflections)", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "iCloud Sync & Backup", freeIncludes: true, premiumIncludes: true),
         FeatureComparison(title: "Unlimited Medications", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "Multiple Daily Reminders", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "AI Powered Interaction & Search", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "Pill Count Tracking", freeIncludes: false, premiumIncludes: true),
-        FeatureComparison(title: "Daily Reflect Monitoring", freeIncludes: false, premiumIncludes: true)
+        FeatureComparison(title: "Daily Reflection Monitoring", freeIncludes: false, premiumIncludes: true)
     ]
 
     private let brandAccent = Color(hex: "#C8F365")

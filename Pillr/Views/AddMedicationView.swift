@@ -838,12 +838,12 @@ struct AddMedicationView: View {
                 }
 
                 if enableStimulantPhaseNotifications {
-                    FormSection(title: "REFLECT", icon: "calendar.badge.clock") {
+                    FormSection(title: "REFLECTION", icon: "calendar.badge.clock") {
                         VStack(alignment: .leading, spacing: 12) {
                             Toggle(isOn: $enableDailyCheckIn) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     HStack {
-                                        Text("Reflect")
+                                        Text("Reflection")
                                             .font(.system(size: 15, weight: .semibold))
                                             .foregroundColor(Color(hex: "#E8E8E0"))
                                         if !userSettings.isPremiumUser {
@@ -858,7 +858,7 @@ struct AddMedicationView: View {
                                     }
                                     Text(userSettings.isPremiumUser ?
                                          "At the start of the fading window, Pillr will remind you to log focus and side effects for this medication." :
-                                            "Reflect requires a premium subscription.")
+                                            "Reflection requires a premium subscription.")
                                         .font(.system(size: 12))
                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                                 }
@@ -893,7 +893,7 @@ struct AddMedicationView: View {
                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
 
                                     Toggle(isOn: $useCustomDailyCheckInTime) {
-                                        Text("Choose a custom Reflect time")
+                                        Text("Choose a custom Reflection time")
                                             .font(.system(size: 14, weight: .medium))
                                             .foregroundColor(Color(hex: "#E8E8E0"))
                                     }
@@ -903,7 +903,7 @@ struct AddMedicationView: View {
                                     }
 
                                     if useCustomDailyCheckInTime {
-                                        TimePickerRow(title: "Reflect time", time: $customDailyCheckInTime)
+                                        TimePickerRow(title: "Reflection time", time: $customDailyCheckInTime)
                                         Text("Tip: the custom reminder only schedules after you log a dose, so pick a time you expect to reach after logging; logging after that time means today’s reminder waits until tomorrow.")
                                             .font(.system(size: 12))
                                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
@@ -964,12 +964,12 @@ struct AddMedicationView: View {
             let shouldShowStandaloneDailyCheckIn = medicationType != .stimulant || !enableStimulantPhaseNotifications
 
             if shouldShowStandaloneDailyCheckIn {
-                FormSection(title: "REFLECT", icon: "calendar.badge.clock") {
+                FormSection(title: "REFLECTION", icon: "calendar.badge.clock") {
                     VStack(alignment: .leading, spacing: 12) {
                         Toggle(isOn: $enableDailyCheckIn) {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
-                                    Text("Reflect")
+                                    Text("Reflection")
                                         .font(.system(size: 15, weight: .semibold))
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                     if !userSettings.isPremiumUser {
@@ -984,7 +984,7 @@ struct AddMedicationView: View {
                                 }
                                 Text(userSettings.isPremiumUser ?
                                      "Pick a time for a gentle reminder to jot anything you'd like to remember about this medication." :
-                                        "Reflect requires a premium subscription.")
+                                        "Reflection requires a premium subscription.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                             }
@@ -1016,8 +1016,8 @@ struct AddMedicationView: View {
                                 Text("Choose when you'd like to reflect each day.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
-                                TimePickerRow(title: "Reflect time", time: $customDailyCheckInTime)
-                                Text("If the medication isn't taken before the Reflect time, the reminder will not trigger.")
+                                TimePickerRow(title: "Reflection time", time: $customDailyCheckInTime)
+                                Text("If the medication isn't taken before the Reflection time, the reminder will not trigger.")
                                     .font(.system(size: 12))
                                     .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
                                     .fixedSize(horizontal: false, vertical: true)
@@ -1291,8 +1291,8 @@ struct AddMedicationView: View {
                 summaryRow(title: "ADHD medication", value: adhdDescription)
             }
 
-            summaryRow(
-                title: "Reflect",
+                summaryRow(
+                    title: "Reflection",
                 value: (userSettings.isPremiumUser && enableDailyCheckIn) ? "Yes" : "No"
             )
 

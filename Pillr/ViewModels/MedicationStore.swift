@@ -77,7 +77,7 @@ class MedicationStore: ObservableObject {
     @Published private(set) var lastCloudSyncDate: Date?
     @Published var recentADHDDoseTimeline: ADHDDoseTimelineEntry?
     /// When set (typically from a notification tap), the UI
-    /// should present a Reflect logging sheet for this medication.
+    /// should present a Reflection logging sheet for this medication.
     @Published var dailyCheckInContext: DailyCheckInContext?
     /// When set, the medications list should highlight / expand this medication card.
     @Published var highlightedMedicationID: UUID?
