@@ -90,6 +90,7 @@ struct OpenAIService {
         date: Date,
         feeling: Int?,
         focus: Int?,
+        emotionalTone: String?,
         sideEffectSeverity: Int?,
         sideEffects: [String],
         notes: String?
@@ -103,13 +104,20 @@ struct OpenAIService {
         let sideEffectsText = sideEffects.isEmpty ? "None noted" : sideEffects.joined(separator: ", ")
 
         let prompt = """
-        Summarize the overall sentiment of this reflection in one short sentence (max 30 words). Be neutral, supportive, and non-judgmental. No medical advice. No emojis. No quotes.
+        Create one short sentence (max 30 words) that captures the overall experience of the day.
+
+        Focus on how the day felt overall, combining mood, focus, medication impact, side effects, and any notes into a single natural summary.
+
+        Be neutral, supportive, and non judgmental.
+        Do not give medical advice.
+        Do not use emojis or quotes.
 
         Reflection data:
         Medication: \(medicationName)
         Date: \(dateString)
         Feeling: \(feeling.map { "\($0)/5" } ?? "Not set")
         Focus: \(focus.map { "\($0)/5" } ?? "Not set")
+        Emotional tone: \(emotionalTone ?? "Not set")
         Side effects severity: \(sideEffectSeverity.map { "\($0)/5" } ?? "Not set")
         Side effects: \(sideEffectsText)
         Notes: \(trimmedNotes.isEmpty ? "None" : trimmedNotes)

@@ -14,6 +14,7 @@ import UIKit
 	    @Environment(\.dismiss) var dismiss
 	    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 	    @Environment(\.colorScheme) private var colorScheme
+        @ObservedObject private var userSettings = UserSettings.shared
 
 	    @State private var medicationToLog: Medication
 	    var isDailyCheckIn: Bool
@@ -32,9 +33,11 @@ import UIKit
     @State private var sideEffectTags: Set<String> = []
     @State private var customSideEffect: String = ""
     @State private var showingAddCustomSideEffect: Bool = false
+    @State private var isEditingCustomSideEffects: Bool = false
     @State private var focusRating: Int = 0 // 1–5, 0 = not set
     @State private var feelingRating: Int = 0 // 1–5, 0 = not set
     @State private var sideEffectSeverity: Int = 0 // 1–5, 0 = not set
+    @State private var emotionalTone: EmotionalTone?
     @State private var checkInDate: Date = Date()
     @State private var didLoadExistingCheckIn: Bool = false
     @State private var currentReflectStepIndex: Int = 0
@@ -83,10 +86,22 @@ import UIKit
     private enum ReflectStep {
         case date
         case feeling
+        case emotionalTone
         case focusOrOverall
         case sideEffectsSeverity
         case sideEffectsTags
         case notes
+    }
+
+    private enum EmotionalTone: String, CaseIterable {
+        case flat
+        case calm
+        case tense
+        case overstimulated
+
+        var label: String {
+            rawValue.capitalized
+        }
     }
 
     private enum ReflectStepTransitionDirection {
@@ -99,6 +114,20 @@ import UIKit
         "Nausea", "Drowsiness", "Headache", "Dizziness", "Stomach upset",
         "Dry mouth", "Fatigue", "Insomnia", "Appetite loss", "Mood changes"
     ]
+
+    private var availableSideEffects: [String] {
+        var seen = Set<String>()
+        return (commonSideEffects + userSettings.customSideEffects).filter { effect in
+            let key = effect.lowercased()
+            guard !seen.contains(key) else { return false }
+            seen.insert(key)
+            return true
+        }
+    }
+
+    private func isCustomSideEffect(_ effect: String) -> Bool {
+        userSettings.customSideEffects.contains { $0.caseInsensitiveCompare(effect) == .orderedSame }
+    }
     
     // Whether this medication has multiple doses
     private var hasMultipleDoses: Bool {
@@ -127,10 +156,11 @@ import UIKit
         }
         steps.append(.feeling)
         if medicationToLog.medicationType == .stimulant {
+            steps.append(.emotionalTone)
             steps.append(.focusOrOverall)
         }
-        steps.append(.sideEffectsSeverity)
         steps.append(.sideEffectsTags)
+        steps.append(.sideEffectsSeverity)
         steps.append(.notes)
         return steps
     }
@@ -495,12 +525,15 @@ import UIKit
             .onChange(of: medicationToLog.id) { _ in
                 selectedDoseIndex = 0
                 remainingPills = medicationToLog.pillCount
+                emotionalTone = nil
             }
             .alert("Add Custom Side Effect", isPresented: $showingAddCustomSideEffect) {
                 TextField("Side effect", text: $customSideEffect)
                 Button("Add") {
-                    if !customSideEffect.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        sideEffectTags.insert(customSideEffect.trimmingCharacters(in: .whitespacesAndNewlines))
+                    let trimmed = customSideEffect.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty {
+                        userSettings.addCustomSideEffect(trimmed)
+                        sideEffectTags.insert(trimmed)
                         customSideEffect = ""
                     }
                 }
@@ -609,6 +642,9 @@ import UIKit
             case .feeling:
                 reflectFeelingQuestion
                     .transition(reflectStepTransition)
+            case .emotionalTone:
+                reflectEmotionalToneQuestion
+                    .transition(reflectStepTransition)
             case .focusOrOverall:
                 reflectFocusQuestion
                     .transition(reflectStepTransition)
@@ -664,6 +700,59 @@ import UIKit
         }
     }
 
+    private var reflectEmotionalToneQuestion: some View {
+        ReflectCard {
+            Text("Did you feel:")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#E8E8E0"))
+
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                ForEach(EmotionalTone.allCases, id: \.self) { tone in
+                    Button(action: {
+                        HapticManager.shared.strongImpact()
+                        emotionalTone = emotionalTone == tone ? nil : tone
+                    }) {
+                        Text(tone.label)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(emotionalTone == tone ? Color(hex: "#2C332D") : Color(hex: "#E8E8E0"))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(emotionalTone == tone ? Color(hex: "#E8E8E0") : Color.white.opacity(0.06))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                            .stroke(Color(hex: "#C7C7BD").opacity(0.35), lineWidth: 1)
+                                    )
+                            )
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                legendLine(term: "Flat", description: "very low energy or emotional activation")
+                legendLine(term: "Calm", description: "balanced baseline")
+                legendLine(term: "Tense", description: "elevated activation or stress")
+                legendLine(term: "Overstimulated", description: "very high activation or overload")
+            }
+        }
+    }
+
+    private func legendLine(term: String, description: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(term)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+            Text("= \(description)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+        }
+    }
+
+
     private var reflectFocusQuestion: some View {
         let isStimulant = medicationToLog.medicationType == .stimulant
         return ReflectCard {
@@ -697,91 +786,99 @@ import UIKit
 
     private var reflectSideEffectsTagsQuestion: some View {
         ReflectCard {
-            Text("Any side effects? (optional)")
+            Text("What side effects showed up, if any?")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
-            if !sideEffectTags.isEmpty {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
-                    ForEach(Array(sideEffectTags), id: \.self) { effect in
-                        HStack(spacing: 8) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                ForEach(availableSideEffects, id: \.self) { effect in
+                    ZStack(alignment: .topTrailing) {
+                        Button(action: {
+                            HapticManager.shared.lightImpact()
+                            if sideEffectTags.contains(effect) {
+                                sideEffectTags.remove(effect)
+                            } else {
+                                sideEffectTags.insert(effect)
+                            }
+                        }) {
                             Text(effect)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(sideEffectTags.contains(effect) ? Color(hex: "#2C332D") : Color(hex: "#E8E8E0"))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(sideEffectTags.contains(effect) ? Color(hex: "#E8E8E0") : Color.white.opacity(0.04))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14)
+                                                .stroke(Color.white.opacity(sideEffectTags.contains(effect) ? 0.2 : 0.12), lineWidth: 1)
+                                        )
+                                )
                                 .lineLimit(1)
-                                .truncationMode(.tail)
+                                .minimumScaleFactor(0.85)
+                        }
+                        .buttonStyle(ScaleButtonStyle())
 
+                        if isEditingCustomSideEffects && isCustomSideEffect(effect) {
                             Button(action: {
                                 HapticManager.shared.lightImpact()
+                                userSettings.removeCustomSideEffect(effect)
                                 sideEffectTags.remove(effect)
                             }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 16))
+                                    .font(.system(size: 14))
                                     .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .background(Color.black.opacity(0.35).clipShape(Circle()))
                             }
+                            .offset(x: 6, y: -6)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Color.white.opacity(0.08))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                                )
-                        )
                     }
                 }
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(commonSideEffects.filter { !sideEffectTags.contains($0) }, id: \.self) { effect in
-                        Button(action: {
-                            HapticManager.shared.lightImpact()
-                            sideEffectTags.insert(effect)
-                        }) {
-                            Text(effect)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(Color.white.opacity(0.04))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 20)
-                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                        )
-                                )
-                        }
-                        .buttonStyle(ScaleButtonStyle())
+            HStack(spacing: 8) {
+                Button(action: {
+                    showingAddCustomSideEffect = true
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle")
+                            .font(.system(size: 14))
+                        Text("Add custom")
+                            .font(.system(size: 12, weight: .medium))
                     }
-
-                    Button(action: {
-                        showingAddCustomSideEffect = true
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "plus.circle")
-                                .font(.system(size: 14))
-                            Text("Add custom")
-                                .font(.system(size: 14, weight: .medium))
-                        }
-                        .foregroundColor(Color(hex: "#F5F5F5"))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color.white.opacity(0.04))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(Color.white.opacity(0.16), lineWidth: 1)
-                                )
-                        )
-                    }
-                    .buttonStyle(ScaleButtonStyle())
+                    .foregroundColor(Color(hex: "#F5F5F5"))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.white.opacity(0.04))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                            )
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 }
-                .padding(.horizontal, 1)
+                .buttonStyle(ScaleButtonStyle())
+
+                Button(action: {
+                    isEditingCustomSideEffects.toggle()
+                }) {
+                    Text(isEditingCustomSideEffects ? "Done" : "Edit")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        )
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .disabled(userSettings.customSideEffects.isEmpty && !isEditingCustomSideEffects)
             }
         }
     }
@@ -876,8 +973,8 @@ import UIKit
                 .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 16) {
-                Text("Your Reflection Summary")
-                    .font(.system(size: 17, weight: .semibold))
+                Text("Upon Reflection")
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(Color(hex: "#E8E8E0"))
 
                 if isGeneratingReflectionSummary {
@@ -968,6 +1065,7 @@ import UIKit
                     date: checkInDate,
                     feeling: feelingValue,
                     focus: focusValue,
+                    emotionalTone: emotionalTone?.label,
                     sideEffectSeverity: sideEffectValue,
                     sideEffects: sideEffects,
                     notes: trimmedNotes.isEmpty ? nil : trimmedNotes
@@ -1093,14 +1191,23 @@ import UIKit
         // Use the selected time instead of current time
         let timeToUse: Date
         if isDailyCheckIn {
-            timeToUse = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: checkInDate) ?? checkInDate
+            timeToUse = checkInDate
         } else {
             timeToUse = selectedQuickTime == .custom ? actualTimeTaken : Date().addingTimeInterval(selectedQuickTime.timeOffset)
         }
         
-        // Combine notes with side effects
+        // Combine notes with mood and side effects
         var combinedNotes = logNotes.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
+        if isDailyCheckIn, let emotionalTone {
+            let moodText = "Mood: \(emotionalTone.label)"
+            if combinedNotes.isEmpty {
+                combinedNotes = moodText
+            } else {
+                combinedNotes += "\n\n" + moodText
+            }
+        }
+
         if isDailyCheckIn && !sideEffectTags.isEmpty {
             let sideEffectsText = "Side effects: " + Array(sideEffectTags).joined(separator: ", ")
             if combinedNotes.isEmpty {
@@ -1116,6 +1223,11 @@ import UIKit
         let feelingToSave = isDailyCheckIn && feelingRating > 0 ? feelingRating : nil
         let focusToSave = isDailyCheckIn && focusRating > 0 ? focusRating : nil
         let sideEffectToSave = isDailyCheckIn && sideEffectSeverity > 0 ? sideEffectSeverity : nil
+        let reflectionSummaryToSave: String? = {
+            guard isDailyCheckIn else { return nil }
+            let trimmed = reflectionSummaryText.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }()
         
 	        if skipped {
 	            if let action = store.skipMedication(
@@ -1126,6 +1238,7 @@ import UIKit
 	                feelingRating: feelingToSave,
 	                focusRating: focusToSave,
 	                sideEffectSeverity: sideEffectToSave,
+                    reflectionSummary: reflectionSummaryToSave,
 	                showFocusTimeline: !isDailyCheckIn
 	            ) {
 	                onLogAction?(action)
@@ -1140,6 +1253,7 @@ import UIKit
 	                feelingRating: feelingToSave,
 	                focusRating: focusToSave,
 	                sideEffectSeverity: sideEffectToSave,
+                    reflectionSummary: reflectionSummaryToSave,
 	                showFocusTimeline: !isDailyCheckIn,
 	                isDailyCheckIn: isDailyCheckIn
 	            ) {
@@ -1179,14 +1293,36 @@ import UIKit
         let noteParts = splitNotesAndSideEffects(from: log.notes)
         logNotes = noteParts.checkInNotes ?? noteParts.notes ?? ""
         sideEffectTags = Set(noteParts.sideEffectsList)
+        if let mood = noteParts.mood?.lowercased(),
+           let tone = EmotionalTone(rawValue: mood) {
+            emotionalTone = tone
+        } else {
+            emotionalTone = nil
+        }
 
         didLoadExistingCheckIn = true
     }
 
-    private func splitNotesAndSideEffects(from notes: String?) -> (notes: String?, checkInNotes: String?, sideEffectsList: [String]) {
+    private func splitNotesAndSideEffects(from notes: String?) -> (notes: String?, checkInNotes: String?, sideEffectsList: [String], mood: String?) {
         guard var raw = notes?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
-            return (nil, nil, [])
+            return (nil, nil, [], nil)
         }
+
+        var moodValue: String?
+        let lines = raw.components(separatedBy: .newlines)
+        var remainingLines: [String] = []
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedLine.lowercased().hasPrefix("mood:") {
+                let value = trimmedLine.dropFirst("mood:".count).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !value.isEmpty {
+                    moodValue = value
+                }
+            } else {
+                remainingLines.append(line)
+            }
+        }
+        raw = remainingLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
 
         var sideEffectsPart: String?
         if let range = raw.range(of: "Side effects:", options: [.caseInsensitive]) {
@@ -1221,7 +1357,8 @@ import UIKit
         return (
             generalNote?.isEmpty == true ? nil : generalNote,
             checkInNote?.isEmpty == true ? nil : checkInNote,
-            sideEffectsList
+            sideEffectsList,
+            moodValue?.isEmpty == true ? nil : moodValue
         )
     }
 }

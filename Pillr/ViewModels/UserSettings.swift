@@ -76,6 +76,14 @@ class UserSettings: ObservableObject {
         }
     }
 
+    @Published var customSideEffects: [String] {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(customSideEffects, forKey: customSideEffectsKey)
+            }
+        }
+    }
+
     @Published var subscriptionType: String? {
         didSet {
             if !isPreviewMode {
@@ -98,6 +106,7 @@ class UserSettings: ObservableObject {
     private let notificationOnboardingPromptKey = "hasSeenNotificationOnboardingPrompt"
     private let cloudSyncPreferenceKey = "should_use_cloud_sync"
     private let appleHealthVisibilityKey = "should_show_apple_health_data"
+    private let customSideEffectsKey = "custom_side_effects"
     private let isPreviewMode: Bool
 
     #if DEBUG
@@ -131,6 +140,7 @@ class UserSettings: ObservableObject {
             self.hasSeenNotificationOnboardingPrompt = false
             self.shouldUseCloudSync = true
             self.shouldShowAppleHealthData = true
+            self.customSideEffects = []
         } else {
             // Load user name if available, otherwise use default
             self.userName = UserDefaults.standard.string(forKey: userNameKey) ?? "User"
@@ -152,6 +162,7 @@ class UserSettings: ObservableObject {
             } else {
                 self.shouldShowAppleHealthData = true
             }
+            self.customSideEffects = UserDefaults.standard.stringArray(forKey: customSideEffectsKey) ?? []
         }
 
         if forcePremiumFromEnv {
@@ -228,5 +239,24 @@ class UserSettings: ObservableObject {
     func markNotificationOnboardingPromptSeen() {
         guard !hasSeenNotificationOnboardingPrompt else { return }
         hasSeenNotificationOnboardingPrompt = true
+    }
+
+    func addCustomSideEffect(_ effect: String) {
+        let trimmed = effect.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let normalized = trimmed.lowercased()
+        if customSideEffects.contains(where: { $0.lowercased() == normalized }) {
+            return
+        }
+        customSideEffects.append(trimmed)
+    }
+
+    func removeCustomSideEffects(at offsets: IndexSet) {
+        customSideEffects.remove(atOffsets: offsets)
+    }
+
+    func removeCustomSideEffect(_ effect: String) {
+        let normalized = effect.lowercased()
+        customSideEffects.removeAll { $0.lowercased() == normalized }
     }
 }

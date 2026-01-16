@@ -289,6 +289,20 @@ private struct DailyCheckInTimelineRow: View {
         return note?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true ? nil : note
     }
 
+    private var reflectionSummary: String? {
+        let summary = log.reflectionSummary?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return summary?.isEmpty == true ? nil : summary
+    }
+
+    private var collapsedSummary: String? {
+        reflectionSummary ?? expandedNote
+    }
+
+    private var feelingDisplay: String {
+        guard let feeling = log.feelingRating, feeling > 0 else { return "Not set" }
+        return "\(feeling)/5"
+    }
+
     private var sideEffectChips: [String] {
         guard let sideEffects = noteParts.sideEffects, !sideEffects.isEmpty else { return [] }
         return sideEffects
@@ -345,6 +359,20 @@ private struct DailyCheckInTimelineRow: View {
                     Divider()
                         .overlay(Color.white.opacity(0.08))
 
+                    if let reflectionSummary {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Upon Reflection")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(ReflectJournalTheme.textTertiary)
+
+                            Text(reflectionSummary)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
+                                .lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
                     VStack(alignment: .leading, spacing: 10) {
                         DailyCheckInScaleView(
                             label: "Feeling",
@@ -359,7 +387,7 @@ private struct DailyCheckInTimelineRow: View {
                                 label: "Focus",
                                 value: focus,
                                 isHero: false,
-                                showValue: false,
+                                showValue: true,
                                 layout: .stacked
                             )
                         }
@@ -369,7 +397,7 @@ private struct DailyCheckInTimelineRow: View {
                                 label: "Side effects",
                                 value: sideEffects,
                                 isHero: false,
-                                showValue: false,
+                                showValue: true,
                                 layout: .stacked
                             )
                         }
@@ -416,48 +444,40 @@ private struct DailyCheckInTimelineRow: View {
                     }
                     .buttonStyle(DailyCheckInRowButtonStyle())
                 } else {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(medicationName)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(ReflectJournalTheme.textPrimary)
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(medicationName)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(ReflectJournalTheme.textSecondary)
+                            }
 
-                        Spacer()
-
-                        Text(timeText)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(ReflectJournalTheme.textTertiary)
-                    }
-
-                    // Feeling as the main, scannable metric
-                    DailyCheckInScaleView(
-                        label: "Feeling",
-                        value: log.feelingRating,
-                        isHero: true,
-                        showValue: true,
-                        layout: .stacked
-                    )
-
-                    // Secondary metrics in two concise columns
-                    if log.focusRating != nil || log.sideEffectSeverity != nil {
-                        HStack(alignment: .top, spacing: 14) {
-                            DailyCheckInMiniMetric(label: "Focus", value: log.focusRating)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            DailyCheckInMiniMetric(label: "Side effects", value: log.sideEffectSeverity)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text(collapsedSummary ?? "Reflection logged")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                    }
 
-                    // Notes preview
-                    if let expandedNote {
-                        Text(expandedNote)
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundColor(ReflectJournalTheme.textSecondary)
-                            .lineLimit(1)
+                        Spacer(minLength: 6)
+
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Spacer(minLength: 0)
+
+                            Text("Overall")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(ReflectJournalTheme.textTertiary)
+
+                            Text(feelingDisplay)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(ReflectJournalTheme.accent)
+
+                            Spacer(minLength: 0)
+                        }
                     }
                 }
             }
             .journalSheet(isExpanded: isExpanded)
+            .frame(minHeight: isExpanded ? nil : 120)
             .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .onTapGesture {
                 guard canExpand else { return }

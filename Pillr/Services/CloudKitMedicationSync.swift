@@ -52,6 +52,7 @@ final class CloudKitMedicationSync {
         static let feelingRating = "feelingRating"
         static let focusRating = "focusRating"
         static let sideEffectSeverity = "sideEffectSeverity"
+        static let reflectionSummary = "reflectionSummary"
         static let isDailyCheckIn = "isDailyCheckIn"
         static let notesLog = "notes"
         static let hiddenFromMyMeds = "hiddenFromMyMeds"
@@ -291,6 +292,9 @@ final class CloudKitMedicationSync {
         if let sideEffectSeverity = log.sideEffectSeverity {
             record[Field.sideEffectSeverity] = sideEffectSeverity as CKRecordValue
         }
+        if let reflectionSummary = log.reflectionSummary {
+            record[Field.reflectionSummary] = reflectionSummary as CKRecordValue
+        }
         record[Field.isDailyCheckIn] = log.isDailyCheckIn as CKRecordValue
         let reference = CKRecord.Reference(recordID: CKRecord.ID(recordName: medication.id.uuidString), action: .none)
         record[Field.medicationReference] = reference
@@ -403,6 +407,7 @@ final class CloudKitMedicationSync {
         let feelingRating = record[Field.feelingRating] as? Int
         let focusRating = record[Field.focusRating] as? Int
         let sideEffectSeverity = record[Field.sideEffectSeverity] as? Int
+        let reflectionSummary = record[Field.reflectionSummary] as? String
         let isDailyCheckIn = record[Field.isDailyCheckIn] as? Bool ?? false
         let hiddenFromMyMeds = record[Field.hiddenFromMyMeds] as? Bool ?? false
         let medicationDosageText = record[Field.medicationDosageText] as? String ?? ""
@@ -422,6 +427,7 @@ final class CloudKitMedicationSync {
             feelingRating: feelingRating,
             focusRating: focusRating,
             sideEffectSeverity: sideEffectSeverity,
+            reflectionSummary: reflectionSummary,
             hiddenFromMyMeds: hiddenFromMyMeds,
             medicationDosageText: medicationDosageText,
             medicationIconName: medicationIconName,

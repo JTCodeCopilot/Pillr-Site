@@ -381,6 +381,7 @@ class MedicationStore: ObservableObject {
         feelingRating: Int? = nil,
         focusRating: Int? = nil,
         sideEffectSeverity: Int? = nil,
+        reflectionSummary: String? = nil,
         showFocusTimeline: Bool = true,
         isDailyCheckIn: Bool = false
     ) -> LogUndoAction? {
@@ -418,7 +419,8 @@ class MedicationStore: ObservableObject {
                             notes: notes,
                             feelingRating: feelingRating,
                             focusRating: focusRating,
-                            sideEffectSeverity: sideEffectSeverity
+                            sideEffectSeverity: sideEffectSeverity,
+                            reflectionSummary: reflectionSummary
                         )
                     } else {
                         hapticManager.warningNotification()
@@ -456,6 +458,7 @@ class MedicationStore: ObservableObject {
             feelingRating: feelingRating,
             focusRating: focusRating,
             sideEffectSeverity: sideEffectSeverity,
+            reflectionSummary: reflectionSummary,
             medicationDosageText: medication.dosageWithUnit,
             medicationIconName: medication.iconName,
             medicationReminderCount: medication.reminderTimes.count
@@ -935,6 +938,7 @@ class MedicationStore: ObservableObject {
         feelingRating: Int? = nil,
         focusRating: Int? = nil,
         sideEffectSeverity: Int? = nil,
+        reflectionSummary: String? = nil,
         showFocusTimeline: Bool = true
     ) -> LogUndoAction? {
         return logMedicationTaken(
@@ -946,6 +950,7 @@ class MedicationStore: ObservableObject {
             feelingRating: feelingRating,
             focusRating: focusRating,
             sideEffectSeverity: sideEffectSeverity,
+            reflectionSummary: reflectionSummary,
             showFocusTimeline: showFocusTimeline
         )
     }
@@ -1195,7 +1200,8 @@ class MedicationStore: ObservableObject {
         notes: String?,
         feelingRating: Int?,
         focusRating: Int?,
-        sideEffectSeverity: Int?
+        sideEffectSeverity: Int?,
+        reflectionSummary: String?
     ) {
         var logEntry = logs[index]
         logEntry.isDailyCheckIn = true
@@ -1210,6 +1216,9 @@ class MedicationStore: ObservableObject {
         }
         if let sideEffectSeverity {
             logEntry.sideEffectSeverity = sideEffectSeverity
+        }
+        if let reflectionSummary {
+            logEntry.reflectionSummary = reflectionSummary
         }
         logs[index] = logEntry
         saveLogs()
