@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import UIKit
 
 // MARK: - Premium journal styling
 private enum ReflectJournalTheme {
@@ -96,6 +97,13 @@ struct DailyCheckInHistoryView: View {
     let isModal: Bool
     @State private var showingQuickCheckIn = false
     @State private var editingLog: MedicationLog?
+    @State private var shareItems: [Any] = []
+    @State private var showingShareSheet = false
+    @State private var showingDateRangeSheet = false
+    @State private var selectedStartDate: Date = Date()
+    @State private var selectedEndDate: Date = Date()
+    @State private var hasCustomDateFilter = false
+    @State private var isResettingRange = false
 
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -128,14 +136,54 @@ struct DailyCheckInHistoryView: View {
             .sorted { $0.takenAt > $1.takenAt }
     }
 
+    private var filteredCheckInLogs: [MedicationLog] {
+        let start = min(selectedStartDate, selectedEndDate)
+        let end = max(selectedStartDate, selectedEndDate)
+        let calendar = Calendar.current
+        let rangeStart = calendar.startOfDay(for: start)
+        let rangeEnd = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: end) ?? calendar.startOfDay(for: end).addingTimeInterval(86399)
+
+        return checkInLogs.filter { log in
+            log.takenAt >= rangeStart && log.takenAt <= rangeEnd
+        }
+    }
+
     private var groupedCheckIns: [(date: Date, logs: [MedicationLog])] {
         let calendar = Calendar.current
-        let groups = Dictionary(grouping: checkInLogs) { calendar.startOfDay(for: $0.takenAt) }
+        let groups = Dictionary(grouping: filteredCheckInLogs) { calendar.startOfDay(for: $0.takenAt) }
 
         return groups.keys.sorted(by: >).map { date in
             let logsForDay = groups[date]?.sorted(by: { $0.takenAt > $1.takenAt }) ?? []
             return (date, logsForDay)
         }
+    }
+
+    private var earliestCheckInDate: Date? {
+        checkInLogs.last?.takenAt
+    }
+
+    private var latestCheckInDate: Date? {
+        checkInLogs.first?.takenAt
+    }
+
+    private var dateRangeLabel: String {
+        guard let earliestCheckInDate, let latestCheckInDate else {
+            return "All time"
+        }
+        let calendar = Calendar.current
+        let earliestStart = calendar.startOfDay(for: earliestCheckInDate)
+        let latestEnd = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: latestCheckInDate) ?? latestCheckInDate
+        let start = min(selectedStartDate, selectedEndDate)
+        let end = max(selectedStartDate, selectedEndDate)
+
+        if start <= earliestStart && end >= latestEnd {
+            return "All time"
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return "\(formatter.string(from: start)) – \(formatter.string(from: end))"
     }
 
     var body: some View {
@@ -149,7 +197,11 @@ struct DailyCheckInHistoryView: View {
                         headerSection
 
                         if groupedCheckIns.isEmpty {
-                            DailyCheckInEmptyState()
+                            if checkInLogs.isEmpty {
+                                DailyCheckInEmptyState()
+                            } else {
+                                DailyCheckInFilteredEmptyState()
+                            }
                         } else {
                             timelineSection
                         }
@@ -175,6 +227,38 @@ struct DailyCheckInHistoryView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingDateRangeSheet = true
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(ReflectJournalTheme.textSecondary)
+                    }
+                    .disabled(checkInLogs.isEmpty)
+                    .accessibilityLabel("Filter reflections")
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button {
+                            exportReflectionsAsCSV()
+                        } label: {
+                            Label("Export CSV", systemImage: "doc.text")
+                        }
+
+                        Button {
+                            exportReflectionsAsPDF()
+                        } label: {
+                            Label("Export PDF", systemImage: "doc.richtext")
+                        }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(ReflectJournalTheme.textSecondary)
+                    }
+                    .disabled(checkInLogs.isEmpty)
+                    .accessibilityLabel("Export reflections")
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         showingQuickCheckIn = true
                     }) {
@@ -186,6 +270,12 @@ struct DailyCheckInHistoryView: View {
                     .accessibilityLabel("New Reflection")
                 }
             }
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            ShareSheet(activityItems: shareItems)
+        }
+        .sheet(isPresented: $showingDateRangeSheet) {
+            dateRangeSheet
         }
         .sheet(isPresented: $showingQuickCheckIn) {
             if let medication = defaultMedicationForCheckIn {
@@ -220,16 +310,46 @@ struct DailyCheckInHistoryView: View {
                 .background(Color(hex: "#424C43").ignoresSafeArea())
             }
         }
+        .onAppear {
+            if earliestCheckInDate != nil && latestCheckInDate != nil {
+                resetToAllTime()
+            } else {
+                selectedStartDate = Date()
+                selectedEndDate = Date()
+            }
+        }
+        .onChange(of: selectedStartDate) { newValue in
+            if selectedEndDate < newValue {
+                selectedEndDate = newValue
+            }
+            if showingDateRangeSheet && !isResettingRange {
+                hasCustomDateFilter = true
+            }
+        }
+        .onChange(of: selectedEndDate) { newValue in
+            if newValue < selectedStartDate {
+                selectedStartDate = newValue
+            }
+            if showingDateRangeSheet && !isResettingRange {
+                hasCustomDateFilter = true
+            }
+        }
         .preferredColorScheme(.dark)
     }
 
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("Reflection")
                 .journalTitle()
 
-            Text("\(checkInLogs.count) \(checkInLogs.count == 1 ? "entry" : "entries") logged")
+            Text("\(filteredCheckInLogs.count) \(filteredCheckInLogs.count == 1 ? "entry" : "entries") logged")
                 .journalSubtitle()
+
+            if hasCustomDateFilter {
+                Text(dateRangeLabel)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(ReflectJournalTheme.textSecondary)
+            }
         }
         .padding(.top, 16)
     }
@@ -251,6 +371,9 @@ struct DailyCheckInHistoryView: View {
                                 isLast: index == logs.count - 1,
                                 onEdit: {
                                     editingLog = log
+                                },
+                                onDelete: {
+                                    store.deleteLog(log)
                                 }
                             )
                         }
@@ -271,6 +394,269 @@ struct DailyCheckInHistoryView: View {
             return DailyCheckInHistoryView.dayFormatter.string(from: date)
         }
     }
+
+    private var dateRangeSheet: some View {
+        NavigationView {
+            ZStack {
+                ReflectJournalTheme.pageBackground
+                    .ignoresSafeArea()
+
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Date range")
+                        .journalTitle()
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        DatePicker("Start", selection: $selectedStartDate, displayedComponents: [.date])
+                            .datePickerStyle(.compact)
+                            .tint(ReflectJournalTheme.accent)
+
+                        DatePicker("End", selection: $selectedEndDate, displayedComponents: [.date])
+                            .datePickerStyle(.compact)
+                            .tint(ReflectJournalTheme.accent)
+                    }
+                    .padding(14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(ReflectJournalTheme.sheetFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(ReflectJournalTheme.sheetHighlight.opacity(0.6), lineWidth: 1)
+                            )
+                    )
+
+                    HStack(spacing: 10) {
+                        Button("Last 7 days") {
+                            applyPresetRange(days: 7)
+                        }
+                        Button("Last 30 days") {
+                            applyPresetRange(days: 30)
+                        }
+                        Button("All time") {
+                            resetToAllTime()
+                        }
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(ReflectJournalTheme.textPrimary)
+                    .padding(.top, 4)
+
+                    Spacer(minLength: 0)
+                }
+                .padding(20)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        showingDateRangeSheet = false
+                    }
+                    .foregroundColor(ReflectJournalTheme.textSecondary)
+                }
+            }
+        }
+    }
+
+    private func applyPresetRange(days: Int) {
+        let end = Date()
+        let start = Calendar.current.date(byAdding: .day, value: -max(1, days - 1), to: end) ?? end
+        selectedStartDate = start
+        selectedEndDate = end
+        hasCustomDateFilter = true
+    }
+
+    private func resetToAllTime() {
+        guard let earliest = earliestCheckInDate, let latest = latestCheckInDate else { return }
+        isResettingRange = true
+        selectedStartDate = earliest
+        selectedEndDate = latest
+        hasCustomDateFilter = false
+        DispatchQueue.main.async {
+            isResettingRange = false
+        }
+    }
+
+    private func exportReflectionsAsCSV() {
+        guard let url = createReflectionCSVFile() else { return }
+        shareItems = [url]
+        showingShareSheet = true
+    }
+
+    private func exportReflectionsAsPDF() {
+        guard let url = createReflectionPDFFile() else { return }
+        shareItems = [url]
+        showingShareSheet = true
+    }
+
+    private func createReflectionCSVFile() -> URL? {
+        let logs = filteredCheckInLogs
+        guard !logs.isEmpty else { return nil }
+
+        var csv = "Date,Time,Medication,Overall,Focus,SideEffectsSeverity,ReflectionSummary,Notes,CheckInNotes,SideEffects\n"
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+
+        for log in logs {
+            let noteParts = splitNotesAndSideEffects(for: log)
+            let summary = log.reflectionSummary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let notes = noteParts.notes ?? ""
+            let checkInNotes = noteParts.checkInNotes ?? ""
+            let sideEffects = noteParts.sideEffects ?? ""
+            let fields = [
+                dateFormatter.string(from: log.takenAt),
+                timeFormatter.string(from: log.takenAt),
+                log.medicationName,
+                ratingDisplay(log.feelingRating),
+                ratingDisplay(log.focusRating),
+                ratingDisplay(log.sideEffectSeverity),
+                summary,
+                notes,
+                checkInNotes,
+                sideEffects
+            ]
+            let row = fields.map { escapeCSVField($0) }.joined(separator: ",")
+            csv += "\(row)\n"
+        }
+
+        let fileName = "ReflectionNotes_\(DateFormatter.fileNameFormatter.string(from: Date())).csv"
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try csv.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            print("Error writing reflection CSV file: \(error)")
+            return nil
+        }
+    }
+
+    private func createReflectionPDFFile() -> URL? {
+        let logs = filteredCheckInLogs
+        guard !logs.isEmpty else { return nil }
+
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: logs) { calendar.startOfDay(for: $0.takenAt) }
+        let sortedDates = grouped.keys.sorted(by: >)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .long
+        let timeFormatter = DateFormatter()
+        timeFormatter.timeStyle = .short
+        let exportedOnFormatter = DateFormatter()
+        exportedOnFormatter.dateStyle = .long
+        exportedOnFormatter.timeStyle = .short
+
+        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
+        let margin: CGFloat = 36
+        let contentWidth = pageRect.width - (margin * 2)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+
+        let titleAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 24, weight: .bold),
+            .foregroundColor: UIColor.black
+        ]
+        let subtitleAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 13, weight: .medium),
+            .foregroundColor: UIColor.darkGray
+        ]
+        let dateHeaderAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 15, weight: .semibold),
+            .foregroundColor: UIColor.black
+        ]
+        let entryTitleAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 12, weight: .semibold),
+            .foregroundColor: UIColor.black
+        ]
+        let bodyAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 12, weight: .regular),
+            .foregroundColor: UIColor.darkGray
+        ]
+
+        let pdfData = renderer.pdfData { context in
+            var currentY = margin
+
+            func beginPage() {
+                context.beginPage()
+                currentY = margin
+            }
+
+            func drawText(_ attributedString: NSAttributedString, spacingAfter: CGFloat = 0) {
+                let height = height(for: attributedString, width: contentWidth)
+                if currentY + height > pageRect.height - margin {
+                    beginPage()
+                }
+                attributedString.draw(in: CGRect(x: margin, y: currentY, width: contentWidth, height: height))
+                currentY += height + spacingAfter
+            }
+
+            beginPage()
+            drawText(NSAttributedString(string: "Reflection Notes Export", attributes: titleAttributes), spacingAfter: 4)
+            let exportedOn = "Exported on \(exportedOnFormatter.string(from: Date()))"
+            drawText(NSAttributedString(string: exportedOn, attributes: subtitleAttributes), spacingAfter: 12)
+
+            for date in sortedDates {
+                let dateHeader = NSAttributedString(string: dateFormatter.string(from: date), attributes: dateHeaderAttributes)
+                drawText(dateHeader, spacingAfter: 6)
+
+                let entries = (grouped[date] ?? []).sorted(by: { $0.takenAt > $1.takenAt })
+                for log in entries {
+                    let headerText = "\(timeFormatter.string(from: log.takenAt)) • \(log.medicationName)"
+                    drawText(NSAttributedString(string: headerText, attributes: entryTitleAttributes), spacingAfter: 4)
+
+                    let ratingsText = "Overall: \(ratingDisplay(log.feelingRating))  Focus: \(ratingDisplay(log.focusRating))  Side effects: \(ratingDisplay(log.sideEffectSeverity))"
+                    drawText(NSAttributedString(string: ratingsText, attributes: bodyAttributes), spacingAfter: 4)
+
+                    let noteParts = splitNotesAndSideEffects(for: log)
+                    if let summary = log.reflectionSummary?.trimmingCharacters(in: .whitespacesAndNewlines), !summary.isEmpty {
+                        drawText(NSAttributedString(string: "Summary: \(summary)", attributes: bodyAttributes), spacingAfter: 4)
+                    }
+                    if let notes = noteParts.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
+                        drawText(NSAttributedString(string: "Notes: \(notes)", attributes: bodyAttributes), spacingAfter: 4)
+                    }
+                    if let checkInNotes = noteParts.checkInNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !checkInNotes.isEmpty {
+                        drawText(NSAttributedString(string: "Check-in: \(checkInNotes)", attributes: bodyAttributes), spacingAfter: 4)
+                    }
+                    if let sideEffects = noteParts.sideEffects?.trimmingCharacters(in: .whitespacesAndNewlines), !sideEffects.isEmpty {
+                        drawText(NSAttributedString(string: "Side effects: \(sideEffects)", attributes: bodyAttributes), spacingAfter: 8)
+                    } else {
+                        currentY += 8
+                    }
+                }
+            }
+        }
+
+        let fileName = "ReflectionNotes_\(DateFormatter.fileNameFormatter.string(from: Date())).pdf"
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try pdfData.write(to: fileURL, options: .atomic)
+            return fileURL
+        } catch {
+            print("Error writing reflection PDF file: \(error)")
+            return nil
+        }
+    }
+
+    private func escapeCSVField(_ field: String) -> String {
+        let escaped = field.replacingOccurrences(of: "\"", with: "\"\"")
+        if escaped.contains(",") || escaped.contains("\"") || escaped.contains("\n") {
+            return "\"\(escaped)\""
+        }
+        return escaped
+    }
+
+    private func ratingDisplay(_ value: Int?) -> String {
+        guard let value, value > 0 else { return "—" }
+        let clamped = max(0, min(value, 5))
+        return "\(clamped)/5"
+    }
+
+    private func height(for attributedString: NSAttributedString, width: CGFloat) -> CGFloat {
+        let bounds = attributedString.boundingRect(
+            with: CGSize(width: width, height: CGFloat.greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            context: nil
+        )
+        return ceil(bounds.height)
+    }
+
 }
 
 private struct DailyCheckInTimelineRow: View {
@@ -278,15 +664,20 @@ private struct DailyCheckInTimelineRow: View {
     let timeText: String
     let isLast: Bool
     let onEdit: () -> Void
+    let onDelete: () -> Void
     @State private var isExpanded = false
+    @State private var showingDeleteConfirm = false
 
     private var noteParts: (notes: String?, checkInNotes: String?, sideEffects: String?) {
         splitNotesAndSideEffects(for: log)
     }
 
     private var expandedNote: String? {
-        let note = noteParts.checkInNotes ?? noteParts.notes
-        return note?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true ? nil : note
+        let parts = [noteParts.notes, noteParts.checkInNotes]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard !parts.isEmpty else { return nil }
+        return parts.joined(separator: "\n\n")
     }
 
     private var reflectionSummary: String? {
@@ -322,6 +713,24 @@ private struct DailyCheckInTimelineRow: View {
 
     private var headerTapHeight: CGFloat {
         48
+    }
+
+    private var longPressHint: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "hand.tap.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(ReflectJournalTheme.textTertiary)
+            Text("Long press to edit or delete")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(ReflectJournalTheme.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+        )
     }
 
     var body: some View {
@@ -444,14 +853,7 @@ private struct DailyCheckInTimelineRow: View {
                         .overlay(Color.white.opacity(0.08))
                         .padding(.vertical, 2)
 
-                    Button(action: onEdit) {
-                        HStack {
-                            Label("Edit reflection", systemImage: "square.and.pencil")
-                                .labelStyle(.titleAndIcon)
-                            Spacer()
-                        }
-                    }
-                    .buttonStyle(DailyCheckInRowButtonStyle())
+                    longPressHint
                 } else {
                     HStack(alignment: .top, spacing: 12) {
                         VStack(alignment: .leading, spacing: 8) {
@@ -467,11 +869,6 @@ private struct DailyCheckInTimelineRow: View {
                                 .truncationMode(.tail)
 
                             HStack(spacing: 10) {
-                                if log.feelingRating != nil {
-                                    DailyCheckInMiniMetric(label: "Feeling", value: log.feelingRating)
-                                        .frame(maxWidth: .infinity)
-                                }
-
                                 if log.focusRating != nil {
                                     DailyCheckInMiniMetric(label: "Focus", value: log.focusRating)
                                         .frame(maxWidth: .infinity)
@@ -487,7 +884,7 @@ private struct DailyCheckInTimelineRow: View {
                         Spacer(minLength: 6)
 
                         VStack(alignment: .trailing, spacing: 6) {
-                            Text("Overall")
+                            Text("Overdall Day")
                                 .font(.system(size: 10, weight: .semibold))
                                 .foregroundColor(ReflectJournalTheme.textTertiary)
 
@@ -502,6 +899,29 @@ private struct DailyCheckInTimelineRow: View {
             .journalSheet(isExpanded: isExpanded)
             .frame(minHeight: isExpanded ? nil : 110)
             .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .contextMenu {
+                if isExpanded {
+                    Button {
+                        onEdit()
+                    } label: {
+                        Label("Edit Reflection", systemImage: "square.and.pencil")
+                    }
+
+                    Button(role: .destructive) {
+                        showingDeleteConfirm = true
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+            }
+            .alert("Delete?", isPresented: $showingDeleteConfirm) {
+                Button("Delete", role: .destructive) {
+                    onDelete()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This reflection will be permanently deleted.")
+            }
             .onTapGesture {
                 guard canExpand else { return }
                 guard !isExpanded else { return }
@@ -530,11 +950,19 @@ private struct DailyCheckInMiniMetric: View {
         let fraction = CGFloat(clampedValue) / CGFloat(maxValue)
 
         VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(ReflectJournalTheme.textSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+            HStack {
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(ReflectJournalTheme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+
+                Spacer(minLength: 6)
+
+                Text(value == nil ? "—" : "\(clampedValue)/\(maxValue)")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(ReflectJournalTheme.textTertiary)
+            }
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
@@ -742,6 +1170,37 @@ private struct DailyCheckInEmptyState: View {
                 .foregroundColor(ReflectJournalTheme.textPrimary)
 
             Text("Your reflection notes will show up here after you log.")
+                .font(.system(size: 14))
+                .foregroundColor(ReflectJournalTheme.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.035))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(ReflectJournalTheme.sheetHighlight, lineWidth: 1)
+                        .blendMode(.overlay)
+                        .opacity(0.45)
+                )
+        )
+    }
+}
+
+private struct DailyCheckInFilteredEmptyState: View {
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "calendar.badge.exclamationmark")
+                .font(.system(size: 42))
+                .foregroundColor(ReflectJournalTheme.textTertiary)
+
+            Text("No reflections in this range")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(ReflectJournalTheme.textPrimary)
+
+            Text("Try adjusting your date filter to see more entries.")
                 .font(.system(size: 14))
                 .foregroundColor(ReflectJournalTheme.textSecondary)
                 .multilineTextAlignment(.center)
