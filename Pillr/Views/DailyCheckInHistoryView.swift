@@ -186,6 +186,41 @@ struct DailyCheckInHistoryView: View {
         return "\(formatter.string(from: start)) – \(formatter.string(from: end))"
     }
 
+    private var last7DayStats: (avgOverall: String, bestDay: String, worstDay: String)? {
+        let calendar = Calendar.current
+        let end = Date()
+        let start = calendar.date(byAdding: .day, value: -6, to: end) ?? end
+        let rangeStart = calendar.startOfDay(for: start)
+        let rangeEnd = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: end) ?? end
+
+        let recentLogs = checkInLogs.filter { log in
+            guard log.takenAt >= rangeStart && log.takenAt <= rangeEnd else { return false }
+            let rating = log.feelingRating ?? 0
+            return rating > 0
+        }
+
+        guard !recentLogs.isEmpty else { return nil }
+
+        let total = recentLogs.reduce(0) { $0 + ($1.feelingRating ?? 0) }
+        let avg = Double(total) / Double(recentLogs.count)
+        let avgText = String(format: "%.1f/5", avg)
+
+        let grouped = Dictionary(grouping: recentLogs) { calendar.startOfDay(for: $0.takenAt) }
+        let dayAverages: [(date: Date, avg: Double)] = grouped.compactMap { date, logs in
+            let ratings = logs.compactMap { $0.feelingRating }.filter { $0 > 0 }
+            guard !ratings.isEmpty else { return nil }
+            let dayAvg = Double(ratings.reduce(0, +)) / Double(ratings.count)
+            return (date, dayAvg)
+        }
+
+        guard let best = dayAverages.max(by: { $0.avg < $1.avg }),
+              let worst = dayAverages.min(by: { $0.avg < $1.avg }) else {
+            return (avgText, "—", "—")
+        }
+
+        return (avgText, dayLabel(for: best.date), dayLabel(for: worst.date))
+    }
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -338,17 +373,39 @@ struct DailyCheckInHistoryView: View {
     }
 
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Reflection")
-                .journalTitle()
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Reflection")
+                    .journalTitle()
 
-            Text("\(filteredCheckInLogs.count) \(filteredCheckInLogs.count == 1 ? "entry" : "entries") logged")
-                .journalSubtitle()
+                Text("\(filteredCheckInLogs.count) \(filteredCheckInLogs.count == 1 ? "entry" : "entries") logged")
+                    .journalSubtitle()
 
-            if hasCustomDateFilter {
-                Text(dateRangeLabel)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(ReflectJournalTheme.textSecondary)
+                if hasCustomDateFilter {
+                    Text(dateRangeLabel)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(ReflectJournalTheme.textSecondary)
+                }
+            }
+
+            Spacer()
+
+            if let stats = last7DayStats {
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text("Avg Overall \(stats.avgOverall)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(ReflectJournalTheme.textPrimary)
+
+                    Text("Best day \(stats.bestDay)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(ReflectJournalTheme.textSecondary)
+
+                    Text("Worst day \(stats.worstDay)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(ReflectJournalTheme.textSecondary)
+                }
+                .multilineTextAlignment(.trailing)
+                .padding(.top, -2)
             }
         }
         .padding(.top, 16)
@@ -665,7 +722,7 @@ private struct DailyCheckInTimelineRow: View {
     let isLast: Bool
     let onEdit: () -> Void
     let onDelete: () -> Void
-    @State private var isExpanded = false
+    @State private var isExpanded = true
     @State private var showingDeleteConfirm = false
 
     private var noteParts: (notes: String?, checkInNotes: String?, sideEffects: String?) {
@@ -702,10 +759,6 @@ private struct DailyCheckInTimelineRow: View {
             .filter { !$0.isEmpty }
     }
 
-    private var canExpand: Bool {
-        true
-    }
-
     private var medicationName: String {
         let trimmedName = log.medicationName.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedName.isEmpty ? "Medication" : trimmedName
@@ -717,16 +770,13 @@ private struct DailyCheckInTimelineRow: View {
 
     private var longPressHint: some View {
         VStack(spacing: 6) {
-            Image(systemName: "hand.tap.fill")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(ReflectJournalTheme.textTertiary)
             Text("Long press to edit or delete")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundColor(ReflectJournalTheme.textSecondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.white.opacity(0.04))
@@ -752,27 +802,19 @@ private struct DailyCheckInTimelineRow: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 if isExpanded {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            isExpanded = false
-                        }
-                    } label: {
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(medicationName)
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(ReflectJournalTheme.textPrimary)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(medicationName)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(ReflectJournalTheme.textPrimary)
 
-                            Spacer()
+                        Spacer()
 
-                            Text(timeText)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(ReflectJournalTheme.textSecondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(height: headerTapHeight)
-                        .contentShape(Rectangle())
+                        Text(timeText)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(ReflectJournalTheme.textSecondary)
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: headerTapHeight)
 
                     Divider()
                         .overlay(Color.white.opacity(0.08))
@@ -921,13 +963,6 @@ private struct DailyCheckInTimelineRow: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("This reflection will be permanently deleted.")
-            }
-            .onTapGesture {
-                guard canExpand else { return }
-                guard !isExpanded else { return }
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded = true
-                }
             }
         }
     }
