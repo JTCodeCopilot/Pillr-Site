@@ -16,17 +16,17 @@ private enum ReflectJournalTheme {
     static let pageBottom = Color(hex: "#303830")
 
     static let textPrimary = Color(hex: "#E8E8E0")
-    static let textSecondary = Color(hex: "#C7C7BD").opacity(0.78)
-    static let textTertiary = Color(hex: "#C7C7BD").opacity(0.55)
+    static let textSecondary = Color(hex: "#C7C7BD").opacity(0.72)
+    static let textTertiary = Color(hex: "#C7C7BD").opacity(0.52)
 
     // Paper
-    static let sheetFill = Color.white.opacity(0.055)
-    static let sheetFillExpanded = Color.white.opacity(0.065)
-    static let sheetHighlight = Color.white.opacity(0.08)
+    static let sheetFill = Color.white.opacity(0.075)
+    static let sheetFillExpanded = Color.white.opacity(0.09)
+    static let sheetHighlight = Color.white.opacity(0.14)
 
     // Accents
     static let accent = Color(hex: "#E1D6C5")
-    static let progressTrack = Color.white.opacity(0.10)
+    static let progressTrack = Color.white.opacity(0.16)
 
     static var pageBackground: some View {
         LinearGradient(
@@ -547,7 +547,7 @@ struct DailyCheckInHistoryView: View {
         let logs = filteredCheckInLogs
         guard !logs.isEmpty else { return nil }
 
-        var csv = "Date,Time,Medication,Overall,Focus,SideEffectsSeverity,ReflectionSummary,Notes,CheckInNotes,SideEffects\n"
+        var csv = "Date,Time,Medication,Overall,Focus,SideEffectsSeverity,Mood,ReflectionSummary,Notes,CheckInNotes,SideEffects\n"
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .short
         let timeFormatter = DateFormatter()
@@ -559,6 +559,7 @@ struct DailyCheckInHistoryView: View {
             let notes = noteParts.notes ?? ""
             let checkInNotes = noteParts.checkInNotes ?? ""
             let sideEffects = noteParts.sideEffects ?? ""
+            let mood = noteParts.mood ?? ""
             let fields = [
                 dateFormatter.string(from: log.takenAt),
                 timeFormatter.string(from: log.takenAt),
@@ -566,6 +567,7 @@ struct DailyCheckInHistoryView: View {
                 ratingDisplay(log.feelingRating),
                 ratingDisplay(log.focusRating),
                 ratingDisplay(log.sideEffectSeverity),
+                mood,
                 summary,
                 notes,
                 checkInNotes,
@@ -662,6 +664,9 @@ struct DailyCheckInHistoryView: View {
                     drawText(NSAttributedString(string: ratingsText, attributes: bodyAttributes), spacingAfter: 4)
 
                     let noteParts = splitNotesAndSideEffects(for: log)
+                    if let mood = noteParts.mood?.trimmingCharacters(in: .whitespacesAndNewlines), !mood.isEmpty {
+                        drawText(NSAttributedString(string: "Mood: \(mood)", attributes: bodyAttributes), spacingAfter: 4)
+                    }
                     if let summary = log.reflectionSummary?.trimmingCharacters(in: .whitespacesAndNewlines), !summary.isEmpty {
                         drawText(NSAttributedString(string: "Summary: \(summary)", attributes: bodyAttributes), spacingAfter: 4)
                     }
@@ -725,7 +730,7 @@ private struct DailyCheckInTimelineRow: View {
     @State private var isExpanded = true
     @State private var showingDeleteConfirm = false
 
-    private var noteParts: (notes: String?, checkInNotes: String?, sideEffects: String?) {
+    private var noteParts: (notes: String?, checkInNotes: String?, sideEffects: String?, mood: String?) {
         splitNotesAndSideEffects(for: log)
     }
 
@@ -771,15 +776,15 @@ private struct DailyCheckInTimelineRow: View {
     private var longPressHint: some View {
         VStack(spacing: 6) {
             Text("Long press to edit or delete")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(ReflectJournalTheme.textSecondary)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(ReflectJournalTheme.textTertiary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 4)
+        .padding(.vertical, 3)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.04))
+                .fill(Color.white.opacity(0.025))
         )
     }
 
@@ -827,15 +832,15 @@ private struct DailyCheckInTimelineRow: View {
 
                             Text(reflectionSummary)
                                 .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(ReflectJournalTheme.textPrimary)
-                                .lineSpacing(3)
+                                .foregroundColor(ReflectJournalTheme.textSecondary)
+                                .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
                         DailyCheckInScaleView(
-                            label: "Overall",
+                            label: "Helped overall",
                             value: log.feelingRating,
                             isHero: true,
                             showValue: true,
@@ -844,7 +849,7 @@ private struct DailyCheckInTimelineRow: View {
 
                         if let focus = log.focusRating {
                             DailyCheckInScaleView(
-                                label: "Focus",
+                                label: "Focus level",
                                 value: focus,
                                 isHero: false,
                                 showValue: true,
@@ -854,12 +859,26 @@ private struct DailyCheckInTimelineRow: View {
 
                         if let sideEffects = log.sideEffectSeverity {
                             DailyCheckInScaleView(
-                                label: "Side effects",
+                                label: "Side-effect impact",
                                 value: sideEffects,
                                 isHero: false,
                                 showValue: true,
                                 layout: .stacked
                             )
+                        }
+                    }
+
+                    if let mood = noteParts.mood?.trimmingCharacters(in: .whitespacesAndNewlines), !mood.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Mood overall")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(ReflectJournalTheme.textTertiary)
+
+                            Text(mood)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(ReflectJournalTheme.textSecondary)
+                                .lineSpacing(2)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 
@@ -871,15 +890,15 @@ private struct DailyCheckInTimelineRow: View {
 
                             Text(expandedNote)
                                 .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(ReflectJournalTheme.textPrimary)
-                                .lineSpacing(3)
+                                .foregroundColor(ReflectJournalTheme.textSecondary)
+                                .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 
                     if !sideEffectChips.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Side effects")
+                            Text("Side effects picked")
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(ReflectJournalTheme.textTertiary)
 
@@ -1160,10 +1179,25 @@ private struct DailyCheckInFlowLayout<Content: View>: View {
     }
 }
 
-private func splitNotesAndSideEffects(for log: MedicationLog) -> (notes: String?, checkInNotes: String?, sideEffects: String?) {
+private func splitNotesAndSideEffects(for log: MedicationLog) -> (notes: String?, checkInNotes: String?, sideEffects: String?, mood: String?) {
     guard var raw = log.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
-        return (nil, nil, nil)
+        return (nil, nil, nil, nil)
     }
+    var moodValue: String?
+    let lines = raw.components(separatedBy: .newlines)
+    var remainingLines: [String] = []
+    for line in lines {
+        let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedLine.lowercased().hasPrefix("mood:") {
+            let value = trimmedLine.dropFirst("mood:".count).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !value.isEmpty {
+                moodValue = value
+            }
+        } else {
+            remainingLines.append(line)
+        }
+    }
+    raw = remainingLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     var sideEffectsPart: String?
     if let range = raw.range(of: "Side effects:", options: [.caseInsensitive]) {
         let after = raw[range.upperBound...]
@@ -1189,7 +1223,8 @@ private func splitNotesAndSideEffects(for log: MedicationLog) -> (notes: String?
     return (
         generalNote?.isEmpty == true ? nil : generalNote,
         checkInNote?.isEmpty == true ? nil : checkInNote,
-        sideEffectsPart?.isEmpty == true ? nil : sideEffectsPart
+        sideEffectsPart?.isEmpty == true ? nil : sideEffectsPart,
+        moodValue?.isEmpty == true ? nil : moodValue
     )
 }
 

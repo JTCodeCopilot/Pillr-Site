@@ -2094,14 +2094,6 @@ fileprivate struct MedicationRowHeaderView: View {
         }
     }
 
-    private var notesPreview: String? {
-        guard let notes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !notes.isEmpty else {
-            return nil
-        }
-        return notes
-    }
-
     private struct DoseBadgeItem: Identifiable {
         let id: Int
         let text: String
@@ -2261,15 +2253,6 @@ fileprivate struct MedicationRowHeaderView: View {
                 doseBadgesView
                     .padding(.top, 2)
                     .padding(.bottom, 6)
-            }
-            
-            if showDetails, let preview = notesPreview {
-                Text(preview)
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9 * detailTextOpacity))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .padding(.top, 2)
             }
         }
     }
@@ -3459,7 +3442,6 @@ fileprivate struct MedicationRowDetailsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                
                 if let rawNotes = medication.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !rawNotes.isEmpty {
                     HStack(alignment: .top, spacing: 10) {
                         VStack(alignment: .leading, spacing: 4) {
@@ -3468,14 +3450,14 @@ fileprivate struct MedicationRowDetailsView: View {
                                 .foregroundColor(Color(hex: "#C7C7BD"))
                                 .textCase(.uppercase)
                                 .tracking(0.5)
-                            
+
                             Text(rawNotes)
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(Color(hex: "#E8E8E0"))
                                 .multilineTextAlignment(.leading)
                                 .lineLimit(nil)
                         }
-                        
+
                         Spacer()
                     }
                     .padding(.vertical, 10)

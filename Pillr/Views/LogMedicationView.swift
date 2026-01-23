@@ -46,6 +46,7 @@ import UIKit
     @State private var isGeneratingReflectionSummary = false
     @State private var reflectionSummaryText: String = ""
     @State private var reflectionSummaryError: String?
+    @State private var summaryItemOrder: [ReflectionSummaryItem] = []
     init(
         medicationToLog: Medication,
         isDailyCheckIn: Bool = false,
@@ -94,13 +95,30 @@ import UIKit
     }
 
     private enum EmotionalTone: String, CaseIterable {
+        case low
         case flat
-        case calm
-        case tense
+        case anxious
+        case irritable
+        case restless
         case overstimulated
+        case calm
+        case grounded
+        case balanced
+        case motivated
 
         var label: String {
-            rawValue.capitalized
+            switch self {
+            case .low: return "Low"
+            case .flat: return "Flat"
+            case .anxious: return "Anxious"
+            case .irritable: return "Irritable"
+            case .restless: return "Restless"
+            case .overstimulated: return "Overstimulated"
+            case .calm: return "Calm"
+            case .grounded: return "Grounded"
+            case .balanced: return "Balanced"
+            case .motivated: return "Motivated"
+            }
         }
     }
 
@@ -584,39 +602,69 @@ import UIKit
     }
 
     private var reflectSummaryCard: some View {
-        let focusLabel = "Focus"
+        let medicationName = medicationToLog.name.isEmpty ? "Not set" : medicationToLog.name
         let focusValue = focusRating > 0 ? "\(focusRating)/5" : "Not set"
-        let effectsValue = sideEffectTags.isEmpty ? "Not set" : "\(sideEffectTags.count) selected"
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 16) {
-                reflectSummaryRow(title: "Medication", value: medicationToLog.name.isEmpty ? "Not set" : medicationToLog.name)
-                reflectSummaryRow(title: "Date", value: Self.reflectDateFormatter.string(from: checkInDate))
+        let feelingValue = feelingRating > 0 ? "\(feelingRating)/5" : "Not set"
+        let sideEffectValue = sideEffectSeverity > 0 ? "\(sideEffectSeverity)/5" : "Not set"
+        let effectsValue = sideEffectTags.isEmpty ? "Not set" : "\(sideEffectTags.count)"
+        let itemMap: [ReflectionSummaryItem: (label: String, value: String)] = [
+            .feeling: (label: "Overall feeling", value: feelingValue),
+            .mood: (label: "Mood overall", value: emotionalTone?.label ?? "Not set"),
+            .focus: (label: "Focus level", value: focusValue),
+            .sideEffectsSeverity: (label: "Side-effect impact", value: sideEffectValue),
+            .effects: (label: "Side effects picked", value: effectsValue)
+        ]
+        let inlineItems: [(label: String, value: String)] = summaryItemOrder.compactMap { itemMap[$0] }
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 14) {
+                reflectSummaryInfoItem(title: "Which medication?", value: medicationName)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Divider()
+                    .frame(width: 1, height: 32)
+                    .background(Color.white.opacity(0.12))
+                reflectSummaryInfoItem(title: "Which day?", value: Self.reflectDateFormatter.string(from: checkInDate))
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            if medicationToLog.medicationType == .stimulant {
-                HStack(alignment: .firstTextBaseline, spacing: 16) {
-                    reflectSummaryRow(title: "Feeling", value: feelingRating > 0 ? "\(feelingRating)/5" : "Not set")
-                    reflectSummaryRow(title: focusLabel, value: focusValue)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(inlineItems.indices, id: \.self) { index in
+                    let item = inlineItems[index]
+                    reflectSummaryMetric(label: item.label, value: item.value)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                    if index != inlineItems.count - 1 {
+                        Divider()
+                            .background(Color.white.opacity(0.12))
+                    }
                 }
-            } else {
-                reflectSummaryRow(title: "Feeling", value: feelingRating > 0 ? "\(feelingRating)/5" : "Not set")
             }
-
-            HStack(alignment: .firstTextBaseline, spacing: 16) {
-                reflectSummaryRow(title: "Side effects", value: sideEffectSeverity > 0 ? "\(sideEffectSeverity)/5" : "Not set")
-                reflectSummaryRow(title: "Effects", value: effectsValue)
-            }
+            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: inlineItems.count)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.18))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.black.opacity(0.22),
+                            Color.black.opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
                 )
         )
+        .onAppear(perform: updateSummaryItemOrder)
+        .onChange(of: feelingRating) { _ in updateSummaryItemOrder() }
+        .onChange(of: focusRating) { _ in updateSummaryItemOrder() }
+        .onChange(of: emotionalTone) { _ in updateSummaryItemOrder() }
+        .onChange(of: sideEffectSeverity) { _ in updateSummaryItemOrder() }
+        .onChange(of: sideEffectTags) { _ in updateSummaryItemOrder() }
+        .onChange(of: medicationToLog.medicationType) { _ in updateSummaryItemOrder() }
     }
 
     private var medicationSelectionSection: some View {
@@ -696,22 +744,22 @@ import UIKit
 
     private var reflectFeelingQuestion: some View {
         ReflectCard {
-            Text("Overall, how was your day today?")
+            Text("How much did your medication help today?")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
             RatingControl(
                 title: "Feeling",
                 value: $feelingRating,
-                lowLabel: "Rough",
-                highLabel: "Great"
+                lowLabel: "Not at all",
+                highLabel: "A lot"
             )
         }
     }
 
     private var reflectEmotionalToneQuestion: some View {
         ReflectCard {
-            Text("Did you feel:")
+            Text("How did your mood feel overall?")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
@@ -741,12 +789,6 @@ import UIKit
                 }
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                legendLine(term: "Flat", description: "very low energy or emotional activation")
-                legendLine(term: "Calm", description: "balanced baseline")
-                legendLine(term: "Tense", description: "elevated activation or stress")
-                legendLine(term: "Overstimulated", description: "very high activation or overload")
-            }
         }
     }
 
@@ -765,30 +807,30 @@ import UIKit
     private var reflectFocusQuestion: some View {
         let isStimulant = medicationToLog.medicationType == .stimulant
         return ReflectCard {
-            Text(isStimulant ? "How was your focus today?" : "Overall, how was your day?")
+            Text("How was your focus and clarity today?")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
             RatingControl(
-                title: isStimulant ? "Focus" : "Overall",
+                title: "Focus",
                 value: $focusRating,
-                lowLabel: isStimulant ? "Foggy" : "Rough",
-                highLabel: isStimulant ? "Very focused" : "Great"
+                lowLabel: "Foggy",
+                highLabel: "Very clear"
             )
         }
     }
 
     private var reflectSideEffectSeverityQuestion: some View {
         ReflectCard {
-            Text("How noticeable were your side effects?")
+            Text("How much did side effects get in your way?")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
             RatingControl(
                 title: "Side effects",
                 value: $sideEffectSeverity,
-                lowLabel: "Barely noticed",
-                highLabel: "Very strong"
+                lowLabel: "Not at all",
+                highLabel: "A lot"
             )
         }
     }
@@ -894,7 +936,7 @@ import UIKit
 
     private var reflectNotesQuestion: some View {
         ReflectCard {
-            Text("Additional notes (optional)")
+            Text("Anything else worth noting?")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(Color(hex: "#E8E8E0"))
 
@@ -917,7 +959,7 @@ import UIKit
                     )
 
                 if logNotes.isEmpty {
-                    Text("How did you feel? Any observations?")
+                    Text("Timing, appetite, sleep, rebound, or anything unusual.")
                         .font(.system(size: 16))
                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
                         .padding(.leading, 20)
@@ -1134,16 +1176,61 @@ import UIKit
         }
     }
 
-    private func reflectSummaryRow(title: String, value: String) -> some View {
+    private func reflectSummaryInfoItem(title: String, value: String) -> some View {
         let isUnset = value == "Not set"
-        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                .tracking(0.5)
             Text(value)
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(isUnset ? Color(hex: "#C7C7BD").opacity(0.6) : Color(hex: "#E8E8E0"))
-            Spacer()
+        }
+    }
+
+    private func reflectSummaryMetric(label: String, value: String) -> some View {
+        let isUnset = value == "Not set"
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+            Text(value)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(isUnset ? Color(hex: "#C7C7BD").opacity(0.6) : Color(hex: "#E8E8E0"))
+        }
+        .padding(.vertical, 8)
+    }
+
+    private enum ReflectionSummaryItem: Hashable {
+        case feeling
+        case mood
+        case focus
+        case sideEffectsSeverity
+        case effects
+    }
+
+    private func updateSummaryItemOrder() {
+        var next = summaryItemOrder
+
+        func set(_ item: ReflectionSummaryItem, isAvailable: Bool) {
+            if isAvailable {
+                if !next.contains(item) {
+                    next.append(item)
+                }
+            } else {
+                next.removeAll { $0 == item }
+            }
+        }
+
+        set(.feeling, isAvailable: feelingRating > 0)
+        set(.mood, isAvailable: emotionalTone != nil)
+        set(.focus, isAvailable: medicationToLog.medicationType == .stimulant && focusRating > 0)
+        set(.sideEffectsSeverity, isAvailable: sideEffectSeverity > 0)
+        set(.effects, isAvailable: !sideEffectTags.isEmpty)
+
+        if next != summaryItemOrder {
+            summaryItemOrder = next
         }
     }
 
