@@ -34,11 +34,23 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
         // Update badge when app becomes active
         MedicationStore.shared.checkAndResetBadge()
         NotificationManager.shared.surfaceDeliveredStimulantCheckInsIfNeeded()
+        incrementAppLaunchCountIfNeeded()
     }
     
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Refresh data when returning to foreground
         MedicationStore.shared.loadMedications()
+    }
+
+    private func incrementAppLaunchCountIfNeeded() {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "isRunningPreview") {
+            return
+        }
+        #endif
+        let key = "appLaunchCount"
+        let currentCount = UserDefaults.standard.integer(forKey: key)
+        UserDefaults.standard.set(currentCount + 1, forKey: key)
     }
 
 }
@@ -70,6 +82,9 @@ struct PillrApp: App {
             
             // Disable animations in preview mode for faster rendering
             UIView.setAnimationsEnabled(false)
+        } else {
+            // Clear the preview flag so normal runs aren't treated as previews.
+            UserDefaults.standard.set(false, forKey: "isRunningPreview")
         }
         #endif
         

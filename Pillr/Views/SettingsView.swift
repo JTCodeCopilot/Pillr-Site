@@ -282,6 +282,10 @@ struct SettingsView: View {
             settingsActionRow(title: "Contact Us") {
                 openLink("https://tally.so/r/3qMdL7")
             }
+
+            settingsActionRow(title: "Review Pillr") {
+                openLink("https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?action=write-review")
+            }
         }
     }
 

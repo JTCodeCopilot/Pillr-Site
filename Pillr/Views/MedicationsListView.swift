@@ -2112,7 +2112,7 @@ fileprivate struct MedicationRowHeaderView: View {
                     let prefix: String? = showDoseLabel
                         ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
                         : nil
-                    let label = prefix != nil ? "\(prefix!) • \(timeText)" : timeText
+                    let label = prefix != nil ? "\(prefix!) • Taken - \(timeText)" : "Taken - \(timeText)"
                     badges.append(DoseBadgeItem(id: state.index, text: label))
                 }
 
@@ -2906,7 +2906,6 @@ struct MedicationRow: View {
             cardBackgroundColor
         )
         .cornerRadius(14)
-        .overlay(loggedCheckmarkOverlay, alignment: .topTrailing)
         .overlay(notificationGlowOverlay)
         .overlay(alignment: .bottomTrailing) {
             if medication.enableDailyCheckIn && hasTakenDoseToday {
@@ -3026,26 +3025,6 @@ struct MedicationRow: View {
             .animation(.easeInOut(duration: 0.35), value: isNotificationGlowActive)
     }
 
-    @ViewBuilder
-    private var loggedCheckmarkOverlay: some View {
-        if usesLoggedCardStyle {
-            GeometryReader { geometry in
-                HStack {
-                    Spacer()
-                    Image(systemName: cycleStatus == .skipped ? "xmark" : "checkmark")
-                        .font(.system(size: geometry.size.height * 0.9, weight: .heavy, design: .rounded))
-                        .foregroundColor(cycleStatus == .skipped ? skippedAccentColor : Color.white)
-                        .opacity(cycleStatus == .skipped ? 0.09 : 0.045)
-                        .rotationEffect(.degrees(cycleStatus == .skipped ? 0 : -10))
-                        .frame(height: geometry.size.height * 0.9)
-                        .padding(.trailing, 18)
-                }
-                .frame(width: geometry.size.width, height: geometry.size.height)
-            }
-            .allowsHitTesting(false)
-        }
-    }
-    
     // Enhanced border overlay with better visual feedback
     private var enhancedBorderOverlay: some View {
         let (borderColor, borderWidth): (Color, CGFloat)

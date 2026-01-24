@@ -93,9 +93,11 @@ private extension View {
 
 struct DailyCheckInHistoryView: View {
     @EnvironmentObject var store: MedicationStore
+    @EnvironmentObject var storeManager: StoreManager
     @Environment(\.dismiss) private var dismiss
     let isModal: Bool
     @State private var showingQuickCheckIn = false
+    @State private var showingPremiumUpgrade = false
     @State private var editingLog: MedicationLog?
     @State private var shareItems: [Any] = []
     @State private var showingShareSheet = false
@@ -120,6 +122,10 @@ struct DailyCheckInHistoryView: View {
 
     init(isModal: Bool = false) {
         self.isModal = isModal
+    }
+
+    private var isPremiumActive: Bool {
+        storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
     }
 
     private var selectableMedications: [Medication] {
@@ -229,11 +235,18 @@ struct DailyCheckInHistoryView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
-                        headerSection
+                        if isPremiumActive {
+                            headerSection
+                        }
+                        if !isPremiumActive {
+                            reflectionInfoCard
+                        }
 
                         if groupedCheckIns.isEmpty {
                             if checkInLogs.isEmpty {
-                                DailyCheckInEmptyState()
+                                if isPremiumActive {
+                                    DailyCheckInEmptyState()
+                                }
                             } else {
                                 DailyCheckInFilteredEmptyState()
                             }
@@ -263,13 +276,17 @@ struct DailyCheckInHistoryView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        showingDateRangeSheet = true
+                        if isPremiumActive {
+                            showingDateRangeSheet = true
+                        } else {
+                            showingPremiumUpgrade = true
+                        }
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(ReflectJournalTheme.textSecondary)
                     }
-                    .disabled(checkInLogs.isEmpty)
+                    .disabled(checkInLogs.isEmpty && isPremiumActive)
                     .accessibilityLabel("Filter reflections")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -290,18 +307,27 @@ struct DailyCheckInHistoryView: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(ReflectJournalTheme.textSecondary)
                     }
-                    .disabled(checkInLogs.isEmpty)
+                    .disabled(checkInLogs.isEmpty && isPremiumActive)
                     .accessibilityLabel("Export reflections")
+                    .onTapGesture {
+                        if !isPremiumActive {
+                            showingPremiumUpgrade = true
+                        }
+                    }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        showingQuickCheckIn = true
+                        if isPremiumActive {
+                            showingQuickCheckIn = true
+                        } else {
+                            showingPremiumUpgrade = true
+                        }
                     }) {
                         Image(systemName: "plus")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(ReflectJournalTheme.textSecondary)
                     }
-                    .disabled(defaultMedicationForCheckIn == nil)
+                    .disabled(defaultMedicationForCheckIn == nil && isPremiumActive)
                     .accessibilityLabel("New Reflection")
                 }
             }
@@ -311,6 +337,10 @@ struct DailyCheckInHistoryView: View {
         }
         .sheet(isPresented: $showingDateRangeSheet) {
             dateRangeSheet
+        }
+        .sheet(isPresented: $showingPremiumUpgrade) {
+            PremiumUpgradeView()
+                .environmentObject(StoreManager.shared)
         }
         .sheet(isPresented: $showingQuickCheckIn) {
             if let medication = defaultMedicationForCheckIn {
@@ -409,6 +439,60 @@ struct DailyCheckInHistoryView: View {
             }
         }
         .padding(.top, 16)
+    }
+
+    private var reflectionInfoCard: some View {
+            VStack(alignment: .center, spacing: 12) {
+            Text("Reflection helps you understand how your medications affect your day by tracking mood, focus, and side effects over time.")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(ReflectJournalTheme.textPrimary)
+                Rectangle()
+                    .fill(Color.white.opacity(0.08))
+                    .frame(height: 1)
+                VStack(alignment: .leading, spacing: 4) {
+                Text("- AI powered reflection summaries")
+                Text("- CSV and PDF export")
+                Text("- Date filtering and history view")
+                Text("- Custom reminders")
+            }
+                .font(.system(size: 13))
+                .foregroundColor(ReflectJournalTheme.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+                Rectangle()
+                    .fill(Color.white.opacity(0.08))
+                    .frame(height: 1)
+                Text("Example Reflection entry")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(ReflectJournalTheme.textSecondary)
+                    .italic()
+                Image("Reflection Example")
+                    .resizable()
+                    .scaledToFit()
+                .frame(maxWidth: 260)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+            Button {
+                showingPremiumUpgrade = true
+            } label: {
+                Text("Unlock Premium to Start")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "#1E2620"))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Color.pillrAccent)
+                    .cornerRadius(12)
+            }
+            .accessibilityLabel("Unlock Premium to Start")
+        }
+        .multilineTextAlignment(.center)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.clear)
     }
 
     private var timelineSection: some View {
@@ -1295,6 +1379,7 @@ struct DailyCheckInHistoryView_Previews: PreviewProvider {
     static var previews: some View {
         DailyCheckInHistoryView()
             .environmentObject(MedicationStore.previewStore())
+            .environmentObject(StoreManager.shared)
     }
 }
 #endif

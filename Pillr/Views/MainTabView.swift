@@ -12,7 +12,6 @@ enum MainTab: String, Hashable, CaseIterable {
 struct MainTabView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
-    @EnvironmentObject var storeManager: StoreManager
     
     @State private var selectedTab: MainTab = .meds
     @StateObject private var addFlowCoordinator = AddMedicationFlowCoordinator()
@@ -26,21 +25,23 @@ struct MainTabView: View {
     @State private var showNotificationOnboardingPrompt = false
     @State private var needsOnboardingAfterNotificationPrompt = false
     @State private var isRequestingNotificationAuthorization = false
-    @State private var showingPremiumUpgrade = false
+    @State private var showReviewPrompt = false
+    @AppStorage("reviewPromptFirstLaunchTimeInterval") private var reviewPromptFirstLaunchTimeInterval: Double = 0
+    @AppStorage("reviewPromptHasShown") private var reviewPromptHasShown = false
+    @AppStorage("reviewPromptLastDismissedTimeInterval") private var reviewPromptLastDismissedTimeInterval: Double = 0
+    @AppStorage("reviewPromptSeeded") private var reviewPromptSeeded = false
+    @AppStorage("appLaunchCount") private var appLaunchCount: Int = 0
     
     private static let cloudSyncOnboardingKey = "cloudSyncChoice"
-    private var isPremiumActive: Bool {
-        storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
-    }
+    private static let reviewPromptURL = "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?action=write-review"
+    private static let reviewPromptDelaySeconds: TimeInterval = 1.2
+    private static let reviewPromptMinimumDays: Double = 3
+    private static let reviewPromptSnoozeDays: Double = 30
 
     private var tabSelection: Binding<MainTab> {
         Binding(
             get: { selectedTab },
             set: { newValue in
-                if newValue == .checkIns && !isPremiumActive {
-                    showingPremiumUpgrade = true
-                    return
-                }
                 if selectedTab == .meds && newValue != .meds && addFlowCoordinator.isShowing {
                     pendingTabSelection = newValue
                     showDiscardAlert = true
@@ -126,6 +127,14 @@ struct MainTabView: View {
                     .transition(.opacity)
                     .zIndex(3)
                 }
+                if showReviewPrompt {
+                    ReviewPromptSheet(
+                        onDismiss: dismissReviewPrompt,
+                        onLeaveReview: openReviewLink
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(2)
+                }
             }
         .alert("Discard medication?", isPresented: $showDiscardAlert) {
             Button("Discard", role: .destructive) {
@@ -140,12 +149,9 @@ struct MainTabView: View {
         } message: {
             Text("Any progress you've made on this medication will be discarded.")
         }
-        .sheet(isPresented: $showingPremiumUpgrade) {
-            PremiumUpgradeView()
-                .environmentObject(StoreManager.shared)
-        }
         .onAppear {
             scheduleOnboarding(for: selectedTab)
+            scheduleReviewPromptIfNeeded()
         }
         .onChange(of: store.requestedMainTab) { requested in
             guard let requested else { return }
@@ -179,6 +185,82 @@ struct MainTabView: View {
         }
     }
 
+    private func scheduleReviewPromptIfNeeded() {
+        guard !reviewPromptHasShown else { return }
+        seedReviewPromptBaselineIfNeeded()
+
+        let now = Date()
+        if reviewPromptFirstLaunchTimeInterval == 0 {
+            reviewPromptFirstLaunchTimeInterval = now.timeIntervalSince1970
+        }
+
+        let firstLaunchDate = Date(timeIntervalSince1970: reviewPromptFirstLaunchTimeInterval)
+        let minimumShowDate = Calendar.current.date(byAdding: .day, value: Int(Self.reviewPromptMinimumDays), to: firstLaunchDate) ?? now
+        let lastDismissedDate = reviewPromptLastDismissedTimeInterval > 0
+            ? Date(timeIntervalSince1970: reviewPromptLastDismissedTimeInterval)
+            : nil
+        let snoozeUntil = lastDismissedDate.flatMap {
+            Calendar.current.date(byAdding: .day, value: Int(Self.reviewPromptSnoozeDays), to: $0)
+        }
+
+        guard now >= minimumShowDate else { return }
+        if let snoozeUntil, now < snoozeUntil { return }
+        guard !isBlockingReviewPrompt else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.reviewPromptDelaySeconds) {
+            guard !reviewPromptHasShown else { return }
+            guard !isBlockingReviewPrompt else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showReviewPrompt = true
+            }
+        }
+    }
+
+    private var isBlockingReviewPrompt: Bool {
+        activeOnboardingStage != nil
+            || showCloudSyncChoice
+            || showCloudSyncConfirmation
+            || showNotificationOnboardingPrompt
+    }
+
+    private func seedReviewPromptBaselineIfNeeded() {
+        guard !reviewPromptSeeded else { return }
+        reviewPromptSeeded = true
+
+        if isLikelyExistingUser {
+            let threeDaysAgo = Date().addingTimeInterval(-Self.reviewPromptMinimumDays * 24 * 60 * 60)
+            reviewPromptFirstLaunchTimeInterval = threeDaysAgo.timeIntervalSince1970
+        } else if reviewPromptFirstLaunchTimeInterval == 0 {
+            reviewPromptFirstLaunchTimeInterval = Date().timeIntervalSince1970
+        }
+    }
+
+    private var isLikelyExistingUser: Bool {
+        if userSettings.hasShownPrivacyNotice { return true }
+        if userSettings.hasSeenCabinetIntroOverlay { return true }
+        if userSettings.hasSeenNotificationOnboardingPrompt { return true }
+        if !userSettings.seenOnboardingStages.isEmpty { return true }
+        return userSettings.userName != "User"
+    }
+
+    private func dismissReviewPrompt() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showReviewPrompt = false
+        }
+        reviewPromptLastDismissedTimeInterval = Date().timeIntervalSince1970
+    }
+
+    private func openReviewLink() {
+        reviewPromptHasShown = true
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showReviewPrompt = false
+        }
+        guard let url = URL(string: Self.reviewPromptURL), UIApplication.shared.canOpenURL(url) else {
+            return
+        }
+        UIApplication.shared.open(url)
+    }
+
     private func dismissOnboarding() {
         let dismissedTab = activeOnboardingTab
         if let tab = dismissedTab {
@@ -188,6 +270,7 @@ struct MainTabView: View {
             activeOnboardingStage = nil
             activeOnboardingTab = nil
         }
+        scheduleReviewPromptIfNeeded()
     }
 
 
@@ -223,6 +306,7 @@ struct MainTabView: View {
         guard !userSettings.hasSeenNotificationOnboardingPrompt else {
             DispatchQueue.main.async {
                 scheduleOnboarding(for: selectedTab)
+                scheduleReviewPromptIfNeeded()
             }
             return
         }
@@ -237,6 +321,7 @@ struct MainTabView: View {
                     }
                 } else {
                     scheduleOnboarding(for: selectedTab)
+                    scheduleReviewPromptIfNeeded()
                 }
             }
         }
@@ -267,6 +352,7 @@ struct MainTabView: View {
         isRequestingNotificationAuthorization = false
         DispatchQueue.main.async {
             scheduleOnboarding(for: selectedTab)
+            scheduleReviewPromptIfNeeded()
         }
     }
 
@@ -374,6 +460,70 @@ struct NotificationPermissionOnboardingPrompt: View {
                     .padding(.bottom, geometry.safeAreaInsets.bottom + 30)
 
                     Spacer()
+                }
+            }
+        }
+    }
+}
+
+struct ReviewPromptSheet: View {
+    let onDismiss: () -> Void
+    let onLeaveReview: () -> Void
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Color.black.opacity(0.25)
+                    .ignoresSafeArea()
+                    .onTapGesture(perform: onDismiss)
+
+                VStack {
+                    Spacer()
+
+                    VStack(spacing: 14) {
+                        Text("Enjoying Pillr?")
+                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .foregroundColor(.white)
+
+                        Text("If Pillr has helped you, tap a star to leave a review and help others find us.")
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundColor(Color.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(3)
+
+                        HStack(spacing: 8) {
+                            ForEach(0..<5) { _ in
+                                Button(action: onLeaveReview) {
+                                    Image(systemName: "star")
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundColor(Color.white.opacity(0.8))
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                                .accessibilityLabel("Leave a 5-star review")
+                            }
+                        }
+
+                        Button(action: onDismiss) {
+                            Text("Not now")
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundColor(Color.white.opacity(0.75))
+                        }
+                        .padding(.top, 2)
+                    }
+                    .padding(.vertical, 20)
+                    .padding(.horizontal, 22)
+                    .frame(maxWidth: 420)
+                    .background(
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(Color(hex: "#2A2D28").opacity(0.98))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.35), radius: 16, x: 0, y: 8)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, geometry.safeAreaInsets.bottom + 20)
                 }
             }
         }
