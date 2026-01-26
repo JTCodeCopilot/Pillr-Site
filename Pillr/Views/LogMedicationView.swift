@@ -153,7 +153,13 @@ import UIKit
     }
 
     private var selectableMedications: [Medication] {
-        store.activeMedications.filter { !$0.isDeleted }
+        let active = store.activeMedications.filter { !$0.isDeleted }
+        guard shouldShowMedicationSelection else { return active }
+        let calendar = Calendar.current
+        let loggedMedicationIDs = Set(store.logs.filter { log in
+            log.isDoseLog && calendar.isDate(log.takenAt, inSameDayAs: checkInDate)
+        }.map { $0.medicationID })
+        return active.filter { loggedMedicationIDs.contains($0.logIdentifier) }
     }
 
     private var shouldShowMedicationSelection: Bool {
@@ -306,7 +312,7 @@ import UIKit
                                 Spacer()
                                 
                                 // Pill count indicator
-                                if let pillCount = remainingPills {
+                                if !isDailyCheckIn, let pillCount = remainingPills {
                                     VStack(spacing: 4) {
                                         HStack(spacing: 6) {
                                             Image(systemName: "pills.circle.fill")
@@ -665,6 +671,8 @@ import UIKit
         .onChange(of: sideEffectSeverity) { _ in updateSummaryItemOrder() }
         .onChange(of: sideEffectTags) { _ in updateSummaryItemOrder() }
         .onChange(of: medicationToLog.medicationType) { _ in updateSummaryItemOrder() }
+        .onChange(of: checkInDate) { _ in syncMedicationSelectionIfNeeded() }
+        .onChange(of: selectableMedications.count) { _ in syncMedicationSelectionIfNeeded() }
     }
 
     private var medicationSelectionSection: some View {
@@ -1272,6 +1280,14 @@ import UIKit
         medicationToLog = medication
         selectedDoseIndex = 0
         remainingPills = medication.pillCount
+    }
+
+    private func syncMedicationSelectionIfNeeded() {
+        guard shouldShowMedicationSelection else { return }
+        guard let first = selectableMedications.first else { return }
+        if !selectableMedications.contains(where: { $0.id == medicationToLog.id }) {
+            applyMedicationSelection(first)
+        }
     }
     
     private func setupKeyboardObservers() {

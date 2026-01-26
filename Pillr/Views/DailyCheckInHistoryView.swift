@@ -129,7 +129,13 @@ struct DailyCheckInHistoryView: View {
     }
 
     private var selectableMedications: [Medication] {
-        store.activeMedications.filter { !$0.isDeleted }
+        let active = store.activeMedications.filter { !$0.isDeleted }
+        let calendar = Calendar.current
+        let today = Date()
+        let loggedMedicationIDs = Set(store.logs.filter { log in
+            log.isDoseLog && calendar.isDate(log.takenAt, inSameDayAs: today)
+        }.map { $0.medicationID })
+        return active.filter { loggedMedicationIDs.contains($0.logIdentifier) }
     }
 
     private var defaultMedicationForCheckIn: Medication? {
