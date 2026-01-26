@@ -80,6 +80,7 @@ struct MedicationsListView: View {
             let todaysLogs = store.logs.filter { log in
                 log.medicationID == medication.id &&
                 !log.hiddenFromMyMeds &&
+                log.isDoseLog &&
                 calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
             }
             return todaysLogs.map { log in
@@ -262,7 +263,7 @@ struct MedicationsListView: View {
                 store.recentADHDDoseTimeline = nil
             }) { entry in
                 ADHDDoseTimelineSheet(entry: entry)
-                    .presentationDetents([.medium])
+                    .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
             }
             .onReceive(referenceTimer) { output in
@@ -572,7 +573,7 @@ fileprivate struct LogUndoToastView: View {
 fileprivate func EmptyMedicationsView(onAddMedication: @escaping () -> Void) -> some View {
     EmptyStateView(
         title: "Your medication list is empty",
-        message: "Get started by adding your first medication below.",
+        message: "Get started by adding your first medication by tapping the + button above.",
         actionTitle: nil,
         action: nil,
         icon: "pills.fill"
@@ -640,8 +641,9 @@ fileprivate func sortedMedications(
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
         return calendar.date(from: components) ?? date
     }
-    let logsByMedication = Dictionary(grouping: logs, by: { $0.medicationID })
-    let logsByID = Dictionary(uniqueKeysWithValues: logs.map { ($0.id, $0) })
+    let doseLogs = logs.filter { $0.isDoseLog }
+    let logsByMedication = Dictionary(grouping: doseLogs, by: { $0.medicationID })
+    let logsByID = Dictionary(uniqueKeysWithValues: doseLogs.map { ($0.id, $0) })
 
     struct MedicationSortInfo {
         let medication: Medication
@@ -2575,12 +2577,14 @@ struct MedicationRow: View {
         if let logEntryID = medication.logEntryID {
             return store.logs.filter { log in
                 log.id == logEntryID &&
-                calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
+                calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
+                log.isDoseLog
             }
         }
         return store.logs.filter { log in
             log.medicationID == medication.logIdentifier &&
-            calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
+            calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
+            log.isDoseLog
         }
     }
     
@@ -2986,6 +2990,24 @@ struct MedicationRow: View {
             toggleExpansion()
         }
         .contextMenu {
+            if cycleStatus == .taken {
+                Button {
+                    HapticManager.shared.lightImpact()
+                    undoMostRecentLog(skipped: false)
+                } label: {
+                    Text("Untake Medication")
+                }
+            }
+
+            if cycleStatus == .skipped {
+                Button {
+                    HapticManager.shared.lightImpact()
+                    undoMostRecentLog(skipped: true)
+                } label: {
+                    Text("Unskip Medication")
+                }
+            }
+
             Button {
                 HapticManager.shared.lightImpact()
                 onEditTap()
@@ -3175,32 +3197,41 @@ struct MedicationRow: View {
 	        }
 	    }
 
-	    private func skipDose(at index: Int) {
-	        if medication.reminderTimes.isEmpty {
-	            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
-	            if let action = store.skipMedication(
-	                medication: medication,
-	                actualTime: Date(),
-	                notes: nil,
-	                reminderIndex: nil
-	            ) {
-	                onPresentUndoToast(action)
-	            }
-	            return
-	        }
+        private func skipDose(at index: Int) {
+            if medication.reminderTimes.isEmpty {
+                guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
+                if let action = store.skipMedication(
+                    medication: medication,
+                    actualTime: Date(),
+                    notes: nil,
+                    reminderIndex: nil
+                ) {
+                    onPresentUndoToast(action)
+                }
+                return
+            }
 
-        guard medication.reminderTimes.indices.contains(index) else { return }
-        guard !todaysLogsForMedication.contains(where: { $0.reminderIndex == index }) else { return }
+            guard medication.reminderTimes.indices.contains(index) else { return }
+            guard !todaysLogsForMedication.contains(where: { $0.reminderIndex == index }) else { return }
 
-	        if let action = store.skipMedication(
-	            medication: medication,
-	            actualTime: Date(),
-	            notes: nil,
-	            reminderIndex: index
-	        ) {
-	            onPresentUndoToast(action)
-	        }
-	    }
+            if let action = store.skipMedication(
+                medication: medication,
+                actualTime: Date(),
+                notes: nil,
+                reminderIndex: index
+            ) {
+                onPresentUndoToast(action)
+            }
+        }
+
+        private func undoMostRecentLog(skipped: Bool) {
+            guard let log = todaysLogsForMedication
+                .filter({ $0.skipped == skipped })
+                .sorted(by: { $0.takenAt > $1.takenAt })
+                .first else { return }
+
+            store.removeDoseLog(log)
+        }
     
     private func toggleExpansion() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -3258,6 +3289,7 @@ fileprivate struct MedicationRowDetailsView: View {
                 log.medicationID == medication.logIdentifier &&
                 !log.hiddenFromMyMeds &&
                 !log.skipped &&
+                log.isDoseLog &&
                 calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
             }
             .sorted(by: { $0.takenAt < $1.takenAt })

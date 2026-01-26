@@ -48,6 +48,7 @@ struct FocusTimelineView: View {
                 // build focus windows only from doses actually logged today.
                 let todaysLogs = store.logs.filter { log in
                     !log.skipped &&
+                    log.isDoseLog &&
                     log.medicationID == medication.id &&
                     calendar.isDate(log.takenAt, inSameDayAs: today)
                 }
@@ -77,32 +78,41 @@ struct FocusTimelineView: View {
             } else {
                 // For scheduled ADHD medications, derive windows from their reminder times.
                 let times = medication.reminderTimes.isEmpty ? [medication.timeToTake] : medication.reminderTimes
-                
-                for (index, rawTime) in times.enumerated() {
+                let scheduledBases: [Date] = times.compactMap { rawTime in
                     let timeComponents = calendar.dateComponents([.hour, .minute], from: rawTime)
-                    guard let base = calendar.date(
+                    return calendar.date(
                         bySettingHour: timeComponents.hour ?? 8,
                         minute: timeComponents.minute ?? 0,
                         second: 0,
                         of: today
-                    ) else { continue }
-                    
-                    let adjustedBase = actualDoseTime(
-                        for: medication,
-                        scheduledIndex: medication.reminderTimes.isEmpty ? nil : index,
-                        scheduledBase: base,
-                        todaysLogs: todaysLogs
                     )
-                    let status = doseStatus(
-                        for: medication,
-                        scheduledIndex: medication.reminderTimes.isEmpty ? nil : index,
-                        todaysLogs: allLogs
-                    )
-                    
+                }
+
+                guard !scheduledBases.isEmpty else { continue }
+
+                let matchingLogs = todaysLogs[medication.id] ?? []
+                let statusLogs = allLogs[medication.id] ?? []
+                let actualAssignments = matchLogsToScheduledTimes(
+                    scheduledTimes: scheduledBases,
+                    logs: matchingLogs
+                )
+                let statusAssignments = matchLogsToScheduledTimes(
+                    scheduledTimes: scheduledBases,
+                    logs: statusLogs
+                )
+
+                for (index, scheduledBase) in scheduledBases.enumerated() {
+                    let adjustedBase = actualAssignments[index]?.takenAt ?? scheduledBase
+                    let status: DoseStatus = {
+                        if let log = statusAssignments[index] {
+                            return log.skipped ? .skipped(log.takenAt) : .logged(log.takenAt)
+                        }
+                        return .pending
+                    }()
+
                     guard let adjustedOnset = calendar.date(byAdding: .minute, value: onsetMinutes, to: adjustedBase),
                           let adjustedFade = calendar.date(byAdding: .minute, value: durationMinutes, to: adjustedBase) else { continue }
-                    
-                    // Only keep windows that intersect today
+
                     if adjustedFade > today {
                         windows.append(
                             FocusWindow(
@@ -112,7 +122,7 @@ struct FocusTimelineView: View {
                                 onsetTime: adjustedOnset,
                                 fadeTime: adjustedFade,
                                 status: status,
-                                scheduledDoseTime: base
+                                scheduledDoseTime: scheduledBase
                             )
                         )
                     }
@@ -159,7 +169,9 @@ struct FocusTimelineView: View {
         let today = calendar.startOfDay(for: Date())
         
         let todaysLogs = store.logs.filter { log in
-            !log.skipped && calendar.isDate(log.takenAt, inSameDayAs: today)
+            !log.skipped &&
+            log.isDoseLog &&
+            calendar.isDate(log.takenAt, inSameDayAs: today)
         }
         
         return Dictionary(grouping: todaysLogs, by: { $0.medicationID })
@@ -170,6 +182,7 @@ struct FocusTimelineView: View {
         let today = calendar.startOfDay(for: Date())
         
         let todaysLogs = store.logs.filter { log in
+            log.isDoseLog &&
             calendar.isDate(log.takenAt, inSameDayAs: today)
         }
         
@@ -227,49 +240,48 @@ struct FocusTimelineView: View {
         }
     }
     
-    private func actualDoseTime(
-        for medication: Medication,
-        scheduledIndex: Int?,
-        scheduledBase: Date,
-        todaysLogs: [UUID: [MedicationLog]]
-    ) -> Date {
-        guard let logs = todaysLogs[medication.id], !logs.isEmpty else {
-            return scheduledBase
+    private func matchLogsToScheduledTimes(
+        scheduledTimes: [Date],
+        logs: [MedicationLog]
+    ) -> [Int: MedicationLog] {
+        guard !scheduledTimes.isEmpty, !logs.isEmpty else { return [:] }
+
+        var assignments: [Int: MedicationLog] = [:]
+        var usedLogIDs = Set<UUID>()
+
+        for log in logs {
+            guard let index = log.reminderIndex,
+                  scheduledTimes.indices.contains(index) else {
+                continue
+            }
+
+            if let existing = assignments[index] {
+                if log.takenAt > existing.takenAt {
+                    assignments[index] = log
+                }
+            } else {
+                assignments[index] = log
+            }
         }
-        
-        if let index = scheduledIndex,
-           let matchingLog = logs.first(where: { $0.reminderIndex == index }) {
-            return matchingLog.takenAt
+
+        for (_, log) in assignments {
+            usedLogIDs.insert(log.id)
         }
-        
-        if scheduledIndex == nil,
-           let singleLog = logs.first(where: { $0.reminderIndex == nil }) {
-            return singleLog.takenAt
+
+        var unassignedLogs = logs.filter { !usedLogIDs.contains($0.id) }
+
+        for index in scheduledTimes.indices where assignments[index] == nil {
+            guard !unassignedLogs.isEmpty else { break }
+            let scheduledTime = scheduledTimes[index]
+            if let closest = unassignedLogs.enumerated().min(by: { lhs, rhs in
+                abs(lhs.element.takenAt.timeIntervalSince(scheduledTime)) <
+                    abs(rhs.element.takenAt.timeIntervalSince(scheduledTime))
+            })?.offset {
+                assignments[index] = unassignedLogs.remove(at: closest)
+            }
         }
-        
-        return scheduledBase
-    }
-    
-    private func doseStatus(
-        for medication: Medication,
-        scheduledIndex: Int?,
-        todaysLogs: [UUID: [MedicationLog]]
-    ) -> DoseStatus {
-        guard let logs = todaysLogs[medication.id] else {
-            return .pending
-        }
-        
-        if let index = scheduledIndex,
-           let matchingLog = logs.first(where: { $0.reminderIndex == index }) {
-            return matchingLog.skipped ? .skipped(matchingLog.takenAt) : .logged(matchingLog.takenAt)
-        }
-        
-        if scheduledIndex == nil,
-           let singleLog = logs.first(where: { $0.reminderIndex == nil }) {
-            return singleLog.skipped ? .skipped(singleLog.takenAt) : .logged(singleLog.takenAt)
-        }
-        
-        return .pending
+
+        return assignments
     }
     
     init(isModal: Bool = true) {
@@ -602,6 +614,11 @@ private struct FocusWindowRow: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 12) {
+                    let loggedTime: Date? = {
+                        if case .logged(let date) = window.status { return date }
+                        return nil
+                    }()
+                    let isLogged = loggedTime != nil
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             if hasMultipleDoses {
@@ -609,24 +626,36 @@ private struct FocusWindowRow: View {
                                     .font(.system(size: 13, weight: .semibold))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
                             }
-                            
-                            let statusInfo = statusSubtitle(for: window, isAsNeededWithoutReminder: isAsNeededWithoutReminder)
-                            Text(statusInfo.text)
-                                .font(.system(size: 12))
-                                .foregroundColor(statusInfo.color)
+
+                            if let loggedTime {
+                                Text("Logged \(formatTime(loggedTime))")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.white.opacity(0.14))
+                                    .cornerRadius(12)
+                            } else {
+                                let statusInfo = statusSubtitle(for: window, isAsNeededWithoutReminder: isAsNeededWithoutReminder)
+                                Text(statusInfo.text)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(statusInfo.color)
+                            }
                         }
                         
                         Spacer()
                         
-                        let badgeText = isNowInsideWindow ? "Now" : formatTime(window.onsetTime)
-                        Text(badgeText)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(isNowInsideWindow ? Color(hex: "#404C42") : Color(hex: "#C7C7BD"))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(isNowInsideWindow ? Color(hex: "#D7CCC8") : Color.white.opacity(0.14))
-                            .cornerRadius(12)
-                            .frame(minWidth: 72, alignment: .trailing)
+                        if !isLogged || isNowInsideWindow {
+                            let badgeText = isNowInsideWindow ? "Now" : formatTime(window.onsetTime)
+                            Text(badgeText)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(isNowInsideWindow ? Color(hex: "#404C42") : Color(hex: "#C7C7BD"))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(isNowInsideWindow ? Color(hex: "#D7CCC8") : Color.white.opacity(0.14))
+                                .cornerRadius(12)
+                                .frame(minWidth: 72, alignment: .trailing)
+                        }
                     }
                     
                     FocusBar(
@@ -925,6 +954,7 @@ struct ADHDDoseTimelineSheet: View {
     let entry: ADHDDoseTimelineEntry
 
     @Environment(\.dismiss) private var dismiss
+    private let cardCornerRadius: CGFloat = 16
 
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
@@ -957,10 +987,20 @@ struct ADHDDoseTimelineSheet: View {
         }
     }
 
-    private var effectWindowDescription: String {
-        let start = formatTime(entry.onsetTime)
-        let end = formatTime(entry.fadeTime)
-        return "Expected focus window ~\(start) to ~\(end)."
+    private var focusWindowDuration: String {
+        let minutes = Int(entry.fadeTime.timeIntervalSince(entry.onsetTime) / 60)
+        if minutes <= 0 {
+            return "—"
+        }
+        if minutes < 60 {
+            return "\(minutes) min"
+        }
+        let hours = minutes / 60
+        let remainder = minutes % 60
+        if remainder == 0 {
+            return "\(hours) hr"
+        }
+        return "\(hours)h \(remainder)m"
     }
 
     private var medicationCategoryLabel: String {
@@ -970,6 +1010,60 @@ struct ADHDDoseTimelineSheet: View {
     private var pillInventoryDescription: String? {
         guard let count = entry.medication.pillCount, count > 0 else { return nil }
         return "\(count) tablets"
+    }
+
+    private var logSummary: String {
+        if let scheduled = entry.scheduledTime {
+            return "Scheduled for \(formatTime(scheduled)) · Logged at \(formatTime(entry.actualTime))"
+        }
+        return "Logged at \(formatTime(entry.actualTime))"
+    }
+
+    private var timingDeltaValue: String? {
+        guard let scheduled = entry.scheduledTime else { return nil }
+        let minutesShift = Int(entry.actualTime.timeIntervalSince(scheduled) / 60)
+        if minutesShift == 0 {
+            return "On time"
+        }
+        let direction = minutesShift > 0 ? "Late" : "Early"
+        let absoluteMinutes = abs(minutesShift)
+        if absoluteMinutes < 60 {
+            return "\(absoluteMinutes) min \(direction)"
+        }
+        let hours = absoluteMinutes / 60
+        let minutesRemainder = absoluteMinutes % 60
+        if minutesRemainder == 0 {
+            return "\(hours) hr \(direction)"
+        }
+        return "\(hours)h \(minutesRemainder)m \(direction)"
+    }
+
+    private var timingBadge: (text: String, color: Color, background: Color) {
+        guard let scheduled = entry.scheduledTime else {
+            return ("Logged", Color(hex: "#2F352F"), Color(hex: "#D7CCC8"))
+        }
+        let minutesShift = Int(entry.actualTime.timeIntervalSince(scheduled) / 60)
+        if minutesShift == 0 {
+            return ("On time", Color(hex: "#1F3C32"), Color(hex: "#9FD7C1"))
+        }
+        if minutesShift > 0 {
+            return ("Logged late", Color(hex: "#4A2D22"), Color(hex: "#F2B8A0"))
+        }
+        return ("Logged early", Color(hex: "#243146"), Color(hex: "#B6C7E6"))
+    }
+
+    @ViewBuilder
+    private func statBlock(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .tracking(0.6)
+            Text(value)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#F5F7F4"))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     var body: some View {
@@ -984,39 +1078,61 @@ struct ADHDDoseTimelineSheet: View {
             )
             .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 28) {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "hourglass")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(Color(hex: "#D7CCC8").opacity(0.6))
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Today's focus timeline")
-                            .font(.system(size: 20, weight: .semibold))
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 10) {
+                        Text("Focus Timeline")
+                            .font(.system(size: 22, weight: .semibold))
                             .foregroundColor(.white)
-                            .padding(.vertical, 4)
 
+                        Spacer()
+
+                        Text(timingBadge.text)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(timingBadge.color)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                Capsule()
+                                    .fill(timingBadge.background.opacity(0.9))
+                            )
+                    }
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.12))
+                        .frame(height: 1)
+
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(entry.medication.name)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F5F7F4"))
 
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(medicationCategoryLabel)
-                                .font(.system(size: 15, weight: .regular))
-                                .foregroundColor(Color.white.opacity(0.88))
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(Color.white.opacity(0.9))
 
                             if let inventoryDescription = pillInventoryDescription {
                                 Text(inventoryDescription)
-                                    .font(.system(size: 12, weight: .regular))
-                                    .foregroundColor(Color.white.opacity(0.58))
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.65))
                             }
                         }
 
                         Text("\(entry.medication.dosage) \(entry.medication.dosageUnit)")
-                            .font(.system(size: 13, weight: .regular))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                            .padding(.top, 2)
+
+                        Text(logSummary)
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                            .padding(.top, 4)
                     }
+                    .padding(.top, 6)
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.12))
+                        .frame(height: 1)
                 }
 
                 FocusBar(
@@ -1024,30 +1140,59 @@ struct ADHDDoseTimelineSheet: View {
                     fadeTime: entry.fadeTime,
                     now: Date()
                 )
-                .padding(.top, 12)
+                .padding(.top, 4)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    if let scheduled = entry.scheduledTime {
-                        Text("Scheduled for \(formatTime(scheduled)), logged at \(formatTime(entry.actualTime)).")
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
-                    } else {
-                        Text("Logged at \(formatTime(entry.actualTime)).")
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Timing recap")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+
+                    HStack(spacing: 14) {
+                        if let scheduled = entry.scheduledTime {
+                            statBlock(title: "Scheduled", value: formatTime(scheduled))
+                        }
+                        statBlock(title: "Logged", value: formatTime(entry.actualTime))
+                        if let delta = timingDeltaValue {
+                            statBlock(title: "Delta", value: delta)
+                        }
                     }
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: cardCornerRadius)
+                        .fill(Color.white.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: cardCornerRadius)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
+                )
 
-                    Text(effectWindowDescription)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.92))
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Focus window estimate")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+
+                    HStack(spacing: 14) {
+                        statBlock(title: "Starts", value: formatTime(entry.onsetTime))
+                        statBlock(title: "Fades", value: formatTime(entry.fadeTime))
+                        statBlock(title: "Duration", value: focusWindowDuration)
+                    }
 
                     if let shift = shiftDescription {
                         Text(shift)
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.55))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                     }
                 }
-                .padding(.top, 16)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: cardCornerRadius)
+                        .fill(Color.white.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: cardCornerRadius)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
+                )
 
                 Spacer()
 
@@ -1056,10 +1201,10 @@ struct ADHDDoseTimelineSheet: View {
                     dismiss()
                 } label: {
                     Text("Close")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(Color.white.opacity(0.9))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 14)
                         .background(
                             Capsule()
                                 .fill(Color.white.opacity(0.12))

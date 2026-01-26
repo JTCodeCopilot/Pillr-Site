@@ -549,7 +549,7 @@ struct MedicationLogContentView: View {
         // Filter logs based on selected medication and exclude skipped logs
         let filteredLogs = store.logs.filter { log in
             let medicationMatch = selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter
-            return !log.skipped && medicationMatch
+            return !log.skipped && log.isDoseLog && medicationMatch
         }
 
         for log in filteredLogs {
@@ -587,7 +587,7 @@ struct MedicationLogContentView: View {
     
     // Get unique medication names for filter
     private var uniqueMedicationNames: [String] {
-        let names = Set(store.logs.filter { !$0.skipped }.map { $0.medicationName })
+        let names = Set(store.logs.filter { !$0.skipped && $0.isDoseLog }.map { $0.medicationName })
         return ["All"] + Array(names).sorted()
     }
     
@@ -666,7 +666,7 @@ struct MedicationLogContentView: View {
                         
                         // Stats row
                         HStack(spacing: 16) {
-                            StatCard(title: "Total Doses", value: "\(store.logs.filter { !$0.skipped }.count)", icon: "pills.fill")
+                            StatCard(title: "Total Doses", value: "\(store.logs.filter { !$0.skipped && $0.isDoseLog }.count)", icon: "pills.fill")
                             StatCard(title: "This Week", value: "\(logsThisWeek)", icon: "calendar")
                             StatCard(title: "Streak", value: "\(currentStreak) days", icon: "flame.fill")
                         }
@@ -698,7 +698,7 @@ struct MedicationLogContentView: View {
                     
                     // Content area
                     ZStack {
-                        if store.logs.filter({ !$0.skipped }).isEmpty {
+                        if store.logs.filter({ !$0.skipped && $0.isDoseLog }).isEmpty {
                             EmptyHistoryView()
                         } else if logsForSelectedDate.isEmpty && !Calendar.current.isDateInToday(selectedDate) {
                             NoLogsForDateView(date: selectedDate, dateFormatter: dateFormatter)
@@ -762,7 +762,7 @@ struct MedicationLogContentView: View {
         let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
         
         return store.logs.filter { log in
-            !log.skipped && log.takenAt >= weekAgo && log.takenAt <= now
+            !log.skipped && log.isDoseLog && log.takenAt >= weekAgo && log.takenAt <= now
         }.count
     }
     
@@ -775,7 +775,7 @@ struct MedicationLogContentView: View {
         
         while true {
             let hasLogForDate = store.logs.contains { log in
-                !log.skipped && calendar.isDate(log.takenAt, inSameDayAs: currentDate)
+                !log.skipped && log.isDoseLog && calendar.isDate(log.takenAt, inSameDayAs: currentDate)
             }
             
             if hasLogForDate {
@@ -813,7 +813,8 @@ struct MedicationLogContentView: View {
         
         // Filter logs based on selected medication
         let filteredLogs = store.logs.filter { log in
-            selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter
+            (selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter) &&
+            log.isDoseLog
         }
         
         // Group logs by date for better readability

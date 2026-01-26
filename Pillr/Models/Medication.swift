@@ -427,6 +427,13 @@ struct MedicationLog: Identifiable, Codable, Hashable {
 }
 
 extension MedicationLog {
+    var isDoseLog: Bool {
+        if pillsConsumed != nil {
+            return true
+        }
+        return !isDailyCheckIn
+    }
+
     var recordedDosageWithUnit: String {
         medicationDosageText.trimmingCharacters(in: .whitespacesAndNewlines)
     }

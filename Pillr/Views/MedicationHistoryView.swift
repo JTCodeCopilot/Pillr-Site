@@ -12,6 +12,7 @@ struct MedicationHistoryView: View {
     @State private var selectedStartDate: Date = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
     @State private var selectedEndDate: Date = Date()
     @State private var showingDateRangePopover = false
+    @State private var logToEdit: MedicationLog?
     
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -56,7 +57,7 @@ struct MedicationHistoryView: View {
     }
     
     private var medicationFilters: [String] {
-        let names = Set(store.logs.map { $0.medicationName })
+        let names = Set(store.logs.filter { $0.isDoseLog }.map { $0.medicationName })
         return ["All"] + names.sorted()
     }
     
@@ -71,7 +72,7 @@ struct MedicationHistoryView: View {
             let matchesMedication = selectedMedication == "All" || log.medicationName == selectedMedication
             let matchesSkipFilter = includeSkipped || !log.skipped
             let inRange = log.takenAt >= rangeStart && log.takenAt <= rangeEnd
-            return matchesMedication && matchesSkipFilter && inRange
+            return matchesMedication && matchesSkipFilter && inRange && log.isDoseLog
         }
         .sorted { $0.takenAt > $1.takenAt }
     }
@@ -192,6 +193,16 @@ struct MedicationHistoryView: View {
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showingShareSheet) {
             ShareSheet(activityItems: shareItems)
+        }
+        .sheet(item: $logToEdit) { log in
+            LogDateEditSheet(
+                log: log,
+                onCancel: { logToEdit = nil },
+                onSave: { newDate in
+                    store.updateLogDate(log, newDate: newDate)
+                    logToEdit = nil
+                }
+            )
         }
         .onChange(of: selectedStartDate) { newValue in
             if selectedEndDate < newValue {
@@ -526,7 +537,13 @@ struct MedicationHistoryView: View {
                             dosageText: log.recordedDosageWithUnit.isEmpty ? nil : log.recordedDosageWithUnit,
                             showDoseChip: log.recordedHasMultipleReminders,
                             timeText: MedicationHistoryView.timeFormatter.string(from: log.takenAt),
-                            isLast: index == logs.count - 1
+                            isLast: index == logs.count - 1,
+                            onEditDate: {
+                                logToEdit = log
+                            },
+                            onDelete: {
+                                store.deleteLog(log)
+                            }
                         )
                         }
                     }
@@ -570,6 +587,9 @@ private struct MedicationTimelineRow: View {
     let showDoseChip: Bool
     let timeText: String
     let isLast: Bool
+    let onEditDate: () -> Void
+    let onDelete: () -> Void
+    @State private var showingDeleteConfirm = false
 
     private var resolvedIconName: String {
         iconName.isEmpty ? "pill" : iconName
@@ -703,7 +723,98 @@ private struct MedicationTimelineRow: View {
                     )
             )
             .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 5)
+            .contextMenu {
+                Button {
+                    onEditDate()
+                } label: {
+                    Label("Edit Date", systemImage: "calendar")
+                }
+
+                Button(role: .destructive) {
+                    showingDeleteConfirm = true
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+            .alert("Delete log entry?", isPresented: $showingDeleteConfirm) {
+                Button("Delete", role: .destructive) {
+                    onDelete()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This entry will be permanently removed from your history.")
+            }
         }
+    }
+}
+
+private struct LogDateEditSheet: View {
+    let log: MedicationLog
+    let onCancel: () -> Void
+    let onSave: (Date) -> Void
+    @State private var selectedDate: Date
+
+    init(log: MedicationLog, onCancel: @escaping () -> Void, onSave: @escaping (Date) -> Void) {
+        self.log = log
+        self.onCancel = onCancel
+        self.onSave = onSave
+        _selectedDate = State(initialValue: log.takenAt)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "#3D463F"),
+                        Color(hex: "#2E352F")
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Edit Log Date")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E8E8E0"))
+
+                    Text(log.medicationName)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+
+                    DatePicker(
+                        "Log time",
+                        selection: $selectedDate,
+                        in: ...Date(),
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .datePickerStyle(.wheel)
+                    .labelsHidden()
+                    .tint(Color(hex: "#E8E8E0"))
+                    .padding(.vertical, 8)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        onCancel()
+                    }
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        onSave(selectedDate)
+                    }
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 }
 

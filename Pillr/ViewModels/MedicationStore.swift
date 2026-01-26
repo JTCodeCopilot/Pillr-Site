@@ -386,7 +386,12 @@ class MedicationStore: ObservableObject {
         isDailyCheckIn: Bool = false
     ) -> LogUndoAction? {
         let storedMedication = medications.first(where: { $0.id == medication.id })
-        let pillsConsumed = skipped ? 0 : medication.pillsPerDose
+        let pillsConsumed: Int? = {
+            if isDailyCheckIn {
+                return nil
+            }
+            return skipped ? 0 : medication.pillsPerDose
+        }()
         let calendar = Calendar.current
         let resolvedReminderIndex = reminderIndex ?? inferReminderIndexIfNeeded(for: medication, actualTime: actualTime)
         var previousLog: MedicationLog?
@@ -412,19 +417,20 @@ class MedicationStore: ObservableObject {
                 }
             }) {
                 let existingLog = logs[existingIndex]
+                if isDailyCheckIn {
+                    applyDailyCheckInUpdates(
+                        at: existingIndex,
+                        notes: notes,
+                        feelingRating: feelingRating,
+                        focusRating: focusRating,
+                        sideEffectSeverity: sideEffectSeverity,
+                        reflectionSummary: reflectionSummary
+                    )
+                    return nil
+                }
+
                 if existingLog.skipped == skipped {
-                    if isDailyCheckIn {
-                        applyDailyCheckInUpdates(
-                            at: existingIndex,
-                            notes: notes,
-                            feelingRating: feelingRating,
-                            focusRating: focusRating,
-                            sideEffectSeverity: sideEffectSeverity,
-                            reflectionSummary: reflectionSummary
-                        )
-                    } else {
-                        hapticManager.warningNotification()
-                    }
+                    hapticManager.warningNotification()
                     return nil
                 }
 
@@ -444,6 +450,22 @@ class MedicationStore: ObservableObject {
                     return nil
                 }
             }
+        }
+
+        if isDailyCheckIn,
+           let existingIndex = logs.firstIndex(where: { log in
+            log.medicationID == medication.id &&
+            calendar.isDate(log.takenAt, inSameDayAs: actualTime)
+           }) {
+            applyDailyCheckInUpdates(
+                at: existingIndex,
+                notes: notes,
+                feelingRating: feelingRating,
+                focusRating: focusRating,
+                sideEffectSeverity: sideEffectSeverity,
+                reflectionSummary: reflectionSummary
+            )
+            return nil
         }
         
         let newLog = MedicationLog(
@@ -476,10 +498,10 @@ class MedicationStore: ObservableObject {
         
         // If medication has a pill count, update it (and restore if replacing a taken log)
         var pillCountDelta = 0
-        if !skipped {
+        if !skipped && !isDailyCheckIn {
             pillCountDelta -= medication.pillsPerDose
         }
-        if let previousLog, !previousLog.skipped {
+        if let previousLog, !previousLog.skipped, !isDailyCheckIn {
             pillCountDelta += medication.pillsPerDose
         }
         
@@ -653,6 +675,7 @@ class MedicationStore: ObservableObject {
 
             let medicationLogs = logs.filter { log in
                 log.medicationID == medication.id &&
+                log.isDoseLog &&
                 calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
                 log.takenAt <= referenceDate
             }
@@ -728,6 +751,7 @@ class MedicationStore: ObservableObject {
 
             let medicationLogs = logs.filter { log in
                 log.medicationID == medication.id &&
+                log.isDoseLog &&
                 calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
                 log.takenAt <= referenceDate
             }
@@ -796,10 +820,11 @@ class MedicationStore: ObservableObject {
     ) -> Set<Int> {
         guard !medication.reminderTimes.isEmpty else { return [] }
 
-        var takenIndices = Set(logs.compactMap { $0.reminderIndex })
+        let doseLogs = logs.filter { $0.isDoseLog }
+        var takenIndices = Set(doseLogs.compactMap { $0.reminderIndex })
 
         if medication.reminderTimes.count <= 1,
-           logs.contains(where: { $0.reminderIndex == nil }) {
+           doseLogs.contains(where: { $0.reminderIndex == nil }) {
             takenIndices.insert(0)
             return takenIndices
         }
@@ -818,7 +843,7 @@ class MedicationStore: ObservableObject {
             return (index, time)
         }
 
-        let nilIndexLogs = logs.filter { $0.reminderIndex == nil }.sorted { $0.takenAt < $1.takenAt }
+        let nilIndexLogs = doseLogs.filter { $0.reminderIndex == nil }.sorted { $0.takenAt < $1.takenAt }
         guard !nilIndexLogs.isEmpty, !anchoredTimes.isEmpty else {
             return takenIndices
         }
@@ -980,6 +1005,29 @@ class MedicationStore: ObservableObject {
 
         resetBadgeIfNeeded()
     }
+
+    func removeDoseLog(_ log: MedicationLog) {
+        guard log.isDoseLog else { return }
+
+        deleteLog(log)
+
+        if !log.skipped,
+           !log.isDailyCheckIn,
+           let index = medications.firstIndex(where: { $0.id == log.medicationID }),
+           var updatedMedication = medications[index] as Medication?,
+           var pillCount = updatedMedication.pillCount {
+            let pillsToRestore = log.pillsConsumed ?? updatedMedication.pillsPerDose
+            if pillsToRestore > 0 {
+                pillCount += pillsToRestore
+                updatedMedication.pillCount = pillCount
+                medications[index] = updatedMedication
+                saveMedications()
+                syncMedicationWithCloud(updatedMedication)
+            }
+        }
+
+        resetBadgeIfNeeded()
+    }
     
     func toggleSkipStatus(for medicationID: UUID) {
         if let index = medications.firstIndex(where: { $0.id == medicationID }) {
@@ -1067,6 +1115,15 @@ class MedicationStore: ObservableObject {
         syncDeleteLog(log)
     }
 
+    func updateLogDate(_ log: MedicationLog, newDate: Date) {
+        guard let index = logs.firstIndex(where: { $0.id == log.id }) else { return }
+        var updatedLog = logs[index]
+        updatedLog.takenAt = newDate
+        logs[index] = updatedLog
+        saveLogs()
+        syncLogWithCloud(updatedLog)
+    }
+
     func hideLogFromMyMeds(_ log: MedicationLog) {
         guard let index = logs.firstIndex(where: { $0.id == log.id }) else { return }
         var updatedLog = logs[index]
@@ -1127,6 +1184,7 @@ class MedicationStore: ObservableObject {
 
         let todaysLogs = logs.filter {
             $0.medicationID == medication.id &&
+            $0.isDoseLog &&
             calendar.isDate($0.takenAt, inSameDayAs: actualTime)
         }
 
@@ -1278,6 +1336,7 @@ class MedicationStore: ObservableObject {
 
             let candidateLogs = logs.filter { log in
                 log.medicationID == medicationID &&
+                log.isDoseLog &&
                 !log.skipped &&
                 log.takenAt >= previousDayStart &&
                 log.takenAt < dayEnd
@@ -1359,6 +1418,7 @@ class MedicationStore: ObservableObject {
         let medicationID = medication.logIdentifier
         return logs.contains { log in
             log.medicationID == medicationID &&
+            log.isDoseLog &&
             !log.skipped &&
             calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
             log.takenAt <= triggerDate

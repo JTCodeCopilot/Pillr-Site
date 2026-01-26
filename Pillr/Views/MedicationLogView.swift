@@ -25,7 +25,7 @@ struct MedicationLogView: View {
         // Filter logs based on selected medication and exclude skipped logs
         let filteredLogs = store.logs.filter { log in
             let medicationMatch = selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter
-            return !log.skipped && medicationMatch
+            return !log.skipped && medicationMatch && log.isDoseLog
         }
         
         for log in filteredLogs {
@@ -63,7 +63,7 @@ struct MedicationLogView: View {
     
     // Get unique medication names for filter
     private var uniqueMedicationNames: [String] {
-        let names = Set(store.logs.filter { !$0.skipped }.map { $0.medicationName })
+        let names = Set(store.logs.filter { !$0.skipped && $0.isDoseLog }.map { $0.medicationName })
         return ["All"] + Array(names).sorted()
     }
     
@@ -184,7 +184,7 @@ struct MedicationLogView: View {
                                 HStack(spacing: 20) {
                                     StatCard(
                                         title: "Total Doses",
-                                        value: "\(store.logs.filter { !$0.skipped }.count)",
+                                        value: "\(store.logs.filter { !$0.skipped && $0.isDoseLog }.count)",
                                         icon: "pills.fill"
                                     )
                                     
@@ -320,7 +320,7 @@ struct MedicationLogView: View {
                         
                         // Content area
                         ZStack {
-                            if store.logs.filter({ !$0.skipped }).isEmpty {
+                            if store.logs.filter({ !$0.skipped && $0.isDoseLog }).isEmpty {
                                 EmptyHistoryView()
                             } else if logsForSelectedDate.isEmpty && !Calendar.current.isDateInToday(selectedDate) {
                                 NoLogsForDateView(date: selectedDate, dateFormatter: dateFormatter)
@@ -382,7 +382,7 @@ struct MedicationLogView: View {
         let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
         
         return store.logs.filter { log in
-            !log.skipped && log.takenAt >= weekAgo && log.takenAt <= now
+            !log.skipped && log.isDoseLog && log.takenAt >= weekAgo && log.takenAt <= now
         }.count
     }
     
@@ -395,7 +395,7 @@ struct MedicationLogView: View {
         
         while true {
             let hasLogForDate = store.logs.contains { log in
-                !log.skipped && calendar.isDate(log.takenAt, inSameDayAs: currentDate)
+                !log.skipped && log.isDoseLog && calendar.isDate(log.takenAt, inSameDayAs: currentDate)
             }
             
             if hasLogForDate {
@@ -561,7 +561,8 @@ struct MedicationLogView: View {
         
         // Add data rows
         let filteredLogs = store.logs.filter { log in
-            selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter
+            (selectedMedicationFilter == "All" || log.medicationName == selectedMedicationFilter) &&
+            log.isDoseLog
         }
         
         for log in filteredLogs.sorted(by: { $0.takenAt > $1.takenAt }) {
@@ -610,7 +611,7 @@ struct MedicationLogView: View {
     }
     
     private func generateFullHistoryPDF() -> URL? {
-        let logs = store.logs.sorted(by: { $0.takenAt > $1.takenAt })
+        let logs = store.logs.filter { $0.isDoseLog }.sorted(by: { $0.takenAt > $1.takenAt })
         guard !logs.isEmpty else { return nil }
         
         let calendar = Calendar.current
