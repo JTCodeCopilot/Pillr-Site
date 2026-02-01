@@ -12,6 +12,7 @@ enum MainTab: String, Hashable, CaseIterable {
 struct MainTabView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
+    @Environment(\.scenePhase) private var scenePhase
     
     @State private var selectedTab: MainTab = .meds
     @StateObject private var addFlowCoordinator = AddMedicationFlowCoordinator()
@@ -26,6 +27,7 @@ struct MainTabView: View {
     @State private var needsOnboardingAfterNotificationPrompt = false
     @State private var isRequestingNotificationAuthorization = false
     @State private var showReviewPrompt = false
+    @State private var referenceDate = Date()
     @AppStorage("reviewPromptFirstLaunchTimeInterval") private var reviewPromptFirstLaunchTimeInterval: Double = 0
     @AppStorage("reviewPromptHasShown") private var reviewPromptHasShown = false
     @AppStorage("reviewPromptLastDismissedTimeInterval") private var reviewPromptLastDismissedTimeInterval: Double = 0
@@ -37,6 +39,7 @@ struct MainTabView: View {
     private static let reviewPromptDelaySeconds: TimeInterval = 1.2
     private static let reviewPromptMinimumDays: Double = 3
     private static let reviewPromptSnoozeDays: Double = 30
+    private let badgeRefreshTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
     private var tabSelection: Binding<MainTab> {
         Binding(
@@ -51,6 +54,10 @@ struct MainTabView: View {
             }
         )
     }
+    
+    private var overdueBadgeCount: Int {
+        max(0, store.overdueReminderCount(referenceDate: referenceDate))
+    }
 
     var body: some View {
         ZStack {
@@ -64,6 +71,7 @@ struct MainTabView: View {
                             .symbolVariant(.none)
                             .accessibilityLabel("My Meds")
                     }
+                    .badge(overdueBadgeCount)
                     .tag(MainTab.meds)
                 
                 DailyCheckInHistoryView()
@@ -98,6 +106,11 @@ struct MainTabView: View {
                 HapticManager.shared.strongImpact()
             }
             .accentColor(Color.pillrAccent)
+            .onReceive(badgeRefreshTimer) { output in
+                guard scenePhase == .active else { return }
+                referenceDate = output
+                store.refreshOverdueMedicationIDs(referenceDate: output)
+            }
 
                 if let stage = activeOnboardingStage {
                     OnboardingOverlayView(info: stage) {
@@ -152,6 +165,12 @@ struct MainTabView: View {
         .onAppear {
             scheduleOnboarding(for: selectedTab)
             scheduleReviewPromptIfNeeded()
+            store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
+        }
+        .onChange(of: scenePhase) { newPhase in
+            guard newPhase == .active else { return }
+            referenceDate = Date()
+            store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
         }
         .onChange(of: store.requestedMainTab) { requested in
             guard let requested else { return }

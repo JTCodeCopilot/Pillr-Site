@@ -35,7 +35,16 @@ class NotificationManager: ObservableObject {
         attributes: .concurrent
     )
     private var trackedMedicationIDs = Set<UUID>()
+    private let reminderSchedulingWindowDays = 30
     private let followUpSchedulingWindowDays = 30
+    private static let reminderDayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyyMMdd"
+        return formatter
+    }()
     private static let dailyCheckInIDFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -183,6 +192,16 @@ class NotificationManager: ObservableObject {
         return String(format: "%@_followup_%04d%02d%02d", originalID.uuidString, year, month, day)
     }
 
+    private func reminderIdentifier(baseID: UUID, fireDate: Date) -> String {
+        let dateString = Self.reminderDayFormatter.string(from: fireDate)
+        return "\(baseID.uuidString)_day_\(dateString)"
+    }
+
+    private func reminderIdentifierMatchesBase(_ identifier: String, baseID: String) -> Bool {
+        if identifier == baseID { return true }
+        return identifier.hasPrefix("\(baseID)_")
+    }
+
     private func medicationDescriptor(for medication: Medication) -> String {
         if medication.medicationType == .other {
             return medication.name
@@ -193,37 +212,17 @@ class NotificationManager: ObservableObject {
     
     // Legacy support for single notification
     func scheduleNotification(for medication: Medication) -> UUID? {
-        guard ensureMedicationIsTracked(medication.id) else {
+        guard medication.frequency != "As needed", ensureMedicationIsTracked(medication.id) else {
             return nil
         }
 
-        let content = UNMutableNotificationContent()
-        content.title = "Medication Reminder"
-        let reminderTime = formatTimeOnly(medication.timeToTake)
-        content.body = "Take your \(reminderTime) medications."
-        content.sound = UNNotificationSound.default
-        content.userInfo = ["medicationID": medication.id.uuidString]
-        content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
-        content.threadIdentifier = "medication-reminders"
-        applyBadge(content, fireDate: nextFireDate(for: medication.timeToTake))
-        prioritizeMedicationReminder(content)
-        
         let notificationID = UUID()
-        let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: medication.timeToTake)
-        let minute = calendar.component(.minute, from: medication.timeToTake)
-        var dateComponents = DateComponents()
-        dateComponents.hour = hour
-        dateComponents.minute = minute
-        
-        // Default: schedule repeating notification
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        let request = UNNotificationRequest(identifier: notificationID.uuidString, content: content, trigger: trigger)
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
-            }
-        }
+        scheduleReminderWindow(
+            medication: medication,
+            time: medication.timeToTake,
+            baseID: notificationID,
+            reminderIndex: nil
+        )
         // Schedule one-time follow-ups for upcoming reminders when enabled.
         if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
             scheduleFollowUpNotificationsWindow(
@@ -239,7 +238,7 @@ class NotificationManager: ObservableObject {
     
     // New method for scheduling multiple notifications
     func scheduleMultipleNotifications(for medication: Medication) -> [UUID] {
-        guard ensureMedicationIsTracked(medication.id) else {
+        guard medication.frequency != "As needed", ensureMedicationIsTracked(medication.id) else {
             return []
         }
 
@@ -252,8 +251,7 @@ class NotificationManager: ObservableObject {
             let notificationID = scheduleNotificationForTime(
                 medication: medication,
                 time: reminderTime,
-                index: index,
-                total: times.count
+                index: index
             )
             notificationIDs.append(notificationID)
         }
@@ -261,48 +259,14 @@ class NotificationManager: ObservableObject {
         return notificationIDs
     }
     
-    private func scheduleNotificationForTime(medication: Medication, time: Date, index: Int, total: Int) -> UUID {
-        let content = UNMutableNotificationContent()
-
-        let formattedTime = formatTimeOnly(time)
-        content.title = "Medication Reminder"
-        content.body = "Take your \(formattedTime) medications."
-
-        content.sound = UNNotificationSound.default
-        content.userInfo = [
-            "medicationID": medication.id.uuidString,
-            "reminderIndex": index
-        ]
-        content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
-        content.threadIdentifier = "medication-reminders"
-
-        // Set the notification icon badge
-        applyBadge(content, fireDate: nextFireDate(for: time))
-        prioritizeMedicationReminder(content)
-        
-        // Extract hour and minute
-        let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: time)
-        let minute = calendar.component(.minute, from: time)
-        
-        // Create date components
-        var dateComponents = DateComponents()
-        dateComponents.hour = hour
-        dateComponents.minute = minute
-        
-        // Create the trigger
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        
-        // Create the notification request with a unique identifier
+    private func scheduleNotificationForTime(medication: Medication, time: Date, index: Int) -> UUID {
         let notificationID = UUID()
-        let request = UNNotificationRequest(identifier: notificationID.uuidString, content: content, trigger: trigger)
-        
-        // Add the notification request
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
-            }
-        }
+        scheduleReminderWindow(
+            medication: medication,
+            time: time,
+            baseID: notificationID,
+            reminderIndex: index
+        )
         
         // Schedule a repeating follow-up notification when enabled.
         if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
@@ -317,6 +281,138 @@ class NotificationManager: ObservableObject {
         
         
         return notificationID
+    }
+
+    private func scheduleReminderWindow(
+        medication: Medication,
+        time: Date,
+        baseID: UUID,
+        reminderIndex: Int?
+    ) {
+        let calendar = Calendar.current
+        let center = UNUserNotificationCenter.current()
+        let formattedTime = formatTimeOnly(time)
+
+        center.getPendingNotificationRequests { [weak self] requests in
+            guard let self else { return }
+            let existingIdentifiers = Set(requests.map { $0.identifier })
+            let maxPendingReminders = 60
+            var remainingSlots = max(0, maxPendingReminders - existingIdentifiers.count)
+            guard remainingSlots > 0 else { return }
+            let now = Date()
+            let startOfDay = calendar.startOfDay(for: now)
+
+            for dayOffset in 0..<self.reminderSchedulingWindowDays {
+                guard let day = calendar.date(byAdding: .day, value: dayOffset, to: startOfDay),
+                      let fireDate = calendar.date(
+                        bySettingHour: calendar.component(.hour, from: time),
+                        minute: calendar.component(.minute, from: time),
+                        second: 0,
+                        of: day
+                      ),
+                      fireDate > now else {
+                    continue
+                }
+
+                let identifier = self.reminderIdentifier(baseID: baseID, fireDate: fireDate)
+                guard !existingIdentifiers.contains(identifier) else { continue }
+                guard remainingSlots > 0 else { break }
+
+                let content = UNMutableNotificationContent()
+                content.title = "Medication Reminder"
+                content.body = "Take your \(formattedTime) medications."
+                content.sound = UNNotificationSound.default
+                var userInfo: [String: Any] = ["medicationID": medication.id.uuidString]
+                if let reminderIndex {
+                    userInfo["reminderIndex"] = reminderIndex
+                }
+                content.userInfo = userInfo
+                content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
+                content.threadIdentifier = "medication-reminders"
+                self.applyBadge(content, fireDate: fireDate)
+                self.prioritizeMedicationReminder(content)
+
+                let triggerComponents = calendar.dateComponents(
+                    [.year, .month, .day, .hour, .minute],
+                    from: fireDate
+                )
+                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+                let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+                center.add(request) { error in
+                    if let error = error {
+                        print("Error scheduling notification: \(error.localizedDescription)")
+                    }
+                }
+                remainingSlots -= 1
+            }
+        }
+    }
+
+    private func scheduleSingleReminderOccurrence(
+        medication: Medication,
+        fireDate: Date,
+        baseID: UUID,
+        reminderIndex: Int?
+    ) {
+        let content = UNMutableNotificationContent()
+        let formattedTime = formatTimeOnly(fireDate)
+        content.title = "Medication Reminder"
+        content.body = "Take your \(formattedTime) medications."
+        content.sound = UNNotificationSound.default
+        var userInfo: [String: Any] = ["medicationID": medication.id.uuidString]
+        if let reminderIndex {
+            userInfo["reminderIndex"] = reminderIndex
+        }
+        content.userInfo = userInfo
+        content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
+        content.threadIdentifier = "medication-reminders"
+        applyBadge(content, fireDate: fireDate)
+        prioritizeMedicationReminder(content)
+
+        let triggerComponents = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: fireDate
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: reminderIdentifier(baseID: baseID, fireDate: fireDate),
+            content: content,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling notification: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func rescheduleReminderOccurrenceIfPending(
+        medication: Medication,
+        time: Date,
+        baseID: UUID,
+        reminderIndex: Int?,
+        referenceDate: Date = Date()
+    ) {
+        guard medication.frequency != "As needed" else { return }
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: referenceDate)
+        let components = calendar.dateComponents([.hour, .minute], from: time)
+        guard let fireDate = calendar.date(
+            bySettingHour: components.hour ?? 8,
+            minute: components.minute ?? 0,
+            second: 0,
+            of: dayStart
+        ), fireDate > referenceDate else {
+            return
+        }
+
+        cancelReminderOccurrence(for: baseID, on: fireDate)
+        scheduleSingleReminderOccurrence(
+            medication: medication,
+            fireDate: fireDate,
+            baseID: baseID,
+            reminderIndex: reminderIndex
+        )
     }
     
     private func formatTimeOnly(_ date: Date) -> String {
@@ -485,23 +581,26 @@ class NotificationManager: ObservableObject {
     
     func cancelNotification(with id: UUID) {
         let baseID = id.uuidString
-        // Cancel the primary, follow-up, and stimulant phase notifications derived from this ID
-        let identifiers = [
-            baseID,
-            "\(baseID)_followup",
-            "\(baseID)_onset",
-            "\(baseID)_fade"
-        ]
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: identifiers)
-
-        center.getPendingNotificationRequests { requests in
-            let followUpPrefix = "\(baseID)_followup_"
-            let extraIdentifiers = requests.compactMap { request -> String? in
-                request.identifier.hasPrefix(followUpPrefix) ? request.identifier : nil
+        center.getPendingNotificationRequests { [weak self] requests in
+            guard let self else { return }
+            let identifiers = requests.compactMap { request -> String? in
+                self.reminderIdentifierMatchesBase(request.identifier, baseID: baseID) ? request.identifier : nil
             }
-            if !extraIdentifiers.isEmpty {
-                center.removePendingNotificationRequests(withIdentifiers: extraIdentifiers)
+            if !identifiers.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: identifiers)
+            }
+        }
+
+        center.getDeliveredNotifications { [weak self] notifications in
+            guard let self else { return }
+            let identifiers = notifications.compactMap { notification -> String? in
+                self.reminderIdentifierMatchesBase(notification.request.identifier, baseID: baseID)
+                    ? notification.request.identifier
+                    : nil
+            }
+            if !identifiers.isEmpty {
+                center.removeDeliveredNotifications(withIdentifiers: identifiers)
             }
         }
     }
@@ -509,19 +608,15 @@ class NotificationManager: ObservableObject {
     func clearDeliveredNotifications(for id: UUID) {
         let baseID = id.uuidString
         let center = UNUserNotificationCenter.current()
-        let identifiers = [
-            baseID,
-            "\(baseID)_followup"
-        ]
-        center.removeDeliveredNotifications(withIdentifiers: identifiers)
-
-        center.getDeliveredNotifications { notifications in
-            let followUpPrefix = "\(baseID)_followup_"
-            let extraIdentifiers = notifications.compactMap { notification -> String? in
-                notification.request.identifier.hasPrefix(followUpPrefix) ? notification.request.identifier : nil
+        center.getDeliveredNotifications { [weak self] notifications in
+            guard let self else { return }
+            let identifiers = notifications.compactMap { notification -> String? in
+                self.reminderIdentifierMatchesBase(notification.request.identifier, baseID: baseID)
+                    ? notification.request.identifier
+                    : nil
             }
-            if !extraIdentifiers.isEmpty {
-                center.removeDeliveredNotifications(withIdentifiers: extraIdentifiers)
+            if !identifiers.isEmpty {
+                center.removeDeliveredNotifications(withIdentifiers: identifiers)
             }
         }
     }
@@ -555,7 +650,10 @@ class NotificationManager: ObservableObject {
                     return nil
                 }
 
-                return identifiersToKeep.contains(request.identifier) ? nil : request.identifier
+                let shouldKeep = identifiersToKeep.contains { baseID in
+                    request.identifier == baseID || request.identifier.hasPrefix("\(baseID)_")
+                }
+                return shouldKeep ? nil : request.identifier
             }
 
             if !identifiers.isEmpty {
@@ -571,7 +669,10 @@ class NotificationManager: ObservableObject {
                     return nil
                 }
 
-                return identifiersToKeep.contains(notification.request.identifier) ? nil : notification.request.identifier
+                let shouldKeep = identifiersToKeep.contains { baseID in
+                    notification.request.identifier == baseID || notification.request.identifier.hasPrefix("\(baseID)_")
+                }
+                return shouldKeep ? nil : notification.request.identifier
             }
 
             if !identifiers.isEmpty {
@@ -620,6 +721,36 @@ class NotificationManager: ObservableObject {
                 return nil
             }
 
+            if !identifiers.isEmpty {
+                center.removeDeliveredNotifications(withIdentifiers: identifiers)
+            }
+        }
+    }
+
+    func cancelReminderOccurrence(for baseID: UUID, on date: Date) {
+        let identifier = reminderIdentifier(baseID: baseID, fireDate: date)
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+    }
+
+    func fetchDeliveredMedicationReminders(completion: @escaping ([UNNotification]) -> Void) {
+        UNUserNotificationCenter.current().getDeliveredNotifications { notifications in
+            let reminders = notifications.filter { notification in
+                notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder
+            }
+            completion(reminders)
+        }
+    }
+
+    func clearDeliveredMedicationReminders() {
+        let center = UNUserNotificationCenter.current()
+        center.getDeliveredNotifications { notifications in
+            let identifiers = notifications.compactMap { notification -> String? in
+                notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder
+                    ? notification.request.identifier
+                    : nil
+            }
             if !identifiers.isEmpty {
                 center.removeDeliveredNotifications(withIdentifiers: identifiers)
             }
@@ -888,7 +1019,7 @@ class NotificationManager: ObservableObject {
         let center = UNUserNotificationCenter.current()
         center.getDeliveredNotifications { [weak self] notifications in
             guard let self else { return }
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 let candidates = notifications
                     .filter { $0.request.content.categoryIdentifier == NotificationCategoryIdentifier.stimulantReminder }
                     .sorted { $0.date < $1.date }
@@ -924,6 +1055,7 @@ class NotificationManager: ObservableObject {
         let shouldRemove: Bool
     }
 
+    @MainActor
     private func pendingCheckIn(from notification: UNNotification) -> DeliveredCheckInResult {
         let userInfo = notification.request.content.userInfo
         guard let medicationIDString = userInfo["medicationID"] as? String,
@@ -1016,49 +1148,54 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     
     // Called when a notification is delivered to a foreground app
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        if let medicationIDString = notification.request.content.userInfo["medicationID"] as? String,
-           let medicationID = UUID(uuidString: medicationIDString),
-           MedicationStore.shared.findMedication(with: medicationID) == nil {
-            NotificationManager.shared.cancelMedicationNotifications(for: medicationID)
-            completionHandler([])
-            return
-        }
-
-        let hapticCategories: Set<String> = [
-            NotificationCategoryIdentifier.medicationReminder,
-            NotificationCategoryIdentifier.stimulantReminder
-        ]
-
-        if hapticCategories.contains(notification.request.content.categoryIdentifier) {
-            if let isFollowUp = notification.request.content.userInfo["isFollowUp"] as? Bool, isFollowUp {
-                NotificationFeedbackManager.shared.triggerReminderHaptic()
-            } else {
-                NotificationFeedbackManager.shared.triggerNotificationHaptic()
+        Task { @MainActor in
+            if let medicationIDString = notification.request.content.userInfo["medicationID"] as? String,
+               let medicationID = UUID(uuidString: medicationIDString),
+               MedicationStore.shared.findMedication(with: medicationID) == nil {
+                NotificationManager.shared.cancelMedicationNotifications(for: medicationID)
+                completionHandler([])
+                return
             }
+
+            let hapticCategories: Set<String> = [
+                NotificationCategoryIdentifier.medicationReminder,
+                NotificationCategoryIdentifier.stimulantReminder
+            ]
+
+            if hapticCategories.contains(notification.request.content.categoryIdentifier) {
+                if let isFollowUp = notification.request.content.userInfo["isFollowUp"] as? Bool, isFollowUp {
+                    NotificationFeedbackManager.shared.triggerReminderHaptic()
+                } else {
+                    NotificationFeedbackManager.shared.triggerNotificationHaptic()
+                }
+            }
+
+            if notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder {
+                MedicationStore.shared.refreshOverdueMedicationIDs(referenceDate: notification.date)
+            }
+
+            // Allow the notification to present with sound, banner, and list
+            completionHandler([.sound, .banner, .list])
         }
-        
-        // Allow the notification to present with sound, banner, and list
-        completionHandler([.sound, .banner, .list])
     }
     
     // Called when a user responds to a notification
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        
-        let userInfo = response.notification.request.content.userInfo
-        if let medicationIDString = userInfo["medicationID"] as? String,
-           let medicationID = UUID(uuidString: medicationIDString),
-           MedicationStore.shared.findMedication(with: medicationID) == nil {
-            NotificationManager.shared.cancelMedicationNotifications(for: medicationID)
-            MedicationStore.shared.checkAndResetBadge()
-            completionHandler()
-            return
-        }
-        
-        // Handle different notification actions
-        switch response.actionIdentifier {
-        case NotificationActionIdentifier.trackNow:
-            // User tapped "Track Now" - log the medication as taken
-            DispatchQueue.main.async {
+        Task { @MainActor in
+            let userInfo = response.notification.request.content.userInfo
+            if let medicationIDString = userInfo["medicationID"] as? String,
+               let medicationID = UUID(uuidString: medicationIDString),
+               MedicationStore.shared.findMedication(with: medicationID) == nil {
+                NotificationManager.shared.cancelMedicationNotifications(for: medicationID)
+                MedicationStore.shared.checkAndResetBadge()
+                completionHandler()
+                return
+            }
+            
+            // Handle different notification actions
+            switch response.actionIdentifier {
+            case NotificationActionIdentifier.trackNow:
+                // User tapped "Track Now" - log the medication as taken
                 if let medicationIDString = userInfo["medicationID"] as? String,
                    let medicationID = UUID(uuidString: medicationIDString),
                    let medication = MedicationStore.shared.findMedication(with: medicationID) {
@@ -1073,63 +1210,57 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                     )
                 }
                 self.cancelNotifications(for: response)
-            }
-            
-        case NotificationActionIdentifier.remindLater:
-            // User tapped "Remind Later" - schedule a reminder in 30 minutes
-            if let medicationIDString = userInfo["medicationID"] as? String,
-               let medicationID = UUID(uuidString: medicationIDString) {
                 
+            case NotificationActionIdentifier.remindLater:
+                // User tapped "Remind Later" - schedule a reminder in 30 minutes
+                if let medicationIDString = userInfo["medicationID"] as? String,
+                   let medicationID = UUID(uuidString: medicationIDString) {
+                    
                 // Find the medication
                 if let medication = MedicationStore.shared.findMedication(with: medicationID) {
-                    if let baseUUID = baseNotificationUUID(from: response.notification.request.identifier) {
+                    if let baseUUID = self.baseNotificationUUID(from: response.notification.request.identifier) {
                         let followUpDate = Calendar.current.date(byAdding: .minute, value: 30, to: response.notification.date) ?? Date()
                         NotificationManager.shared.cancelFollowUpNotification(for: baseUUID, on: followUpDate)
                     }
-                    // Schedule a one-time reminder for 30 minutes later
-                    NotificationManager.shared.scheduleOneTimeReminder(for: medication, afterMinutes: 30)
-                    
-                    // Provide light haptic feedback
-                    HapticManager.shared.lightImpact()
+                        // Schedule a one-time reminder for 30 minutes later
+                        NotificationManager.shared.scheduleOneTimeReminder(for: medication, afterMinutes: 30)
+                        
+                        // Provide light haptic feedback
+                        HapticManager.shared.lightImpact()
+                    }
                 }
-            }
-            
-        case NotificationActionIdentifier.dismiss:
-            MedicationStore.shared.checkAndResetBadge()
-            completionHandler()
-            return
-            
-        default:
-            // User tapped the notification itself.
-            if let medicationIDString = userInfo["medicationID"] as? String,
-               let medicationID = UUID(uuidString: medicationIDString),
-               let medication = MedicationStore.shared.findMedication(with: medicationID) {
+                
+            case NotificationActionIdentifier.dismiss:
+                MedicationStore.shared.checkAndResetBadge()
+                completionHandler()
+                return
+                
+            default:
+                // User tapped the notification itself.
+                if let medicationIDString = userInfo["medicationID"] as? String,
+                   let medicationID = UUID(uuidString: medicationIDString),
+                   let medication = MedicationStore.shared.findMedication(with: medicationID) {
 
-                if response.notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder {
-                    DispatchQueue.main.async {
+                    if response.notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder {
                         MedicationStore.shared.highlightedMedicationID = medication.id
                         MedicationStore.shared.notificationHighlightMedicationID = medication.id
                         MedicationStore.shared.requestedMainTab = .meds
                     }
-                }
-                
-                // If this is a stimulant fade notification with Reflection enabled,
-                // surface the notes & side-effects logging sheet for this medication.
-                if let phase = userInfo["phase"] as? String {
-                    if phase == "checkin", medication.enableDailyCheckIn {
-                        DispatchQueue.main.async {
+                    
+                    // If this is a stimulant fade notification with Reflection enabled,
+                    // surface the notes & side-effects logging sheet for this medication.
+                    if let phase = userInfo["phase"] as? String {
+                        if phase == "checkin", medication.enableDailyCheckIn {
                             MedicationStore.shared.dailyCheckInContext = DailyCheckInContext(
                                 medication: medication,
                                 entrySource: .notification
                             )
-                        }
-                    } else if phase == "fade",
-                              let isDailyCheckIn = userInfo["isDailyCheckIn"] as? Bool,
-                              isDailyCheckIn,
-                              let logIDString = userInfo["logID"] as? String,
-                              let logID = UUID(uuidString: logIDString),
-                              medication.enableDailyCheckIn {
-                        DispatchQueue.main.async {
+                        } else if phase == "fade",
+                                  let isDailyCheckIn = userInfo["isDailyCheckIn"] as? Bool,
+                                  isDailyCheckIn,
+                                  let logIDString = userInfo["logID"] as? String,
+                                  let logID = UUID(uuidString: logIDString),
+                                  medication.enableDailyCheckIn {
                             MedicationStore.shared.dailyCheckInContext = DailyCheckInContext(
                                 medication: medication,
                                 logID: logID,
@@ -1137,15 +1268,15 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                             )
                         }
                     }
+                    
+                    MedicationStore.shared.checkAndResetBadge()
+                } else {
+                    MedicationStore.shared.checkAndResetBadge()
                 }
-                
-                MedicationStore.shared.checkAndResetBadge()
-            } else {
-                MedicationStore.shared.checkAndResetBadge()
             }
+            
+            completionHandler()
         }
-        
-        completionHandler()
     }
 
     private func cancelNotifications(for response: UNNotificationResponse) {
@@ -1156,7 +1287,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             return
         }
 
-        guard let baseUUID = baseNotificationUUID(from: response.notification.request.identifier) else { return }
+        guard let baseUUID = self.baseNotificationUUID(from: response.notification.request.identifier) else { return }
         NotificationManager.shared.cancelNotification(with: baseUUID)
     }
 

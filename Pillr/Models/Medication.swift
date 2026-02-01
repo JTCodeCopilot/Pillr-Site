@@ -34,6 +34,7 @@ struct Medication: Identifiable, Codable, Hashable {
     var dosageUnit: String = "mg" // "mg" or "ml"
     var iconName: String = "pill" // Default icon
     var createdAt: Date? = Date() // When the medication was added
+    var updatedAt: Date? = Date() // Last local update time
     var cloudLastModified: Date? = nil // The last time this record was synced with CloudKit
     
     var dosageWithUnit: String {
@@ -141,6 +142,7 @@ struct Medication: Identifiable, Codable, Hashable {
         case dosageUnit
         case iconName
         case createdAt
+        case updatedAt
         case frequency
         case medicationType
         case isExtendedRelease
@@ -173,6 +175,7 @@ struct Medication: Identifiable, Codable, Hashable {
         dosageUnit: String = "mg",
         iconName: String = "pill",
         createdAt: Date? = Date(),
+        updatedAt: Date? = Date(),
         frequency: String,
         medicationType: MedicationType = .other,
         isExtendedRelease: Bool = false,
@@ -203,6 +206,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.dosageUnit = dosageUnit
         self.iconName = iconName
         self.createdAt = createdAt
+        self.updatedAt = updatedAt
         self.frequency = frequency
         self.medicationType = medicationType
         self.isExtendedRelease = isExtendedRelease
@@ -237,6 +241,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.dosageUnit = try container.decodeIfPresent(String.self, forKey: .dosageUnit) ?? "mg"
         self.iconName = try container.decodeIfPresent(String.self, forKey: .iconName) ?? "pill"
         self.createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
         self.frequency = try container.decode(String.self, forKey: .frequency)
 
         // New ADHD metadata – default safely for older data
@@ -273,6 +278,7 @@ struct Medication: Identifiable, Codable, Hashable {
         try container.encode(dosageUnit, forKey: .dosageUnit)
         try container.encode(iconName, forKey: .iconName)
         try container.encodeIfPresent(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(updatedAt, forKey: .updatedAt)
         try container.encode(frequency, forKey: .frequency)
         try container.encode(medicationType, forKey: .medicationType)
         try container.encode(isExtendedRelease, forKey: .isExtendedRelease)
@@ -310,9 +316,11 @@ struct MedicationLog: Identifiable, Codable, Hashable {
     var medicationID: UUID
     var medicationName: String // Denormalized for easy display
     var takenAt: Date
+    var updatedAt: Date? = Date()
     var notes: String?
     var skipped: Bool = false // Whether this log represents a skipped dose
     var isDailyCheckIn: Bool = false
+    var isDeleted: Bool = false
     var pillsConsumed: Int? // Number of pills consumed in this dose
     var reminderIndex: Int? // Which reminder this log corresponds to (if multiple reminders)
     var feelingRating: Int? // 1–5 overall feeling rating
@@ -329,9 +337,11 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         case medicationID
         case medicationName
         case takenAt
+        case updatedAt
         case notes
         case skipped
         case isDailyCheckIn
+        case isDeleted
         case pillsConsumed
         case reminderIndex
         case feelingRating
@@ -349,9 +359,11 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         medicationID: UUID,
         medicationName: String,
         takenAt: Date,
+        updatedAt: Date? = Date(),
         notes: String? = nil,
         skipped: Bool = false,
         isDailyCheckIn: Bool = false,
+        isDeleted: Bool = false,
         pillsConsumed: Int? = nil,
         reminderIndex: Int? = nil,
         feelingRating: Int? = nil,
@@ -367,9 +379,11 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.medicationID = medicationID
         self.medicationName = medicationName
         self.takenAt = takenAt
+        self.updatedAt = updatedAt
         self.notes = notes
         self.skipped = skipped
         self.isDailyCheckIn = isDailyCheckIn
+        self.isDeleted = isDeleted
         self.pillsConsumed = pillsConsumed
         self.reminderIndex = reminderIndex
         self.feelingRating = feelingRating
@@ -389,9 +403,11 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.medicationID = try container.decode(UUID.self, forKey: .medicationID)
         self.medicationName = try container.decode(String.self, forKey: .medicationName)
         self.takenAt = try container.decode(Date.self, forKey: .takenAt)
+        self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
         self.notes = try container.decodeIfPresent(String.self, forKey: .notes)
         self.skipped = try container.decodeIfPresent(Bool.self, forKey: .skipped) ?? false
         self.isDailyCheckIn = try container.decodeIfPresent(Bool.self, forKey: .isDailyCheckIn) ?? false
+        self.isDeleted = try container.decodeIfPresent(Bool.self, forKey: .isDeleted) ?? false
         self.pillsConsumed = try container.decodeIfPresent(Int.self, forKey: .pillsConsumed)
         self.reminderIndex = try container.decodeIfPresent(Int.self, forKey: .reminderIndex)
         self.feelingRating = try container.decodeIfPresent(Int.self, forKey: .feelingRating)
@@ -410,9 +426,11 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         try container.encode(medicationID, forKey: .medicationID)
         try container.encode(medicationName, forKey: .medicationName)
         try container.encode(takenAt, forKey: .takenAt)
+        try container.encodeIfPresent(updatedAt, forKey: .updatedAt)
         try container.encodeIfPresent(notes, forKey: .notes)
         try container.encode(skipped, forKey: .skipped)
         try container.encode(isDailyCheckIn, forKey: .isDailyCheckIn)
+        try container.encode(isDeleted, forKey: .isDeleted)
         try container.encodeIfPresent(pillsConsumed, forKey: .pillsConsumed)
         try container.encodeIfPresent(reminderIndex, forKey: .reminderIndex)
         try container.encodeIfPresent(feelingRating, forKey: .feelingRating)

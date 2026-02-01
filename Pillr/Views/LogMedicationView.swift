@@ -363,7 +363,7 @@ import UIKit
                     .padding(.top, isDailyCheckIn ? 8 : 20)
                         
                         // Multiple doses selector (if applicable)
-                        if hasMultipleDoses {
+                        if hasMultipleDoses && !isDailyCheckIn {
                             FormSection(title: "DOSE SELECTION", icon: "list.number.circle.fill") {
                                 VStack(alignment: .leading, spacing: 16) {
                                     HStack {

@@ -1,10 +1,12 @@
 import Foundation
 import CloudKit
+import UIKit
 
 final class CloudKitMedicationSync {
     static let shared = CloudKitMedicationSync()
 
     private let database: CKDatabase
+    private let subscriptionID = "pillr-private-medication-changes"
 
     private init() {
         self.database = CKContainer.default().privateCloudDatabase
@@ -25,6 +27,7 @@ final class CloudKitMedicationSync {
         static let isExtendedRelease = "isExtendedRelease"
         static let onsetMinutes = "onsetMinutes"
         static let durationMinutes = "durationMinutes"
+        static let effectsGoneMinutes = "effectsGoneMinutes"
         static let enableDailyCheckIn = "enableDailyCheckIn"
         static let enableStimulantPhaseNotifications = "enableStimulantPhaseNotifications"
         static let dailyCheckInTime = "dailyCheckInTime"
@@ -46,6 +49,8 @@ final class CloudKitMedicationSync {
         static let medicationReference = "medicationReference"
         static let medicationName = "medicationName"
         static let takenAt = "takenAt"
+        static let logUpdatedAt = "updatedAt"
+        static let logIsDeleted = "isDeleted"
         static let skipped = "skipped"
         static let pillsConsumed = "pillsConsumed"
         static let reminderIndex = "reminderIndex"
@@ -65,43 +70,28 @@ final class CloudKitMedicationSync {
 
     func save(medication: Medication, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
         let record = medicationRecord(from: medication)
-        record[Field.updatedAt] = Date() as CKRecordValue
-        database.save(record) { savedRecord, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    completion?(.failure(error))
-                } else if let savedRecord = savedRecord {
-                    completion?(.success(savedRecord))
-                }
-            }
+        let updatedAt = medication.updatedAt ?? Date()
+        record[Field.updatedAt] = updatedAt as CKRecordValue
+        if medication.isDeleted {
+            saveForce(record: record, completion: completion)
+        } else {
+            saveWithConflictResolution(record: record, completion: completion)
         }
     }
 
 
     func save(log: MedicationLog, medication: Medication, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
         let record = medicationLogRecord(from: log, medication: medication)
-        database.save(record) { savedRecord, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    completion?(.failure(error))
-                } else if let savedRecord = savedRecord {
-                    completion?(.success(savedRecord))
-                }
-            }
+        record[Field.logUpdatedAt] = (log.updatedAt ?? Date()) as CKRecordValue
+        if log.isDeleted {
+            saveForce(record: record, completion: completion)
+        } else {
+            saveWithConflictResolution(record: record, completion: completion)
         }
     }
 
     func delete(log: MedicationLog, completion: ((Result<Void, Error>) -> Void)? = nil) {
-        let recordID = CKRecord.ID(recordName: log.id.uuidString)
-        database.delete(withRecordID: recordID) { _, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    completion?(.failure(error))
-                } else {
-                    completion?(.success(()))
-                }
-            }
-        }
+        markLogDeleted(log, completion: completion)
     }
 
     func deleteMedication(withID medicationID: UUID, completion: ((Result<Void, Error>) -> Void)? = nil) {
@@ -113,6 +103,41 @@ final class CloudKitMedicationSync {
                 } else {
                     completion?(.success(()))
                 }
+            }
+        }
+    }
+
+    func markMedicationDeleted(_ medication: Medication, completion: ((Result<Void, Error>) -> Void)? = nil) {
+        var tombstone = medication
+        tombstone.isDeleted = true
+        tombstone.updatedAt = Date()
+        save(medication: tombstone) { result in
+            switch result {
+            case .success:
+                completion?(.success(()))
+            case .failure(let error):
+                completion?(.failure(error))
+            }
+        }
+    }
+
+    func markLogDeleted(_ log: MedicationLog, completion: ((Result<Void, Error>) -> Void)? = nil) {
+        var tombstone = log
+        tombstone.isDeleted = true
+        tombstone.updatedAt = Date()
+        let medication = Medication(
+            id: log.medicationID,
+            name: log.medicationName,
+            dosage: log.medicationDosageText,
+            frequency: "Once daily",
+            timeToTake: log.takenAt
+        )
+        save(log: tombstone, medication: medication) { result in
+            switch result {
+            case .success:
+                completion?(.success(()))
+            case .failure(let error):
+                completion?(.failure(error))
             }
         }
     }
@@ -153,6 +178,34 @@ final class CloudKitMedicationSync {
                 completion(.success((medications: medicationResults, logs: logResults)))
             }
         }
+    }
+
+    func ensureSubscriptions() {
+        let subscription = CKDatabaseSubscription(subscriptionID: subscriptionID)
+        let notificationInfo = CKSubscription.NotificationInfo()
+        notificationInfo.shouldSendContentAvailable = true
+        subscription.notificationInfo = notificationInfo
+
+        database.save(subscription) { _, error in
+            if let error = error as? CKError, error.code == .serverRejectedRequest {
+                return
+            }
+            if let error = error as? CKError, error.code == .unknownItem {
+                return
+            }
+            if let error = error {
+                print("CloudKit subscription error: \(error)")
+            }
+        }
+    }
+
+    func handleRemoteNotification(_ userInfo: [AnyHashable: Any], completion: @escaping (UIBackgroundFetchResult) -> Void) {
+        let notification = CKNotification(fromRemoteNotificationDictionary: userInfo)
+        guard notification?.subscriptionID == subscriptionID else {
+            completion(.noData)
+            return
+        }
+        completion(.newData)
     }
 
     // MARK: - Helpers
@@ -228,6 +281,9 @@ final class CloudKitMedicationSync {
         if let durationMinutes = medication.durationMinutes {
             record[Field.durationMinutes] = NSNumber(value: durationMinutes)
         }
+        if let effectsGoneMinutes = medication.effectsGoneMinutes {
+            record[Field.effectsGoneMinutes] = NSNumber(value: effectsGoneMinutes)
+        }
         record[Field.enableDailyCheckIn] = medication.enableDailyCheckIn as CKRecordValue
         record[Field.enableStimulantPhaseNotifications] = medication.enableStimulantPhaseNotifications as CKRecordValue
         if let dailyCheckInTime = medication.dailyCheckInTime {
@@ -260,7 +316,6 @@ final class CloudKitMedicationSync {
         if let createdAt = medication.createdAt {
             record[Field.createdAt] = createdAt as CKRecordValue
         }
-
         return record
     }
 
@@ -272,6 +327,8 @@ final class CloudKitMedicationSync {
         record[Field.medicationIconName] = log.medicationIconName as CKRecordValue
         record[Field.medicationReminderCount] = log.medicationReminderCount as CKRecordValue
         record[Field.takenAt] = log.takenAt as CKRecordValue
+        record[Field.logUpdatedAt] = (log.updatedAt ?? Date()) as CKRecordValue
+        record[Field.logIsDeleted] = NSNumber(value: log.isDeleted ? 1 : 0)
         record[Field.hiddenFromMyMeds] = NSNumber(value: log.hiddenFromMyMeds)
         record[Field.skipped] = log.skipped as CKRecordValue
         if let notes = log.notes {
@@ -342,6 +399,7 @@ final class CloudKitMedicationSync {
         let isExtendedRelease = record[Field.isExtendedRelease] as? Bool ?? false
         let onsetMinutes = record[Field.onsetMinutes] as? Int
         let durationMinutes = record[Field.durationMinutes] as? Int
+        let effectsGoneMinutes = record[Field.effectsGoneMinutes] as? Int
         let dailyCheckInTime = record[Field.dailyCheckInTime] as? Date
 
         let logReferenceID: UUID?
@@ -359,6 +417,7 @@ final class CloudKitMedicationSync {
         }
 
         let createdAt = record[Field.createdAt] as? Date ?? record.creationDate
+        let updatedAt = record[Field.updatedAt] as? Date ?? record.modificationDate
         let cloudLastModified = record.modificationDate ?? record.creationDate
 
         return Medication(
@@ -368,11 +427,13 @@ final class CloudKitMedicationSync {
             dosageUnit: dosageUnit,
             iconName: iconName,
             createdAt: createdAt,
+            updatedAt: updatedAt,
             frequency: frequency,
             medicationType: medicationType,
             isExtendedRelease: isExtendedRelease,
             onsetMinutes: onsetMinutes,
             durationMinutes: durationMinutes,
+            effectsGoneMinutes: effectsGoneMinutes,
             enableDailyCheckIn: enableDailyCheckIn,
             enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
             dailyCheckInTime: dailyCheckInTime,
@@ -402,6 +463,15 @@ final class CloudKitMedicationSync {
 
         let notes = record[Field.notesLog] as? String
         let skipped = record[Field.skipped] as? Bool ?? false
+        let updatedAt = record[Field.logUpdatedAt] as? Date ?? record.modificationDate
+        let isDeleted: Bool
+        if let number = record[Field.logIsDeleted] as? NSNumber {
+            isDeleted = number.boolValue
+        } else if let boolValue = record[Field.logIsDeleted] as? Bool {
+            isDeleted = boolValue
+        } else {
+            isDeleted = false
+        }
         let pillsConsumed = record[Field.pillsConsumed] as? Int
         let reminderIndex = record[Field.reminderIndex] as? Int
         let feelingRating = record[Field.feelingRating] as? Int
@@ -419,9 +489,11 @@ final class CloudKitMedicationSync {
             medicationID: medicationID,
             medicationName: medicationName,
             takenAt: takenAt,
+            updatedAt: updatedAt,
             notes: notes,
             skipped: skipped,
             isDailyCheckIn: isDailyCheckIn,
+            isDeleted: isDeleted,
             pillsConsumed: pillsConsumed,
             reminderIndex: reminderIndex,
             feelingRating: feelingRating,
@@ -433,5 +505,111 @@ final class CloudKitMedicationSync {
             medicationIconName: medicationIconName,
             medicationReminderCount: medicationReminderCount
         )
+    }
+
+    private func saveWithConflictResolution(
+        record: CKRecord,
+        completion: ((Result<CKRecord, Error>) -> Void)? = nil
+    ) {
+        let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        operation.savePolicy = .ifServerRecordUnchanged
+        operation.modifyRecordsCompletionBlock = { [weak self] savedRecords, _, error in
+            if let error = error as? CKError,
+               error.code == .serverRecordChanged,
+               let serverRecord = error.userInfo[CKRecordChangedErrorServerRecordKey] as? CKRecord,
+               let clientRecord = error.userInfo[CKRecordChangedErrorClientRecordKey] as? CKRecord,
+               let ancestorRecord = error.userInfo[CKRecordChangedErrorAncestorRecordKey] as? CKRecord,
+               let resolved = self?.resolveConflict(
+                server: serverRecord,
+                client: clientRecord,
+                ancestor: ancestorRecord
+               ) {
+                let retryOperation = CKModifyRecordsOperation(recordsToSave: [resolved], recordIDsToDelete: nil)
+                retryOperation.savePolicy = .changedKeys
+                retryOperation.modifyRecordsCompletionBlock = { retrySaved, _, retryError in
+                    DispatchQueue.main.async {
+                        if let retryError {
+                            completion?(.failure(retryError))
+                        } else if let record = retrySaved?.first {
+                            completion?(.success(record))
+                        }
+                    }
+                }
+                self?.database.add(retryOperation)
+                return
+            }
+
+            DispatchQueue.main.async {
+                if let error {
+                    completion?(.failure(error))
+                } else if let record = savedRecords?.first {
+                    completion?(.success(record))
+                }
+            }
+        }
+        database.add(operation)
+    }
+
+    private func resolveConflict(
+        server: CKRecord,
+        client: CKRecord,
+        ancestor: CKRecord
+    ) -> CKRecord {
+        let serverUpdatedAt = server[Field.updatedAt] as? Date
+        let clientUpdatedAt = client[Field.updatedAt] as? Date
+
+        if let clientDate = clientUpdatedAt, let serverDate = serverUpdatedAt {
+            return clientDate >= serverDate ? client : server
+        }
+
+        if let clientDate = clientUpdatedAt {
+            return clientDate >= (serverUpdatedAt ?? clientDate) ? client : server
+        }
+
+        if let serverDate = serverUpdatedAt {
+            return serverDate >= (clientUpdatedAt ?? serverDate) ? server : client
+        }
+
+        return client
+    }
+
+    private func saveForce(record: CKRecord, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
+        let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        operation.savePolicy = .changedKeys
+        operation.modifyRecordsCompletionBlock = { [weak self] savedRecords, _, error in
+            if let error = error as? CKError,
+               error.code == .serverRecordChanged,
+               let serverRecord = error.userInfo[CKRecordChangedErrorServerRecordKey] as? CKRecord,
+               let clientRecord = error.userInfo[CKRecordChangedErrorClientRecordKey] as? CKRecord,
+               let ancestorRecord = error.userInfo[CKRecordChangedErrorAncestorRecordKey] as? CKRecord,
+               let resolved = self?.resolveConflict(
+                server: serverRecord,
+                client: clientRecord,
+                ancestor: ancestorRecord
+               ) {
+                let retryOperation = CKModifyRecordsOperation(recordsToSave: [resolved], recordIDsToDelete: nil)
+                retryOperation.savePolicy = .changedKeys
+                retryOperation.modifyRecordsCompletionBlock = { retrySaved, _, retryError in
+                    DispatchQueue.main.async {
+                        if let retryError {
+                            completion?(.failure(retryError))
+                        } else if let record = retrySaved?.first {
+                            completion?(.success(record))
+                        }
+                    }
+                }
+                self?.database.add(retryOperation)
+                return
+            }
+
+            DispatchQueue.main.async {
+                if let error {
+                    completion?(.failure(error))
+                } else if let record = savedRecords?.first {
+                    completion?(.success(record))
+                }
+            }
+        }
+        database.add(operation)
     }
 }

@@ -21,6 +21,7 @@ final class AddMedicationFlowCoordinator: ObservableObject {
     }
 }
 
+@MainActor
 struct MedicationsListView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
@@ -270,6 +271,15 @@ struct MedicationsListView: View {
                 guard scenePhase == .active else { return }
                 referenceDate = output
                 store.refreshOverdueMedicationIDs(referenceDate: output)
+                store.refreshCloudSyncIfNeeded()
+            }
+            .refreshable {
+                await MainActor.run {
+                    store.refreshCloudSyncIfNeeded()
+                    store.loadMedications()
+                    store.loadLogs()
+                    refreshReferenceDate(resetBadge: true)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 refreshReferenceDate(resetBadge: false)
@@ -812,6 +822,7 @@ fileprivate func calculateDueTime(
 }
 
 @ViewBuilder
+@MainActor
 fileprivate func MedicationsListContent(
 	    store: MedicationStore,
 	    showingAddSheet: Binding<Bool>,
@@ -871,6 +882,7 @@ fileprivate func MedicationsListContent(
 }
 
 @ViewBuilder
+@MainActor
 fileprivate func MedicationsListHeader(
     store: MedicationStore,
     horizontalInsets: CGFloat,
@@ -1726,6 +1738,7 @@ fileprivate struct CabinetMedicationRow: View {
     }
 }
 
+@MainActor
 fileprivate struct MedicationsListMainContent: View {
     @ObservedObject var store: MedicationStore
     @Binding var showingAddSheet: Bool
@@ -1992,9 +2005,11 @@ fileprivate struct MedicationRowHeaderView: View {
     let onSkipDose: (Int) -> Void
     let highlightedDoseIndex: Int?
     let compactLayout: Bool
+    let referenceDate: Date
     
     private let timelineTimeWidth: CGFloat = 58
     private let logButtonMinWidth: CGFloat = 96
+    private let overdueHighlightColor = Color(hex: "#FFB74D")
 
 	    private var usesTimelineLayout: Bool {
 	        !doseStates.isEmpty && !compactLayout
@@ -2052,6 +2067,22 @@ fileprivate struct MedicationRowHeaderView: View {
 
     private var doseRowVerticalPadding: CGFloat {
         allDosesLogged ? 8 : 12
+    }
+
+    private func startOfMinute(_ date: Date) -> Date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        return calendar.date(from: components) ?? date
+    }
+
+    private func isOverdueDose(_ state: DoseButtonState) -> Bool {
+        guard medication.reminderTimes.count > 1 else { return false }
+        guard state.status == .pending else { return false }
+        guard state.scheduledTime != nil else { return false }
+        let dueTime = calculateDueTime(for: medication, reminderIndex: state.index, referenceDate: referenceDate)
+        let nowMinute = startOfMinute(referenceDate)
+        let dueMinute = startOfMinute(dueTime)
+        return dueMinute < nowMinute
     }
     
     // Moved statusDisplay computed property
@@ -2403,6 +2434,8 @@ fileprivate struct MedicationRowHeaderView: View {
         let textFont: Font = .system(size: 14)
         let takeStyle = baseTakeButtonColors
         let skipStyle = baseSkipButtonColors
+        let showsOverdueHighlight = false
+        let overdueBorderColor = Color(hex: "#FFA726").opacity(0.32)
 
         return HStack(spacing: 12) {
             if state.status == .taken, let loggedText = state.loggedTimeLabel {
@@ -2489,10 +2522,11 @@ fileprivate struct MedicationRowHeaderView: View {
             Spacer()
 
             if shouldShowDoseLabel(for: state) {
+                let isOverdue = isOverdueDose(state)
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(displayText)
                         .font(.system(.body, design: .default).weight(.semibold))
-                        .foregroundColor(Color(hex: "#F5F7F4").opacity(state.status == .pending ? 1 : 0.7))
+                        .foregroundColor(isOverdue ? overdueHighlightColor : Color(hex: "#F5F7F4").opacity(state.status == .pending ? 1 : 0.7))
                         .lineLimit(1)
                         .allowsTightening(true)
                         .minimumScaleFactor(0.85)
@@ -2557,6 +2591,7 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 }
 
+@MainActor
 struct MedicationRow: View {
     let medication: Medication
     let referenceDate: Date
@@ -2894,7 +2929,8 @@ struct MedicationRow: View {
                     skipDose(at: doseIndex)
                 },
                 highlightedDoseIndex: highlightedDoseIndex,
-                compactLayout: usesLoggedCardStyle
+                compactLayout: usesLoggedCardStyle,
+                referenceDate: referenceDate
             )
             
             if showsDetails {

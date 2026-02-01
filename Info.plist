@@ -37,8 +37,13 @@
 	<true/>
 	<key>SKPaymentTransactionObserverUseFinishTransaction</key>
 	<true/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.pillr.cloud-sync-refresh</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
 	<key>UILaunchScreen</key>
