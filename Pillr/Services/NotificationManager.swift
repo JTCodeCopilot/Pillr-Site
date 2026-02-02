@@ -625,6 +625,27 @@ class NotificationManager: ObservableObject {
         let followUpID = followUpIdentifier(originalID: baseID, fireDate: date, repeats: false)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [followUpID])
     }
+
+    func cancelFollowUpNotifications(for baseID: UUID) {
+        let prefix = "\(baseID.uuidString)_followup"
+        let center = UNUserNotificationCenter.current()
+        center.getPendingNotificationRequests { requests in
+            let identifiers = requests.compactMap { request -> String? in
+                request.identifier.hasPrefix(prefix) ? request.identifier : nil
+            }
+            if !identifiers.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: identifiers)
+            }
+        }
+        center.getDeliveredNotifications { notifications in
+            let identifiers = notifications.compactMap { notification -> String? in
+                notification.request.identifier.hasPrefix(prefix) ? notification.request.identifier : nil
+            }
+            if !identifiers.isEmpty {
+                center.removeDeliveredNotifications(withIdentifiers: identifiers)
+            }
+        }
+    }
     
     func cancelMultipleNotifications(ids: [UUID]) {
         for id in ids {
@@ -1210,6 +1231,10 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                     )
                 }
                 self.cancelNotifications(for: response)
+                if let baseUUID = self.baseNotificationUUID(from: response.notification.request.identifier) {
+                    NotificationManager.shared.cancelFollowUpNotifications(for: baseUUID)
+                }
+                MedicationStore.shared.checkAndResetBadge()
                 
             case NotificationActionIdentifier.remindLater:
                 // User tapped "Remind Later" - schedule a reminder in 30 minutes
