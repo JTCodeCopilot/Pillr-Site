@@ -97,22 +97,23 @@ struct MedicationsListView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                MedicationsListMainContent(
-                    store: store,
-                    showingAddSheet: $showingAddSheet,
-                    scrolledOffset: $scrolledOffset,
-                    selectedMedicationToEdit: $selectedMedicationToEdit,
-                    medicationToDelete: $medicationToDelete,
-                    logToDelete: $logToDelete,
-                    showDeleteAlert: $showDeleteAlert,
-                    showingInteractionSheet: $showingInteractionSheet,
-                    isCheckingInteractions: $isCheckingInteractions,
-                    onCheckAllInteractions: showMedicationSelectionSheet,
-                    onAddMedication: handleAddMedication,
-                    onShowFocusTimeline: { showingFocusTimeline = true },
-                    onPresentUndoToast: presentUndoToast,
-                    onRequestCustomLogTimeAction: requestCustomLogTime,
-                    onPresentDailyCheckIn: presentDailyCheckIn,
+                    MedicationsListMainContent(
+                        store: store,
+                        showingAddSheet: $showingAddSheet,
+                        scrolledOffset: $scrolledOffset,
+                        selectedMedicationToEdit: $selectedMedicationToEdit,
+                        medicationToDelete: $medicationToDelete,
+                        logToDelete: $logToDelete,
+                        showDeleteAlert: $showDeleteAlert,
+                        showingInteractionSheet: $showingInteractionSheet,
+                        isCheckingInteractions: $isCheckingInteractions,
+                        onCheckAllInteractions: showMedicationSelectionSheet,
+                        onShowPremiumUpgrade: { showingPremiumUpgrade = true },
+                        onAddMedication: handleAddMedication,
+                        onShowFocusTimeline: { showingFocusTimeline = true },
+                        onPresentUndoToast: presentUndoToast,
+                        onRequestCustomLogTimeAction: requestCustomLogTime,
+                        onPresentDailyCheckIn: presentDailyCheckIn,
                     displayedMedications: displayedMedications,
                     cabinetMedications: cabinetMedications,
                     onShowCabinet: handleCabinetTap,
@@ -1179,7 +1180,9 @@ fileprivate struct HealthSummaryWidget: View {
 fileprivate struct InteractionPromptCard: View {
     let medicationName: String
     let canCheck: Bool
+    let hasAccess: Bool
     let onCheck: () -> Void
+    let onUpgrade: () -> Void
     let onDismiss: () -> Void
 
     private var displayName: String {
@@ -1222,16 +1225,28 @@ fileprivate struct InteractionPromptCard: View {
                 .buttonStyle(.plain)
             }
 
-            Button(action: onCheck) {
-                Text("Check Interactions")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(canCheck ? Color(hex: "#2F352F") : Color(hex: "#C7C7BD"))
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(canCheck ? Color(hex: "#F5F7F4") : Color(hex: "#4C584F"))
-                    )
+            Button(action: {
+                if hasAccess {
+                    onCheck()
+                } else {
+                    onUpgrade()
+                }
+            }) {
+                HStack(spacing: 8) {
+                    Text("Check Interactions")
+                        .font(.system(size: 14, weight: .semibold))
+                    if !hasAccess {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                }
+                .foregroundColor(canCheck && hasAccess ? Color(hex: "#2F352F") : Color(hex: "#C7C7BD"))
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(canCheck && hasAccess ? Color(hex: "#F5F7F4") : Color(hex: "#4C584F"))
+                )
             }
             .buttonStyle(ScaleButtonStyle())
             .disabled(!canCheck)
@@ -1823,6 +1838,7 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var showingInteractionSheet: Bool
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
+    let onShowPremiumUpgrade: () -> Void
     let onAddMedication: () -> Void
     let onShowFocusTimeline: () -> Void
     let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
@@ -1844,6 +1860,10 @@ fileprivate struct MedicationsListMainContent: View {
 
     private var canCheckInteractions: Bool {
         store.activeMedications.count >= 2
+    }
+
+    private var hasInteractionAccess: Bool {
+        userSettings.hasAIAccess()
     }
 
     private func horizontalInsets(for width: CGFloat) -> CGFloat {
@@ -1874,13 +1894,13 @@ fileprivate struct MedicationsListMainContent: View {
                             InteractionPromptCard(
                                 medicationName: recentMedication.name,
                                 canCheck: canCheckInteractions,
+                                hasAccess: hasInteractionAccess,
                                 onCheck: {
                                     Task { await onCheckAllInteractions() }
                                     store.lastAddedMedicationID = nil
                                 },
-                                onDismiss: {
-                                    store.lastAddedMedicationID = nil
-                                }
+                                onUpgrade: onShowPremiumUpgrade,
+                                onDismiss: { store.lastAddedMedicationID = nil }
                             )
                             .padding(.horizontal, horizontalInset)
                         }
