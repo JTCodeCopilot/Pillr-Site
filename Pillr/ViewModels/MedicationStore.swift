@@ -86,6 +86,8 @@ class MedicationStore: ObservableObject {
     @Published var notificationHighlightMedicationID: UUID?
     /// The medication that should currently show expanded details on the My Meds list.
     @Published var expandedMedicationID: UUID?
+    /// Most recently added medication (used to prompt interaction checks).
+    @Published var lastAddedMedicationID: UUID?
     /// Allows any view to request a specific tab to show (e.g., jump back to My Meds).
     @Published var requestedMainTab: MainTab?
     @Published private(set) var overdueMedicationIDs: Set<UUID> = []
@@ -275,6 +277,7 @@ class MedicationStore: ObservableObject {
         }
         
         medications.append(newMed)
+        lastAddedMedicationID = newMed.id
         saveMedications()
         syncMedicationWithCloud(newMed)
         scheduleDailyCheckInReminderIfNeeded(for: newMed)

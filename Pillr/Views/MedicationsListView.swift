@@ -1176,6 +1176,79 @@ fileprivate struct HealthSummaryWidget: View {
 
 }
 
+fileprivate struct InteractionPromptCard: View {
+    let medicationName: String
+    let canCheck: Bool
+    let onCheck: () -> Void
+    let onDismiss: () -> Void
+
+    private var displayName: String {
+        let trimmed = medicationName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "this medication" : trimmed
+    }
+
+    private var subtitle: String {
+        canCheck
+            ? "See how it combines with your other meds."
+            : "Add at least one more medication to run a check."
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Check interactions for \(displayName)")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .lineLimit(2)
+
+                    Text(subtitle)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                }
+
+                Spacer()
+
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .frame(width: 28, height: 28)
+                        .background(
+                            Circle()
+                                .fill(Color(hex: "#2F352F").opacity(0.35))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button(action: onCheck) {
+                Text("Check Interactions")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(canCheck ? Color(hex: "#2F352F") : Color(hex: "#C7C7BD"))
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(canCheck ? Color(hex: "#F5F7F4") : Color(hex: "#4C584F"))
+                    )
+            }
+            .buttonStyle(ScaleButtonStyle())
+            .disabled(!canCheck)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(hex: "#4C584F"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
+    }
+}
+
 fileprivate struct FloatingActionButton: View {
     @Binding var showingAddSheet: Bool
     @Binding var isCheckingInteractions: Bool
@@ -1764,6 +1837,15 @@ fileprivate struct MedicationsListMainContent: View {
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    private var recentlyAddedMedication: Medication? {
+        guard let lastAddedID = store.lastAddedMedicationID else { return nil }
+        return store.findMedication(with: lastAddedID)
+    }
+
+    private var canCheckInteractions: Bool {
+        store.activeMedications.count >= 2
+    }
+
     private func horizontalInsets(for width: CGFloat) -> CGFloat {
         if horizontalSizeClass == .regular && width > 768 {
             return max((width - 650) / 2, 16)
@@ -1787,6 +1869,21 @@ fileprivate struct MedicationsListMainContent: View {
                             onShowCabinet: onShowCabinet,
                             cabinetCount: cabinetMedications.count
                         )
+
+                        if let recentMedication = recentlyAddedMedication {
+                            InteractionPromptCard(
+                                medicationName: recentMedication.name,
+                                canCheck: canCheckInteractions,
+                                onCheck: {
+                                    Task { await onCheckAllInteractions() }
+                                    store.lastAddedMedicationID = nil
+                                },
+                                onDismiss: {
+                                    store.lastAddedMedicationID = nil
+                                }
+                            )
+                            .padding(.horizontal, horizontalInset)
+                        }
 
                         if userSettings.shouldShowAppleHealthData {
                             HealthSummaryWidget(manager: healthKitManager)
