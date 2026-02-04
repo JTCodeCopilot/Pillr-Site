@@ -133,6 +133,8 @@ struct MedicationInteractionSelectionSheet: View {
 
         .sheet(isPresented: $showingInteractionHistory) {
             InteractionHistoryView()
+                .environmentObject(store)
+                .environmentObject(storeManager)
         }
     }
     
@@ -218,6 +220,27 @@ struct MedicationInteractionSelectionSheet: View {
                     Text("\(totalSelectedCount) medication\(totalSelectedCount == 1 ? "" : "s") selected")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+
+                    Button {
+                        showingInteractionHistory = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Past Interactions")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundColor(Color.pillrAccent)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.18))
+                        .cornerRadius(16)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.pillrAccent.opacity(0.35), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 
                 if !canCheckInteractions {
@@ -622,11 +645,12 @@ struct MedicationInteractionSelectionSheet: View {
         }
         
         if interactionResults.isEmpty {
-            saveAllClearInteraction(medications: medications)
+            saveNoInteractionPairs(medications: medications, excluding: [])
         } else {
             for interaction in interactionResults {
                 InteractionStore.shared.saveInteraction(interaction)
             }
+            saveNoInteractionPairs(medications: medications, excluding: interactionResults)
         }
         
         await MainActor.run {
@@ -654,23 +678,49 @@ struct MedicationInteractionSelectionSheet: View {
         }
     }
 
-    private func saveAllClearInteraction(medications: [String]) {
-        let filteredMedications = medications.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        let summary = filteredMedications.joined(separator: " + ")
-        let displayTitle = summary.isEmpty ? "Medication Check" : summary
-        let description = summary.isEmpty
-            ? "No significant interactions were found among your selected medications."
-            : "No significant interactions were found for \(summary)."
+    private func saveNoInteractionPairs(medications: [String], excluding interactions: [DrugInteraction]) {
+        let trimmed = medications
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
 
-        let clearInteraction = DrugInteraction(
-            drugA: displayTitle,
-            drugB: "",
-            severity: .unknown,
-            description: description,
-            recommendedAction: "Continue monitoring your medications and consult your healthcare provider if you have any questions."
-        )
+        var unique: [String] = []
+        var seen = Set<String>()
+        for medication in trimmed {
+            let key = medication.lowercased()
+            if !seen.contains(key) {
+                seen.insert(key)
+                unique.append(medication)
+            }
+        }
 
-        InteractionStore.shared.saveInteraction(clearInteraction)
+        guard unique.count >= 2 else { return }
+
+        let interactionPairs: Set<String> = Set(interactions.map { pairKey($0.drugA, $0.drugB) })
+
+        for i in 0..<(unique.count - 1) {
+            for j in (i + 1)..<unique.count {
+                let drugA = unique[i]
+                let drugB = unique[j]
+                let key = pairKey(drugA, drugB)
+                guard !interactionPairs.contains(key) else { continue }
+
+                let clearInteraction = DrugInteraction(
+                    drugA: drugA,
+                    drugB: drugB,
+                    severity: .unknown,
+                    description: "No significant interactions were found between \(drugA) and \(drugB).",
+                    recommendedAction: "Continue monitoring your medications and consult your healthcare provider if you have any questions."
+                )
+
+                InteractionStore.shared.saveInteraction(clearInteraction)
+            }
+        }
+    }
+
+    private func pairKey(_ drugA: String, _ drugB: String) -> String {
+        let a = drugA.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let b = drugB.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return [a, b].sorted().joined(separator: "|")
     }
 }
 

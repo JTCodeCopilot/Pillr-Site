@@ -1190,24 +1190,28 @@ fileprivate struct InteractionPromptCard: View {
         return trimmed.isEmpty ? "this medication" : trimmed
     }
 
-    private var subtitle: String {
-        canCheck
-            ? "See how it combines with your other meds."
-            : "Add at least one more medication to run a check."
+    private var titleText: String {
+        "See how \(displayName) works alongside your other meds."
+    }
+
+    private var subtitle: String? {
+        canCheck ? nil : "Add at least one more medication to run a check."
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Check interactions for \(displayName)")
+                    Text(titleText)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(Color(hex: "#F5F7F4"))
                         .lineLimit(2)
 
-                    Text(subtitle)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color(hex: "#C7C7BD"))
+                    }
                 }
 
                 Spacer()
@@ -1890,7 +1894,13 @@ fileprivate struct MedicationsListMainContent: View {
                             cabinetCount: cabinetMedications.count
                         )
 
-                        if let recentMedication = recentlyAddedMedication {
+                        if userSettings.shouldShowAppleHealthData {
+                            HealthSummaryWidget(manager: healthKitManager)
+                                .environmentObject(userSettings)
+                                .padding(.horizontal, horizontalInset)
+                        }
+
+                        if canCheckInteractions, let recentMedication = recentlyAddedMedication {
                             InteractionPromptCard(
                                 medicationName: recentMedication.name,
                                 canCheck: canCheckInteractions,
@@ -1903,12 +1913,6 @@ fileprivate struct MedicationsListMainContent: View {
                                 onDismiss: { store.lastAddedMedicationID = nil }
                             )
                             .padding(.horizontal, horizontalInset)
-                        }
-
-                        if userSettings.shouldShowAppleHealthData {
-                            HealthSummaryWidget(manager: healthKitManager)
-                                .environmentObject(userSettings)
-                                .padding(.horizontal, horizontalInset)
                         }
 
                         if store.activeMedications.isEmpty {
