@@ -15,6 +15,7 @@ final class CloudKitMedicationSync {
     private enum RecordType: String {
         case medication = "Medication"
         case medicationLog = "MedicationLog"
+        case drugInteraction = "DrugInteraction"
     }
 
     private struct Field {
@@ -64,6 +65,13 @@ final class CloudKitMedicationSync {
         static let medicationDosageText = "medicationDosageText"
         static let medicationIconName = "medicationIconName"
         static let medicationReminderCount = "medicationReminderCount"
+
+        static let interactionDrugA = "drugA"
+        static let interactionDrugB = "drugB"
+        static let interactionSeverity = "severity"
+        static let interactionDescription = "interactionDescription"
+        static let interactionRecommendedAction = "interactionRecommendedAction"
+        static let interactionTimestamp = "timestamp"
     }
 
     // MARK: - Public API
@@ -103,6 +111,25 @@ final class CloudKitMedicationSync {
                 } else {
                     completion?(.success(()))
                 }
+            }
+        }
+    }
+
+    func save(interaction: DrugInteraction, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
+        let record = interactionRecord(from: interaction, isDeleted: false)
+        record[Field.updatedAt] = interaction.timestamp as CKRecordValue
+        saveWithConflictResolution(record: record, completion: completion)
+    }
+
+    func markInteractionDeleted(_ interaction: DrugInteraction, completion: ((Result<Void, Error>) -> Void)? = nil) {
+        let record = interactionRecord(from: interaction, isDeleted: true)
+        record[Field.updatedAt] = Date() as CKRecordValue
+        saveForce(record: record) { result in
+            switch result {
+            case .success:
+                completion?(.success(()))
+            case .failure(let error):
+                completion?(.failure(error))
             }
         }
     }
@@ -176,6 +203,18 @@ final class CloudKitMedicationSync {
                 completion(.failure(error))
             } else {
                 completion(.success((medications: medicationResults, logs: logResults)))
+            }
+        }
+    }
+
+    func fetchInteractions(completion: @escaping (Result<[CloudInteractionRecord], Error>) -> Void) {
+        fetchRecords(of: .drugInteraction) { result in
+            switch result {
+            case let .success(records):
+                let interactions = records.compactMap { self.interaction(from: $0) }
+                completion(.success(interactions))
+            case let .failure(error):
+                completion(.failure(error))
             }
         }
     }
@@ -358,6 +397,19 @@ final class CloudKitMedicationSync {
         return record
     }
 
+    private func interactionRecord(from interaction: DrugInteraction, isDeleted: Bool) -> CKRecord {
+        let recordID = CKRecord.ID(recordName: interaction.id.uuidString)
+        let record = CKRecord(recordType: RecordType.drugInteraction.rawValue, recordID: recordID)
+        record[Field.interactionDrugA] = interaction.drugA as CKRecordValue
+        record[Field.interactionDrugB] = interaction.drugB as CKRecordValue
+        record[Field.interactionSeverity] = interaction.severity.rawValue as CKRecordValue
+        record[Field.interactionDescription] = interaction.description as CKRecordValue
+        record[Field.interactionRecommendedAction] = interaction.recommendedAction as CKRecordValue
+        record[Field.interactionTimestamp] = interaction.timestamp as CKRecordValue
+        record[Field.isDeleted] = NSNumber(value: isDeleted ? 1 : 0)
+        return record
+    }
+
     private func medication(from record: CKRecord) -> Medication? {
         guard let id = UUID(uuidString: record.recordID.recordName),
               let name = record[Field.name] as? String,
@@ -505,6 +557,41 @@ final class CloudKitMedicationSync {
             medicationIconName: medicationIconName,
             medicationReminderCount: medicationReminderCount
         )
+    }
+
+    private func interaction(from record: CKRecord) -> CloudInteractionRecord? {
+        guard let id = UUID(uuidString: record.recordID.recordName),
+              let drugA = record[Field.interactionDrugA] as? String,
+              let drugB = record[Field.interactionDrugB] as? String,
+              let severityRaw = record[Field.interactionSeverity] as? String,
+              let description = record[Field.interactionDescription] as? String,
+              let recommendedAction = record[Field.interactionRecommendedAction] as? String,
+              let timestamp = record[Field.interactionTimestamp] as? Date else {
+            return nil
+        }
+
+        let severity = DrugInteraction.InteractionSeverity(rawValue: severityRaw) ?? .unknown
+        let isDeleted: Bool
+        if let number = record[Field.isDeleted] as? NSNumber {
+            isDeleted = number.boolValue
+        } else if let boolValue = record[Field.isDeleted] as? Bool {
+            isDeleted = boolValue
+        } else {
+            isDeleted = false
+        }
+        let updatedAt = record[Field.updatedAt] as? Date ?? record.modificationDate
+
+        let interaction = DrugInteraction(
+            id: id,
+            drugA: drugA,
+            drugB: drugB,
+            severity: severity,
+            description: description,
+            recommendedAction: recommendedAction,
+            timestamp: timestamp
+        )
+
+        return CloudInteractionRecord(interaction: interaction, isDeleted: isDeleted, updatedAt: updatedAt)
     }
 
     private func saveWithConflictResolution(

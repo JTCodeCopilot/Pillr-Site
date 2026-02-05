@@ -35,16 +35,17 @@ struct SettingsView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        interactionsSection
-                        iCloudSyncSection
-                        notificationPermissionsSection
+                    VStack(alignment: .leading, spacing: 24) {
+                        headerView
                         generalSettingsSection
+                        interactionsSection
+                        notificationPermissionsSection
+                        iCloudSyncSection
                         supportLinksSection
                         Color.clear.frame(height: 20)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 10)
+                    .padding(.top, 16)
                     .padding(.bottom, 70)
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
@@ -91,6 +92,60 @@ struct SettingsView: View {
             refreshNotificationSettings()
             await refreshICloudStatus()
         }
+    }
+
+    private var headerView: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Settings")
+                    .font(.system(size: 36, weight: .bold))
+                    .foregroundColor(Color(hex: "#F5F7F4"))
+
+                Text("Tailor your Pillr experience")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+            }
+
+            Spacer()
+
+            HStack(spacing: 10) {
+                Menu {
+                    Button("Check Interactions") {
+                        handleInteractionSelectionTap()
+                    }
+                    Button("Interaction History") {
+                        handleInteractionHistoryTap()
+                    }
+                } label: {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .frame(width: 46, height: 46)
+                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                .contentShape(Circle())
+                .accessibilityLabel("Interaction shortcuts")
+
+                Button {
+                    openNotificationSettings()
+                } label: {
+                    Image(systemName: "bell.badge.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .frame(width: 46, height: 46)
+                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                .contentShape(Circle())
+                .accessibilityLabel("Notification settings")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 4)
+        .padding(.top, 6)
     }
     
     private var interactionsSection: some View {
@@ -142,6 +197,7 @@ struct SettingsView: View {
                     title: "Change sync preference",
                     subtitle: "Reopen the iCloud choice screen to enable sync again.",
                     accessoryIcon: "icloud",
+                    leadingIcon: "arrow.triangle.2.circlepath",
                     action: {
                         showingCloudSyncChoiceAgain = true
                     }
@@ -241,6 +297,7 @@ struct SettingsView: View {
             settingsActionRow(
                 title: "Manage Notifications",
                 subtitle: "Open the iOS notification settings for Pillr",
+                leadingIcon: "bell.badge.fill",
                 action: openNotificationSettings
             )
         }
@@ -400,11 +457,22 @@ struct SettingsView: View {
         subtitle: String? = nil,
         showChevron: Bool = true,
         accessoryIcon: String? = nil,
+        leadingIcon: String? = nil,
         trailingIcon: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             HStack(alignment: .top, spacing: SettingsMetrics.rowSpacing) {
+                if let leadingIcon {
+                    Image(systemName: leadingIcon)
+                        .font(.system(size: SettingsMetrics.rowIconSize, weight: .semibold))
+                        .frame(width: SettingsMetrics.rowIconFrame, height: SettingsMetrics.rowIconFrame)
+                        .foregroundColor(SettingsPalette.secondaryText)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.white.opacity(0.06))
+                        )
+                }
                 VStack(alignment: .leading, spacing: subtitle == nil ? 0 : 4) {
                     Text(title)
                         .font(.system(size: 16, weight: .medium, design: .rounded))

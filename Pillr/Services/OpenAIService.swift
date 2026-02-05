@@ -547,6 +547,18 @@ struct OpenAIService {
     }
 }
 
+#if DEBUG
+extension OpenAIService {
+    func _test_extractJSON(_ content: String) -> String {
+        extractJSON(from: content)
+    }
+
+    func _test_checkKnownInteractions(_ medications: [String]) -> [DrugInteraction] {
+        checkKnownInteractions(medications: medications)
+    }
+}
+#endif
+
 // MARK: - Data Models
 
 struct OpenAIRequest: Codable {

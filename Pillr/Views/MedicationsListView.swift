@@ -137,13 +137,10 @@ struct MedicationsListView: View {
                     }
                 }
 
-                NavigationLink(
-                    destination: addMedicationDestination,
-                    isActive: $showingAddSheet
-                ) {
-                    EmptyView()
-                }
-                .hidden()
+                EmptyView()
+                    .navigationDestination(isPresented: $showingAddSheet) {
+                        addMedicationDestination
+                    }
             }
             .sheet(item: $showingLogSheetFor) { med in
                 LogMedicationView(medicationToLog: med, onLogAction: presentUndoToast)
@@ -302,7 +299,7 @@ struct MedicationsListView: View {
             .onDisappear {
                 isViewActive = false
             }
-            .onChange(of: scenePhase) { newPhase in
+            .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     refreshReferenceDate(resetBadge: true)
                     Task {
@@ -314,12 +311,12 @@ struct MedicationsListView: View {
             .task {
                 await healthKitManager.refreshAuthorizationState()
             }
-            .onChange(of: addFlowCoordinator.dismissTrigger) { _ in
+            .onChange(of: addFlowCoordinator.dismissTrigger) { _, _ in
                 if showingAddSheet {
                     showingAddSheet = false
                 }
             }
-            .onChange(of: showingAddSheet) { isActive in
+            .onChange(of: showingAddSheet) { _, isActive in
                 addFlowCoordinator.isShowing = isActive
                 addFlowCoordinator.hasUnsavedChanges = isActive ? true : false
             }
@@ -949,7 +946,7 @@ fileprivate func MedicationsListHeader(
 fileprivate struct HealthSummaryWidget: View {
     @ObservedObject var manager: HealthKitManager
     private static var defaultDistanceUnit: HealthDistanceUnit {
-        Locale.current.usesMetricSystem ? .kilometers : .miles
+        Locale.current.measurementSystem == .metric ? .kilometers : .miles
     }
     @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = defaultDistanceUnit.rawValue
 
@@ -1500,7 +1497,7 @@ struct EnhancedScaleButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.92 : 1)
             .opacity(configuration.isPressed ? 0.8 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
-            .onChange(of: configuration.isPressed) { newValue in
+            .onChange(of: configuration.isPressed) { _, newValue in
                 if newValue {
                     HapticManager.shared.pulseButton()
                 }
@@ -1963,7 +1960,7 @@ fileprivate struct MedicationsListMainContent: View {
                 .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                     scrolledOffset = -value
                 }
-                .onChange(of: store.highlightedMedicationID) { target in
+                .onChange(of: store.highlightedMedicationID) { _, target in
                     guard let target else { return }
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
                         proxy.scrollTo(target, anchor: .top)
@@ -1975,7 +1972,7 @@ fileprivate struct MedicationsListMainContent: View {
                         store.highlightedMedicationID = nil
                     }
                 }
-                .onChange(of: store.expandedMedicationID) { expandedID in
+                .onChange(of: store.expandedMedicationID) { _, expandedID in
                     guard let expandedID else { return }
                     // Scroll the expanded card into view so its details are fully visible.
                     DispatchQueue.main.async {
@@ -2555,8 +2552,6 @@ fileprivate struct MedicationRowHeaderView: View {
         let textFont: Font = .system(size: 14)
         let takeStyle = baseTakeButtonColors
         let skipStyle = baseSkipButtonColors
-        let showsOverdueHighlight = false
-        let overdueBorderColor = Color(hex: "#FFA726").opacity(0.32)
 
         return HStack(spacing: 12) {
             if state.status == .taken, let loggedText = state.loggedTimeLabel {
@@ -3184,7 +3179,7 @@ struct MedicationRow: View {
         .onAppear {
             handleNotificationHighlightChange(store.notificationHighlightMedicationID)
         }
-        .onChange(of: store.notificationHighlightMedicationID) { newValue in
+        .onChange(of: store.notificationHighlightMedicationID) { _, newValue in
             handleNotificationHighlightChange(newValue)
         }
         .onDisappear {

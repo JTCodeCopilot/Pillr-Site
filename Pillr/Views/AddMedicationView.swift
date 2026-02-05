@@ -218,7 +218,7 @@ struct AddMedicationView: View {
                         }
                     }
                 }
-                .onChange(of: contentExpansionKey) { _ in
+                .onChange(of: contentExpansionKey) { _, _ in
                     scrollToBottom(using: scrollProxy)
                 }
             }
@@ -235,7 +235,7 @@ struct AddMedicationView: View {
                 }
                 hasInitializedForm = true
             }
-            .onChange(of: currentStep) { newStep in
+            .onChange(of: currentStep) { _, newStep in
                 onProgressStateChange(newStep != .basics)
             }
         .onChange(of: resetTrigger) { _, _ in
@@ -247,7 +247,7 @@ struct AddMedicationView: View {
                 hasInitializedForm = true
             }
         }
-        .onChange(of: userSettings.isPremiumUser) { isPremium in
+        .onChange(of: userSettings.isPremiumUser) { _, isPremium in
             if !isPremium {
                 enableDailyCheckIn = false
                 useCustomDailyCheckInTime = false
@@ -612,7 +612,7 @@ struct AddMedicationView: View {
                                 )
                         )
                     }
-                    .onChange(of: frequency) { newValue in
+                    .onChange(of: frequency) { _, newValue in
                         validateField(.frequency, value: newValue)
                     }
 
@@ -674,7 +674,7 @@ struct AddMedicationView: View {
                                     .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                                     .disabled(!userSettings.isPremiumUser)
                                     .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
-                                    .onChange(of: isOneTimeWithFollowUp) { _ in
+                                    .onChange(of: isOneTimeWithFollowUp) { _, _ in
                                         triggerStrongHaptic()
                                     }
                                     .simultaneousGesture(
@@ -742,7 +742,7 @@ struct AddMedicationView: View {
                                     .padding(.trailing, 12)
                             }
                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                            .onChange(of: enableStimulantPhaseNotifications) { enabled in
+                            .onChange(of: enableStimulantPhaseNotifications) { _, enabled in
                                 if !enabled {
                                     onsetMinutesError = nil
                                     durationMinutesError = nil
@@ -867,7 +867,7 @@ struct AddMedicationView: View {
                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                             .disabled(!userSettings.isPremiumUser)
                             .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
-                            .onChange(of: enableDailyCheckIn) { newValue in
+                            .onChange(of: enableDailyCheckIn) { _, newValue in
                                 guard userSettings.isPremiumUser else {
                                     enableDailyCheckIn = false
                                     useCustomDailyCheckInTime = false
@@ -898,7 +898,7 @@ struct AddMedicationView: View {
                                             .foregroundColor(Color(hex: "#E8E8E0"))
                                     }
                                     .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                                    .onChange(of: useCustomDailyCheckInTime) { _ in
+                                    .onChange(of: useCustomDailyCheckInTime) { _, _ in
                                         triggerStrongHaptic()
                                     }
 
@@ -917,7 +917,7 @@ struct AddMedicationView: View {
                 }
             }
         }
-        .onChange(of: isADHDMedication) { newValue in
+        .onChange(of: isADHDMedication) { _, newValue in
             triggerStrongHaptic()
             if newValue {
                 if medicationType == .other {
@@ -938,7 +938,7 @@ struct AddMedicationView: View {
                 }
             }
         }
-        .onChange(of: medicationType) { newType in
+        .onChange(of: medicationType) { _, newType in
             triggerStrongHaptic()
             if newType != .stimulant {
                 isExtendedRelease = false
@@ -992,7 +992,7 @@ struct AddMedicationView: View {
                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
-                        .onChange(of: enableDailyCheckIn) { newValue in
+                        .onChange(of: enableDailyCheckIn) { _, newValue in
                             guard userSettings.isPremiumUser else {
                                 enableDailyCheckIn = false
                                 useCustomDailyCheckInTime = false
@@ -1056,7 +1056,7 @@ struct AddMedicationView: View {
                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
-                        .onChange(of: trackPillCount) { newValue in
+                        .onChange(of: trackPillCount) { _, newValue in
                             triggerStrongHaptic()
                             if !newValue {
                                 pillCountError = nil
@@ -2201,7 +2201,7 @@ struct AddMedicationView: View {
         let shouldUseCustomCheckInTime = supportsGeneralCheckIn || useCustomDailyCheckInTime
         let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && shouldUseCustomCheckInTime) ? customDailyCheckInTime : nil
 
-        if var medication = medicationToEdit {
+        if let medication = medicationToEdit {
             var updatedMedication = medication
             updatedMedication.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
             updatedMedication.dosage = dosage.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2368,7 +2368,7 @@ struct TimePickerRow: View {
                 .labelsHidden()
                 .colorScheme(.dark)
                 .accentColor(Color(hex: "#C7C7BD"))
-                .onChange(of: time) { _ in
+                .onChange(of: time) { _, _ in
                     HapticManager.shared.pulseRigid()
                 }
         }

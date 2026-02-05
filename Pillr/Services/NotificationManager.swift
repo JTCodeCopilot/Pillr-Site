@@ -1161,9 +1161,20 @@ class NotificationFeedbackManager {
 // This delegate will handle notification responses and trigger appropriate haptics
 
 class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
-    static let shared = NotificationDelegate()
+    static let shared = NotificationDelegate(
+        notificationManager: NotificationManager.shared,
+        medicationStore: MedicationStore.shared
+    )
     
-    private override init() {
+    private let notificationManager: NotificationManagerProtocol
+    private let medicationStore: MedicationStore
+    
+    init(
+        notificationManager: NotificationManagerProtocol,
+        medicationStore: MedicationStore
+    ) {
+        self.notificationManager = notificationManager
+        self.medicationStore = medicationStore
         super.init()
     }
     
@@ -1172,8 +1183,8 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         Task { @MainActor in
             if let medicationIDString = notification.request.content.userInfo["medicationID"] as? String,
                let medicationID = UUID(uuidString: medicationIDString),
-               MedicationStore.shared.findMedication(with: medicationID) == nil {
-                NotificationManager.shared.cancelMedicationNotifications(for: medicationID)
+               medicationStore.findMedication(with: medicationID) == nil {
+                notificationManager.cancelMedicationNotifications(for: medicationID)
                 completionHandler([])
                 return
             }
@@ -1192,7 +1203,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             }
 
             if notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder {
-                MedicationStore.shared.refreshOverdueMedicationIDs(referenceDate: notification.date)
+                medicationStore.refreshOverdueMedicationIDs(referenceDate: notification.date)
             }
 
             // Allow the notification to present with sound, banner, and list
@@ -1204,116 +1215,131 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         Task { @MainActor in
             let userInfo = response.notification.request.content.userInfo
-            if let medicationIDString = userInfo["medicationID"] as? String,
-               let medicationID = UUID(uuidString: medicationIDString),
-               MedicationStore.shared.findMedication(with: medicationID) == nil {
-                NotificationManager.shared.cancelMedicationNotifications(for: medicationID)
-                MedicationStore.shared.checkAndResetBadge()
-                completionHandler()
-                return
-            }
-            
-            // Handle different notification actions
-            switch response.actionIdentifier {
-            case NotificationActionIdentifier.trackNow:
-                // User tapped "Track Now" - log the medication as taken
-                if let medicationIDString = userInfo["medicationID"] as? String,
-                   let medicationID = UUID(uuidString: medicationIDString),
-                   let medication = MedicationStore.shared.findMedication(with: medicationID) {
-                    
-                    let reminderIndex = userInfo["reminderIndex"] as? Int
-                    MedicationStore.shared.logMedicationTaken(
-                        medication: medication,
-                        actualTime: Date(),
-                        notes: nil,
-                        skipped: false,
-                        reminderIndex: reminderIndex
-                    )
-                }
-                self.cancelNotifications(for: response)
-                if let baseUUID = self.baseNotificationUUID(from: response.notification.request.identifier) {
-                    NotificationManager.shared.cancelFollowUpNotifications(for: baseUUID)
-                }
-                MedicationStore.shared.checkAndResetBadge()
-                
-            case NotificationActionIdentifier.remindLater:
-                // User tapped "Remind Later" - schedule a reminder in 30 minutes
-                if let medicationIDString = userInfo["medicationID"] as? String,
-                   let medicationID = UUID(uuidString: medicationIDString) {
-                    
-                // Find the medication
-                if let medication = MedicationStore.shared.findMedication(with: medicationID) {
-                    if let baseUUID = self.baseNotificationUUID(from: response.notification.request.identifier) {
-                        let followUpDate = Calendar.current.date(byAdding: .minute, value: 30, to: response.notification.date) ?? Date()
-                        NotificationManager.shared.cancelFollowUpNotification(for: baseUUID, on: followUpDate)
-                    }
-                        // Schedule a one-time reminder for 30 minutes later
-                        NotificationManager.shared.scheduleOneTimeReminder(for: medication, afterMinutes: 30)
-                        
-                        // Provide light haptic feedback
-                        HapticManager.shared.lightImpact()
-                    }
-                }
-                
-            case NotificationActionIdentifier.dismiss:
-                MedicationStore.shared.checkAndResetBadge()
-                completionHandler()
-                return
-                
-            default:
-                // User tapped the notification itself.
-                if let medicationIDString = userInfo["medicationID"] as? String,
-                   let medicationID = UUID(uuidString: medicationIDString),
-                   let medication = MedicationStore.shared.findMedication(with: medicationID) {
-
-                    if response.notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder {
-                        MedicationStore.shared.highlightedMedicationID = medication.id
-                        MedicationStore.shared.notificationHighlightMedicationID = medication.id
-                        MedicationStore.shared.requestedMainTab = .meds
-                    }
-                    
-                    // If this is a stimulant fade notification with Reflection enabled,
-                    // surface the notes & side-effects logging sheet for this medication.
-                    if let phase = userInfo["phase"] as? String {
-                        if phase == "checkin", medication.enableDailyCheckIn {
-                            MedicationStore.shared.dailyCheckInContext = DailyCheckInContext(
-                                medication: medication,
-                                entrySource: .notification
-                            )
-                        } else if phase == "fade",
-                                  let isDailyCheckIn = userInfo["isDailyCheckIn"] as? Bool,
-                                  isDailyCheckIn,
-                                  let logIDString = userInfo["logID"] as? String,
-                                  let logID = UUID(uuidString: logIDString),
-                                  medication.enableDailyCheckIn {
-                            MedicationStore.shared.dailyCheckInContext = DailyCheckInContext(
-                                medication: medication,
-                                logID: logID,
-                                entrySource: .notification
-                            )
-                        }
-                    }
-                    
-                    MedicationStore.shared.checkAndResetBadge()
-                } else {
-                    MedicationStore.shared.checkAndResetBadge()
-                }
-            }
-            
-            completionHandler()
+            handleNotification(
+                actionIdentifier: response.actionIdentifier,
+                userInfo: userInfo,
+                notificationIdentifier: response.notification.request.identifier,
+                categoryIdentifier: response.notification.request.content.categoryIdentifier,
+                notificationDate: response.notification.date,
+                completionHandler: completionHandler
+            )
         }
     }
 
-    private func cancelNotifications(for response: UNNotificationResponse) {
-        let content = response.notification.request.content
-        if let originalIDString = content.userInfo["originalNotificationID"] as? String,
-           let originalUUID = UUID(uuidString: originalIDString) {
-            NotificationManager.shared.cancelNotification(with: originalUUID)
+    @MainActor
+    private func handleNotification(
+        actionIdentifier: String,
+        userInfo: [AnyHashable: Any],
+        notificationIdentifier: String,
+        categoryIdentifier: String,
+        notificationDate: Date,
+        completionHandler: @escaping () -> Void
+    ) {
+        if let medicationIDString = userInfo["medicationID"] as? String,
+           let medicationID = UUID(uuidString: medicationIDString),
+           medicationStore.findMedication(with: medicationID) == nil {
+            notificationManager.cancelMedicationNotifications(for: medicationID)
+            medicationStore.checkAndResetBadge()
+            completionHandler()
             return
         }
 
-        guard let baseUUID = self.baseNotificationUUID(from: response.notification.request.identifier) else { return }
-        NotificationManager.shared.cancelNotification(with: baseUUID)
+        switch actionIdentifier {
+        case NotificationActionIdentifier.trackNow:
+                if let medicationIDString = userInfo["medicationID"] as? String,
+                   let medicationID = UUID(uuidString: medicationIDString),
+                   let medication = medicationStore.findMedication(with: medicationID) {
+                let reminderIndex = userInfo["reminderIndex"] as? Int
+                medicationStore.logMedicationTaken(
+                    medication: medication,
+                    actualTime: Date(),
+                    notes: nil,
+                    skipped: false,
+                    reminderIndex: reminderIndex
+                )
+            }
+            cancelNotifications(
+                userInfo: userInfo,
+                notificationIdentifier: notificationIdentifier
+            )
+            if let baseUUID = baseNotificationUUID(from: notificationIdentifier) {
+                notificationManager.cancelFollowUpNotifications(for: baseUUID)
+            }
+            medicationStore.checkAndResetBadge()
+
+        case NotificationActionIdentifier.remindLater:
+            if let medicationIDString = userInfo["medicationID"] as? String,
+               let medicationID = UUID(uuidString: medicationIDString) {
+                if let medication = medicationStore.findMedication(with: medicationID) {
+                    if let baseUUID = baseNotificationUUID(from: notificationIdentifier) {
+                        let followUpDate = Calendar.current.date(
+                            byAdding: .minute,
+                            value: 30,
+                            to: notificationDate
+                        ) ?? Date()
+                        notificationManager.cancelFollowUpNotification(for: baseUUID, on: followUpDate)
+                    }
+                    notificationManager.scheduleOneTimeReminder(for: medication, afterMinutes: 30)
+                    HapticManager.shared.lightImpact()
+                }
+            }
+
+        case NotificationActionIdentifier.dismiss:
+            medicationStore.checkAndResetBadge()
+            completionHandler()
+            return
+
+        default:
+            if let medicationIDString = userInfo["medicationID"] as? String,
+               let medicationID = UUID(uuidString: medicationIDString),
+               let medication = medicationStore.findMedication(with: medicationID) {
+                    if categoryIdentifier == NotificationCategoryIdentifier.medicationReminder {
+                        medicationStore.highlightedMedicationID = medication.id
+                        medicationStore.notificationHighlightMedicationID = medication.id
+                        medicationStore.requestedMainTab = .meds
+                    }
+
+                if let phase = userInfo["phase"] as? String {
+                    if phase == "checkin", medication.enableDailyCheckIn {
+                        medicationStore.dailyCheckInContext = DailyCheckInContext(
+                            medication: medication,
+                            entrySource: .notification
+                        )
+                    } else if phase == "fade",
+                              let isDailyCheckIn = userInfo["isDailyCheckIn"] as? Bool,
+                              isDailyCheckIn,
+                              let logIDString = userInfo["logID"] as? String,
+                              let logID = UUID(uuidString: logIDString),
+                              medication.enableDailyCheckIn {
+                        medicationStore.dailyCheckInContext = DailyCheckInContext(
+                            medication: medication,
+                            logID: logID,
+                            entrySource: .notification
+                        )
+                    }
+                }
+
+                medicationStore.checkAndResetBadge()
+            } else {
+                medicationStore.checkAndResetBadge()
+            }
+        }
+
+        completionHandler()
+    }
+
+    private func cancelNotifications(
+        userInfo: [AnyHashable: Any],
+        notificationIdentifier: String
+    ) {
+        if let originalIDString = userInfo["originalNotificationID"] as? String,
+           let originalUUID = UUID(uuidString: originalIDString) {
+            notificationManager.cancelNotification(with: originalUUID)
+            return
+        }
+
+        guard let baseUUID = baseNotificationUUID(from: notificationIdentifier) else { return }
+        notificationManager.cancelNotification(with: baseUUID)
     }
 
     private func baseNotificationUUID(from identifier: String) -> UUID? {
@@ -1323,4 +1349,24 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         }
         return UUID(uuidString: identifier)
     }
-} 
+
+#if DEBUG
+    @MainActor
+    func _test_handleNotification(
+        actionIdentifier: String,
+        userInfo: [AnyHashable: Any],
+        notificationIdentifier: String,
+        categoryIdentifier: String,
+        notificationDate: Date
+    ) {
+        handleNotification(
+            actionIdentifier: actionIdentifier,
+            userInfo: userInfo,
+            notificationIdentifier: notificationIdentifier,
+            categoryIdentifier: categoryIdentifier,
+            notificationDate: notificationDate,
+            completionHandler: {}
+        )
+    }
+#endif
+}

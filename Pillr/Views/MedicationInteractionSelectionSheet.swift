@@ -111,7 +111,7 @@ struct MedicationInteractionSelectionSheet: View {
             PremiumUpgradeView()
                 .environmentObject(storeManager)
         }
-        .onChange(of: showingPremiumUpgrade) { isShowing in
+        .onChange(of: showingPremiumUpgrade) { _, isShowing in
             if !isShowing && OpenAIService.shared.isPremiumUser() {
                 // User just returned from premium upgrade and now has premium
                 // Reset the error state and go back to selection

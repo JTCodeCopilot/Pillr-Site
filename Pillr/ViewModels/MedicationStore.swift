@@ -92,13 +92,14 @@ class MedicationStore: ObservableObject {
     @Published var requestedMainTab: MainTab?
     @Published private(set) var overdueMedicationIDs: Set<UUID> = []
     @Published private(set) var overdueReminderNotificationIDs: Set<String> = []
-    private let notificationManager = NotificationManager.shared
+    private let notificationManager: NotificationManagerProtocol
     private let hapticManager = HapticManager.shared
-    private let cloudSync = CloudKitMedicationSync.shared
+    private let cloudSync: CloudKitMedicationSyncProtocol
     private var dayChangeObserver: NSObjectProtocol?
     private var appActiveObserver: NSObjectProtocol?
     private var cloudSyncPreferenceCancellable: AnyCancellable?
     private var lastCloudSyncPreferenceState: Bool = false
+    private var isPerformingInitialCloudSync = false
     private var lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
     private var pendingCheckIns: [PendingCheckIn] = []
     
@@ -141,8 +142,14 @@ class MedicationStore: ObservableObject {
     }
     #endif
 
-    init(isPreview: Bool = false) {
+    init(
+        isPreview: Bool = false,
+        notificationManager: NotificationManagerProtocol = NotificationManager.shared,
+        cloudSync: CloudKitMedicationSyncProtocol = CloudKitMedicationSync.shared
+    ) {
         self.isPreviewMode = isPreview
+        self.notificationManager = notificationManager
+        self.cloudSync = cloudSync
         if !isPreview {
             if let stored = UserDefaults.standard.stringArray(forKey: deletedMedicationIDsKey) {
                 deletedMedicationIDs = Set(stored.compactMap { UUID(uuidString: $0) })
@@ -1817,7 +1824,7 @@ class MedicationStore: ObservableObject {
         let enabled = shouldUseCloudSync
         if enabled && !lastCloudSyncPreferenceState {
             cloudSync.ensureSubscriptions()
-            fetchCloudData()
+            performInitialCloudSync()
         }
         lastCloudSyncPreferenceState = enabled
     }
@@ -1913,7 +1920,7 @@ class MedicationStore: ObservableObject {
             guard let self else { return }
             switch result {
             case let .success(payload):
-                self.mergeCloudMedications(payload.medications)
+                self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: true)
                 self.mergeCloudLogs(payload.logs)
                 self.lastCloudSyncDate = Date()
                 completion?(.newData)
@@ -1989,6 +1996,10 @@ class MedicationStore: ObservableObject {
     }
 
     private func mergeCloudMedications(_ remote: [Medication]) {
+        mergeCloudMedications(remote, allowSnapshotDeletion: true)
+    }
+
+    private func mergeCloudMedications(_ remote: [Medication], allowSnapshotDeletion: Bool) {
         guard !remote.isEmpty else { return }
         DispatchQueue.main.async {
             var updated = self.medications
@@ -1998,7 +2009,7 @@ class MedicationStore: ObservableObject {
 
             // CloudKit is the source of truth when sync is enabled.
             // Remove any local medications that are missing from the remote snapshot.
-            if self.shouldUseCloudSync {
+            if self.shouldUseCloudSync && allowSnapshotDeletion {
                 let missingLocals = updated.filter { !remoteIDs.contains($0.id) }
                 if !missingLocals.isEmpty {
                     for medication in missingLocals {
@@ -2087,6 +2098,100 @@ class MedicationStore: ObservableObject {
                 self.saveMedications()
                 self.resetBadgeIfNeeded()
             }
+        }
+    }
+
+    private func performInitialCloudSync() {
+        guard shouldUseCloudSync else { return }
+        guard !isPerformingInitialCloudSync else { return }
+        isPerformingInitialCloudSync = true
+        cloudSync.fetchAllRecords { [weak self] result in
+            guard let self else { return }
+            self.isPerformingInitialCloudSync = false
+            switch result {
+            case let .success(payload):
+                if payload.medications.isEmpty && payload.logs.isEmpty {
+                    self.pushAllLocalDataToCloud()
+                    self.lastCloudSyncDate = Date()
+                    return
+                }
+
+                self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: false)
+                self.mergeCloudLogs(payload.logs)
+                self.pushLocalChangesToCloud(remoteMedications: payload.medications, remoteLogs: payload.logs)
+                self.lastCloudSyncDate = Date()
+            case let .failure(error):
+                print("CloudKit fetch failed: \(error)")
+            }
+        }
+    }
+
+    private func pushAllLocalDataToCloud() {
+        guard shouldUseCloudSync else { return }
+        for medication in medications {
+            syncMedicationWithCloud(medication)
+        }
+        for log in logs {
+            syncLogWithCloud(log)
+        }
+
+        let medicationIDs = Set(medications.map { $0.id })
+        let missingDeletedIDs = deletedMedicationIDs.subtracting(medicationIDs)
+        for id in missingDeletedIDs {
+            let tombstone = Medication(
+                id: id,
+                name: "Deleted Medication",
+                dosage: "Deleted",
+                dosageUnit: "",
+                iconName: "pill",
+                createdAt: nil,
+                updatedAt: Date(),
+                frequency: "Once daily",
+                timeToTake: Date(),
+                isDeleted: true
+            )
+            syncMedicationWithCloud(tombstone)
+        }
+    }
+
+    private func pushLocalChangesToCloud(remoteMedications: [Medication], remoteLogs: [MedicationLog]) {
+        guard shouldUseCloudSync else { return }
+        let remoteMedsByID = Dictionary(uniqueKeysWithValues: remoteMedications.map { ($0.id, $0) })
+        for medication in medications {
+            if let remote = remoteMedsByID[medication.id] {
+                if shouldReplace(local: medication, with: remote) {
+                    continue
+                }
+            }
+            syncMedicationWithCloud(medication)
+        }
+
+        let remoteLogsByID = Dictionary(uniqueKeysWithValues: remoteLogs.map { ($0.id, $0) })
+        for log in logs {
+            if let remote = remoteLogsByID[log.id] {
+                if shouldReplace(local: log, with: remote) {
+                    continue
+                }
+            }
+            syncLogWithCloud(log)
+        }
+
+        let remoteIDs = Set(remoteMedications.map { $0.id })
+        let missingDeletedIDs = deletedMedicationIDs.subtracting(remoteIDs)
+        for id in missingDeletedIDs {
+            let tombstone = Medication(
+                id: id,
+                name: "Deleted Medication",
+                dosage: "Deleted",
+                dosageUnit: "",
+                iconName: "pill",
+                createdAt: nil,
+                updatedAt: Date(),
+                frequency: "Once daily",
+                timeToTake: Date(),
+                isDeleted: true
+            )
+            syncMedicationWithCloud(tombstone)
         }
     }
 
@@ -2254,3 +2359,88 @@ class MedicationStore: ObservableObject {
     }
 
 }
+
+#if DEBUG
+extension MedicationStore {
+    func _test_scheduledReminderTime(
+        medication: Medication,
+        reminderIndex: Int?,
+        dayStart: Date,
+        referenceDate: Date
+    ) -> Date {
+        scheduledReminderTime(
+            medication: medication,
+            reminderIndex: reminderIndex,
+            dayStart: dayStart,
+            referenceDate: referenceDate
+        )
+    }
+
+    func _test_scheduledTimeForToday(
+        medication: Medication,
+        actualTime: Date,
+        reminderIndex: Int?
+    ) -> Date? {
+        scheduledTimeForToday(
+            medication: medication,
+            actualTime: actualTime,
+            reminderIndex: reminderIndex
+        )
+    }
+
+    func _test_resolvedTakenReminderIndices(
+        medication: Medication,
+        dayStart: Date,
+        logs: [MedicationLog]
+    ) -> Set<Int> {
+        resolvedTakenReminderIndices(
+            medication: medication,
+            dayStart: dayStart,
+            logs: logs
+        )
+    }
+
+    func _test_inferReminderIndexIfNeeded(
+        medication: Medication,
+        actualTime: Date
+    ) -> Int? {
+        inferReminderIndexIfNeeded(
+            for: medication,
+            actualTime: actualTime
+        )
+    }
+
+    func _test_overdueMedicationIDsSnapshot(referenceDate: Date) -> Set<UUID> {
+        overdueMedicationIDsSnapshot(referenceDate: referenceDate)
+    }
+
+    func _test_overdueReminderCountSnapshot(referenceDate: Date) -> Int {
+        overdueReminderCountSnapshot(referenceDate: referenceDate)
+    }
+
+    func _test_mergeCloudMedications(_ remote: [Medication]) {
+        mergeCloudMedications(remote, allowSnapshotDeletion: true)
+    }
+
+    func _test_mergeCloudLogs(_ remote: [MedicationLog]) {
+        mergeCloudLogs(remote)
+    }
+
+    func _test_shouldReplace(local: Medication, with remote: Medication) -> Bool {
+        shouldReplace(local: local, with: remote)
+    }
+
+    func _test_shouldReplace(local: MedicationLog, with remote: MedicationLog) -> Bool {
+        shouldReplace(local: local, with: remote)
+    }
+
+    func _test_setDeletedMedicationIDs(_ ids: Set<UUID>) {
+        deletedMedicationIDs = ids
+        persistDeletedMedicationIDs()
+    }
+
+    func _test_getDeletedMedicationIDs() -> Set<UUID> {
+        deletedMedicationIDs
+    }
+}
+#endif

@@ -204,12 +204,12 @@ struct MedicationHistoryView: View {
                 }
             )
         }
-        .onChange(of: selectedStartDate) { newValue in
+        .onChange(of: selectedStartDate) { _, newValue in
             if selectedEndDate < newValue {
                 selectedEndDate = newValue
             }
         }
-        .onChange(of: selectedEndDate) { newValue in
+        .onChange(of: selectedEndDate) { _, newValue in
             if newValue < selectedStartDate {
                 selectedStartDate = newValue
             }

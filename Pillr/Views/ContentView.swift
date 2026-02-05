@@ -294,7 +294,7 @@ struct MenuButton: View {
                 pulseAnimation = true
             }
         }
-        .onChange(of: showingPopoutMenu) { newValue in
+        .onChange(of: showingPopoutMenu) { _, newValue in
             if newValue {
                 pulseAnimation = true
             } else {
@@ -462,7 +462,7 @@ struct MenuItemButton: View {
         .offset(y: hasAppeared ? 0 : 15) // Reduced offset distance for faster appearance
         .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed) // Faster button press
         .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(delay), value: hasAppeared) // Faster item appearance
-        .onChange(of: animateItems) { newValue in
+        .onChange(of: animateItems) { _, newValue in
             // Use dispatchqueue to slightly stagger the appearance
             if newValue {
                 DispatchQueue.main.async {
@@ -894,16 +894,20 @@ struct MedicationLogContentView: View {
                 // Share the file
                 let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
                 
-                // Ensure iPad gets a popover
-                if let popoverController = activityVC.popoverPresentationController {
-                    popoverController.sourceView = UIApplication.shared.windows.first?.rootViewController?.view
-                    popoverController.sourceRect = CGRect(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2, width: 0, height: 0)
-                    popoverController.permittedArrowDirections = []
-                }
-                
                 // Present the share sheet
                 if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                    let rootViewController = windowScene.windows.first?.rootViewController {
+                    // Ensure iPad gets a popover
+                    if let popoverController = activityVC.popoverPresentationController {
+                        popoverController.sourceView = rootViewController.view
+                        popoverController.sourceRect = CGRect(
+                            x: UIScreen.main.bounds.width / 2,
+                            y: UIScreen.main.bounds.height / 2,
+                            width: 0,
+                            height: 0
+                        )
+                        popoverController.permittedArrowDirections = []
+                    }
                     
                     // If presented from a sheet, find the correct presenting controller
                     var presentingController = rootViewController

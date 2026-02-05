@@ -357,7 +357,7 @@ struct EditMedicationView: View {
                                                 )
                                         )
                                     }
-                                    .onChange(of: frequency) { newValue in
+                                    .onChange(of: frequency) { _, newValue in
                                         validateField(.frequency, value: newValue)
                                     }
                                     if frequencyHasError {
@@ -400,7 +400,7 @@ struct EditMedicationView: View {
                         }
                         
                         focusAndTimingSection
-                            .onChange(of: isADHDMedication) { newValue in
+                            .onChange(of: isADHDMedication) { _, newValue in
                                 if newValue {
                                     if medicationType == .other {
                                         medicationType = .stimulant
@@ -421,7 +421,7 @@ struct EditMedicationView: View {
                 }
                                 }
                             }
-                            .onChange(of: medicationType) { newType in
+                            .onChange(of: medicationType) { _, newType in
                                 if newType != .stimulant {
                                     isExtendedRelease = false
                                     onsetMinutesString = ""
@@ -465,7 +465,7 @@ struct EditMedicationView: View {
                                                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                         }
                                     }
-                                    .onChange(of: trackPillCount) { isEnabled in
+                                    .onChange(of: trackPillCount) { _, isEnabled in
                                         if !isEnabled {
                                             pillCountError = nil
                                             pillsPerDoseError = nil
@@ -640,7 +640,7 @@ struct EditMedicationView: View {
                         }
                     }
                 }
-                .onChange(of: scrollTargetField) { field in
+                .onChange(of: scrollTargetField) { _, field in
                     if let field = field {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             scrollProxy.scrollTo(field, anchor: .center)
@@ -665,7 +665,7 @@ struct EditMedicationView: View {
                     reminderTimes = []
                 }
             }
-            .onChange(of: userSettings.isPremiumUser) { isPremium in
+            .onChange(of: userSettings.isPremiumUser) { _, isPremium in
                 if !isPremium {
                     enableDailyCheckIn = false
                     useCustomDailyCheckInTime = false
@@ -889,7 +889,7 @@ struct EditMedicationView: View {
                                         .foregroundColor(Color(hex: "#E8E8E0"))
                                 }
                                 .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
-                              .onChange(of: enableStimulantPhaseNotifications) { enabled in
+                              .onChange(of: enableStimulantPhaseNotifications) { _, enabled in
                                   if !enabled {
                                       onsetMinutesString = ""
                                       durationMinutesString = ""
@@ -995,7 +995,7 @@ struct EditMedicationView: View {
                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
-                        .onChange(of: enableDailyCheckIn) { newValue in
+                        .onChange(of: enableDailyCheckIn) { _, newValue in
                             guard userSettings.isPremiumUser else {
                                 enableDailyCheckIn = false
                                 useCustomDailyCheckInTime = false
@@ -1059,7 +1059,7 @@ struct EditMedicationView: View {
                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
-                        .onChange(of: enableDailyCheckIn) { isEnabled in
+                        .onChange(of: enableDailyCheckIn) { _, isEnabled in
                             guard userSettings.isPremiumUser else {
                                 enableDailyCheckIn = false
                                 useCustomDailyCheckInTime = false

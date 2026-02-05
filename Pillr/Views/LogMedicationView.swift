@@ -555,7 +555,7 @@ import UIKit
                 }
                 loadExistingCheckInIfNeeded()
             }
-            .onChange(of: medicationToLog.id) { _ in
+            .onChange(of: medicationToLog.id) { _, _ in
                 selectedDoseIndex = 0
                 remainingPills = medicationToLog.pillCount
                 emotionalTone = nil
@@ -665,14 +665,14 @@ import UIKit
                 )
         )
         .onAppear(perform: updateSummaryItemOrder)
-        .onChange(of: feelingRating) { _ in updateSummaryItemOrder() }
-        .onChange(of: focusRating) { _ in updateSummaryItemOrder() }
-        .onChange(of: emotionalTone) { _ in updateSummaryItemOrder() }
-        .onChange(of: sideEffectSeverity) { _ in updateSummaryItemOrder() }
-        .onChange(of: sideEffectTags) { _ in updateSummaryItemOrder() }
-        .onChange(of: medicationToLog.medicationType) { _ in updateSummaryItemOrder() }
-        .onChange(of: checkInDate) { _ in syncMedicationSelectionIfNeeded() }
-        .onChange(of: selectableMedications.count) { _ in syncMedicationSelectionIfNeeded() }
+        .onChange(of: feelingRating) { _, _ in updateSummaryItemOrder() }
+        .onChange(of: focusRating) { _, _ in updateSummaryItemOrder() }
+        .onChange(of: emotionalTone) { _, _ in updateSummaryItemOrder() }
+        .onChange(of: sideEffectSeverity) { _, _ in updateSummaryItemOrder() }
+        .onChange(of: sideEffectTags) { _, _ in updateSummaryItemOrder() }
+        .onChange(of: medicationToLog.medicationType) { _, _ in updateSummaryItemOrder() }
+        .onChange(of: checkInDate) { _, _ in syncMedicationSelectionIfNeeded() }
+        .onChange(of: selectableMedications.count) { _, _ in syncMedicationSelectionIfNeeded() }
     }
 
     private var medicationSelectionSection: some View {
@@ -813,7 +813,6 @@ import UIKit
 
 
     private var reflectFocusQuestion: some View {
-        let isStimulant = medicationToLog.medicationType == .stimulant
         return ReflectCard {
             Text("How was your focus and clarity today?")
                 .font(.system(size: 16, weight: .semibold))

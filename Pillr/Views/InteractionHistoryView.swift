@@ -81,6 +81,45 @@ struct InteractionHistoryView: View {
                         .font(.system(size: 16, weight: .medium))
                     }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 10) {
+                        Menu {
+                            ForEach(SaveFormat.allCases, id: \.self) { format in
+                                Button {
+                                    saveInteractions(format: format)
+                                } label: {
+                                    Label(format.rawValue, systemImage: format.systemImage)
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                .frame(width: 24, height: 24)
+                        }
+                        .buttonStyle(.plain)
+                        .frame(width: 46, height: 46)
+                        .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                        .contentShape(Circle())
+                        .disabled(filteredInteractions.isEmpty)
+                        .opacity(filteredInteractions.isEmpty ? 0.5 : 1.0)
+                        
+                        Button {
+                            showingClearAlert = true
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                .frame(width: 24, height: 24)
+                        }
+                        .buttonStyle(.plain)
+                        .frame(width: 46, height: 46)
+                        .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                        .contentShape(Circle())
+                        .disabled(filteredInteractions.isEmpty)
+                        .opacity(filteredInteractions.isEmpty ? 0.5 : 1.0)
+                    }
+                }
             }
             .sheet(isPresented: $showingShareSheet) {
                 ShareSheet(activityItems: shareItems)
@@ -105,40 +144,51 @@ struct InteractionHistoryView: View {
     // MARK: - Subviews
     
     private var emptyStateView: some View {
-        VStack(spacing: 24) {
+        VStack {
             Spacer()
-            
-            Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 64))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
-            
-            Text("No Interaction History")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(Color(hex: "#E8E8E0"))
-            
-            Text("Your interaction checks will appear here for easy reference and tracking.")
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .foregroundColor(Color(hex: "#C7C7BD"))
-                .padding(.horizontal, 32)
-            
-            Button(action: {
-                showingMedicationSelectionSheet = true
-            }) {
-                Text("Check Interactions")
-                    .font(.headline)
-                    .foregroundColor(Color(hex: "#404C42"))
+
+            VStack(spacing: 14) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 42))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                
+                Text("No Interaction History")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E8E8E0"))
+                
+                Text("Your interaction checks will appear here for easy reference and tracking.")
+                    .font(.system(size: 14))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
                     .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(Color.pillrAccent)
-                    .cornerRadius(12)
+                
+                Button(action: {
+                    showingMedicationSelectionSheet = true
+                }) {
+                    Text("Check Interactions")
+                        .font(.headline)
+                        .foregroundColor(Color(hex: "#404C42"))
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
+                        .background(Color.pillrAccent)
+                        .cornerRadius(12)
+                }
+                .padding(.top, 10)
             }
-            .padding(.top, 16)
-            
+            .padding(20)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white.opacity(0.04))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 18)
+
             Spacer()
         }
-        .frame(maxWidth: .infinity)
     }
 
     private var headerView: some View {
@@ -331,10 +381,17 @@ struct HistoryInteractionRow: View {
                 }
             }
         }
-        .gyroGlassCardStyle(cornerRadius: 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                )
+        )
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color(hex: interaction.severity.color).opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color(hex: interaction.severity.color).opacity(0.25), lineWidth: 1)
         )
         .animation(.easeInOut(duration: 0.3), value: showingDetails)
     }

@@ -102,7 +102,7 @@ struct MainTabView: View {
                     }
                     .tag(MainTab.more)
             }
-            .onChange(of: selectedTab) { _ in
+            .onChange(of: selectedTab) { _, _ in
                 HapticManager.shared.strongImpact()
             }
             .accentColor(Color.pillrAccent)
@@ -167,12 +167,12 @@ struct MainTabView: View {
             scheduleReviewPromptIfNeeded()
             store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
         }
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             referenceDate = Date()
             store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
         }
-        .onChange(of: store.requestedMainTab) { requested in
+        .onChange(of: store.requestedMainTab) { _, requested in
             guard let requested else { return }
             applySelectedTab(requested)
             DispatchQueue.main.async {
