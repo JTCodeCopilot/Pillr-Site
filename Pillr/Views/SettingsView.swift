@@ -109,15 +109,10 @@ struct SettingsView: View {
             Spacer()
 
             HStack(spacing: 10) {
-                Menu {
-                    Button("Check Interactions") {
-                        handleInteractionSelectionTap()
-                    }
-                    Button("Interaction History") {
-                        handleInteractionHistoryTap()
-                    }
+                Button {
+                    openLink("https://tally.so/r/w2yeXV")
                 } label: {
-                    Image(systemName: "sparkles")
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(Color(hex: "#F5F7F4"))
                         .frame(width: 24, height: 24)
@@ -126,12 +121,12 @@ struct SettingsView: View {
                 .frame(width: 46, height: 46)
                 .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
                 .contentShape(Circle())
-                .accessibilityLabel("Interaction shortcuts")
+                .accessibilityLabel("Feedback")
 
                 Button {
-                    openNotificationSettings()
+                    openLink("https://tally.so/r/3qMdL7")
                 } label: {
-                    Image(systemName: "bell.badge.fill")
+                    Image(systemName: "envelope.fill")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(Color(hex: "#F5F7F4"))
                         .frame(width: 24, height: 24)
@@ -140,7 +135,7 @@ struct SettingsView: View {
                 .frame(width: 46, height: 46)
                 .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
                 .contentShape(Circle())
-                .accessibilityLabel("Notification settings")
+                .accessibilityLabel("Contact us")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

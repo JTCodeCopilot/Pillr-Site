@@ -97,7 +97,7 @@ struct MedicationsListView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                    MedicationsListMainContent(
+                MedicationsListMainContent(
                         store: store,
                         showingAddSheet: $showingAddSheet,
                         scrolledOffset: $scrolledOffset,
@@ -136,11 +136,9 @@ struct MedicationsListView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
-
-                EmptyView()
-                    .navigationDestination(isPresented: $showingAddSheet) {
-                        addMedicationDestination
-                    }
+            }
+            .navigationDestination(isPresented: $showingAddSheet) {
+                addMedicationDestination
             }
             .sheet(item: $showingLogSheetFor) { med in
                 LogMedicationView(medicationToLog: med, onLogAction: presentUndoToast)
