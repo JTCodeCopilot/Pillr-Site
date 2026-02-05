@@ -12,14 +12,30 @@
 		499088612F13272C00E7147A /* TikTokBusinessSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 499088602F13272C00E7147A /* TikTokBusinessSDK */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		49DE6DB02F3477FC004110CF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 496470162DD3F0E9003964BD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4964701D2DD3F0E9003964BD;
+			remoteInfo = Pillr;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		4964701E2DD3F0E9003964BD /* Pillr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pillr.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		49DE6DAC2F3477FC004110CF /* PillrTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PillrTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		496470202DD3F0E9003964BD /* Pillr */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Pillr;
+			sourceTree = "<group>";
+		};
+		49DE6DAD2F3477FC004110CF /* PillrTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PillrTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -35,6 +51,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		49DE6DA92F3477FC004110CF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -42,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				496470202DD3F0E9003964BD /* Pillr */,
+				49DE6DAD2F3477FC004110CF /* PillrTests */,
 				4964701F2DD3F0E9003964BD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -50,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				4964701E2DD3F0E9003964BD /* Pillr.app */,
+				49DE6DAC2F3477FC004110CF /* PillrTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -82,6 +107,29 @@
 			productReference = 4964701E2DD3F0E9003964BD /* Pillr.app */;
 			productType = "com.apple.product-type.application";
 		};
+		49DE6DAB2F3477FC004110CF /* PillrTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 49DE6DB42F3477FC004110CF /* Build configuration list for PBXNativeTarget "PillrTests" */;
+			buildPhases = (
+				49DE6DA82F3477FC004110CF /* Sources */,
+				49DE6DA92F3477FC004110CF /* Frameworks */,
+				49DE6DAA2F3477FC004110CF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				49DE6DB12F3477FC004110CF /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				49DE6DAD2F3477FC004110CF /* PillrTests */,
+			);
+			name = PillrTests;
+			packageProductDependencies = (
+			);
+			productName = PillrTests;
+			productReference = 49DE6DAC2F3477FC004110CF /* PillrTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -89,11 +137,15 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastSwiftUpdateCheck = 1630;
+				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					4964701D2DD3F0E9003964BD = {
 						CreatedOnToolsVersion = 16.3;
+					};
+					49DE6DAB2F3477FC004110CF = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 4964701D2DD3F0E9003964BD;
 					};
 				};
 			};
@@ -117,12 +169,20 @@
 			projectRoot = "";
 			targets = (
 				4964701D2DD3F0E9003964BD /* Pillr */,
+				49DE6DAB2F3477FC004110CF /* PillrTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4964701C2DD3F0E9003964BD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		49DE6DAA2F3477FC004110CF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -139,7 +199,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		49DE6DA82F3477FC004110CF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		49DE6DB12F3477FC004110CF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4964701D2DD3F0E9003964BD /* Pillr */;
+			targetProxy = 49DE6DB02F3477FC004110CF /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		496470272DD3F0EA003964BD /* Debug */ = {
@@ -357,6 +432,50 @@
 			};
 			name = Release;
 		};
+		49DE6DB22F3477FC004110CF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A857RBQBM9;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.PillrTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pillr.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pillr";
+			};
+			name = Debug;
+		};
+		49DE6DB32F3477FC004110CF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A857RBQBM9;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.PillrTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pillr.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pillr";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -374,6 +493,15 @@
 			buildConfigurations = (
 				4964702A2DD3F0EA003964BD /* Debug */,
 				4964702B2DD3F0EA003964BD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		49DE6DB42F3477FC004110CF /* Build configuration list for PBXNativeTarget "PillrTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				49DE6DB22F3477FC004110CF /* Debug */,
+				49DE6DB32F3477FC004110CF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
