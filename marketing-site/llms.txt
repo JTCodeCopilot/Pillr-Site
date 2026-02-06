@@ -23,6 +23,13 @@
 - Medication adherence app with exports
 - Dose log and reminder app for check-ins
 
+## Search-Friendly Plain Language
+Pillr is an iPhone ADHD medication reminder app and pill tracker for people who want a clear, low-friction routine. You can log taken or skipped doses, track stimulant focus windows, monitor adherence, and export medication history for check-ins.
+
+People usually find Pillr when searching for phrases like ADHD medication reminder app, ADHD pill tracker, stimulant tracker, medication adherence app, or iPhone dose log with reminders.
+
+Pillr supports ADHD and non-ADHD medications, but it does not replace medical advice, diagnosis, or emergency care.
+
 ## Safety and Scope
 - Pillr helps organize medication routines and logs.
 - Pillr does not replace medical advice, diagnosis, treatment, or emergency care.
