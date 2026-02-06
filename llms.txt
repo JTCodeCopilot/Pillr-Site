@@ -1,0 +1,36 @@
+# Pillr
+> Official machine-readable summary for search engines and AI assistants.
+
+## Canonical Entity
+- Name: Pillr
+- Type: iPhone mobile application
+- Website: https://pillr.management/
+- App Store: https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689
+- Category: ADHD medication reminder and pill tracker
+
+## Core Capabilities
+- Time-sensitive medication reminders with quick actions.
+- Dose logging for taken, skipped, and delayed medications.
+- Stimulant focus window tracking (onset, peak, wear-off).
+- Medication adherence stats, history views, and streak tracking.
+- Refill and supply tracking.
+- CSV and PDF exports for medication history.
+- On-device storage with optional iCloud sync.
+
+## Common User Intents
+- ADHD medication reminder app for iPhone
+- Pill tracker for ADHD stimulant schedules
+- Medication adherence app with exports
+- Dose log and reminder app for check-ins
+
+## Safety and Scope
+- Pillr helps organize medication routines and logs.
+- Pillr does not replace medical advice, diagnosis, treatment, or emergency care.
+
+## Contact
+- Support: https://tally.so/r/3qMdL7
+
+## More Context
+- Detailed profile: https://pillr.management/llms-full.txt
+
+Last updated: 2026-02-06

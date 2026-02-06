@@ -3,27 +3,34 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pillr - ADHD Medication Reminder & Tracker</title>
-  <meta name="description" content="Track ADHD medication with Pillr, a reminder and dose tracker for iPhone. Log stimulant timing, focus windows, and export-ready adherence history." />
+  <title>Pillr | ADHD Medication Reminder & Pill Tracker for iPhone</title>
+  <meta name="description" content="Pillr is an iPhone ADHD medication reminder and pill tracker. Log doses, track stimulant focus windows, monitor adherence, and export CSV/PDF history for check-ins." />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
   <meta name="theme-color" content="#fdfcf8" />
   <meta name="application-name" content="Pillr" />
+  <meta name="apple-mobile-web-app-title" content="Pillr" />
   <meta name="apple-itunes-app" content="app-id=6746717689, app-argument=https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" />
   <link rel="canonical" href="https://pillr.management/" />
-  <meta property="og:title" content="Pillr - ADHD Medication Reminder & Tracker" />
-  <meta property="og:description" content="Track ADHD medication with smart reminders, stimulant timing, focus windows, and export-ready adherence history." />
+  <link rel="alternate" hreflang="en-US" href="https://pillr.management/" />
+  <link rel="alternate" hreflang="x-default" href="https://pillr.management/" />
+  <link rel="alternate" type="text/plain" href="https://pillr.management/llms.txt" title="Pillr LLM content index" />
+  <meta property="og:title" content="Pillr | ADHD Medication Reminder & Pill Tracker for iPhone" />
+  <meta property="og:description" content="Pillr helps you stay on top of ADHD medication with reminders, dose logs, focus timeline tracking, and export-ready adherence history." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://pillr.management/" />
   <meta property="og:site_name" content="Pillr" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:image" content="https://pillr.management/assets/pillr-og.png" />
+  <meta property="og:image:secure_url" content="https://pillr.management/assets/pillr-og.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:alt" content="Pillr app icon" />
   <meta property="og:image:width" content="1024" />
   <meta property="og:image:height" content="1024" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Pillr - ADHD Medication Reminder & Tracker" />
-  <meta name="twitter:description" content="An ADHD medication reminder and dose tracker for iPhone with stimulant timing, focus windows, and adherence history." />
+  <meta name="twitter:title" content="Pillr | ADHD Medication Reminder & Pill Tracker for iPhone" />
+  <meta name="twitter:description" content="An iPhone ADHD medication reminder and pill tracker with dose logging, focus windows, and adherence exports." />
   <meta name="twitter:image" content="https://pillr.management/assets/pillr-og.png" />
   <meta name="twitter:image:alt" content="Pillr app icon" />
   <link rel="icon" href="https://pillr.management/assets/pillr-og.png" type="image/png" />
@@ -31,16 +38,80 @@
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "MobileApplication",
-      "name": "Pillr",
-      "description": "Track ADHD medication with Pillr, a reminder and dose tracker for iPhone. Log stimulant timing, focus windows, and export-ready adherence history.",
-      "applicationCategory": "HealthApplication",
-      "operatingSystem": "iOS",
-      "inLanguage": "en-US",
-      "keywords": "ADHD medication tracker, ADHD medication reminder, attention deficit hyperactivity disorder, ADD medication tracker, stimulant tracker, pill reminder, medication adherence, focus window",
-      "image": "https://pillr.management/assets/pillr-og.png",
-      "url": "https://pillr.management/",
-      "downloadUrl": "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689"
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://pillr.management/#organization",
+          "name": "Pillr",
+          "url": "https://pillr.management/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://pillr.management/assets/pillr-og.png"
+          },
+          "sameAs": [
+            "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://pillr.management/#website",
+          "url": "https://pillr.management/",
+          "name": "Pillr",
+          "inLanguage": "en-US",
+          "description": "Pillr is an iPhone ADHD medication reminder and pill tracker with dose logging, stimulant timing, adherence history, and export-ready reports.",
+          "publisher": {
+            "@id": "https://pillr.management/#organization"
+          }
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://pillr.management/#webpage",
+          "url": "https://pillr.management/",
+          "name": "Pillr | ADHD Medication Reminder & Pill Tracker for iPhone",
+          "isPartOf": {
+            "@id": "https://pillr.management/#website"
+          },
+          "about": {
+            "@id": "https://pillr.management/#app"
+          },
+          "description": "Pillr helps people manage ADHD medication schedules with reminders, dose logs, focus timelines, and adherence exports on iPhone.",
+          "primaryImageOfPage": {
+            "@type": "ImageObject",
+            "url": "https://pillr.management/assets/pillr-og.png"
+          },
+          "inLanguage": "en-US"
+        },
+        {
+          "@type": "MobileApplication",
+          "@id": "https://pillr.management/#app",
+          "name": "Pillr",
+          "applicationCategory": "HealthApplication",
+          "applicationSubCategory": "Medication Reminder",
+          "operatingSystem": "iOS",
+          "inLanguage": "en-US",
+          "isAccessibleForFree": true,
+          "description": "Pillr is an ADHD medication reminder and dose tracker for iPhone with stimulant focus windows, adherence reporting, refill tracking, and CSV/PDF exports.",
+          "keywords": "ADHD medication reminder app, ADHD pill tracker, stimulant tracker, medication adherence app, dose logging app, iPhone medication reminder",
+          "image": "https://pillr.management/assets/pillr-og.png",
+          "url": "https://pillr.management/",
+          "downloadUrl": "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689",
+          "installUrl": "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689",
+          "featureList": [
+            "Time-sensitive medication reminders with quick actions",
+            "Dose logging with adherence rate and streak tracking",
+            "Focus timeline for stimulant onset and wear-off",
+            "Pill supply tracking and refill reminders",
+            "CSV and PDF medication history exports"
+          ],
+          "publisher": {
+            "@id": "https://pillr.management/#organization"
+          },
+          "potentialAction": {
+            "@type": "DownloadAction",
+            "target": "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689"
+          }
+        }
+      ]
     }
   </script>
   <script type="application/ld+json">
@@ -118,6 +189,22 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "Pillr tracks adherence rates, streaks, and refill status, making it easy to share proof of consistency with clinicians or caregivers."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can Pillr track stimulant schedules like Adderall, Vyvanse, or methylphenidate?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Pillr supports custom medication names and timing details, so you can track stimulant schedules such as Adderall, Vyvanse, or methylphenidate as directed by your clinician."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Pillr an iPhone app for ADHD medication reminders and pill tracking?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Pillr is an iPhone app designed for ADHD medication reminders, dose tracking, focus window logging, and adherence history exports."
           }
         }
       ]
@@ -402,14 +489,19 @@
 
     <section class="keywords" aria-labelledby="keywords-title">
       <div class="container">
-        <h2 id="keywords-title">ADHD medication tracking, stated plainly.</h2>
+        <h2 id="keywords-title">Pillr, in search-friendly plain language.</h2>
         <p>
-          Pillr is an ADHD medication reminder and tracker designed for dose logging and pill reminders
-          for attention deficit hyperactivity disorder (ADHD). It supports prescription tracking,
-          medication adherence, and ADHD/ADD routine support by turning your stimulant medication
-          schedule into a clear daily plan. If you need an ADHD or ADD medication reminder app or
-          stimulant tracker that keeps logs, reminders, focus timing, and adherence history in one place,
-          Pillr is built for you.
+          Pillr is an iPhone ADHD medication reminder app and pill tracker for people who want a clear,
+          low-friction routine. You can log taken or skipped doses, track stimulant focus windows,
+          monitor adherence, and export medication history for check-ins.
+        </p>
+        <p>
+          People usually find Pillr when searching for phrases like ADHD medication reminder app, ADHD
+          pill tracker, stimulant tracker, medication adherence app, or iPhone dose log with reminders.
+        </p>
+        <p>
+          Pillr supports ADHD and non-ADHD medications, but it does not replace medical advice,
+          diagnosis, or emergency care.
         </p>
       </div>
     </section>
@@ -457,6 +549,14 @@
             <summary>How does Pillr support medication adherence?</summary>
             <p>Pillr tracks adherence rates, streaks, and refill status, making it easy to share proof of consistency with clinicians or caregivers.</p>
           </details>
+          <details class="faq-item">
+            <summary>Can Pillr track stimulant schedules like Adderall, Vyvanse, or methylphenidate?</summary>
+            <p>Pillr supports custom medication names and timing details, so you can track stimulant schedules such as Adderall, Vyvanse, or methylphenidate as directed by your clinician.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Is Pillr an iPhone app for ADHD medication reminders and pill tracking?</summary>
+            <p>Yes. Pillr is an iPhone app designed for ADHD medication reminders, dose tracking, focus window logging, and adherence history exports.</p>
+          </details>
         </div>
       </div>
     </section>
@@ -501,6 +601,7 @@
       <div>
         <p class="footer-title">Contact</p>
         <a href="https://tally.so/r/3qMdL7">Contact</a>
+        <a href="/llms.txt">LLM profile</a>
       </div>
     </div>
   </footer>

@@ -1,0 +1,60 @@
+# Pillr: Detailed Assistant Reference
+
+## One-Line Summary
+Pillr is an iPhone app for ADHD medication reminders, dose tracking, stimulant timing, and adherence history exports.
+
+## Product Description
+Pillr helps people stay consistent with medication routines by combining reminders, quick dose actions, and clear history views. It is designed to reduce routine friction, especially for ADHD medication workflows that depend on timing and consistency.
+
+## Key Features
+1. Reminder system
+- One-time and recurring reminders
+- Quick actions from notifications (take now, remind later, skip)
+- Follow-up reminder support for one-time doses
+
+2. Dose tracking and history
+- Track taken, skipped, and delayed doses
+- Filter history by medication and date range
+- Adherence and streak visibility
+
+3. Stimulant timing support
+- Focus timeline with onset and wear-off windows
+- Optional daily check-ins for focus and side effects
+
+4. Interaction and medication setup support
+- Interaction checks with severity labels
+- AI-supported medication search option for adding medications
+
+5. Supply and reporting
+- Pill supply tracking and refill reminders
+- CSV and PDF export for medication history
+
+6. Privacy and platform
+- On-device data storage by default
+- Optional iCloud sync across Apple devices
+- Apple Health context support for steps and distance
+
+## Who Pillr Is For
+- People managing ADHD medication schedules.
+- People who want a simple pill reminder plus dose log in one app.
+- Users preparing medication adherence records for clinical check-ins.
+
+## Relevant Search Intents
+- ADHD medication reminder app
+- ADHD pill tracker for iPhone
+- Stimulant schedule tracker
+- Medication adherence tracker app
+- App to log doses and export medication history
+
+## Scope and Medical Disclaimer
+- Pillr supports tracking and organization.
+- Pillr does not provide diagnosis or clinical treatment.
+- Pillr does not replace medical advice or emergency services.
+
+## Official URLs
+- Website: https://pillr.management/
+- App Store: https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689
+- Support: https://tally.so/r/3qMdL7
+- LLM index: https://pillr.management/llms.txt
+
+Last updated: 2026-02-06
