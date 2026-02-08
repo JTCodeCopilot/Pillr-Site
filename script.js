@@ -1,3 +1,60 @@
+const TRACKING_QUERY_PARAMS = [
+  "ref",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "gclid",
+  "fbclid",
+  "mc_cid",
+  "mc_eid",
+];
+
+const normalizeCanonicalUrl = () => {
+  const current = new URL(window.location.href);
+  let changed = false;
+
+  if (current.protocol !== "https:") {
+    current.protocol = "https:";
+    changed = true;
+  }
+
+  if (current.hostname === "www.pillr.management") {
+    current.hostname = "pillr.management";
+    changed = true;
+  }
+
+  if (current.pathname === "/index.html") {
+    current.pathname = "/";
+    changed = true;
+  }
+
+  TRACKING_QUERY_PARAMS.forEach((param) => {
+    if (current.searchParams.has(param)) {
+      current.searchParams.delete(param);
+      changed = true;
+    }
+  });
+
+  if (!changed) return;
+
+  const destination = `${current.origin}${current.pathname}${current.search}${current.hash}`;
+  const isProtocolOrHostChange =
+    current.protocol !== window.location.protocol ||
+    current.host !== window.location.host ||
+    current.pathname !== window.location.pathname;
+
+  if (isProtocolOrHostChange) {
+    window.location.replace(destination);
+    return;
+  }
+
+  window.history.replaceState({}, "", destination);
+};
+
+normalizeCanonicalUrl();
+
 const reveals = document.querySelectorAll(".reveal");
 
 const observer = new IntersectionObserver(
