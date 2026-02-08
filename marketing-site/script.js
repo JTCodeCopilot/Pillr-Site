@@ -1,16 +1,18 @@
 const reveals = document.querySelectorAll(".reveal");
 
 const observer = new IntersectionObserver(
-  (entries, observerInstance) => {
+  (entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         entry.target.classList.add("is-visible");
-        observerInstance.unobserve(entry.target);
+      } else {
+        entry.target.classList.remove("is-visible");
       }
     });
   },
   {
-    threshold: 0.2,
+    threshold: 0.18,
+    rootMargin: "0px 0px -8% 0px",
   }
 );
 
