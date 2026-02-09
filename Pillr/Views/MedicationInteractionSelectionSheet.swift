@@ -150,8 +150,8 @@ struct MedicationInteractionSelectionSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             if hasCompletedCheck {
                 // Results header
-                VStack(spacing: 8) {
-                    if let interactions = foundInteractions {
+                if let interactions = foundInteractions {
+                    VStack(spacing: 8) {
                         if interactions.isEmpty {
                             HStack(spacing: 12) {
                                 Image(systemName: "checkmark.shield.fill")
@@ -194,36 +194,17 @@ struct MedicationInteractionSelectionSheet: View {
                                 Spacer()
                             }
                         }
-                    } else if let error = interactionCheckError {
-                        HStack(spacing: 12) {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(.red)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Check Failed")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(Color(hex: "#F5F7F4"))
-                                
-                                Text(error)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
-                                    .lineLimit(2)
-                            }
-                            
-                            Spacer()
-                        }
                     }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.white.opacity(0.04))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                            )
+                    )
                 }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.white.opacity(0.04))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                        )
-                )
             } else {
                 // Selection header
                 VStack(alignment: .leading, spacing: 4) {

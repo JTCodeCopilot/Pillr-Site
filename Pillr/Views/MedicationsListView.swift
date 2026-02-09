@@ -1554,15 +1554,8 @@ fileprivate struct MedicationCabinetSheet: View {
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(hex: "#404C42"),
-                        Color(hex: "#3A443D")
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                Color(hex: "#404C42")
+                    .ignoresSafeArea()
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
@@ -1584,16 +1577,18 @@ fileprivate struct MedicationCabinetSheet: View {
                                 }
                                 .frame(maxWidth: .infinity, alignment: .center)
                             }
-                            .padding()
+                            .padding(18)
                             .frame(maxWidth: .infinity)
                             .background(
-                                RoundedRectangle(cornerRadius: 18)
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .fill(Color(hex: "#5B695D"))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 18)
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                                             .stroke(Color.white.opacity(0.08), lineWidth: 1)
                                     )
                             )
+                            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
                         } else {
                             if !asNeededMedications.isEmpty {
                                 cabinetSection(title: "As needed", medications: asNeededMedications)
@@ -1748,7 +1743,7 @@ fileprivate struct CabinetMedicationRow: View {
                     .foregroundColor(Color(hex: "#C7C7BD"))
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Button(action: onLogTap) {
                     HStack(spacing: 6) {
                         Text("Log dose")
@@ -1770,15 +1765,15 @@ fileprivate struct CabinetMedicationRow: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color(hex: "#4C584F"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
+        .padding(14)
+        .background(Color(hex: "#5B695D").opacity(0.92))
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
         )
+        .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
+        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
         .contentShape(Rectangle())
         .onTapGesture {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -1792,13 +1787,13 @@ fileprivate struct CabinetMedicationRow: View {
                 }
             }) {
                 Image(systemName: showDetails ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.65))
-                    .frame(width: 34, height: 34)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.55))
+                    .frame(width: 28, height: 28)
             }
             .buttonStyle(.plain)
-            .padding(.top, 12)
-            .padding(.trailing, 12)
+            .padding(.top, 8)
+            .padding(.trailing, 8)
         }
         .contextMenu {
             Button {

@@ -164,7 +164,7 @@ struct OpenAIService {
                     try await Task.sleep(nanoseconds: UInt64(attempt * 1_000_000_000)) // Wait 1-3 seconds
                     return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
                 }
-                return createFallbackInteraction(for: medications)
+                throw OpenAIError.serviceUnavailable
             }
             
             // Clean and extract JSON from the response
@@ -174,7 +174,7 @@ struct OpenAIService {
                 if attempt < maxAttempts {
                     return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
                 }
-                return createFallbackInteraction(for: medications)
+                throw OpenAIError.serviceUnavailable
             }
             
             // Try to decode the interactions
@@ -200,9 +200,7 @@ struct OpenAIService {
                 if attempt < maxAttempts {
                     return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
                 }
-                
-                // Final fallback - check known interactions
-                return createFallbackInteraction(for: medications)
+                throw OpenAIError.serviceUnavailable
             }
             
         } catch AIProxyError.unsuccessfulRequest(let statusCode, let responseBody) {
@@ -213,9 +211,8 @@ struct OpenAIService {
                 try await Task.sleep(nanoseconds: UInt64(attempt * 2_000_000_000)) // Wait 2-6 seconds
                 return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
             }
-            
-            // For other errors, use fallback
-            return createFallbackInteraction(for: medications)
+
+            throw OpenAIError.serviceUnavailable
         } catch {
             print("Network error on attempt \(attempt): \(error)")
             
@@ -224,9 +221,8 @@ struct OpenAIService {
                 try await Task.sleep(nanoseconds: UInt64(attempt * 1_000_000_000))
                 return try await performRequestWithRetry(medications: medications, prompt: prompt, attempt: attempt + 1)
             }
-            
-            // Final fallback - check known interactions
-            return createFallbackInteraction(for: medications)
+
+            throw OpenAIError.serviceUnavailable
         }
     }
     
@@ -390,18 +386,6 @@ struct OpenAIService {
         
         // If no array or object brackets found, return the cleaned content
         return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    
-    private func createFallbackInteraction(for medications: [String]) -> [DrugInteraction] {
-        // Check for known interactions first
-        let knownInteractions = checkKnownInteractions(medications: medications)
-        if !knownInteractions.isEmpty {
-            return knownInteractions
-        }
-        
-        // If no known interactions and we have multiple medications, return empty array
-        // This indicates no interactions found rather than an error
-        return []
     }
     
     private func checkKnownInteractions(medications: [String]) -> [DrugInteraction] {
@@ -610,6 +594,7 @@ struct OpenAIFocusTimingGuidanceResponse: Codable {
 
 enum OpenAIError: LocalizedError {
     case premiumRequired
+    case serviceUnavailable
     case invalidAPIKey
     case insufficientMedications
     case invalidURL
@@ -625,6 +610,8 @@ enum OpenAIError: LocalizedError {
         switch self {
         case .premiumRequired:
             return "Premium subscription required to access AI-powered interaction checking."
+        case .serviceUnavailable:
+            return "Interaction check is temporarily unavailable. We couldn't verify medication safety right now. Please try again shortly."
         case .invalidAPIKey:
             return "Service temporarily unavailable. Please try again later."
         case .insufficientMedications:
