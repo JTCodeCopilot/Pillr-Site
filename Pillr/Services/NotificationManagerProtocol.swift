@@ -12,7 +12,13 @@ protocol NotificationManagerProtocol: AnyObject {
 
     func scheduleNotification(for medication: Medication) -> UUID?
     func scheduleMultipleNotifications(for medication: Medication) -> [UUID]
-    func scheduleOneTimeReminder(for medication: Medication, afterMinutes: Int)
+    func scheduleOneTimeReminder(
+        for medication: Medication,
+        afterMinutes: Int,
+        sourceNotificationBaseID: UUID?,
+        reminderIndex: Int?,
+        scheduledDoseDate: Date?
+    )
     func scheduleStimulantPhaseNotifications(for medication: Medication, doseTime: Date, logID: UUID)
     func scheduleDailyCheckInReminder(for medication: Medication, referenceDate: Date)
 
@@ -41,6 +47,7 @@ protocol NotificationManagerProtocol: AnyObject {
     )
 
     func setApplicationBadge(count: Int)
+    func fetchPendingMedicationReminders(completion: @escaping ([UNNotificationRequest]) -> Void)
     func fetchDeliveredMedicationReminders(completion: @escaping ([UNNotification]) -> Void)
     func clearDeliveredMedicationReminders()
     func purgeNotifications(excluding validMedicationIDs: Set<UUID>)
@@ -51,5 +58,15 @@ extension NotificationManager: NotificationManagerProtocol {}
 extension NotificationManagerProtocol {
     func requestAuthorizationIfNeeded() {
         requestAuthorizationIfNeeded(completion: nil)
+    }
+
+    func scheduleOneTimeReminder(for medication: Medication, afterMinutes: Int) {
+        scheduleOneTimeReminder(
+            for: medication,
+            afterMinutes: afterMinutes,
+            sourceNotificationBaseID: nil,
+            reminderIndex: nil,
+            scheduledDoseDate: nil
+        )
     }
 }

@@ -50,6 +50,7 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
         // Update badge when app becomes active
         Task { @MainActor in
             MedicationStore.shared.checkAndResetBadge()
+            MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
             NotificationManager.shared.surfaceDeliveredStimulantCheckInsIfNeeded()
             incrementAppLaunchCountIfNeeded()
         }
@@ -60,6 +61,7 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
         Task { @MainActor in
             MedicationStore.shared.refreshCloudSyncIfNeeded()
             MedicationStore.shared.loadMedications()
+            MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
         }
     }
 
@@ -75,6 +77,7 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
                     return
                 }
                 MedicationStore.shared.refreshCloudSyncIfNeeded { fetchResult in
+                    MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
                     completionHandler(fetchResult == .failed ? .failed : .newData)
                 }
             }
@@ -122,6 +125,7 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
             let semaphore = DispatchSemaphore(value: 0)
             Task { @MainActor in
                 MedicationStore.shared.refreshCloudSyncIfNeeded { _ in
+                    MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
                     semaphore.signal()
                 }
             }

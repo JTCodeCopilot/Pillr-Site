@@ -300,6 +300,60 @@ struct MedicationStoreTests {
     }
 
     @Test
+    func reconcileNotificationSchedulesRepairsMissingPendingReminder() async throws {
+        clearPillrUserDefaults()
+        let notificationManager = FakeNotificationManager()
+        let cloudSync = FakeCloudKitSync()
+        let store = MedicationStore(
+            isPreview: true,
+            notificationManager: notificationManager,
+            cloudSync: cloudSync
+        )
+
+        let referenceDate = makeDate(year: 2025, month: 2, day: 10, hour: 7, minute: 0)
+        let reminderTime = makeDate(year: 2025, month: 2, day: 10, hour: 8, minute: 0)
+        let baseID = UUID()
+        let med = Medication(
+            name: "Repair Med",
+            dosage: "10",
+            dosageUnit: "mg",
+            iconName: "pill",
+            createdAt: reminderTime,
+            updatedAt: reminderTime,
+            frequency: "Once daily",
+            medicationType: .other,
+            isExtendedRelease: false,
+            onsetMinutes: nil,
+            durationMinutes: nil,
+            effectsGoneMinutes: nil,
+            enableDailyCheckIn: false,
+            enableStimulantPhaseNotifications: false,
+            dailyCheckInTime: nil,
+            timeToTake: reminderTime,
+            reminderTimes: [reminderTime],
+            notes: nil,
+            notificationID: nil,
+            notificationIDs: [baseID],
+            pillCount: nil,
+            pillsPerDose: 1,
+            refillThreshold: nil,
+            isSkipped: false,
+            isOneTimeWithFollowUp: false,
+            isDeleted: false,
+            logReferenceID: nil,
+            logEntryID: nil,
+            cloudLastModified: nil
+        )
+        store.medications = [med]
+
+        store._test_reconcileNotificationSchedules(withPendingRequests: [], referenceDate: referenceDate)
+
+        #expect(notificationManager.rescheduledOccurrences.count == 1)
+        #expect(notificationManager.rescheduledOccurrences.first?.2 == baseID)
+        #expect(notificationManager.rescheduledOccurrences.first?.3 == 0)
+    }
+
+    @Test
     func logMedicationTakenPreventsDuplicateSingleDoseLogs() async throws {
         clearPillrUserDefaults()
         let store = MedicationStore(isPreview: true)

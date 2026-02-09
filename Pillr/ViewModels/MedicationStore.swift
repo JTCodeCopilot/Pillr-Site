@@ -123,6 +123,14 @@ class MedicationStore: ObservableObject {
     private let deletedMedicationIDsKey = "deletedMedicationIDs"
     private var deletedMedicationIDs: Set<UUID> = []
     private let isPreviewMode: Bool
+    private static let reminderIdentifierDayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyyMMdd"
+        return formatter
+    }()
 
     private var shouldUseCloudSync: Bool {
         !isPreviewMode && UserSettings.shared.shouldUseCloudSync
@@ -653,16 +661,7 @@ class MedicationStore: ObservableObject {
     
     // Helper method to update badge count based on overdue medication reminders
     public func resetBadgeIfNeeded() {
-        let referenceDate = Date()
-        if !overdueReminderNotificationIDs.isEmpty {
-            notificationManager.setApplicationBadge(count: overdueReminderNotificationIDs.count)
-            updateOverdueMedicationIDs(overdueMedicationIDs)
-            return
-        }
-        let overdueIDs = overdueMedicationIDsSnapshot(referenceDate: referenceDate)
-        updateOverdueMedicationIDs(overdueIDs)
-        let overdueCount = overdueReminderCountSnapshot(referenceDate: referenceDate)
-        notificationManager.setApplicationBadge(count: overdueCount)
+        recomputeOverdueStateFromSnapshots(referenceDate: Date())
     }
     
     // Public method that can be called from app delegate/scene
@@ -683,7 +682,15 @@ class MedicationStore: ObservableObject {
     }
 
     func refreshOverdueMedicationIDs(referenceDate: Date = Date()) {
-        refreshOverdueFromDeliveredNotifications(referenceDate: referenceDate)
+        recomputeOverdueStateFromSnapshots(referenceDate: referenceDate)
+    }
+
+    private func recomputeOverdueStateFromSnapshots(referenceDate: Date) {
+        let overdueIDs = overdueMedicationIDsSnapshot(referenceDate: referenceDate)
+        let overdueCount = overdueReminderCountSnapshot(referenceDate: referenceDate)
+        overdueReminderNotificationIDs = []
+        updateOverdueMedicationIDs(overdueIDs)
+        notificationManager.setApplicationBadge(count: overdueCount)
     }
 
     private func overdueMedicationIDsSnapshot(referenceDate: Date) -> Set<UUID> {
@@ -981,11 +988,11 @@ class MedicationStore: ObservableObject {
         let calendar = Calendar.current
         let anchoredTimes: [(index: Int, time: Date)] = medication.reminderTimes.enumerated().compactMap { index, reminder in
             let components = calendar.dateComponents([.hour, .minute], from: reminder)
-            guard let time = calendar.date(
-                bySettingHour: components.hour ?? 8,
+            guard let time = localTimeOnDay(
+                calendar: calendar,
+                hour: components.hour ?? 8,
                 minute: components.minute ?? 0,
-                second: 0,
-                of: dayStart
+                dayStart: dayStart
             ) else {
                 return nil
             }
@@ -1031,11 +1038,11 @@ class MedicationStore: ObservableObject {
         }
 
         let components = calendar.dateComponents([.hour, .minute], from: reminderTime)
-        var scheduled = calendar.date(
-            bySettingHour: components.hour ?? 8,
+        var scheduled = localTimeOnDay(
+            calendar: calendar,
+            hour: components.hour ?? 8,
             minute: components.minute ?? 0,
-            second: 0,
-            of: dayStart
+            dayStart: dayStart
         ) ?? reminderTime
 
         if let creationDate = medication.createdAt,
@@ -1045,6 +1052,29 @@ class MedicationStore: ObservableObject {
         }
 
         return scheduled
+    }
+
+    private func localTimeOnDay(
+        calendar: Calendar,
+        hour: Int,
+        minute: Int,
+        dayStart: Date
+    ) -> Date? {
+        if let exact = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: dayStart) {
+            return exact
+        }
+
+        guard let next = calendar.nextDate(
+            after: dayStart,
+            matching: DateComponents(hour: hour, minute: minute, second: 0),
+            matchingPolicy: .nextTime,
+            repeatedTimePolicy: .first,
+            direction: .forward
+        ), calendar.isDate(next, inSameDayAs: dayStart) else {
+            return nil
+        }
+
+        return next
     }
 
     private func scheduleDailyCheckInReminders(referenceDate: Date) {
@@ -1372,12 +1402,18 @@ class MedicationStore: ObservableObject {
             preservingIdentifiers: identifiersToKeep
         )
 
-        // Update application badge based on overdue medications
-        resetBadgeIfNeeded()
+        // Recompute overdue state from source-of-truth logs immediately.
+        // This prevents stale delivered-reminder cache from keeping a medication
+        // marked as overdue right after it was logged from a notification action.
+        synchronizeOverdueStateAfterDoseLog(referenceDate: actualTime)
 
         if isDailyCheckIn {
             notificationManager.cancelDailyCheckInNotification(for: medication.id, on: actualTime)
         }
+    }
+
+    private func synchronizeOverdueStateAfterDoseLog(referenceDate: Date) {
+        recomputeOverdueStateFromSnapshots(referenceDate: referenceDate)
     }
 
     private func inferReminderIndexIfNeeded(
@@ -1391,11 +1427,11 @@ class MedicationStore: ObservableObject {
 
         let todaysTimes: [(index: Int, time: Date)] = medication.reminderTimes.enumerated().compactMap { index, reminder in
             let components = calendar.dateComponents([.hour, .minute], from: reminder)
-            guard let date = calendar.date(
-                bySettingHour: components.hour ?? 8,
+            guard let date = localTimeOnDay(
+                calendar: calendar,
+                hour: components.hour ?? 8,
                 minute: components.minute ?? 0,
-                second: 0,
-                of: dayStart
+                dayStart: dayStart
             ) else {
                 return nil
             }
@@ -1443,11 +1479,11 @@ class MedicationStore: ObservableObject {
         if !medication.reminderTimes.isEmpty {
             let baseTimes: [Date] = medication.reminderTimes.compactMap { raw in
                 let components = calendar.dateComponents([.hour, .minute], from: raw)
-                return calendar.date(
-                    bySettingHour: components.hour ?? 8,
+                return localTimeOnDay(
+                    calendar: calendar,
+                    hour: components.hour ?? 8,
                     minute: components.minute ?? 0,
-                    second: 0,
-                    of: dayStart
+                    dayStart: dayStart
                 )
             }
 
@@ -1466,11 +1502,11 @@ class MedicationStore: ObservableObject {
         } else {
             // Legacy single-time medications: anchor timeToTake to today
             let components = calendar.dateComponents([.hour, .minute], from: medication.timeToTake)
-            return calendar.date(
-                bySettingHour: components.hour ?? 8,
+            return localTimeOnDay(
+                calendar: calendar,
+                hour: components.hour ?? 8,
                 minute: components.minute ?? 0,
-                second: 0,
-                of: dayStart
+                dayStart: dayStart
             )
         }
     }
@@ -1532,11 +1568,11 @@ class MedicationStore: ObservableObject {
             let components = calendar.dateComponents([.hour, .minute], from: customCheckInTime)
             guard let hour = components.hour,
                   let minute = components.minute,
-                  let triggerDate = calendar.date(
-                    bySettingHour: hour,
+                  let triggerDate = localTimeOnDay(
+                    calendar: calendar,
+                    hour: hour,
                     minute: minute,
-                    second: 0,
-                    of: dayStart
+                    dayStart: dayStart
                   ) else {
                 return nil
             }
@@ -1576,11 +1612,11 @@ class MedicationStore: ObservableObject {
         }
 
         guard shouldUseDefaultDailyCheckInTime(for: medication),
-              let triggerDate = calendar.date(
-                bySettingHour: 19,
+              let triggerDate = localTimeOnDay(
+                calendar: calendar,
+                hour: 19,
                 minute: 0,
-                second: 0,
-                of: dayStart
+                dayStart: dayStart
               ) else {
             return nil
         }
@@ -1735,6 +1771,7 @@ class MedicationStore: ObservableObject {
                 // Update badge on app launch if needed
                 resetBadgeIfNeeded()
                 refreshOverdueMedicationIDs(referenceDate: Date())
+                reconcileNotificationSchedules(referenceDate: Date())
                 
                 return
             }
@@ -1764,6 +1801,7 @@ class MedicationStore: ObservableObject {
             lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
             resetBadgeIfNeeded()
             refreshOverdueMedicationIDs(referenceDate: Date())
+            reconcileNotificationSchedules(referenceDate: Date())
             return
         }
         self.medications = []
@@ -1800,7 +1838,9 @@ class MedicationStore: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.performDailyResetIfNeeded()
+            Task { @MainActor in
+                self?.performDailyResetIfNeeded()
+            }
         }
 
         appActiveObserver = NotificationCenter.default.addObserver(
@@ -1808,7 +1848,10 @@ class MedicationStore: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.performDailyResetIfNeeded()
+            Task { @MainActor in
+                self?.performDailyResetIfNeeded()
+                self?.reconcileNotificationSchedules(referenceDate: Date())
+            }
         }
     }
 
@@ -1901,6 +1944,96 @@ class MedicationStore: ObservableObject {
         }
 
         return updatedMedication
+    }
+
+    func reconcileNotificationSchedules(referenceDate: Date = Date()) {
+        guard !isPreviewMode else { return }
+        let active = activeMedications.filter { $0.hasActiveReminder }
+        guard !active.isEmpty else { return }
+
+        notificationManager.fetchPendingMedicationReminders { [weak self] requests in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                self.reconcileNotificationSchedules(
+                    withPendingRequests: requests,
+                    referenceDate: referenceDate
+                )
+            }
+        }
+    }
+
+    private func reconcileNotificationSchedules(
+        withPendingRequests requests: [UNNotificationRequest],
+        referenceDate: Date
+    ) {
+        let pendingIDs = Set(requests.map { $0.identifier })
+        var didRepair = false
+        var repairsApplied = 0
+
+        for medication in activeMedications where medication.hasActiveReminder {
+            if medication.reminderTimes.isEmpty {
+                guard let baseID = medication.notificationID else { continue }
+                guard let scheduled = scheduledTimeForToday(
+                    medication: medication,
+                    actualTime: referenceDate,
+                    reminderIndex: nil
+                ), scheduled > referenceDate else {
+                    continue
+                }
+                let dayID = reminderIdentifier(baseID: baseID, fireDate: scheduled)
+                if !pendingIDs.contains(dayID) {
+                    notificationManager.rescheduleReminderOccurrenceIfPending(
+                        medication: medication,
+                        time: medication.timeToTake,
+                        baseID: baseID,
+                        reminderIndex: nil,
+                        referenceDate: referenceDate
+                    )
+                    didRepair = true
+                    repairsApplied += 1
+                }
+                continue
+            }
+
+            for (index, time) in medication.reminderTimes.enumerated() {
+                guard medication.notificationIDs.indices.contains(index) else { continue }
+                let baseID = medication.notificationIDs[index]
+                guard let scheduled = scheduledTimeForToday(
+                    medication: medication,
+                    actualTime: referenceDate,
+                    reminderIndex: index
+                ), scheduled > referenceDate else {
+                    continue
+                }
+                let dayID = reminderIdentifier(baseID: baseID, fireDate: scheduled)
+                if pendingIDs.contains(dayID) { continue }
+                notificationManager.rescheduleReminderOccurrenceIfPending(
+                    medication: medication,
+                    time: time,
+                    baseID: baseID,
+                    reminderIndex: index,
+                    referenceDate: referenceDate
+                )
+                didRepair = true
+                repairsApplied += 1
+            }
+        }
+
+        if didRepair {
+            recordNotificationReliabilityMetric("repair_applied", amount: repairsApplied)
+            resetBadgeIfNeeded()
+        }
+    }
+
+    private func recordNotificationReliabilityMetric(_ metric: String, amount: Int = 1) {
+        let key = "notification_reliability_store_\(metric)"
+        let current = UserDefaults.standard.integer(forKey: key)
+        UserDefaults.standard.set(current + amount, forKey: key)
+    }
+
+    private func reminderIdentifier(baseID: UUID, fireDate: Date) -> String {
+        let dateString = Self.reminderIdentifierDayFormatter.string(from: fireDate)
+        return "\(baseID.uuidString)_day_\(dateString)"
     }
 
     private func saveLogs() {
@@ -2416,6 +2549,20 @@ extension MedicationStore {
 
     func _test_overdueReminderCountSnapshot(referenceDate: Date) -> Int {
         overdueReminderCountSnapshot(referenceDate: referenceDate)
+    }
+
+    func _test_setOverdueReminderNotificationIDs(_ ids: Set<String>) {
+        overdueReminderNotificationIDs = ids
+    }
+
+    func _test_reconcileNotificationSchedules(
+        withPendingRequests requests: [UNNotificationRequest],
+        referenceDate: Date
+    ) {
+        reconcileNotificationSchedules(
+            withPendingRequests: requests,
+            referenceDate: referenceDate
+        )
     }
 
     func _test_mergeCloudMedications(_ remote: [Medication]) {

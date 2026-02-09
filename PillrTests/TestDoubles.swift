@@ -13,6 +13,9 @@ final class FakeNotificationManager: NotificationManagerProtocol {
     private(set) var canceledFollowUps: [UUID] = []
     private(set) var canceledFollowUpOccurrences: [(UUID, Date)] = []
     private(set) var scheduledOneTime: [(Medication, Int)] = []
+    private(set) var scheduledOneTimeContext: [(UUID?, Int?, Date?)] = []
+    private(set) var rescheduledOccurrences: [(Medication, Date, UUID, Int?, Date)] = []
+    var pendingMedicationReminderRequests: [UNNotificationRequest] = []
     private(set) var canceledMedicationIDs: [UUID] = []
     private(set) var badgeCounts: [Int] = []
     private(set) var removedUntracked: [(UUID, Set<String>)] = []
@@ -43,8 +46,15 @@ final class FakeNotificationManager: NotificationManagerProtocol {
         return medication.reminderTimes.map { _ in UUID() }
     }
 
-    func scheduleOneTimeReminder(for medication: Medication, afterMinutes: Int) {
+    func scheduleOneTimeReminder(
+        for medication: Medication,
+        afterMinutes: Int,
+        sourceNotificationBaseID: UUID?,
+        reminderIndex: Int?,
+        scheduledDoseDate: Date?
+    ) {
         scheduledOneTime.append((medication, afterMinutes))
+        scheduledOneTimeContext.append((sourceNotificationBaseID, reminderIndex, scheduledDoseDate))
     }
 
     func scheduleStimulantPhaseNotifications(for medication: Medication, doseTime: Date, logID: UUID) {}
@@ -79,7 +89,9 @@ final class FakeNotificationManager: NotificationManagerProtocol {
         baseID: UUID,
         reminderIndex: Int?,
         referenceDate: Date
-    ) {}
+    ) {
+        rescheduledOccurrences.append((medication, time, baseID, reminderIndex, referenceDate))
+    }
 
     func removeUntrackedMedicationReminders(
         for medicationID: UUID,
@@ -90,6 +102,9 @@ final class FakeNotificationManager: NotificationManagerProtocol {
 
     func setApplicationBadge(count: Int) {
         badgeCounts.append(count)
+    }
+    func fetchPendingMedicationReminders(completion: @escaping ([UNNotificationRequest]) -> Void) {
+        completion(pendingMedicationReminderRequests)
     }
     func fetchDeliveredMedicationReminders(completion: @escaping ([UNNotification]) -> Void) {
         completion([])
