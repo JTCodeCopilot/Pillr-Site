@@ -216,6 +216,7 @@ class MedicationStore: ObservableObject {
         pillsPerDose: Int = 1,
         refillThreshold: Int? = nil,
         isOneTimeWithFollowUp: Bool = false,
+        isPersistentReminder: Bool = false,
         medicationType: MedicationType = .other,
         isExtendedRelease: Bool = false,
         onsetMinutes: Int? = nil,
@@ -238,6 +239,8 @@ class MedicationStore: ObservableObject {
         let finalRefillThreshold = isPremiumUser ? refillThreshold : nil
         let finalFrequency = isPremiumUser ? frequency : (frequency == "As needed" ? frequency : "Once daily")
         let finalReminderTimes = isPremiumUser ? reminderTimes : []
+        let finalIsOneTimeWithFollowUp = isPremiumUser ? (isOneTimeWithFollowUp && !isPersistentReminder) : false
+        let finalIsPersistentReminder = isPremiumUser ? isPersistentReminder : false
         let finalEnableDailyCheckIn = isPremiumUser ? enableDailyCheckIn : false
         let finalDailyCheckInTime = finalEnableDailyCheckIn ? dailyCheckInTime : nil
         
@@ -263,7 +266,8 @@ class MedicationStore: ObservableObject {
             pillCount: finalPillCount,
             pillsPerDose: finalPillsPerDose,
             refillThreshold: finalRefillThreshold,
-            isOneTimeWithFollowUp: isOneTimeWithFollowUp,
+            isOneTimeWithFollowUp: finalIsOneTimeWithFollowUp,
+            isPersistentReminder: finalIsPersistentReminder,
         )
         
         deletedMedicationIDs.remove(newMed.id)
@@ -278,7 +282,7 @@ class MedicationStore: ObservableObject {
                 let notificationIDs = notificationManager.scheduleMultipleNotifications(for: newMed)
                 newMed.notificationIDs = notificationIDs
                 newMed.notificationID = nil
-            } else if isOneTimeWithFollowUp {
+            } else if finalIsOneTimeWithFollowUp || finalIsPersistentReminder {
                 newMed.notificationID = notificationManager.scheduleNotification(for: newMed)
                 newMed.notificationIDs = []
             } else if reminderTimes.isEmpty {
@@ -314,9 +318,14 @@ class MedicationStore: ObservableObject {
                 updatedMedication.enableDailyCheckIn = false
                 updatedMedication.dailyCheckInTime = nil
                 updatedMedication.reminderTimes = []
+                updatedMedication.isOneTimeWithFollowUp = false
+                updatedMedication.isPersistentReminder = false
                 if updatedMedication.frequency != "As needed" {
                     updatedMedication.frequency = "Once daily"
                 }
+            }
+            if updatedMedication.isPersistentReminder {
+                updatedMedication.isOneTimeWithFollowUp = false
             }
             updatedMedication.updatedAt = Date()
             
@@ -346,7 +355,7 @@ class MedicationStore: ObservableObject {
                         let newNotificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
                         updatedMedication.notificationIDs = newNotificationIDs
                         updatedMedication.notificationID = nil
-                    } else if updatedMedication.isOneTimeWithFollowUp {
+                    } else if updatedMedication.isOneTimeWithFollowUp || updatedMedication.isPersistentReminder {
                         updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
                         updatedMedication.notificationIDs = []
                     } else if updatedMedication.reminderTimes.isEmpty {
@@ -393,6 +402,9 @@ class MedicationStore: ObservableObject {
 
     private func medicationReminderSettingsChanged(old: Medication, updated: Medication) -> Bool {
         if old.isOneTimeWithFollowUp != updated.isOneTimeWithFollowUp {
+            return true
+        }
+        if old.isPersistentReminder != updated.isPersistentReminder {
             return true
         }
 
@@ -1358,20 +1370,12 @@ class MedicationStore: ObservableObject {
         reminderIndex: Int?,
         isDailyCheckIn: Bool
     ) {
-        // Clear the delivered notification and cancel any follow-up for today without touching future reminders.
-        let followUpBaseTime = scheduledTimeForToday(
-            medication: medication,
-            actualTime: actualTime,
-            reminderIndex: reminderIndex
-        ) ?? actualTime
-        let followUpCancelDate = Calendar.current.date(byAdding: .minute, value: 30, to: followUpBaseTime) ?? actualTime
-
         if let specificIndex = reminderIndex,
            let referenceMedication = storedMedication,
            !referenceMedication.notificationIDs.isEmpty,
            specificIndex < referenceMedication.notificationIDs.count {
             let notificationID = referenceMedication.notificationIDs[specificIndex]
-            notificationManager.cancelFollowUpNotification(for: notificationID, on: followUpCancelDate)
+            notificationManager.cancelFollowUpNotifications(for: notificationID)
             notificationManager.clearDeliveredNotifications(for: notificationID)
             resolveOverdueReminder(identifierPrefix: notificationID.uuidString)
             cancelPendingReminderIfNeeded(
@@ -1381,7 +1385,7 @@ class MedicationStore: ObservableObject {
             )
             refreshUpcomingReminderBadges(for: referenceMedication, referenceDate: actualTime)
         } else if let notificationID = storedMedication?.notificationID ?? medication.notificationID {
-            notificationManager.cancelFollowUpNotification(for: notificationID, on: followUpCancelDate)
+            notificationManager.cancelFollowUpNotifications(for: notificationID)
             notificationManager.clearDeliveredNotifications(for: notificationID)
             resolveOverdueReminder(identifierPrefix: notificationID.uuidString)
             cancelPendingReminderIfNeeded(

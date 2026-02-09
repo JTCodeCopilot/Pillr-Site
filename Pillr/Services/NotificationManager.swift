@@ -45,6 +45,8 @@ class NotificationManager: ObservableObject {
     private var trackedMedicationIDs = Set<UUID>()
     private let reminderSchedulingWindowDays = 30
     private let followUpSchedulingWindowDays = 30
+    private let persistentFollowUpIntervalMinutes = 10
+    private let persistentFollowUpDurationMinutes = 60
     private static let reminderDayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -342,13 +344,12 @@ class NotificationManager: ObservableObject {
             baseID: notificationID,
             reminderIndex: nil
         )
-        // Schedule one-time follow-ups for upcoming reminders when enabled.
-        if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
+        for offset in followUpOffsets(for: medication) {
             scheduleFollowUpNotificationsWindow(
                 for: medication,
                 time: medication.timeToTake,
                 index: 0,
-                after: 30,
+                after: offset,
                 originalID: notificationID
             )
         }
@@ -386,20 +387,41 @@ class NotificationManager: ObservableObject {
             baseID: notificationID,
             reminderIndex: index
         )
-        
-        // Schedule a repeating follow-up notification when enabled.
-        if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
+
+        for offset in followUpOffsets(for: medication) {
             scheduleFollowUpNotificationsWindow(
                 for: medication,
                 time: time,
                 index: index,
-                after: 30,
+                after: offset,
                 originalID: notificationID
             )
         }
         
         
         return notificationID
+    }
+
+    private func followUpOffsets(for medication: Medication) -> [Int] {
+        guard UserSettings.shared.isPremiumUser else {
+            return []
+        }
+
+        if medication.isPersistentReminder {
+            return Array(
+                stride(
+                    from: persistentFollowUpIntervalMinutes,
+                    through: persistentFollowUpDurationMinutes,
+                    by: persistentFollowUpIntervalMinutes
+                )
+            )
+        }
+
+        if medication.isOneTimeWithFollowUp {
+            return [30]
+        }
+
+        return []
     }
 
     private func scheduleReminderWindow(

@@ -1746,7 +1746,7 @@ fileprivate struct CabinetMedicationRow: View {
             HStack(spacing: 10) {
                 Button(action: onLogTap) {
                     HStack(spacing: 6) {
-                        Text("Log dose")
+                        Text("Take")
                     }
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(logButtonDefaultForeground)

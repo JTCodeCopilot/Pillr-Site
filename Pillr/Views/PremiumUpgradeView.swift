@@ -28,6 +28,7 @@ struct PremiumUpgradeView: View {
         FeatureComparison(title: "Reflection (daily wellness reflections)", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "Unlimited Medications", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "Multiple Daily Reminders", freeIncludes: false, premiumIncludes: true),
+        FeatureComparison(title: "Persistent Reminder Escalation", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "AI Powered Interaction & Search", freeIncludes: false, premiumIncludes: true),
         FeatureComparison(title: "Pill Count Tracking", freeIncludes: false, premiumIncludes: true)
     ]
