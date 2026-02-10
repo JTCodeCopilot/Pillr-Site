@@ -56,6 +56,7 @@ struct MedicationsListView: View {
     @State private var undoToastDismissWorkItem: DispatchWorkItem?
     private let undoToastDuration: TimeInterval = 5.0
     @State private var isViewActive = false
+    @State private var isPullRefreshingCloudSync = false
 
     private struct CustomLogRequest: Identifiable {
         let id = UUID()
@@ -118,7 +119,8 @@ struct MedicationsListView: View {
                     cabinetMedications: cabinetMedications,
                     onShowCabinet: handleCabinetTap,
                     healthKitManager: healthKitManager,
-                    referenceDate: referenceDate
+                    referenceDate: referenceDate,
+                    isCloudSyncRefreshing: isPullRefreshingCloudSync
                 )
                 .overlay(alignment: .bottom) {
                     if let action = undoToastAction {
@@ -270,12 +272,7 @@ struct MedicationsListView: View {
                 store.refreshCloudSyncIfNeeded()
             }
             .refreshable {
-                await MainActor.run {
-                    store.refreshCloudSyncIfNeeded()
-                    store.loadMedications()
-                    store.loadLogs()
-                    refreshReferenceDate(resetBadge: true)
-                }
+                await performPullToRefresh()
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 refreshReferenceDate(resetBadge: false)
@@ -356,6 +353,25 @@ struct MedicationsListView: View {
         store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
         if resetBadge {
             store.checkAndResetBadge()
+        }
+    }
+
+    private func performPullToRefresh() async {
+        await MainActor.run {
+            isPullRefreshingCloudSync = true
+        }
+
+        let _ = await withCheckedContinuation { continuation in
+            store.refreshCloudSyncIfNeeded { _ in
+                continuation.resume()
+            }
+        }
+
+        await MainActor.run {
+            store.loadMedications()
+            store.loadLogs()
+            refreshReferenceDate(resetBadge: true)
+            isPullRefreshingCloudSync = false
         }
     }
     
@@ -884,7 +900,9 @@ fileprivate func MedicationsListHeader(
     horizontalInsets: CGFloat,
     onAddMedication: @escaping () -> Void,
     onShowCabinet: @escaping () -> Void,
-    cabinetCount: Int
+    cabinetCount: Int,
+    showCloudSyncIndicator: Bool,
+    isCloudSyncRefreshing: Bool
 ) -> some View {
     VStack(alignment: .leading, spacing: 8) {
         HStack(alignment: .top) {
@@ -901,6 +919,10 @@ fileprivate func MedicationsListHeader(
             Spacer()
             
             HStack(spacing: 10) {
+                if showCloudSyncIndicator {
+                    CloudSyncStatusIndicator(isSyncing: isCloudSyncRefreshing)
+                }
+
                 Button(action: onShowCabinet) {
                     Image(systemName: "cabinet.fill")
                         .font(.system(size: 18, weight: .semibold))
@@ -939,6 +961,55 @@ fileprivate func MedicationsListHeader(
     .padding(.leading, horizontalInsets + 8)
     .padding(.trailing, horizontalInsets)
     .padding(.top, 12)
+}
+
+fileprivate struct CloudSyncStatusIndicator: View {
+    let isSyncing: Bool
+    @State private var syncRotation: Double = 0
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "icloud.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(Color(hex: "#F5F7F4").opacity(0.88))
+                .overlay(alignment: .bottomTrailing) {
+                    if isSyncing {
+                        Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F5F7F4").opacity(0.9))
+                            .rotationEffect(.degrees(syncRotation))
+                            .background(
+                                Circle()
+                                    .fill(Color(hex: "#404C42"))
+                                    .frame(width: 12, height: 12)
+                            )
+                            .offset(x: 2, y: 1)
+                    }
+                }
+        }
+        .frame(width: 46, height: 46)
+        .animation(.easeInOut(duration: 0.2), value: isSyncing)
+        .accessibilityLabel("iCloud sync status")
+        .onAppear {
+            updateSyncAnimation(isSyncing)
+        }
+        .onChange(of: isSyncing) { _, newValue in
+            updateSyncAnimation(newValue)
+        }
+    }
+
+    private func updateSyncAnimation(_ syncing: Bool) {
+        if syncing {
+            syncRotation = 0
+            withAnimation(.linear(duration: 0.9).repeatForever(autoreverses: false)) {
+                syncRotation = 360
+            }
+        } else {
+            withAnimation(.easeOut(duration: 0.15)) {
+                syncRotation = 0
+            }
+        }
+    }
 }
 
 fileprivate struct HealthSummaryWidget: View {
@@ -1835,6 +1906,7 @@ fileprivate struct MedicationsListMainContent: View {
     let onShowCabinet: () -> Void
     let healthKitManager: HealthKitManager
     let referenceDate: Date
+    let isCloudSyncRefreshing: Bool
     @EnvironmentObject private var userSettings: UserSettings
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -1873,7 +1945,9 @@ fileprivate struct MedicationsListMainContent: View {
                             horizontalInsets: horizontalInset,
                             onAddMedication: onAddMedication,
                             onShowCabinet: onShowCabinet,
-                            cabinetCount: cabinetMedications.count
+                            cabinetCount: cabinetMedications.count,
+                            showCloudSyncIndicator: userSettings.shouldUseCloudSync,
+                            isCloudSyncRefreshing: isCloudSyncRefreshing
                         )
 
                         if userSettings.shouldShowAppleHealthData {
