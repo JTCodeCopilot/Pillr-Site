@@ -104,14 +104,16 @@ struct OpenAIService {
         let sideEffectsText = sideEffects.isEmpty ? "None noted" : sideEffects.joined(separator: ", ")
 
         let prompt = """
-        Write one short sentence (max 30 words) that captures the overall experience of the day.
+        Write a short journal entry in first person using 2 to 3 sentences.
 
-        Make it feel personable and relatable, like a friendly recap to the user.
-        Blend mood, focus, medication impact, side effects, and notes into a single natural line.
+        Make it sound like the user wrote it about this specific day.
+        Blend mood, focus, medication impact, side effects, and notes naturally.
+        Use only the details provided below.
 
         Be supportive and non judgmental.
         Do not give medical advice.
         Do not use emojis or quotes.
+        Do not assume timelines, trends, or history (for example, avoid phrases like "since starting \(medicationName)").
 
         Reflection data:
         Medication: \(medicationName)
@@ -127,7 +129,7 @@ struct OpenAIService {
         let response = try await openAIService.chatCompletionRequest(body: .init(
             model: "gpt-4o-mini",
             messages: [
-                .system(content: .text("You are a concise, friendly assistant. Respond with a single sentence only.")),
+                .system(content: .text("You are a concise, empathetic assistant writing in first person as the user. Respond with 2 to 3 sentences only, grounded only in provided data.")),
                 .user(content: .text(prompt))
             ],
             temperature: 0.2

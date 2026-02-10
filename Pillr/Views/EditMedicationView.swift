@@ -33,7 +33,7 @@ struct EditMedicationView: View {
     @State private var pillsPerDoseString: String = "1"
     @State private var refillThresholdString: String = ""
     @State private var trackPillCount: Bool = false
-    @State private var followUpReminderOption: FollowUpReminderOption = .off
+    @State private var isOneTimeWithFollowUp: Bool = false
     // ADHD / stimulant specific fields
     @State private var isADHDMedication: Bool = false
     @State private var medicationType: MedicationType = .other
@@ -83,36 +83,6 @@ struct EditMedicationView: View {
     private let focusOnsetRange: ClosedRange<Int> = 30...1440
     private let focusDurationRange: ClosedRange<Int> = 30...1440
     private let focusEffectsGoneRange: ClosedRange<Int> = 30...1440
-
-    private enum FollowUpReminderOption: String, CaseIterable, Identifiable {
-        case off
-        case single
-        case persistent
-
-        var id: String { rawValue }
-
-        var title: String {
-            switch self {
-            case .off:
-                return "Off"
-            case .single:
-                return "Single (30m)"
-            case .persistent:
-                return "Persistent (10m x 1h)"
-            }
-        }
-
-        var helperText: String {
-            switch self {
-            case .off:
-                return "Only scheduled medication reminders will be sent."
-            case .single:
-                return "Send one follow-up reminder 30 minutes after each dose reminder."
-            case .persistent:
-                return "Send follow-up reminders every 10 minutes for 1 hour after each dose reminder."
-            }
-        }
-    }
     
     // Computed properties
     private var needsMultipleReminders: Bool {
@@ -178,9 +148,7 @@ struct EditMedicationView: View {
         }
         
         _trackPillCount = State(initialValue: medication.pillCount != nil)
-        _followUpReminderOption = State(
-            initialValue: medication.isPersistentReminder ? .persistent : (medication.isOneTimeWithFollowUp ? .single : .off)
-        )
+        _isOneTimeWithFollowUp = State(initialValue: medication.isOneTimeWithFollowUp)
         _medicationType = State(initialValue: medication.medicationType)
         _isADHDMedication = State(initialValue: medication.medicationType != .other)
         _isExtendedRelease = State(initialValue: medication.isExtendedRelease)
@@ -571,81 +539,31 @@ struct EditMedicationView: View {
                                 VStack(spacing: 16) {
                                     if needsMultipleReminders || frequency == "Once daily" {
                                         VStack(alignment: .leading, spacing: 8) {
-                                            HStack {
-                                                Text("Follow-up reminder style")
-                                                    .font(.system(size: 16, weight: .semibold))
-                                                    .foregroundColor(Color(hex: "#E8E8E0"))
-                                                if !userSettings.isPremiumUser {
-                                                    Button(action: {
-                                                        showingPremiumUpgrade = true
-                                                    }) {
-                                                        PremiumLockIcon()
-                                                    }
-                                                    .buttonStyle(PlainButtonStyle())
-                                                }
-                                            }
-
-                                            if userSettings.isPremiumUser {
-                                                Menu {
-                                                    ForEach(FollowUpReminderOption.allCases) { option in
-                                                        Button(option.title) {
-                                                            followUpReminderOption = option
-                                                        }
-                                                    }
-                                                } label: {
+                                            Toggle(isOn: $isOneTimeWithFollowUp.animation(.easeInOut)) {
+                                                VStack(alignment: .leading, spacing: 4) {
                                                     HStack {
-                                                        Text(followUpReminderOption.title)
+                                                        Text("Remind me again")
                                                             .font(.system(size: 16, weight: .semibold))
                                                             .foregroundColor(Color(hex: "#E8E8E0"))
-                                                        Spacer()
-                                                        Image(systemName: "chevron.down")
-                                                            .font(.system(size: 12, weight: .semibold))
-                                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                                        if !userSettings.isPremiumUser {
+                                                            Button(action: {
+                                                                showingPremiumUpgrade = true
+                                                            }) {
+                                                                PremiumLockIcon()
+                                                            }
+                                                            .buttonStyle(PlainButtonStyle())
+                                                        }
                                                     }
-                                                    .padding(.horizontal, 12)
-                                                    .frame(height: standardFieldHeight)
-                                                    .background(
-                                                        RoundedRectangle(cornerRadius: 12)
-                                                            .fill(Color.black.opacity(0.2))
-                                                            .overlay(
-                                                                RoundedRectangle(cornerRadius: 12)
-                                                                    .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
-                                                            )
-                                                    )
+                                                    Text(userSettings.isPremiumUser ?
+                                                         "Get another reminder after 30 minutes if not taken" :
+                                                         "One-time reminders require premium subscription")
+                                                        .font(.system(size: 13))
+                                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                                                 }
-                                                .buttonStyle(.plain)
-                                            } else {
-                                                Button {
-                                                    showingPremiumUpgrade = true
-                                                } label: {
-                                                    HStack {
-                                                        Text(followUpReminderOption.title)
-                                                            .font(.system(size: 16, weight: .semibold))
-                                                            .foregroundColor(Color(hex: "#E8E8E0").opacity(0.75))
-                                                        Spacer()
-                                                        Image(systemName: "lock.fill")
-                                                            .font(.system(size: 12, weight: .semibold))
-                                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
-                                                    }
-                                                    .padding(.horizontal, 12)
-                                                    .frame(height: standardFieldHeight)
-                                                    .background(
-                                                        RoundedRectangle(cornerRadius: 12)
-                                                            .fill(Color.black.opacity(0.2))
-                                                            .overlay(
-                                                                RoundedRectangle(cornerRadius: 12)
-                                                                    .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
-                                                            )
-                                                    )
-                                                }
-                                                .buttonStyle(.plain)
                                             }
-
-                                            Text(userSettings.isPremiumUser ?
-                                                 followUpReminderOption.helperText :
-                                                 "Follow-up reminder styles require premium subscription")
-                                                .font(.system(size: 13))
-                                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                            .disabled(!userSettings.isPremiumUser)
+                                            .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                                         }
                                     }
                                 }
@@ -1571,8 +1489,6 @@ struct EditMedicationView: View {
         let shouldEnableDailyCheckIn = userSettings.isPremiumUser && enableDailyCheckIn && (hasFocusWindow || supportsGeneralCheckIn)
         let shouldUseCustomDailyCheckInTime = supportsGeneralCheckIn || useCustomDailyCheckInTime
         let selectedDailyCheckInTime = (shouldEnableDailyCheckIn && shouldUseCustomDailyCheckInTime) ? customDailyCheckInTime : nil
-        let isOneTimeWithFollowUp = userSettings.isPremiumUser && followUpReminderOption == .single
-        let isPersistentReminder = userSettings.isPremiumUser && followUpReminderOption == .persistent
         if medicationType == .stimulant {
             updatedMedication.isExtendedRelease = isExtendedRelease
             if hasFocusWindow {
@@ -1603,7 +1519,6 @@ struct EditMedicationView: View {
         let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         updatedMedication.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
         updatedMedication.isOneTimeWithFollowUp = isOneTimeWithFollowUp
-        updatedMedication.isPersistentReminder = isPersistentReminder
         
         // Handle pill tracking
         if trackPillCount {

@@ -21,6 +21,26 @@ fileprivate struct NotificationActionIdentifier {
     static let dismiss = "DISMISS_NOTIFICATION"
 }
 
+fileprivate enum NotificationIdentifierKey {
+    static func day(_ date: Date) -> String {
+        let components = Calendar.autoupdatingCurrent.dateComponents([.year, .month, .day], from: date)
+        let year = components.year ?? 0
+        let month = components.month ?? 0
+        let day = components.day ?? 0
+        return String(format: "%04d%02d%02d", year, month, day)
+    }
+
+    static func minute(_ date: Date) -> String {
+        let components = Calendar.autoupdatingCurrent.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        let year = components.year ?? 0
+        let month = components.month ?? 0
+        let day = components.day ?? 0
+        let hour = components.hour ?? 0
+        let minute = components.minute ?? 0
+        return String(format: "%04d%02d%02d%02d%02d", year, month, day, hour, minute)
+    }
+}
+
 private actor NotificationMutationQueue {
     func run<T>(_ operation: @escaping () async -> T) async -> T {
         await operation()
@@ -45,32 +65,6 @@ class NotificationManager: ObservableObject {
     private var trackedMedicationIDs = Set<UUID>()
     private let reminderSchedulingWindowDays = 30
     private let followUpSchedulingWindowDays = 30
-    private let persistentFollowUpIntervalMinutes = 10
-    private let persistentFollowUpDurationMinutes = 60
-    private static let reminderDayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyyMMdd"
-        return formatter
-    }()
-    private static let dailyCheckInIDFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyyMMdd"
-        return formatter
-    }()
-    private static let oneTimeReminderIDFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyyMMddHHmm"
-        return formatter
-    }()
 
     func updateTrackedMedicationIDs(_ ids: Set<UUID>) {
         trackedMedicationIDsQueue.sync(flags: .barrier) {
@@ -211,12 +205,12 @@ class NotificationManager: ObservableObject {
     }
 
     private func reminderIdentifier(baseID: UUID, fireDate: Date) -> String {
-        let dateString = Self.reminderDayFormatter.string(from: fireDate)
+        let dateString = NotificationIdentifierKey.day(fireDate)
         return "\(baseID.uuidString)_day_\(dateString)"
     }
 
     private func oneTimeReminderIdentifier(baseID: UUID, fireDate: Date) -> String {
-        let dateString = Self.oneTimeReminderIDFormatter.string(from: fireDate)
+        let dateString = NotificationIdentifierKey.minute(fireDate)
         return "\(baseID.uuidString)_snooze_\(dateString)"
     }
 
@@ -237,7 +231,7 @@ class NotificationManager: ObservableObject {
             "originalNotificationID": baseID.uuidString,
             "reminderBaseID": baseID.uuidString,
             "scheduledDoseAt": scheduledDoseDate.timeIntervalSince1970,
-            "scheduleDayKey": Self.reminderDayFormatter.string(from: scheduledDoseDate)
+            "scheduleDayKey": NotificationIdentifierKey.day(scheduledDoseDate)
         ]
         if let reminderIndex {
             userInfo["reminderIndex"] = reminderIndex
@@ -344,12 +338,13 @@ class NotificationManager: ObservableObject {
             baseID: notificationID,
             reminderIndex: nil
         )
-        for offset in followUpOffsets(for: medication) {
+        // Schedule one-time follow-ups for upcoming reminders when enabled.
+        if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
             scheduleFollowUpNotificationsWindow(
                 for: medication,
                 time: medication.timeToTake,
                 index: 0,
-                after: offset,
+                after: 30,
                 originalID: notificationID
             )
         }
@@ -387,41 +382,20 @@ class NotificationManager: ObservableObject {
             baseID: notificationID,
             reminderIndex: index
         )
-
-        for offset in followUpOffsets(for: medication) {
+        
+        // Schedule a repeating follow-up notification when enabled.
+        if UserSettings.shared.isPremiumUser && medication.isOneTimeWithFollowUp {
             scheduleFollowUpNotificationsWindow(
                 for: medication,
                 time: time,
                 index: index,
-                after: offset,
+                after: 30,
                 originalID: notificationID
             )
         }
         
         
         return notificationID
-    }
-
-    private func followUpOffsets(for medication: Medication) -> [Int] {
-        guard UserSettings.shared.isPremiumUser else {
-            return []
-        }
-
-        if medication.isPersistentReminder {
-            return Array(
-                stride(
-                    from: persistentFollowUpIntervalMinutes,
-                    through: persistentFollowUpDurationMinutes,
-                    by: persistentFollowUpIntervalMinutes
-                )
-            )
-        }
-
-        if medication.isOneTimeWithFollowUp {
-            return [30]
-        }
-
-        return []
     }
 
     private func scheduleReminderWindow(
@@ -592,6 +566,9 @@ class NotificationManager: ObservableObject {
         guard ensureMedicationIsTracked(medication.id) else {
             return
         }
+        guard minutes > 0 else {
+            return
+        }
         let content = UNMutableNotificationContent()
 
         content.title = "Medications Follow Up"
@@ -707,6 +684,9 @@ class NotificationManager: ObservableObject {
         scheduledDoseDate: Date? = nil
     ) {
         guard ensureMedicationIsTracked(medication.id) else {
+            return
+        }
+        guard afterMinutes > 0 else {
             return
         }
         let content = UNMutableNotificationContent()
@@ -1159,15 +1139,27 @@ class NotificationManager: ObservableObject {
             guard let self else { return }
             let existingIdentifiers = Set((await self.pendingRequestsSnapshot()).map { $0.identifier })
             let now = Date()
-            let startOfDay = calendar.startOfDay(for: referenceDate)
-            guard let fireDate = self.localTimeOnDay(
+            let anchorDate = referenceDate > now ? referenceDate : now
+            let dayStart = calendar.startOfDay(for: anchorDate)
+            guard var fireDate = self.localTimeOnDay(
                 calendar: calendar,
                 hour: hour,
                 minute: minute,
-                day: startOfDay
-            ), fireDate > now else {
+                day: dayStart
+            ) else {
                 return
             }
+            if fireDate <= now,
+               let nextDay = calendar.date(byAdding: .day, value: 1, to: dayStart),
+               let nextFireDate = self.localTimeOnDay(
+                calendar: calendar,
+                hour: hour,
+                minute: minute,
+                day: nextDay
+               ) {
+                fireDate = nextFireDate
+            }
+            guard fireDate > now else { return }
 
             let identifier = self.dailyCheckInIdentifier(for: medication.id, date: fireDate)
             guard !existingIdentifiers.contains(identifier) else { return }
@@ -1194,7 +1186,7 @@ class NotificationManager: ObservableObject {
     }
 
     private func dailyCheckInIdentifier(for medicationID: UUID, date: Date) -> String {
-        let dateString = Self.dailyCheckInIDFormatter.string(from: date)
+        let dateString = NotificationIdentifierKey.day(date)
         return "\(medicationID.uuidString)_checkin_\(dateString)"
     }
 
@@ -1653,12 +1645,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     }
 
     private func dayKey(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyyMMdd"
-        return formatter.string(from: date)
+        NotificationIdentifierKey.day(date)
     }
 
 #if DEBUG

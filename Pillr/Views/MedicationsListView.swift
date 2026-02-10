@@ -1546,57 +1546,49 @@ fileprivate struct MedicationCabinetSheet: View {
     private var asNeededMedications: [Medication] {
         medications.filter { $0.frequency == "As needed" }
     }
-    
-    private var inactiveReminderMedications: [Medication] {
-        medications.filter { $0.frequency != "As needed" }
-    }
 
     var body: some View {
         NavigationView {
             ZStack {
                 Color(hex: "#404C42")
-                    .ignoresSafeArea()
+                .ignoresSafeArea()
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        Text("Medication Cabinet")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(Color(hex: "#F5F7F4"))
-                            .padding(.top, 12)
-                        if medications.isEmpty {
-                            VStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Medication Cabinet")
+                                .font(.system(size: 36, weight: .bold))
+                                .foregroundColor(Color(hex: "#F5F7F4"))
+
+                            Text("\(asNeededMedications.count) medication\(asNeededMedications.count == 1 ? "" : "s")")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                        }
+                        .padding(.top, 12)
+
+                        if asNeededMedications.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
                                 Text("Your Cabinet Is Empty")
                                     .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(Color(hex: "#F5F7F4"))
-                                VStack(spacing: 6) {
-
-                                    Text("Anything you set as \"as needed\" stays here tucked away and ready when you need them.")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(Color(hex: "#E0E7DC"))
-                                        .multilineTextAlignment(.center)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .center)
+                                Text("Anything you set as \"as needed\" stays here tucked away and ready when you need it.")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                             .padding(18)
                             .frame(maxWidth: .infinity)
                             .background(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .fill(Color(hex: "#5B695D"))
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color(hex: "#4C584F"))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        RoundedRectangle(cornerRadius: 14)
                                             .stroke(Color.white.opacity(0.08), lineWidth: 1)
                                     )
                             )
-                            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
-                            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
+                            .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
                         } else {
-                            if !asNeededMedications.isEmpty {
-                                cabinetSection(title: "As needed", medications: asNeededMedications)
-                            }
-                            
-                            if !inactiveReminderMedications.isEmpty {
-                                cabinetSection(title: "No daily reminders", medications: inactiveReminderMedications)
-                            }
+                            cabinetSection(title: "As needed", medications: asNeededMedications)
                         }
 
                         Spacer(minLength: 20)
@@ -1614,7 +1606,7 @@ fileprivate struct MedicationCabinetSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Done") { dismiss() }
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
                 }
             }
         }
@@ -1630,8 +1622,8 @@ fileprivate struct MedicationCabinetSheet: View {
     private func cabinetSection(title: String, medications: [Medication]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(title)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(hex: "#E0E7DC"))
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD"))
 
             ForEach(sortedMedications(medications, logs: logs, referenceDate: referenceDate)) { medication in
                 CabinetMedicationRow(
@@ -1722,8 +1714,12 @@ fileprivate struct CabinetMedicationRow: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.12))
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(hex: "#2F352F").opacity(0.35))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                )
         )
     }
 
@@ -1731,7 +1727,7 @@ fileprivate struct CabinetMedicationRow: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(medication.name)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(Color(hex: "#F5F7F4"))
                     .lineLimit(1)
                 Text("\(medication.dosage) \(medication.dosageUnit) • \(medication.frequency)")
@@ -1739,22 +1735,20 @@ fileprivate struct CabinetMedicationRow: View {
                     .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
                     .lineLimit(1)
                 Text(detailSubtitle)
-                    .font(.system(size: 13))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(Color(hex: "#C7C7BD"))
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Button(action: onLogTap) {
-                    HStack(spacing: 6) {
-                        Text("Take")
-                    }
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(logButtonDefaultForeground)
+                    Text("Take Now")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "#2F352F"))
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(logButtonDefaultBackground)
+                            .fill(Color(hex: "#F5F7F4"))
                     )
                 }
                 .buttonStyle(ScaleButtonStyle())
@@ -1765,12 +1759,18 @@ fileprivate struct CabinetMedicationRow: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .padding(14)
-        .background(Color(hex: "#5B695D").opacity(0.92))
-        .cornerRadius(14)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(hex: "#5B695D"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+        )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.03), lineWidth: 0.5)
         )
         .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
@@ -1789,11 +1789,11 @@ fileprivate struct CabinetMedicationRow: View {
                 Image(systemName: showDetails ? "chevron.up" : "chevron.down")
                     .font(.system(size: 13))
                     .foregroundColor(Color(hex: "#E0E7DC").opacity(0.55))
-                    .frame(width: 28, height: 28)
+                    .frame(width: 34, height: 34)
             }
             .buttonStyle(.plain)
-            .padding(.top, 8)
-            .padding(.trailing, 8)
+            .padding(.top, 10)
+            .padding(.trailing, 10)
         }
         .contextMenu {
             Button {
@@ -1809,14 +1809,6 @@ fileprivate struct CabinetMedicationRow: View {
                 }
             }
         }
-    }
-
-    private var logButtonDefaultForeground: Color {
-        Color(hex: "#2F352F")
-    }
-
-    private var logButtonDefaultBackground: Color {
-        Color(hex: "#E0E7DC")
     }
 }
 
