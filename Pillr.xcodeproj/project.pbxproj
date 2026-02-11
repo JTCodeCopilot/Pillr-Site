@@ -357,7 +357,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Pillr/Pillr.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2.0.245;
+				CURRENT_PROJECT_VERSION = 2.0.5;
 				DEVELOPMENT_TEAM = A857RBQBM9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -378,7 +378,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.245;
+				MARKETING_VERSION = 2.0.5;
 				"OTHER_LDFLAGS[arch=*]" = (
 					"-ObjC",
 					"-lc++",
@@ -398,7 +398,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Pillr/Pillr.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2.0.245;
+				CURRENT_PROJECT_VERSION = 2.0.5;
 				DEVELOPMENT_TEAM = A857RBQBM9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -419,7 +419,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.245;
+				MARKETING_VERSION = 2.0.5;
 				"OTHER_LDFLAGS[arch=*]" = (
 					"-ObjC",
 					"-lc++",

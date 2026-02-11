@@ -47,22 +47,24 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Update badge when app becomes active
+        // Update badge and refresh CloudKit whenever the app is active.
+        // This covers both cold start and return-from-background.
         Task { @MainActor in
             MedicationStore.shared.checkAndResetBadge()
-            MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
+            MedicationStore.shared.refreshCloudSyncIfNeeded { _ in
+                MedicationStore.shared.loadMedications()
+                MedicationStore.shared.loadLogs()
+                MedicationStore.shared.kickstartActiveReminderSchedules(referenceDate: Date())
+                MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
+            }
+            MedicationStore.shared.kickstartActiveReminderSchedules(referenceDate: Date())
             NotificationManager.shared.surfaceDeliveredStimulantCheckInsIfNeeded()
             incrementAppLaunchCountIfNeeded()
         }
     }
     
     func applicationWillEnterForeground(_ application: UIApplication) {
-        // Refresh data when returning to foreground
-        Task { @MainActor in
-            MedicationStore.shared.refreshCloudSyncIfNeeded()
-            MedicationStore.shared.loadMedications()
-            MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
-        }
+        // Foreground-specific work is handled in applicationDidBecomeActive.
     }
 
     func application(

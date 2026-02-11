@@ -8,285 +8,237 @@ enum CloudSyncChoice {
 struct CloudSyncChoiceOverlay: View {
     let onChoice: (CloudSyncChoice) -> Void
 
+    @State private var selectedChoice: CloudSyncChoice?
+    @State private var showFinalConfirmation = false
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                Color.black.opacity(0.74)
+                Rectangle()
+                    .fill(.ultraThinMaterial)
                     .ignoresSafeArea()
-
-                VStack {
-                    Spacer()
-
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(spacing: 24) {
-                            VStack(spacing: 10) {
-                                VStack(spacing: 6) {
-                                    Text("Welcome to Pillr!")
-                                        .font(.system(size: 30, weight: .bold, design: .rounded))
-                                        .foregroundColor(.white)
-                                        .multilineTextAlignment(.center)
-                                        .fixedSize(horizontal: false, vertical: true)
-
-                                    Text("First, choose how your medications are stored.")
-                                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                        .foregroundColor(.white)
-                                        .multilineTextAlignment(.center)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.6))
-                                    .frame(height: 0.5)
-                                    .padding(.horizontal, 10)
-
-                                Text("Pick what works for you.\nYou can change this later in Settings.")
-                                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                                    .foregroundColor(Color.white.opacity(0.65))
-                                    .multilineTextAlignment(.center)
-                                    .lineSpacing(3)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-
-                            VStack(spacing: 16) {
-                                CloudSyncChoiceCard(
-                                    iconName: "internaldrive",
-                                    title: "On device only",
-                                    description: "Your medication data stays only on this phone. It is not shared with iCloud unless you turn it on later.",
-                                    highlights: [
-                                        "Stored only on this device",
-                                        "No backup or syncing",
-                                        "Data is lost if you delete Pillr or reset this phone"
-                                    ],
-                                    accentColor: Color.white.opacity(0.9),
-                                    filled: false,
-                                    action: {
-                                        onChoice(.onDeviceOnly)
-                                    }
-                                )
-
-                                CloudSyncChoiceCard(
-                                    iconName: "icloud.and.arrow.up",
-                                    title: "Connect iCloud Sync (recommended)",
-                                    description: "Your medication history is encrypted and safely synced across all your Apple devices using your Apple ID.",
-                                    highlights: [
-                                        "Automatic backup and sync",
-                                        "Access your logs on all devices",
-                                        "History is restored if you change or reset devices"
-                                    ],
-                                    accentColor: Color(hex: "#2A2C27"),
-                                    filled: true,
-                                    iconColor: Color(hex: "#2A2C27"),
-                                    tapBackgroundColor: Color(hex: "#2A2C27"),
-                                    tapTextColor: Color.white,
-                                    action: {
-                                        onChoice(.connect)
-                                    }
-                                )
-                            }
-
-                            Text("You must choose one option to keep going.")
-                                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color.white.opacity(0.8))
-                                .multilineTextAlignment(.center)
-                                .lineSpacing(2)
-                                .padding(.top, 6)
-                        }
-                        .padding(28)
-                        .frame(maxWidth: 460)
-                    }
-                    .frame(maxWidth: 460, maxHeight: geometry.size.height * 0.78)
-                    .background(
-                        RoundedRectangle(cornerRadius: 28)
-                            .fill(Color(hex: "#2A2D28").opacity(0.98))
-                            .shadow(color: Color.black.opacity(0.35), radius: 16, x: 0, y: 8)
-                    )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 28)
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        Color.black.opacity(0.58)
+                            .ignoresSafeArea()
                     )
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom + 16)
+
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .center, spacing: 8) {
+                            Image("PillrLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 68, height: 68)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .shadow(color: Color.black.opacity(0.18), radius: 6, x: 0, y: 3)
+
+                            Text("Welcome to Pillr.")
+                                .font(.system(size: 34, weight: .bold))
+                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                .multilineTextAlignment(.center)
+
+                        Text("Let’s start by choosing how your information will be stored.")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.92))
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                        VStack(spacing: 14) {
+                        MyMedsSyncChoiceCard(
+                            title: "On this device only",
+                            detail: "Everything stays local on this iPhone. No cloud backup or sync.",
+                            benefits: [
+                                "Stored only on this iPhone",
+                                "No cloud syncing between devices",
+                                "You can switch to iCloud later in Settings"
+                            ],
+                            isPrimary: false,
+                            isSelected: selectedChoice == .onDeviceOnly,
+                            isMuted: selectedChoice != nil && selectedChoice != .onDeviceOnly,
+                            action: { selectedChoice = .onDeviceOnly }
+                        )
+
+                        MyMedsSyncChoiceCard(
+                            title: "Use iCloud Sync",
+                            detail: "Back up and sync across your Apple devices. Recommended for continuity.",
+                            benefits: [
+                                "Encrypted backup in your iCloud account",
+                                "Syncs across iPhone, iPad, and Mac",
+                                "Easier recovery when changing devices"
+                            ],
+                            isPrimary: true,
+                            isSelected: selectedChoice == .connect,
+                            isMuted: selectedChoice != nil && selectedChoice != .connect,
+                            action: { selectedChoice = .connect }
+                        )
+                        }
+
+                        Button {
+                            showFinalConfirmation = true
+                        } label: {
+                            Text("Continue")
+                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                .foregroundColor(Color(hex: "#F5F7F4").opacity(selectedChoice == nil ? 0.56 : 1.0))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color(hex: "#5B695D").opacity(selectedChoice == nil ? 0.56 : 1.0))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(selectedChoice == nil)
+                        .shadow(color: Color.black.opacity(0.22), radius: 12, x: 0, y: 6)
+
+                        Text("Select one option, then continue")
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.78))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 22)
                 }
+                .frame(maxWidth: 560)
+                .frame(maxHeight: min(geometry.size.height * 0.9, 760))
+                .background(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(Color(hex: "#404C42"))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke(Color.white.opacity(0.11), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.4), radius: 24, x: 0, y: 10)
+                .padding(.horizontal, 18)
+                .offset(y: -22)
             }
         }
-        .transition(.opacity)
-        .zIndex(2)
+        .alert("Confirm selection?", isPresented: $showFinalConfirmation) {
+            Button(confirmButtonTitle, role: .none) {
+                guard let selectedChoice else { return }
+                onChoice(selectedChoice)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(confirmMessage)
+        }
+    }
+
+    private var confirmButtonTitle: String {
+        switch selectedChoice {
+        case .onDeviceOnly:
+            return "Yes, keep local"
+        case .connect:
+            return "Yes, use iCloud"
+        case .none:
+            return "Confirm"
+        }
+    }
+
+    private var confirmMessage: String {
+        switch selectedChoice {
+        case .onDeviceOnly:
+            return "Medication data will stay only on this device until you change it in Settings."
+        case .connect:
+            return "Medication data will sync with iCloud across your Apple devices."
+        case .none:
+            return ""
+        }
     }
 }
 
-private struct CloudSyncChoiceCard: View {
-    let iconName: String
+private struct MyMedsSyncChoiceCard: View {
     let title: String
-    let description: String
-    let highlights: [String]
-    let accentColor: Color
-    var filled: Bool = false
-    var iconColor: Color? = nil
-    var tapBackgroundColor: Color? = nil
-    var tapTextColor: Color? = nil
+    let detail: String
+    let benefits: [String]
+    let isPrimary: Bool
+    let isSelected: Bool
+    let isMuted: Bool
     let action: () -> Void
+
+    private var leadingIconName: String {
+        isPrimary ? "icloud.and.arrow.up" : "iphone"
+    }
+
+    private var cardColor: Color {
+        if isPrimary {
+            return Color(hex: "#A7B3A2").opacity(0.76)
+        }
+        return Color(hex: "#5B695D").opacity(0.96)
+    }
 
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .center, spacing: 10) {
-                    Image(systemName: iconName)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(iconColor ?? (filled ? Color.white : accentColor))
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: leadingIconName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4").opacity(0.9))
+                        .padding(.top, 6)
 
                     Text(title)
-                        .font(.system(size: 19, weight: .semibold, design: .rounded))
-                        .foregroundColor(filled ? Color(hex: "#404C42") : Color.white)
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.92)
+
+                    Spacer()
+
+                    Circle()
+                        .fill(isSelected ? Color.white.opacity(0.3) : Color.white.opacity(0.08))
+                        .frame(width: 30, height: 30)
+                        .overlay {
+                            Image(systemName: isSelected ? "checkmark" : "circle")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(Color(hex: "#F5F7F4").opacity(isSelected ? 1 : 0.65))
+                        }
                 }
 
-                Text(description)
-                    .font(.system(size: 14, design: .rounded))
-                    .foregroundColor(filled ? Color(hex: "#404C42").opacity(0.9) : Color.white.opacity(0.9))
-                    .lineSpacing(4)
+                Text(detail)
+                    .font(.system(size: 17, weight: .medium, design: .rounded))
+                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.94))
+                    .multilineTextAlignment(.leading)
+                    .lineSpacing(3)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(highlights, id: \.self) { highlight in
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(benefits, id: \.self) { benefit in
                         HStack(alignment: .top, spacing: 8) {
                             Circle()
-                                .fill(filled ? Color(hex: "#404C42") : accentColor)
-                                .frame(width: 6, height: 6)
-                                .padding(.top, 6)
+                                .fill(Color(hex: "#F5F7F4").opacity(0.8))
+                                .frame(width: 5, height: 5)
+                                .padding(.top, 7)
 
-                            Text(highlight)
-                                .font(.system(size: 13, weight: .medium, design: .rounded))
-                                .foregroundColor(filled ? Color(hex: "#404C42").opacity(0.9) : Color.white.opacity(0.8))
+                            Text(benefit)
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
-
-                HStack {
-                    Spacer(minLength: 0)
-                    Text("Tap to select")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundColor(tapTextColor ?? (filled ? Color(hex: "#404C42") : accentColor))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background(
-                            Capsule()
-                                .fill(
-                                    tapBackgroundColor
-                                    ?? (filled ? Color.white.opacity(0.8) : Color.white.opacity(0.08))
-                                )
-                        )
-                    Spacer(minLength: 0)
-                }
-                .padding(.top, 2)
             }
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 22)
-                    .fill(filled ? Color.white : Color.white.opacity(0.03))
-            )
+            .background(cardColor)
+            .cornerRadius(18)
             .overlay(
-                RoundedRectangle(cornerRadius: 22)
-                    .stroke(filled ? Color.clear : accentColor.opacity(0.5), lineWidth: filled ? 0 : 1)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(
+                        isSelected ? Color.white.opacity(0.45) : Color.white.opacity(0.1),
+                        lineWidth: isSelected ? 1.6 : 1
+                    )
             )
+            .shadow(color: Color.black.opacity(0.24), radius: 13, x: 0, y: 7)
+            .shadow(color: Color.black.opacity(0.12), radius: 5, x: 0, y: 2)
+            .opacity(isMuted ? 0.52 : 1.0)
+            .scaleEffect(isSelected ? 1.0 : 0.985)
         }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-struct CloudSyncChoiceConfirmationOverlay: View {
-    let choice: CloudSyncChoice
-    let onConfirm: () -> Void
-    let onCancel: () -> Void
-
-    private var title: String {
-        switch choice {
-        case .onDeviceOnly:
-            return "Keep data on this device?"
-        case .connect:
-            return "Enable iCloud Sync?"
-        }
-    }
-
-    private var description: String {
-        switch choice {
-        case .onDeviceOnly:
-            return "Everything stays local. If you delete Pillr or reset this device, your medication data is gone forever unless you enable iCloud Sync later."
-        case .connect:
-            return "Medication data and history are backed up and mirrored across every Apple device signed in with your Apple ID, helping you recover or continue on new devices."
-        }
-    }
-
-    private var confirmTitle: String {
-        switch choice {
-        case .onDeviceOnly:
-            return "Confirm On-device only"
-        case .connect:
-            return "Confirm Connect iCloud Sync"
-        }
-    }
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color.black.opacity(0.75)
-                    .ignoresSafeArea()
-
-                VStack {
-                    Spacer()
-
-                    VStack(spacing: 16) {
-                        Text(title)
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-
-                        Text(description)
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .foregroundColor(Color.white.opacity(0.9))
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(4)
-
-                        Button(action: onConfirm) {
-                            Text(confirmTitle)
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color(hex: "#404C42"))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.white)
-                                )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-
-                        Button(action: onCancel) {
-                            Text("Go back")
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.6), lineWidth: 1)
-                                )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    .padding(28)
-                    .frame(maxWidth: 400)
-                    .background(
-                        RoundedRectangle(cornerRadius: 26)
-                            .fill(Color(hex: "#2A2D28").opacity(0.98))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 26)
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                    )
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom + 16)
-                }
-            }
-        }
-        .transition(.opacity)
-        .zIndex(3)
+        .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.2), value: isMuted)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 }

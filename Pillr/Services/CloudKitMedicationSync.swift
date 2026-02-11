@@ -48,6 +48,8 @@ final class CloudKitMedicationSync {
         static let updatedAt = "updatedAt"
 
         static let medicationReference = "medicationReference"
+        static let medicationID = "medicationID"
+        static let medicationId = "medicationId"
         static let medicationName = "medicationName"
         static let takenAt = "takenAt"
         static let logUpdatedAt = "updatedAt"
@@ -191,7 +193,7 @@ final class CloudKitMedicationSync {
         fetchRecords(of: .medicationLog) { result in
             switch result {
             case let .success(records):
-                logResults = records.compactMap { self.medicationLog(from: $0) }
+                logResults = self.decodeMedicationLogs(records)
             case let .failure(error):
                 fetchError = fetchError ?? error
             }
@@ -392,6 +394,7 @@ final class CloudKitMedicationSync {
             record[Field.reflectionSummary] = reflectionSummary as CKRecordValue
         }
         record[Field.isDailyCheckIn] = log.isDailyCheckIn as CKRecordValue
+        record[Field.medicationID] = medication.id.uuidString as CKRecordValue
         let reference = CKRecord.Reference(recordID: CKRecord.ID(recordName: medication.id.uuidString), action: .none)
         record[Field.medicationReference] = reference
         return record
@@ -506,10 +509,26 @@ final class CloudKitMedicationSync {
 
     private func medicationLog(from record: CKRecord) -> MedicationLog? {
         guard let id = UUID(uuidString: record.recordID.recordName),
-              let medicationReference = record[Field.medicationReference] as? CKRecord.Reference,
-              let medicationID = UUID(uuidString: medicationReference.recordID.recordName),
-              let medicationName = record[Field.medicationName] as? String,
+              let medicationName = (record[Field.medicationName] as? String ?? record[Field.name] as? String),
               let takenAt = record[Field.takenAt] as? Date else {
+            return nil
+        }
+
+        let medicationID: UUID? = {
+            if let medicationReference = record[Field.medicationReference] as? CKRecord.Reference,
+               let uuid = UUID(uuidString: medicationReference.recordID.recordName) {
+                return uuid
+            }
+            if let value = record[Field.medicationID] as? String, let uuid = UUID(uuidString: value) {
+                return uuid
+            }
+            if let value = record[Field.medicationId] as? String, let uuid = UUID(uuidString: value) {
+                return uuid
+            }
+            return nil
+        }()
+
+        guard let medicationID else {
             return nil
         }
 
@@ -557,6 +576,26 @@ final class CloudKitMedicationSync {
             medicationIconName: medicationIconName,
             medicationReminderCount: medicationReminderCount
         )
+    }
+
+    private func decodeMedicationLogs(_ records: [CKRecord]) -> [MedicationLog] {
+        var decoded: [MedicationLog] = []
+        decoded.reserveCapacity(records.count)
+        var dropped = 0
+
+        for record in records {
+            if let log = medicationLog(from: record) {
+                decoded.append(log)
+            } else {
+                dropped += 1
+            }
+        }
+
+        if dropped > 0 {
+            print("CloudKit: dropped \(dropped) MedicationLog record(s) during decode; decoded \(decoded.count) of \(records.count).")
+        }
+
+        return decoded
     }
 
     private func interaction(from record: CKRecord) -> CloudInteractionRecord? {

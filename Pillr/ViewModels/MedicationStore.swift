@@ -92,14 +92,18 @@ class MedicationStore: ObservableObject {
     @Published var requestedMainTab: MainTab?
     @Published private(set) var overdueMedicationIDs: Set<UUID> = []
     @Published private(set) var overdueReminderNotificationIDs: Set<String> = []
+    @Published private(set) var isCloudSyncInProgress = false
     private let notificationManager: NotificationManagerProtocol
     private let hapticManager = HapticManager.shared
     private let cloudSync: CloudKitMedicationSyncProtocol
     private var dayChangeObserver: NSObjectProtocol?
     private var appActiveObserver: NSObjectProtocol?
     private var cloudSyncPreferenceCancellable: AnyCancellable?
+    private var cloudSyncOperationCount = 0
     private var lastCloudSyncPreferenceState: Bool = false
     private var isPerformingInitialCloudSync = false
+    private var lastReminderKickstartDate: Date?
+    private let reminderKickstartMinimumInterval: TimeInterval = 30
     private var lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
     private var pendingCheckIns: [PendingCheckIn] = []
     
@@ -667,6 +671,51 @@ class MedicationStore: ObservableObject {
             return
         }
         fetchCloudData(completion: completion)
+    }
+
+    /// Re-applies scheduled reminder windows for active medications that already
+    /// have reminders configured, primarily to recover schedules after reinstall
+    /// or auth state transitions.
+    func kickstartActiveReminderSchedules(referenceDate: Date = Date(), force: Bool = false) {
+        guard !isPreviewMode else { return }
+        let now = Date()
+        if !force,
+           let lastRun = lastReminderKickstartDate,
+           now.timeIntervalSince(lastRun) < reminderKickstartMinimumInterval {
+            return
+        }
+        lastReminderKickstartDate = now
+
+        let hasActiveReminderMedication = medications.contains {
+            !$0.isDeleted && $0.frequency != "As needed" && $0.hasActiveReminder
+        }
+        guard hasActiveReminderMedication else { return }
+
+        notificationManager.requestAuthorizationIfNeeded { [weak self] granted in
+            guard let self, granted else { return }
+            DispatchQueue.main.async {
+                var updatedMedications = self.medications
+                var didRefresh = false
+
+                for index in updatedMedications.indices {
+                    let medication = updatedMedications[index]
+                    guard !medication.isDeleted,
+                          medication.frequency != "As needed",
+                          medication.hasActiveReminder else {
+                        continue
+                    }
+                    updatedMedications[index] = self.refreshNotificationSchedule(for: medication)
+                    didRefresh = true
+                }
+
+                if didRefresh {
+                    self.medications = updatedMedications
+                    self.saveMedications()
+                }
+                self.reconcileNotificationSchedules(referenceDate: referenceDate)
+                self.resetBadgeIfNeeded()
+            }
+        }
     }
 
     private func overdueDoseCount(referenceDate: Date) -> Int {
@@ -1710,13 +1759,18 @@ class MedicationStore: ObservableObject {
 
     // Helper function to update medication names in existing logs
     private func updateMedicationNameInLogs(medicationID: UUID, newName: String) {
+        var updatedLogs: [MedicationLog] = []
         for index in logs.indices {
             if logs[index].medicationID == medicationID {
                 logs[index].medicationName = newName
                 logs[index].updatedAt = Date()
+                updatedLogs.append(logs[index])
             }
         }
         saveLogs()
+        for log in updatedLogs {
+            syncLogWithCloud(log)
+        }
     }
 
     // --- Local Device Persistence ---
@@ -1860,8 +1914,26 @@ class MedicationStore: ObservableObject {
         if enabled && !lastCloudSyncPreferenceState {
             cloudSync.ensureSubscriptions()
             performInitialCloudSync()
+        } else if !enabled {
+            cloudSyncOperationCount = 0
+            isCloudSyncInProgress = false
         }
         lastCloudSyncPreferenceState = enabled
+    }
+
+    private func beginCloudSyncOperation() {
+        guard shouldUseCloudSync else { return }
+        cloudSyncOperationCount += 1
+        isCloudSyncInProgress = cloudSyncOperationCount > 0
+    }
+
+    private func endCloudSyncOperation() {
+        guard cloudSyncOperationCount > 0 else {
+            isCloudSyncInProgress = false
+            return
+        }
+        cloudSyncOperationCount -= 1
+        isCloudSyncInProgress = cloudSyncOperationCount > 0
     }
 
     private func performDailyResetIfNeeded() {
@@ -2045,32 +2117,41 @@ class MedicationStore: ObservableObject {
     
     private func fetchCloudData(completion: ((UIBackgroundFetchResult) -> Void)? = nil) {
         guard shouldUseCloudSync else { return }
+        beginCloudSyncOperation()
         cloudSync.fetchAllRecords { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case let .success(payload):
-                self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: true)
-                self.mergeCloudLogs(payload.logs)
-                self.lastCloudSyncDate = Date()
-                completion?(.newData)
-            case let .failure(error):
-                print("CloudKit fetch failed: \(error)")
-                completion?(.failed)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                defer { self.endCloudSyncOperation() }
+                switch result {
+                case let .success(payload):
+                    self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: true)
+                    self.mergeCloudLogs(payload.logs)
+                    self.lastCloudSyncDate = Date()
+                    completion?(.newData)
+                case let .failure(error):
+                    print("CloudKit fetch failed: \(error)")
+                    completion?(.failed)
+                }
             }
         }
     }
 
     private func syncMedicationWithCloud(_ medication: Medication) {
         guard shouldUseCloudSync else { return }
+        beginCloudSyncOperation()
         cloudSync.save(medication: medication) { [weak self] result in
-            switch result {
-            case let .success(record):
-                if let modificationDate = record.modificationDate {
-                    self?.updateCloudLastModified(for: medication.id, date: modificationDate)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                defer { self.endCloudSyncOperation() }
+                switch result {
+                case let .success(record):
+                    if let modificationDate = record.modificationDate {
+                        self.updateCloudLastModified(for: medication.id, date: modificationDate)
+                    }
+                    self.lastCloudSyncDate = Date()
+                case let .failure(error):
+                    print("CloudKit medication save failed: \(error)")
                 }
-                self?.lastCloudSyncDate = Date()
-            case let .failure(error):
-                print("CloudKit medication save failed: \(error)")
             }
         }
     }
@@ -2078,11 +2159,16 @@ class MedicationStore: ObservableObject {
     private func syncLogWithCloud(_ log: MedicationLog) {
         guard shouldUseCloudSync else { return }
         guard let medication = medications.first(where: { $0.id == log.medicationID }) else { return }
+        beginCloudSyncOperation()
         cloudSync.save(log: log, medication: medication) { [weak self] result in
-            if case let .failure(error) = result {
-                print("CloudKit log save failed: \(error)")
-            } else {
-                self?.lastCloudSyncDate = Date()
+            DispatchQueue.main.async {
+                guard let self else { return }
+                defer { self.endCloudSyncOperation() }
+                if case let .failure(error) = result {
+                    print("CloudKit log save failed: \(error)")
+                } else {
+                    self.lastCloudSyncDate = Date()
+                }
             }
         }
     }
@@ -2094,9 +2180,13 @@ class MedicationStore: ObservableObject {
         tombstone.updatedAt = Date()
         deletedMedicationIDs.insert(tombstone.id)
         persistDeletedMedicationIDs()
+        beginCloudSyncOperation()
         cloudSync.markMedicationDeleted(tombstone) { result in
-            if case let .failure(error) = result {
-                print("CloudKit medication delete failed: \(error)")
+            DispatchQueue.main.async {
+                defer { self.endCloudSyncOperation() }
+                if case let .failure(error) = result {
+                    print("CloudKit medication delete failed: \(error)")
+                }
             }
         }
     }
@@ -2106,9 +2196,13 @@ class MedicationStore: ObservableObject {
         var tombstone = log
         tombstone.isDeleted = true
         tombstone.updatedAt = Date()
+        beginCloudSyncOperation()
         cloudSync.markLogDeleted(tombstone) { result in
-            if case let .failure(error) = result {
-                print("CloudKit log delete failed: \(error)")
+            DispatchQueue.main.async {
+                defer { self.endCloudSyncOperation() }
+                if case let .failure(error) = result {
+                    print("CloudKit log delete failed: \(error)")
+                }
             }
         }
     }
@@ -2131,6 +2225,13 @@ class MedicationStore: ObservableObject {
     private func mergeCloudMedications(_ remote: [Medication], allowSnapshotDeletion: Bool) {
         guard !remote.isEmpty else { return }
         DispatchQueue.main.async {
+            let hasReminderEligibleMedication = remote.contains {
+                !$0.isDeleted && $0.frequency != "As needed"
+            }
+            if hasReminderEligibleMedication {
+                self.notificationManager.requestAuthorizationIfNeeded()
+            }
+
             var updated = self.medications
             var hasChanges = false
             let deletedIDs = self.deletedMedicationIDs
@@ -2227,6 +2328,7 @@ class MedicationStore: ObservableObject {
                 self.saveMedications()
                 self.resetBadgeIfNeeded()
             }
+            self.kickstartActiveReminderSchedules(referenceDate: Date(), force: true)
         }
     }
 
@@ -2234,23 +2336,27 @@ class MedicationStore: ObservableObject {
         guard shouldUseCloudSync else { return }
         guard !isPerformingInitialCloudSync else { return }
         isPerformingInitialCloudSync = true
+        beginCloudSyncOperation()
         cloudSync.fetchAllRecords { [weak self] result in
-            guard let self else { return }
-            self.isPerformingInitialCloudSync = false
-            switch result {
-            case let .success(payload):
-                if payload.medications.isEmpty && payload.logs.isEmpty {
-                    self.pushAllLocalDataToCloud()
-                    self.lastCloudSyncDate = Date()
-                    return
-                }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                defer { self.endCloudSyncOperation() }
+                self.isPerformingInitialCloudSync = false
+                switch result {
+                case let .success(payload):
+                    if payload.medications.isEmpty && payload.logs.isEmpty {
+                        self.pushAllLocalDataToCloud()
+                        self.lastCloudSyncDate = Date()
+                        return
+                    }
 
-                self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: false)
-                self.mergeCloudLogs(payload.logs)
-                self.pushLocalChangesToCloud(remoteMedications: payload.medications, remoteLogs: payload.logs)
-                self.lastCloudSyncDate = Date()
-            case let .failure(error):
-                print("CloudKit fetch failed: \(error)")
+                    self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: false)
+                    self.mergeCloudLogs(payload.logs)
+                    self.pushLocalChangesToCloud(remoteMedications: payload.medications, remoteLogs: payload.logs)
+                    self.lastCloudSyncDate = Date()
+                case let .failure(error):
+                    print("CloudKit fetch failed: \(error)")
+                }
             }
         }
     }

@@ -17,8 +17,7 @@ struct SettingsView: View {
     @State private var isHealthSettingsExpanded = false
     @State private var isPremiumSettingsExpanded = false
     @State private var showingCloudSyncChoiceAgain = false
-    @State private var showingCloudSyncConfirmationAgain = false
-    @State private var pendingCloudSyncChoice: CloudSyncChoice?
+    @State private var cloudSyncRotation: Double = 0
 
     private var isPremiumActive: Bool {
         storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
@@ -54,19 +53,12 @@ struct SettingsView: View {
                         await refreshICloudStatus()
                     }
                 }
-                if showingCloudSyncChoiceAgain && !showingCloudSyncConfirmationAgain {
+                if showingCloudSyncChoiceAgain {
                     CloudSyncChoiceOverlay { choice in
                         handleCloudSyncSelection(choice)
                     }
                     .transition(.opacity)
-                    .zIndex(2)
-                }
-                if showingCloudSyncConfirmationAgain, let choice = pendingCloudSyncChoice {
-                    CloudSyncChoiceConfirmationOverlay(
-                        choice: choice,
-                        onConfirm: confirmCloudSyncSetting,
-                        onCancel: cancelCloudSyncSetting
-                    )
+                    .zIndex(3)
                 }
             }
             .navigationBarHidden(true)
@@ -180,6 +172,37 @@ struct SettingsView: View {
                 value: iCloudLastSyncTitle,
                 detail: iCloudLastSyncDetail
             )
+
+            settingsActionRow(
+                title: store.isCloudSyncInProgress ? "Syncing with iCloud..." : "Resync iCloud now",
+                subtitle: shouldUseCloudSync
+                    ? "Tap to manually fetch your latest iCloud medication data."
+                    : "Enable iCloud Sync to manually resync.",
+                showChevron: false,
+                accessoryIcon: nil,
+                leadingIcon: "icloud",
+                trailingIcon: shouldUseCloudSync ? nil : "lock"
+            ) {
+                triggerManualCloudResync()
+            }
+            .overlay(alignment: .trailing) {
+                if shouldUseCloudSync {
+                    Image(systemName: store.isCloudSyncInProgress ? "arrow.triangle.2.circlepath.circle.fill" : "icloud")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(SettingsPalette.secondaryText)
+                        .padding(.top, 2)
+                        .rotationEffect(.degrees(cloudSyncRotation))
+                        .animation(.easeInOut(duration: 0.2), value: store.isCloudSyncInProgress)
+                }
+            }
+            .disabled(!shouldUseCloudSync || store.isCloudSyncInProgress)
+            .opacity(!shouldUseCloudSync ? 0.7 : 1)
+            .onAppear {
+                updateCloudSyncAnimation(isSyncing: store.isCloudSyncInProgress)
+            }
+            .onChange(of: store.isCloudSyncInProgress) { _, syncing in
+                updateCloudSyncAnimation(isSyncing: syncing)
+            }
 
             if !shouldUseCloudSync {
                 Text("You chose to keep everything on this device. Connect to iCloud later whenever you’re ready.")
@@ -358,23 +381,9 @@ struct SettingsView: View {
     }
 
     private func handleCloudSyncSelection(_ choice: CloudSyncChoice) {
-        pendingCloudSyncChoice = choice
-        showingCloudSyncChoiceAgain = false
-        showingCloudSyncConfirmationAgain = true
-    }
-
-    private func confirmCloudSyncSetting() {
-        guard let choice = pendingCloudSyncChoice else { return }
         let enableSync = choice == .connect
         userSettings.setCloudSyncPreference(enableSync)
-        pendingCloudSyncChoice = nil
-        showingCloudSyncConfirmationAgain = false
-    }
-
-    private func cancelCloudSyncSetting() {
-        pendingCloudSyncChoice = nil
-        showingCloudSyncConfirmationAgain = false
-        showingCloudSyncChoiceAgain = true
+        showingCloudSyncChoiceAgain = false
     }
 
     @ViewBuilder
@@ -556,6 +565,28 @@ struct SettingsView: View {
         }
     }
 
+    private func triggerManualCloudResync() {
+        guard shouldUseCloudSync else { return }
+        store.refreshCloudSyncIfNeeded { _ in
+            Task { @MainActor in
+                await refreshICloudStatus()
+            }
+        }
+    }
+
+    private func updateCloudSyncAnimation(isSyncing: Bool) {
+        if isSyncing {
+            cloudSyncRotation = 0
+            withAnimation(.linear(duration: 0.9).repeatForever(autoreverses: false)) {
+                cloudSyncRotation = 360
+            }
+        } else {
+            withAnimation(.easeOut(duration: 0.15)) {
+                cloudSyncRotation = 0
+            }
+        }
+    }
+
     private func openLink(_ urlString: String) {
         guard let url = URL(string: urlString), UIApplication.shared.canOpenURL(url) else {
             return
@@ -669,23 +700,17 @@ struct SettingsView: View {
         guard let date = store.lastCloudSyncDate else {
             return "Not yet synced"
         }
-        return "Synced \(relativeDateString(for: date))"
+        return DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .short)
     }
 
     private var iCloudLastSyncDetail: String? {
         if !shouldUseCloudSync {
             return "Last sync tracking is paused while iCloud sync is off."
         }
-        guard let date = store.lastCloudSyncDate else {
+        guard store.lastCloudSyncDate != nil else {
             return "Waiting for Pillr to finish its first sync"
         }
-        return DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .short)
-    }
-
-    private func relativeDateString(for date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        return formatter.localizedString(for: date, relativeTo: Date())
+        return nil
     }
 }
 

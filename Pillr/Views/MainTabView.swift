@@ -21,13 +21,12 @@ struct MainTabView: View {
     @State private var activeOnboardingStage: OnboardingStageInfo?
     @State private var activeOnboardingTab: MainTab?
     @State private var showCloudSyncChoice = false
-    @State private var showCloudSyncConfirmation = false
-    @State private var pendingCloudSyncChoice: CloudSyncChoice?
     @State private var showNotificationOnboardingPrompt = false
     @State private var needsOnboardingAfterNotificationPrompt = false
     @State private var isRequestingNotificationAuthorization = false
     @State private var showReviewPrompt = false
     @State private var referenceDate = Date()
+    @State private var suppressTabSelectionUntil = Date.distantPast
     @AppStorage("reviewPromptFirstLaunchTimeInterval") private var reviewPromptFirstLaunchTimeInterval: Double = 0
     @AppStorage("reviewPromptHasShown") private var reviewPromptHasShown = false
     @AppStorage("reviewPromptLastDismissedTimeInterval") private var reviewPromptLastDismissedTimeInterval: Double = 0
@@ -45,6 +44,7 @@ struct MainTabView: View {
         Binding(
             get: { selectedTab },
             set: { newValue in
+                guard !isTabSelectionTemporarilySuppressed else { return }
                 if selectedTab == .meds && newValue != .meds && addFlowCoordinator.isShowing {
                     pendingTabSelection = newValue
                     showDiscardAlert = true
@@ -111,6 +111,13 @@ struct MainTabView: View {
                 referenceDate = output
                 store.refreshOverdueMedicationIDs(referenceDate: output)
             }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 8)
+                    .onChanged { value in
+                        guard shouldSuppressTabSelection(for: value) else { return }
+                        suppressTabSelectionUntil = Date().addingTimeInterval(0.35)
+                    }
+            )
 
                 if let stage = activeOnboardingStage {
                     OnboardingOverlayView(info: stage) {
@@ -119,18 +126,12 @@ struct MainTabView: View {
                     .transition(.opacity)
                     .zIndex(1)
                 }
-                if showCloudSyncChoice && !showCloudSyncConfirmation {
+                if showCloudSyncChoice {
                     CloudSyncChoiceOverlay { choice in
                         handleCloudSyncSelection(choice)
                     }
                     .transition(.opacity)
-                }
-                if showCloudSyncConfirmation, let pending = pendingCloudSyncChoice {
-                    CloudSyncChoiceConfirmationOverlay(
-                        choice: pending,
-                        onConfirm: confirmCloudSyncChoice,
-                        onCancel: cancelCloudSyncChoice
-                    )
+                    .zIndex(4)
                 }
                 if showNotificationOnboardingPrompt {
                     NotificationPermissionOnboardingPrompt(
@@ -187,6 +188,19 @@ struct MainTabView: View {
         scheduleOnboarding(for: tab)
     }
 
+    private var isTabSelectionTemporarilySuppressed: Bool {
+        Date() < suppressTabSelectionUntil
+    }
+
+    private func shouldSuppressTabSelection(for value: DragGesture.Value) -> Bool {
+        let startNearBottom = value.startLocation.y > (UIScreen.main.bounds.height - 120)
+        guard startNearBottom else { return false }
+
+        let verticalTravel = -value.translation.height
+        let horizontalTravel = abs(value.translation.width)
+        return verticalTravel > 20 && verticalTravel > (horizontalTravel * 1.2)
+    }
+
     private func scheduleOnboarding(for tab: MainTab) {
         guard activeOnboardingStage == nil else { return }
         let key = tab.rawValue
@@ -238,7 +252,6 @@ struct MainTabView: View {
     private var isBlockingReviewPrompt: Bool {
         activeOnboardingStage != nil
             || showCloudSyncChoice
-            || showCloudSyncConfirmation
             || showNotificationOnboardingPrompt
     }
 
@@ -294,31 +307,13 @@ struct MainTabView: View {
 
 
     private func handleCloudSyncSelection(_ choice: CloudSyncChoice) {
-        pendingCloudSyncChoice = choice
-        withAnimation(.easeInOut(duration: 0.2)) {
-            showCloudSyncChoice = false
-            showCloudSyncConfirmation = true
-        }
-    }
-
-    private func confirmCloudSyncChoice() {
-        guard let choice = pendingCloudSyncChoice else { return }
         let enableSync = choice == .connect
         userSettings.setCloudSyncPreference(enableSync)
         userSettings.markOnboardingStageSeen(Self.cloudSyncOnboardingKey)
-        pendingCloudSyncChoice = nil
         withAnimation(.easeInOut(duration: 0.2)) {
-            showCloudSyncConfirmation = false
+            showCloudSyncChoice = false
         }
         handleCloudSyncCompletion()
-    }
-
-    private func cancelCloudSyncChoice() {
-        pendingCloudSyncChoice = nil
-        withAnimation(.easeInOut(duration: 0.2)) {
-            showCloudSyncConfirmation = false
-            showCloudSyncChoice = true
-        }
     }
 
     private func handleCloudSyncCompletion() {
@@ -335,13 +330,35 @@ struct MainTabView: View {
                 if settings.authorizationStatus == .notDetermined {
                     needsOnboardingAfterNotificationPrompt = true
                     userSettings.markNotificationOnboardingPromptSeen()
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        showNotificationOnboardingPrompt = true
-                    }
+                    presentNotificationPromptAfterCloudChoiceDismissal()
                 } else {
                     scheduleOnboarding(for: selectedTab)
                     scheduleReviewPromptIfNeeded()
                 }
+            }
+        }
+    }
+
+    private func presentNotificationPromptAfterCloudChoiceDismissal(attempt: Int = 0) {
+        let maxAttempts = 10
+        guard attempt <= maxAttempts else {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showNotificationOnboardingPrompt = true
+            }
+            return
+        }
+
+        // Ensure the sync chooser sheet is fully dismissed first.
+        guard !showCloudSyncChoice else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                presentNotificationPromptAfterCloudChoiceDismissal(attempt: attempt + 1)
+            }
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showNotificationOnboardingPrompt = true
             }
         }
     }
