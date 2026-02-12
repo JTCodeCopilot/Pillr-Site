@@ -138,7 +138,6 @@ struct InteractionHistoryView: View {
                 Text("This will permanently delete all interaction history. This action cannot be undone.")
             }
         }
-        .preferredColorScheme(.dark)
     }
     
     // MARK: - Subviews

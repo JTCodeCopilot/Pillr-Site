@@ -258,7 +258,6 @@ struct AddMedicationView: View {
             }
         }
         }
-        .preferredColorScheme(.dark)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .toolbar {
@@ -2706,7 +2705,6 @@ struct FocusTimingGuidanceSheet_Previews: PreviewProvider {
             onApply: {},
             onClose: {}
         )
-        .preferredColorScheme(.dark)
     }
 }
 

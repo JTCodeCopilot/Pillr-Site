@@ -12,28 +12,24 @@ import UIKit
 // MARK: - Premium journal styling
 private enum ReflectJournalTheme {
     // Base palette
-    static let pageTop = Color(hex: "#3E483F")
-    static let pageBottom = Color(hex: "#303830")
+    static var pageTop: Color { Color(hex: "#3E483F") }
+    static var pageBottom: Color { Color(hex: "#303830") }
 
-    static let textPrimary = Color(hex: "#E8E8E0")
-    static let textSecondary = Color(hex: "#C7C7BD").opacity(0.72)
-    static let textTertiary = Color(hex: "#C7C7BD").opacity(0.52)
+    static var textPrimary: Color { Color(hex: "#E8E8E0") }
+    static var textSecondary: Color { Color(hex: "#C7C7BD").opacity(0.72) }
+    static var textTertiary: Color { Color(hex: "#C7C7BD").opacity(0.52) }
 
     // Paper
-    static let sheetFill = Color.white.opacity(0.075)
-    static let sheetFillExpanded = Color.white.opacity(0.09)
-    static let sheetHighlight = Color.white.opacity(0.14)
+    static var sheetFill: Color { Color.white.opacity(AppTheme.shared.mode == .dark ? 0.06 : 0.075) }
+    static var sheetFillExpanded: Color { Color.white.opacity(AppTheme.shared.mode == .dark ? 0.08 : 0.09) }
+    static var sheetHighlight: Color { Color.white.opacity(AppTheme.shared.mode == .dark ? 0.12 : 0.14) }
 
     // Accents
-    static let accent = Color(hex: "#E1D6C5")
-    static let progressTrack = Color.white.opacity(0.16)
+    static var accent: Color { Color(hex: "#E1D6C5") }
+    static var progressTrack: Color { Color.white.opacity(AppTheme.shared.mode == .dark ? 0.12 : 0.16) }
 
     static var pageBackground: some View {
-        LinearGradient(
-            gradient: Gradient(colors: [pageTop, pageBottom]),
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        LinearGradient.pillrBackground
     }
 }
 
@@ -378,7 +374,7 @@ struct DailyCheckInHistoryView: View {
                         .foregroundColor(Color(hex: "#C7C7BD"))
                 }
                 .padding(24)
-                .background(Color(hex: "#424C43").ignoresSafeArea())
+                .background(LinearGradient.pillrBackground.ignoresSafeArea())
             }
         }
         .onAppear {
@@ -405,7 +401,6 @@ struct DailyCheckInHistoryView: View {
                 hasCustomDateFilter = true
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     private var headerSection: some View {

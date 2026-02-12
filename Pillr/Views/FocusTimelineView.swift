@@ -291,15 +291,8 @@ struct FocusTimelineView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(hex: "#404C42"),
-                        Color(hex: "#3A443D")
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                LinearGradient.pillrBackground
+                    .ignoresSafeArea()
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
@@ -336,7 +329,6 @@ struct FocusTimelineView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
     }
     
     private var horizontalInsets: CGFloat {
@@ -1068,15 +1060,8 @@ struct ADHDDoseTimelineSheet: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(hex: "#404C42"),
-                    Color(hex: "#3A443D")
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            LinearGradient.pillrBackground
+                .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 12) {

@@ -6,23 +6,423 @@
 // 
 
 import SwiftUI
+import UIKit
 import WebKit
+
+struct AppThemePalette {
+    let backgroundPrimary: String
+    let backgroundSecondary: String
+    let surfacePrimary: String
+    let surfaceSecondary: String
+    let border: String
+    let divider: String
+    let textPrimary: String
+    let textSecondary: String
+    let textMuted: String
+    let iconPrimary: String
+    let iconSecondary: String
+    let inputBackground: String
+    let inputBorder: String
+    let inputPlaceholder: String
+    let buttonPrimaryBackground: String
+    let buttonPrimaryForeground: String
+    let buttonSecondaryBackground: String
+    let buttonSecondaryForeground: String
+    let interactivePressed: String
+    let interactiveDisabledBackground: String
+    let interactiveDisabledForeground: String
+    let success: String
+    let warning: String
+    let error: String
+    let link: String
+    let navigationBackground: String
+    let navigationTitle: String
+    let tabBarBackground: String
+
+    var backgroundPrimaryColor: Color { Color(hexLiteral: backgroundPrimary) }
+    var backgroundSecondaryColor: Color { Color(hexLiteral: backgroundSecondary) }
+    var surfacePrimaryColor: Color { Color(hexLiteral: surfacePrimary) }
+    var surfaceSecondaryColor: Color { Color(hexLiteral: surfaceSecondary) }
+    var borderColor: Color { Color(hexLiteral: border) }
+    var dividerColor: Color { Color(hexLiteral: divider) }
+    var textPrimaryColor: Color { Color(hexLiteral: textPrimary) }
+    var textSecondaryColor: Color { Color(hexLiteral: textSecondary) }
+    var textMutedColor: Color { Color(hexLiteral: textMuted) }
+    var iconPrimaryColor: Color { Color(hexLiteral: iconPrimary) }
+    var iconSecondaryColor: Color { Color(hexLiteral: iconSecondary) }
+    var inputBackgroundColor: Color { Color(hexLiteral: inputBackground) }
+    var inputBorderColor: Color { Color(hexLiteral: inputBorder) }
+    var inputPlaceholderColor: Color { Color(hexLiteral: inputPlaceholder) }
+    var buttonPrimaryBackgroundColor: Color { Color(hexLiteral: buttonPrimaryBackground) }
+    var buttonPrimaryForegroundColor: Color { Color(hexLiteral: buttonPrimaryForeground) }
+    var buttonSecondaryBackgroundColor: Color { Color(hexLiteral: buttonSecondaryBackground) }
+    var buttonSecondaryForegroundColor: Color { Color(hexLiteral: buttonSecondaryForeground) }
+    var interactivePressedColor: Color { Color(hexLiteral: interactivePressed) }
+    var interactiveDisabledBackgroundColor: Color { Color(hexLiteral: interactiveDisabledBackground) }
+    var interactiveDisabledForegroundColor: Color { Color(hexLiteral: interactiveDisabledForeground) }
+    var successColor: Color { Color(hexLiteral: success) }
+    var warningColor: Color { Color(hexLiteral: warning) }
+    var errorColor: Color { Color(hexLiteral: error) }
+    var linkColor: Color { Color(hexLiteral: link) }
+    var navigationBackgroundColor: Color { Color(hexLiteral: navigationBackground) }
+    var navigationTitleColor: Color { Color(hexLiteral: navigationTitle) }
+    var tabBarBackgroundColor: Color { Color(hexLiteral: tabBarBackground) }
+
+    static let light = AppThemePalette(
+        backgroundPrimary: "#404C42",
+        backgroundSecondary: "#3A443D",
+        surfacePrimary: "#4C584F",
+        surfaceSecondary: "#5B695D",
+        border: "#606A63",
+        divider: "#A0A69B",
+        textPrimary: "#F5F7F4",
+        textSecondary: "#E0E7DC",
+        textMuted: "#C7C7BD",
+        iconPrimary: "#F5F7F4",
+        iconSecondary: "#C7C7BD",
+        inputBackground: "#3B433C",
+        inputBorder: "#606A63",
+        inputPlaceholder: "#A7B3A2",
+        buttonPrimaryBackground: "#F5F5F5",
+        buttonPrimaryForeground: "#2F352F",
+        buttonSecondaryBackground: "#4C584F",
+        buttonSecondaryForeground: "#F5F7F4",
+        interactivePressed: "#DCD8CF",
+        interactiveDisabledBackground: "#4D5A4F",
+        interactiveDisabledForeground: "#A0A69B",
+        success: "#C8F365",
+        warning: "#FFB74D",
+        error: "#F87171",
+        link: "#C8F365",
+        navigationBackground: "#404C42",
+        navigationTitle: "#C7C7BD",
+        tabBarBackground: "#404C42"
+    )
+
+    static let dark = AppThemePalette(
+        backgroundPrimary: "#26292D",
+        backgroundSecondary: "#2E3237",
+        surfacePrimary: "#343940",
+        surfaceSecondary: "#3C424A",
+        border: "#505962",
+        divider: "#5A636D",
+        textPrimary: "#F1F3F5",
+        textSecondary: "#D6DBE1",
+        textMuted: "#AFB6BF",
+        iconPrimary: "#ECEFF3",
+        iconSecondary: "#BDC4CD",
+        inputBackground: "#2F343A",
+        inputBorder: "#59626C",
+        inputPlaceholder: "#8E97A2",
+        buttonPrimaryBackground: "#E1E6EB",
+        buttonPrimaryForeground: "#252A2F",
+        buttonSecondaryBackground: "#464D56",
+        buttonSecondaryForeground: "#EFF2F5",
+        interactivePressed: "#C5CCD3",
+        interactiveDisabledBackground: "#555D66",
+        interactiveDisabledForeground: "#929AA5",
+        success: "#9FBF9F",
+        warning: "#D0A672",
+        error: "#E09A9A",
+        link: "#C9D0D8",
+        navigationBackground: "#2B2F34",
+        navigationTitle: "#D6DBE1",
+        tabBarBackground: "#2B2F34"
+    )
+}
+
+enum AppThemeMode: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system:
+            return "System"
+        case .light:
+            return "Light"
+        case .dark:
+            return "Dark"
+        }
+    }
+
+    var preferredColorScheme: ColorScheme? {
+        switch self {
+        case .system:
+            return nil
+        case .light:
+            return .light
+        case .dark:
+            return .dark
+        }
+    }
+}
+
+final class AppTheme: ObservableObject {
+    static let shared = AppTheme()
+    static let modeStorageKey = "pillr.appThemeMode"
+
+    @Published var mode: AppThemeMode {
+        didSet {
+            guard oldValue != mode else { return }
+            UserDefaults.standard.set(mode.rawValue, forKey: Self.modeStorageKey)
+        }
+    }
+    @Published private(set) var systemColorScheme: ColorScheme
+
+    var preferredColorScheme: ColorScheme? {
+        mode.preferredColorScheme
+    }
+
+    var resolvedColorScheme: ColorScheme {
+        switch mode {
+        case .light:
+            return .light
+        case .dark:
+            return .dark
+        case .system:
+            return systemColorScheme
+        }
+    }
+
+    var isUsingDarkPalette: Bool {
+        resolvedColorScheme == .dark
+    }
+
+    var palette: AppThemePalette {
+        isUsingDarkPalette ? .dark : .light
+    }
+
+    private init() {
+        let raw = UserDefaults.standard.string(forKey: Self.modeStorageKey)
+        mode = AppThemeMode(rawValue: raw ?? "") ?? .system
+        systemColorScheme = Self.detectCurrentSystemColorScheme()
+    }
+
+    func setMode(_ mode: AppThemeMode) {
+        self.mode = mode
+    }
+
+    func updateSystemColorScheme(_ colorScheme: ColorScheme) {
+        guard systemColorScheme != colorScheme else { return }
+        systemColorScheme = colorScheme
+    }
+
+    static var currentMode: AppThemeMode {
+        shared.mode
+    }
+
+    static var currentPalette: AppThemePalette {
+        shared.palette
+    }
+
+    struct RGBAComponents {
+        let red: Double
+        let green: Double
+        let blue: Double
+        let alpha: Double
+    }
+
+    static func literalComponents(for hex: String) -> RGBAComponents {
+        parseHexToRGBA(normalizeHex(hex))
+    }
+
+    static func themedComponents(for hex: String) -> RGBAComponents {
+        let normalized = normalizeHex(hex)
+        var parsed = parseHexToRGBA(normalized)
+
+        guard shared.isUsingDarkPalette else {
+            return parsed
+        }
+
+        let baseHex = rgbHex(from: normalized)
+
+        if let overrideHex = darkHexOverrides[baseHex] ?? darkStatusOverrides[baseHex] {
+            let overrideColor = parseHexToRGBA(normalizeHex(overrideHex))
+            return RGBAComponents(
+                red: overrideColor.red,
+                green: overrideColor.green,
+                blue: overrideColor.blue,
+                alpha: parsed.alpha
+            )
+        }
+
+        parsed = neutralizeForDarkMode(parsed)
+        return parsed
+    }
+
+    private static let darkHexOverrides: [String: String] = [
+        "0A0F0C": "#23272B",
+        "1B1D19": "#1F2429",
+        "1E201A": "#21262B",
+        "1E2620": "#242930",
+        "2A2D28": "#262B31",
+        "2C332D": "#2E343B",
+        "2E352F": "#313841",
+        "2F352F": "#323A42",
+        "303830": "#333B44",
+        "343D36": "#363F48",
+        "3A443D": "#2E3339",
+        "3B433C": "#353B43",
+        "3C463E": "#373E47",
+        "3D463F": "#384049",
+        "3E483F": "#39414A",
+        "404C42": "#2B2F34",
+        "424C43": "#30353B",
+        "4A5A4A": "#3D434B",
+        "4C584F": "#3E454D",
+        "4D5A4F": "#3F464E",
+        "525E55": "#454C54",
+        "5B695D": "#434B53",
+        "606A63": "#4F5962",
+        "616D5F": "#505A63",
+        "A0A69B": "#8E97A1",
+        "A7B3A2": "#99A2AB",
+        "B8B8AE": "#A9B1BB",
+        "C7C7BD": "#AFB6BF",
+        "C8CCBE": "#B5BCC5",
+        "D0D0C8": "#BEC4CD",
+        "D0D5D8": "#C4CBD3",
+        "D7CCC8": "#C2C9D1",
+        "DCD8CF": "#C8CED6",
+        "DFDFD9": "#CFD4DB",
+        "E0E0E0": "#D1D6DC",
+        "E0E7DC": "#D6DBE1",
+        "E1D6C5": "#C6CDD4",
+        "E8E8E0": "#DEE3E9",
+        "F0F0E8": "#E5E8EC",
+        "F5F1E8": "#E5E8EC",
+        "F5F5F5": "#ECEFF3",
+        "F5F7F4": "#F1F3F5",
+        "F8F8F1": "#F2F4F6"
+    ]
+
+    private static let darkStatusOverrides: [String: String] = [
+        "64B5F6": "#AFBED0",
+        "7FE3FF": "#B9CEDA",
+        "81C784": "#8FAF95",
+        "8BC34A": "#94AD7B",
+        "9FD7C1": "#B7C7C2",
+        "B6C7E6": "#C5CEDA",
+        "C7A76B": "#B29874",
+        "C8F365": "#9FBF9F",
+        "D4A017": "#B38C58",
+        "D78B7E": "#B98E88",
+        "D8B4F8": "#C3C8D0",
+        "DFFFC0": "#CED5C8",
+        "F2B8A0": "#D2ADA0",
+        "F3D6D6": "#DDBEC2",
+        "F44336": "#C97B76",
+        "F6FFE0": "#D6DBD0",
+        "F87171": "#E09A9A",
+        "FF5A5A": "#D68A8A",
+        "FF6B6B": "#DC9393",
+        "FF8A65": "#C99983",
+        "FF9800": "#C08355",
+        "FFA726": "#C99562",
+        "FFB74D": "#D0A672",
+        "FFC107": "#D4B06E",
+        "FFC857": "#CBA56F",
+        "FFE4E6": "#E6C9CC",
+        "7A3330": "#93615E",
+        "8C3A37": "#A66F6B"
+    ]
+
+    private static func neutralizeForDarkMode(_ color: RGBAComponents) -> RGBAComponents {
+        let luminance = (0.2126 * color.red) + (0.7152 * color.green) + (0.0722 * color.blue)
+        let clampedGray = min(max(0.14 + (luminance * 0.72), 0.14), 0.93)
+        return RGBAComponents(
+            red: clampedGray,
+            green: clampedGray,
+            blue: clampedGray,
+            alpha: color.alpha
+        )
+    }
+
+    private static func normalizeHex(_ hex: String) -> String {
+        let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted).uppercased()
+        switch cleaned.count {
+        case 3:
+            return cleaned.map { "\($0)\($0)" }.joined()
+        case 6, 8:
+            return cleaned
+        default:
+            return "FFFFFFFF"
+        }
+    }
+
+    private static func parseHexToRGBA(_ normalizedHex: String) -> RGBAComponents {
+        var int: UInt64 = 0
+        Scanner(string: normalizedHex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch normalizedHex.count {
+        case 6:
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8:
+            // ARGB format.
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 255, 255, 255)
+        }
+        return RGBAComponents(
+            red: Double(r) / 255.0,
+            green: Double(g) / 255.0,
+            blue: Double(b) / 255.0,
+            alpha: Double(a) / 255.0
+        )
+    }
+
+    private static func rgbHex(from normalizedHex: String) -> String {
+        if normalizedHex.count == 8 {
+            return String(normalizedHex.suffix(6))
+        }
+        return normalizedHex
+    }
+
+    private static func detectCurrentSystemColorScheme() -> ColorScheme {
+        let style: UIUserInterfaceStyle
+        if let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first,
+           let window = scene.windows.first {
+            style = window.traitCollection.userInterfaceStyle
+        } else {
+            style = UITraitCollection.current.userInterfaceStyle
+        }
+        return style == .light ? .light : .dark
+    }
+}
+
+private struct PillrThemeModeKey: EnvironmentKey {
+    static let defaultValue: AppThemeMode = .system
+}
+
+extension EnvironmentValues {
+    var pillrThemeMode: AppThemeMode {
+        get { self[PillrThemeModeKey.self] }
+        set { self[PillrThemeModeKey.self] = newValue }
+    }
+}
 
 // MARK: - Global Background Definition
 extension Color {
-    static let pillrNavy = Color.black
-    static let pillrSoftBlue = Color.black
-    static let pillrDeepBlue = Color.black
+    static var pillrNavy: Color { AppTheme.shared.palette.backgroundPrimaryColor }
+    static var pillrSoftBlue: Color { AppTheme.shared.palette.backgroundSecondaryColor }
+    static var pillrDeepBlue: Color { AppTheme.shared.palette.surfacePrimaryColor }
 }
 
 extension LinearGradient {
-    static let pillrBackground = LinearGradient(
-        gradient: Gradient(colors: [
-            Color(hex: "#404C42"),  // Solid background color
-        ]),
-        startPoint: .topTrailing,
-        endPoint: .bottomLeading
-    )
+    static var pillrBackground: LinearGradient {
+        let palette = AppTheme.shared.palette
+        return LinearGradient(
+            gradient: Gradient(colors: [palette.backgroundPrimaryColor, palette.backgroundSecondaryColor]),
+            startPoint: .topTrailing,
+            endPoint: .bottomLeading
+        )
+    }
 }
 
 // Alternative background accessor for direct color use
@@ -35,37 +435,47 @@ extension View {
 // MARK: - Color Extension for Theme Colors
 extension Color {
     static var pillrAccent: Color {
-        return Color(hex: "#F5F5F5") // Tan accent color
+        AppTheme.shared.palette.buttonPrimaryBackgroundColor
     }
-    
+
     static var pillrSecondary: Color {
-        return Color(hex: "#F5F5F5") // Tan secondary color
+        AppTheme.shared.palette.textSecondaryColor
     }
 }
 
 // MARK: - Color Hex Extension
 extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (1, 1, 1, 0)
-        }
+    init(hexLiteral: String) {
+        let components = AppTheme.literalComponents(for: hexLiteral)
         self.init(
             .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
+            red: components.red,
+            green: components.green,
+            blue: components.blue,
+            opacity: components.alpha
+        )
+    }
+
+    init(hex: String) {
+        let components = AppTheme.themedComponents(for: hex)
+        self.init(
+            .sRGB,
+            red: components.red,
+            green: components.green,
+            blue: components.blue,
+            opacity: components.alpha
+        )
+    }
+}
+
+extension UIColor {
+    convenience init(hexLiteral: String) {
+        let components = AppTheme.literalComponents(for: hexLiteral)
+        self.init(
+            red: components.red,
+            green: components.green,
+            blue: components.blue,
+            alpha: components.alpha
         )
     }
 }
@@ -197,7 +607,6 @@ struct ContentView: View {
                     }
                 }
             }
-        .preferredColorScheme(.dark)
         .accessibilityAddTraits(.isButton)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Pillr - Your Personal Medication Tracker")

@@ -131,7 +131,7 @@ struct MedicationHistoryView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#424C43")
+                LinearGradient.pillrBackground
                     .ignoresSafeArea()
                 
                 ScrollView(showsIndicators: false) {
@@ -190,7 +190,6 @@ struct MedicationHistoryView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
         .sheet(isPresented: $showingShareSheet) {
             ShareSheet(activityItems: shareItems)
         }
@@ -232,15 +231,8 @@ struct MedicationHistoryView: View {
     private var dateRangeFullScreen: some View {
         NavigationStack {
             ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(hex: "#3D463F"),
-                        Color(hex: "#2E352F")
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                LinearGradient.pillrBackground
+                    .ignoresSafeArea()
                 
                 VStack {
                     dateRangePopoverContent
@@ -258,7 +250,6 @@ struct MedicationHistoryView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
     }
     
     private var dateRangePopoverContent: some View {
@@ -764,15 +755,8 @@ private struct LogDateEditSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(hex: "#3D463F"),
-                        Color(hex: "#2E352F")
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                LinearGradient.pillrBackground
+                    .ignoresSafeArea()
 
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Edit Log Date")
@@ -814,7 +798,6 @@ private struct LogDateEditSheet: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 

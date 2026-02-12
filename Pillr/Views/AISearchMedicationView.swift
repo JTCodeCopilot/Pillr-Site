@@ -501,6 +501,5 @@ struct AISearchMedicationView_Previews: PreviewProvider {
             AISearchMedicationView(onSelectMedication: { _ in })
                 .environmentObject(UserSettings.previewSettings())
         }
-        .preferredColorScheme(.dark)
     }
 } 
