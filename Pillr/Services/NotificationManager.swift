@@ -65,6 +65,7 @@ class NotificationManager: ObservableObject {
     private var trackedMedicationIDs = Set<UUID>()
     private let reminderSchedulingWindowDays = 30
     private let followUpSchedulingWindowDays = 30
+    private let maxPendingMedicationNotifications = 60
 
     func updateTrackedMedicationIDs(_ ids: Set<UUID>) {
         trackedMedicationIDsQueue.sync(flags: .barrier) {
@@ -290,6 +291,12 @@ class NotificationManager: ObservableObject {
         _ request: UNNotificationRequest,
         context: String
     ) async {
+        let authorizationAllowed = await isNotificationSchedulingAllowed()
+        guard authorizationAllowed else {
+            print("Skipping \(context): notification authorization not granted")
+            return
+        }
+
         await withCheckedContinuation { continuation in
             UNUserNotificationCenter.current().add(request) { [weak self] error in
                 if let error {
@@ -297,6 +304,35 @@ class NotificationManager: ObservableObject {
                     self?.recordReliabilityEvent(.notificationMutationError)
                 }
                 continuation.resume()
+            }
+        }
+    }
+
+    private func isNotificationSchedulingAllowed() async -> Bool {
+        let status = await notificationAuthorizationStatus()
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        case .notDetermined:
+            return await requestAuthorizationAsync()
+        default:
+            return false
+        }
+    }
+
+    private func notificationAuthorizationStatus() async -> UNAuthorizationStatus {
+        await withCheckedContinuation { continuation in
+            UNUserNotificationCenter.current().getNotificationSettings { settings in
+                continuation.resume(returning: settings.authorizationStatus)
+            }
+        }
+    }
+
+    private func requestAuthorizationAsync() async -> Bool {
+        let options = defaultAuthorizationOptions
+        return await withCheckedContinuation { continuation in
+            UNUserNotificationCenter.current().requestAuthorization(options: options) { granted, _ in
+                continuation.resume(returning: granted)
             }
         }
     }
@@ -411,8 +447,7 @@ class NotificationManager: ObservableObject {
             guard let self else { return }
             let existingIdentifiers = Set((await self.pendingRequestsSnapshot()).map { $0.identifier })
             var knownIdentifiers = existingIdentifiers
-            let maxPendingReminders = 60
-            var remainingSlots = max(0, maxPendingReminders - knownIdentifiers.count)
+            var remainingSlots = max(0, self.maxPendingMedicationNotifications - knownIdentifiers.count)
             guard remainingSlots > 0 else { return }
             let now = Date()
             let startOfDay = calendar.startOfDay(for: now)
@@ -640,10 +675,13 @@ class NotificationManager: ObservableObject {
             guard let self else { return }
             let existingIdentifiers = Set((await self.pendingRequestsSnapshot()).map { $0.identifier })
             var knownIdentifiers = existingIdentifiers
+            var remainingSlots = max(0, self.maxPendingMedicationNotifications - knownIdentifiers.count)
+            guard remainingSlots > 0 else { return }
             let now = Date()
             let startOfDay = calendar.startOfDay(for: now)
 
             for dayOffset in 0..<self.followUpSchedulingWindowDays {
+                guard remainingSlots > 0 else { break }
                 guard let day = calendar.date(byAdding: .day, value: dayOffset, to: startOfDay),
                       let baseDate = self.localTimeOnDay(
                         calendar: calendar,
@@ -672,6 +710,7 @@ class NotificationManager: ObservableObject {
                     repeats: false
                 )
                 knownIdentifiers.insert(identifier)
+                remainingSlots -= 1
             }
         }
     }

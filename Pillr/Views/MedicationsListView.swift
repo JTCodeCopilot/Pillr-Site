@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import UIKit
+import UserNotifications
 
 final class AddMedicationFlowCoordinator: ObservableObject {
     @Published var isShowing = false
@@ -56,6 +58,7 @@ struct MedicationsListView: View {
     @State private var undoToastDismissWorkItem: DispatchWorkItem?
     private let undoToastDuration: TimeInterval = 5.0
     @State private var isViewActive = false
+    @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
 
     private struct CustomLogRequest: Identifiable {
         let id = UUID()
@@ -64,11 +67,41 @@ struct MedicationsListView: View {
     }
 
     private var reminderMedications: [Medication] {
-        store.activeMedications.filter { !$0.isCabinetMedication }
+        store.activeMedications.filter { medication in
+            if medication.frequency == "As needed" {
+                return false
+            }
+            if !notificationsEnabledForReminders {
+                return true
+            }
+            return medication.hasActiveReminder
+        }
     }
     
     private var cabinetMedications: [Medication] {
-        store.activeMedications.filter { $0.isCabinetMedication }
+        store.activeMedications.filter { medication in
+            if medication.frequency == "As needed" {
+                return true
+            }
+            if !notificationsEnabledForReminders {
+                return false
+            }
+            return !medication.hasActiveReminder
+        }
+    }
+
+    private var notificationsEnabledForReminders: Bool {
+        guard let status = notificationAuthorizationStatus else { return true }
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private var shouldShowNotificationEnableBanner: Bool {
+        !notificationsEnabledForReminders
     }
 
     init(addFlowCoordinator: AddMedicationFlowCoordinator = AddMedicationFlowCoordinator()) {
@@ -134,6 +167,14 @@ struct MedicationsListView: View {
                         .padding(.bottom, 32)
                         .frame(maxWidth: .infinity, alignment: .bottom)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .safeAreaInset(edge: .top) {
+                    if shouldShowNotificationEnableBanner {
+                        notificationEnableBanner
+                            .padding(.horizontal, 16)
+                            .padding(.top, 12)
+                            .padding(.bottom, 4)
                     }
                 }
             }
@@ -284,6 +325,7 @@ struct MedicationsListView: View {
             }
             .onAppear {
                 isViewActive = true
+                refreshNotificationPermissionStatus()
                 Task {
                     await healthKitManager.refreshAuthorizationState()
                     await healthKitManager.refreshMetrics()
@@ -295,6 +337,7 @@ struct MedicationsListView: View {
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     refreshReferenceDate(resetBadge: true)
+                    refreshNotificationPermissionStatus()
                     Task {
                         await healthKitManager.refreshAuthorizationState()
                         await healthKitManager.refreshMetrics()
@@ -303,6 +346,7 @@ struct MedicationsListView: View {
             }
             .task {
                 await healthKitManager.refreshAuthorizationState()
+                refreshNotificationPermissionStatus()
             }
             .onChange(of: addFlowCoordinator.dismissTrigger) { _, _ in
                 if showingAddSheet {
@@ -354,6 +398,25 @@ struct MedicationsListView: View {
         }
     }
 
+    private func refreshNotificationPermissionStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                notificationAuthorizationStatus = settings.authorizationStatus
+            }
+        }
+    }
+
+    private func openNotificationSettings() {
+        let urlString: String
+        if #available(iOS 16.0, *) {
+            urlString = UIApplication.openNotificationSettingsURLString
+        } else {
+            urlString = UIApplication.openSettingsURLString
+        }
+        guard let url = URL(string: urlString) else { return }
+        UIApplication.shared.open(url)
+    }
+
     private func performPullToRefresh() async {
         let _ = await withCheckedContinuation { continuation in
             store.refreshCloudSyncIfNeeded { _ in
@@ -365,7 +428,43 @@ struct MedicationsListView: View {
             store.loadMedications()
             store.loadLogs()
             refreshReferenceDate(resetBadge: true)
+            refreshNotificationPermissionStatus()
         }
+    }
+
+    private var notificationEnableBanner: some View {
+        HStack(spacing: 12) {
+            Text("Turn on notifications to get medication reminders.")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+                .lineSpacing(2)
+                .lineLimit(3)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 8) {
+                Image(systemName: "bell.slash.fill")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 24, alignment: .center)
+                Button(action: openNotificationSettings) {
+                    Text("Enable")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(Color(hex: "#1C2A1C"))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 9)
+                        .background(Color.white)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(hex: "#FFB74D").opacity(0.95))
+        )
     }
     
     private func handleAddMedication() {

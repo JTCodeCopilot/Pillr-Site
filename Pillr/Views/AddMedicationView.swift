@@ -2295,9 +2295,8 @@ struct AddMedicationView: View {
             if settings.authorizationStatus == .notDetermined {
                 requestNotificationAuthorization()
             } else if settings.authorizationStatus == .denied {
-                DispatchQueue.main.async {
-                    self.enableNotification = false
-                }
+                // Keep the user's reminder choice on even if iOS permission is currently denied.
+                // This prevents newly added reminder meds from being treated as "no reminder" meds.
             } else if settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral {
                 var needsTimeSensitiveUpgrade = false
                 if #available(iOS 15.0, *) {
@@ -2311,9 +2310,7 @@ struct AddMedicationView: View {
                     }
                 }
             } else {
-                DispatchQueue.main.async {
-                    self.enableNotification = false
-                }
+                // Preserve current toggle state for unknown/unexpected statuses.
             }
         }
     }
@@ -2321,7 +2318,9 @@ struct AddMedicationView: View {
     private func requestNotificationAuthorization() {
         NotificationManager.shared.requestAuthorization { granted in
             DispatchQueue.main.async {
-                self.enableNotification = granted
+                if granted {
+                    self.enableNotification = true
+                }
             }
         }
     }
