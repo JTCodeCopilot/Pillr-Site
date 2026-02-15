@@ -105,6 +105,7 @@ struct MainTabView: View {
             }
             .onChange(of: selectedTab) { _, _ in
                 HapticManager.shared.strongImpact()
+                enforceTabBarIconColors()
             }
             .tint(.white)
             .toolbarColorScheme(.dark, for: .tabBar)
@@ -167,12 +168,14 @@ struct MainTabView: View {
         }
         .onAppear {
             AppTheme.shared.updateSystemColorScheme(colorScheme)
+            enforceTabBarIconColors()
             scheduleOnboarding(for: selectedTab)
             scheduleReviewPromptIfNeeded()
             store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
         }
         .onChange(of: colorScheme) { _, newValue in
             AppTheme.shared.updateSystemColorScheme(newValue)
+            enforceTabBarIconColors()
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
@@ -191,6 +194,28 @@ struct MainTabView: View {
     private func applySelectedTab(_ tab: MainTab) {
         selectedTab = tab
         scheduleOnboarding(for: tab)
+    }
+
+    private func enforceTabBarIconColors() {
+        let iconColor = UIColor.white
+        let appearance = UITabBar.appearance().standardAppearance
+        let itemAppearances = [
+            appearance.stackedLayoutAppearance,
+            appearance.inlineLayoutAppearance,
+            appearance.compactInlineLayoutAppearance
+        ]
+        for itemAppearance in itemAppearances {
+            itemAppearance.normal.iconColor = iconColor
+            itemAppearance.normal.titleTextAttributes = [.foregroundColor: iconColor]
+            itemAppearance.selected.iconColor = iconColor
+            itemAppearance.selected.titleTextAttributes = [.foregroundColor: iconColor]
+        }
+        UITabBar.appearance().standardAppearance = appearance
+        if #available(iOS 15.0, *) {
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        }
+        UITabBar.appearance().tintColor = iconColor
+        UITabBar.appearance().unselectedItemTintColor = iconColor
     }
 
     private var isTabSelectionTemporarilySuppressed: Bool {

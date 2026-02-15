@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var isPremiumSettingsExpanded = false
     @State private var showingCloudSyncChoiceAgain = false
     @State private var cloudSyncRotation: Double = 0
+    @Environment(\.colorScheme) private var colorScheme
 
     private var isPremiumActive: Bool {
         storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
@@ -112,7 +113,26 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .frame(width: 46, height: 46)
-                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                .background(
+                    Group {
+                        if colorScheme == .dark {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
+                                )
+                        } else {
+                            Circle()
+                                .fill(Color.white.opacity(0.18))
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                )
+                                .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+                        }
+                    }
+                )
                 .contentShape(Circle())
                 .accessibilityLabel("Feedback")
 
@@ -126,7 +146,26 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .frame(width: 46, height: 46)
-                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                .background(
+                    Group {
+                        if colorScheme == .dark {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
+                                )
+                        } else {
+                            Circle()
+                                .fill(Color.white.opacity(0.18))
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                )
+                                .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+                        }
+                    }
+                )
                 .contentShape(Circle())
                 .accessibilityLabel("Contact us")
             }
@@ -482,6 +521,7 @@ struct SettingsView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .environment(\.colorScheme, appTheme.isUsingDarkPalette ? .dark : .light)
             .accessibilityLabel("Appearance")
         }
         .padding(.vertical, 10)

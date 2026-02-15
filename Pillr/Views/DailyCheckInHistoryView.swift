@@ -90,6 +90,7 @@ private extension View {
 struct DailyCheckInHistoryView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var storeManager: StoreManager
+    @EnvironmentObject var appTheme: AppTheme
     @Environment(\.dismiss) private var dismiss
     let isModal: Bool
     @State private var showingQuickCheckIn = false
@@ -122,6 +123,10 @@ struct DailyCheckInHistoryView: View {
 
     private var isPremiumActive: Bool {
         storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
+    }
+
+    private var toolbarButtonColor: Color {
+        appTheme.isUsingDarkPalette ? ReflectJournalTheme.textSecondary : Color(hexLiteral: "#2F352F").opacity(0.88)
     }
 
     private var selectableMedications: [Medication] {
@@ -273,7 +278,7 @@ struct DailyCheckInHistoryView: View {
                         Button("Close") {
                             dismiss()
                         }
-                        .foregroundColor(ReflectJournalTheme.textSecondary)
+                        .foregroundColor(toolbarButtonColor)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -286,7 +291,7 @@ struct DailyCheckInHistoryView: View {
                     } label: {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(ReflectJournalTheme.textSecondary)
+                            .foregroundColor(toolbarButtonColor)
                     }
                     .disabled(checkInLogs.isEmpty && isPremiumActive)
                     .accessibilityLabel("Filter reflections")
@@ -307,7 +312,7 @@ struct DailyCheckInHistoryView: View {
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(ReflectJournalTheme.textSecondary)
+                            .foregroundColor(toolbarButtonColor)
                     }
                     .disabled(checkInLogs.isEmpty && isPremiumActive)
                     .accessibilityLabel("Export reflections")
@@ -327,7 +332,7 @@ struct DailyCheckInHistoryView: View {
                     }) {
                         Image(systemName: "plus")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(ReflectJournalTheme.textSecondary)
+                            .foregroundColor(toolbarButtonColor)
                     }
                     .disabled(defaultMedicationForCheckIn == nil && isPremiumActive)
                     .accessibilityLabel("New Reflection")
