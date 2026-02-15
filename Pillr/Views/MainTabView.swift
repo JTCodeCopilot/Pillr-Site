@@ -13,7 +13,6 @@ struct MainTabView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var userSettings: UserSettings
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.colorScheme) private var colorScheme
     
     @State private var selectedTab: MainTab = .meds
     @StateObject private var addFlowCoordinator = AddMedicationFlowCoordinator()
@@ -105,10 +104,8 @@ struct MainTabView: View {
             }
             .onChange(of: selectedTab) { _, _ in
                 HapticManager.shared.strongImpact()
-                enforceTabBarIconColors()
             }
-            .tint(.white)
-            .toolbarColorScheme(.dark, for: .tabBar)
+            .accentColor(Color.pillrAccent)
             .onReceive(badgeRefreshTimer) { output in
                 guard scenePhase == .active else { return }
                 referenceDate = output
@@ -167,15 +164,9 @@ struct MainTabView: View {
             Text("Any progress you've made on this medication will be discarded.")
         }
         .onAppear {
-            AppTheme.shared.updateSystemColorScheme(colorScheme)
-            enforceTabBarIconColors()
             scheduleOnboarding(for: selectedTab)
             scheduleReviewPromptIfNeeded()
             store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
-        }
-        .onChange(of: colorScheme) { _, newValue in
-            AppTheme.shared.updateSystemColorScheme(newValue)
-            enforceTabBarIconColors()
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
@@ -189,33 +180,12 @@ struct MainTabView: View {
                 store.requestedMainTab = nil
             }
         }
+        .preferredColorScheme(.dark)
     }
 
     private func applySelectedTab(_ tab: MainTab) {
         selectedTab = tab
         scheduleOnboarding(for: tab)
-    }
-
-    private func enforceTabBarIconColors() {
-        let iconColor = UIColor.white
-        let appearance = UITabBar.appearance().standardAppearance
-        let itemAppearances = [
-            appearance.stackedLayoutAppearance,
-            appearance.inlineLayoutAppearance,
-            appearance.compactInlineLayoutAppearance
-        ]
-        for itemAppearance in itemAppearances {
-            itemAppearance.normal.iconColor = iconColor
-            itemAppearance.normal.titleTextAttributes = [.foregroundColor: iconColor]
-            itemAppearance.selected.iconColor = iconColor
-            itemAppearance.selected.titleTextAttributes = [.foregroundColor: iconColor]
-        }
-        UITabBar.appearance().standardAppearance = appearance
-        if #available(iOS 15.0, *) {
-            UITabBar.appearance().scrollEdgeAppearance = appearance
-        }
-        UITabBar.appearance().tintColor = iconColor
-        UITabBar.appearance().unselectedItemTintColor = iconColor
     }
 
     private var isTabSelectionTemporarilySuppressed: Bool {

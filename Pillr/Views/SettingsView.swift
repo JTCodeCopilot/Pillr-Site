@@ -7,7 +7,6 @@ import CloudKit
 struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
     @EnvironmentObject var store: MedicationStore
-    @EnvironmentObject var appTheme: AppTheme
     @ObservedObject private var storeManager = StoreManager.shared
     @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = HealthDistanceUnit.miles.rawValue
     @State private var showingPremiumUpgrade = false
@@ -19,7 +18,6 @@ struct SettingsView: View {
     @State private var isPremiumSettingsExpanded = false
     @State private var showingCloudSyncChoiceAgain = false
     @State private var cloudSyncRotation: Double = 0
-    @Environment(\.colorScheme) private var colorScheme
 
     private var isPremiumActive: Bool {
         storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
@@ -113,26 +111,7 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .frame(width: 46, height: 46)
-                .background(
-                    Group {
-                        if colorScheme == .dark {
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
-                                )
-                        } else {
-                            Circle()
-                                .fill(Color.white.opacity(0.18))
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                )
-                                .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
-                        }
-                    }
-                )
+                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
                 .contentShape(Circle())
                 .accessibilityLabel("Feedback")
 
@@ -146,26 +125,7 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .frame(width: 46, height: 46)
-                .background(
-                    Group {
-                        if colorScheme == .dark {
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
-                                )
-                        } else {
-                            Circle()
-                                .fill(Color.white.opacity(0.18))
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                )
-                                .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
-                        }
-                    }
-                )
+                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
                 .contentShape(Circle())
                 .accessibilityLabel("Contact us")
             }
@@ -267,7 +227,6 @@ struct SettingsView: View {
     private var generalSettingsSection: some View {
         let premiumActive = isPremiumActive
         return settingsSection(title: "Settings") {
-            settingsThemeModeRow
 
             VStack(spacing: 14) {
                 collapsibleSettingsSection(
@@ -385,13 +344,6 @@ struct SettingsView: View {
         )
     }
 
-    private var themeModeBinding: Binding<AppThemeMode> {
-        Binding(
-            get: { appTheme.mode },
-            set: { appTheme.setMode($0) }
-        )
-    }
-
     private var supportLinksSection: some View {
         return settingsSection(title: "Support & Resources") {
             settingsActionRow(title: "Privacy Policy") {
@@ -502,29 +454,6 @@ struct SettingsView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 22)
         .settingsCardStyle()
-    }
-
-    private var settingsThemeModeRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Appearance")
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundColor(SettingsPalette.mainText)
-                Text("Choose Light, Dark, or follow your iPhone system appearance.")
-                    .font(.system(size: 14, weight: .regular, design: .rounded))
-                    .foregroundColor(SettingsPalette.secondaryText)
-            }
-
-            Picker("Appearance", selection: themeModeBinding) {
-                ForEach(AppThemeMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .environment(\.colorScheme, appTheme.isUsingDarkPalette ? .dark : .light)
-            .accessibilityLabel("Appearance")
-        }
-        .padding(.vertical, 10)
     }
 
     private func settingsActionRow(
@@ -809,6 +738,7 @@ struct SettingsView_Previews: PreviewProvider {
         SettingsView()
             .environmentObject(UserSettings.shared)
             .environmentObject(MedicationStore.shared)
-            .environmentObject(AppTheme.shared)
+
+            .preferredColorScheme(.dark)
     }
 } 

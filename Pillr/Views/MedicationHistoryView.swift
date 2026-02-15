@@ -3,7 +3,6 @@ import UIKit
 
 struct MedicationHistoryView: View {
     @EnvironmentObject var store: MedicationStore
-    @EnvironmentObject var appTheme: AppTheme
     let isModal: Bool
     @Environment(\.dismiss) private var dismiss
     @State private var selectedMedication: String = "All"
@@ -128,27 +127,11 @@ struct MedicationHistoryView: View {
     private var dateRangeSummaryText: String {
         rangeDaysDisplayed == 1 ? "Single day selected" : "\(rangeDaysDisplayed) days selected"
     }
-
-    private var toolbarIconColor: Color {
-        appTheme.isUsingDarkPalette ? Color(hex: "#C7C7BD") : Color(hexLiteral: "#2F352F")
-    }
-
-    private var filterPrimaryColor: Color {
-        Color(hex: "#E8E8E0")
-    }
-
-    private var filterSecondaryColor: Color {
-        Color(hex: "#C7C7BD")
-    }
-
-    private var filterMutedColor: Color {
-        Color(hex: "#C7C7BD").opacity(0.8)
-    }
     
     var body: some View {
         NavigationView {
             ZStack {
-                LinearGradient.pillrBackground
+                Color(hex: "#424C43")
                     .ignoresSafeArea()
                 
                 ScrollView(showsIndicators: false) {
@@ -178,7 +161,7 @@ struct MedicationHistoryView: View {
                         Button("Close") {
                             dismiss()
                         }
-                        .foregroundColor(toolbarIconColor)
+                        .foregroundColor(Color(hex: "#C7C7BD"))
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -200,13 +183,14 @@ struct MedicationHistoryView: View {
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(toolbarIconColor)
+                            .foregroundColor(Color(hex: "#C7C7BD"))
                     }
                     .disabled(filteredLogs.isEmpty)
                     .accessibilityLabel("Export history")
                 }
             }
         }
+        .preferredColorScheme(.dark)
         .sheet(isPresented: $showingShareSheet) {
             ShareSheet(activityItems: shareItems)
         }
@@ -248,8 +232,15 @@ struct MedicationHistoryView: View {
     private var dateRangeFullScreen: some View {
         NavigationStack {
             ZStack {
-                LinearGradient.pillrBackground
-                    .ignoresSafeArea()
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "#3D463F"),
+                        Color(hex: "#2E352F")
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
                 
                 VStack {
                     dateRangePopoverContent
@@ -263,10 +254,11 @@ struct MedicationHistoryView: View {
                     Button("Close") {
                         showingDateRangePopover = false
                     }
-                    .foregroundColor(filterPrimaryColor)
+                    .foregroundColor(Color(hex: "#C7C7BD"))
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
     
     private var dateRangePopoverContent: some View {
@@ -275,7 +267,7 @@ struct MedicationHistoryView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Choose a date range")
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(filterPrimaryColor)
+                        .foregroundColor(Color(hex: "#E8E8E0"))
                 }
 
                 VStack(spacing: 12) {
@@ -286,8 +278,7 @@ struct MedicationHistoryView: View {
                         DatePicker("", selection: $selectedStartDate, in: ...selectedEndDate, displayedComponents: .date)
                             .labelsHidden()
                             .datePickerStyle(.wheel)
-                            .tint(.white)
-                            .environment(\.colorScheme, .dark)
+                            .tint(Color(hex: "#E8E8E0"))
                             .scaleEffect(y: 0.8, anchor: .center)
                             .frame(height: 120)
                     }
@@ -299,8 +290,7 @@ struct MedicationHistoryView: View {
                         DatePicker("", selection: $selectedEndDate, in: selectedStartDate...Date(), displayedComponents: .date)
                             .labelsHidden()
                             .datePickerStyle(.wheel)
-                            .tint(.white)
-                            .environment(\.colorScheme, .dark)
+                            .tint(Color(hex: "#E8E8E0"))
                             .scaleEffect(y: 0.8, anchor: .center)
                             .frame(height: 120)
                     }
@@ -309,11 +299,11 @@ struct MedicationHistoryView: View {
                 HStack(spacing: 10) {
                     Label("\(rangeDaysDisplayed) days selected", systemImage: "calendar.badge.clock")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(filterPrimaryColor)
+                        .foregroundColor(Color(hex: "#E8E8E0"))
                     Spacer()
                     Text("\(rangeTakenCount) logged • \(rangeNotesCount) notes")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(filterSecondaryColor)
+                        .foregroundColor(Color(hex: "#C7C7BD"))
                 }
                 .padding(.horizontal, 6)
 
@@ -348,10 +338,10 @@ struct MedicationHistoryView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label.uppercased())
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(filterMutedColor)
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
                 Text(selectionText)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(filterPrimaryColor)
+                    .foregroundColor(Color(hex: "#E8E8E0"))
             }
             .padding(.horizontal, 4)
 
@@ -396,19 +386,19 @@ struct MedicationHistoryView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Quick ranges")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(filterSecondaryColor)
+                        .foregroundColor(Color(hex: "#C7C7BD"))
                     Text("Jump to a recent window")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(filterSecondaryColor.opacity(0.82))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
                 }
                 Spacer()
                 HStack(spacing: 6) {
                     Text(activePresetLabel ?? "Custom")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(filterPrimaryColor)
+                        .foregroundColor(Color(hex: "#7FE3FF"))
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(filterSecondaryColor)
+                        .foregroundColor(Color(hex: "#C7C7BD"))
                 }
             }
             .padding(.vertical, 14)
@@ -458,7 +448,7 @@ struct MedicationHistoryView: View {
         } label: {
             Image(systemName: includeSkipped ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(includeSkipped ? toolbarIconColor : toolbarIconColor.opacity(0.8))
+                .foregroundColor(includeSkipped ? Color(hex: "#C7C7BD") : Color.white.opacity(0.7))
                 .accessibilityLabel(includeSkipped ? "Exclude skipped doses" : "Include skipped doses")
         }
     }
@@ -774,8 +764,15 @@ private struct LogDateEditSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                LinearGradient.pillrBackground
-                    .ignoresSafeArea()
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "#3D463F"),
+                        Color(hex: "#2E352F")
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
 
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Edit Log Date")
@@ -817,6 +814,7 @@ private struct LogDateEditSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 }
 

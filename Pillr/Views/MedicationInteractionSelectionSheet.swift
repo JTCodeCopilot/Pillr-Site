@@ -108,6 +108,7 @@ struct MedicationInteractionSelectionSheet: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
         .onAppear {
             // Pre-select all medications by default
             selectedMedicationIDs = Set(store.activeMedications.map { $0.id })

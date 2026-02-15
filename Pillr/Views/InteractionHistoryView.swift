@@ -7,7 +7,6 @@ struct InteractionHistoryView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var storeManager: StoreManager
-    @EnvironmentObject var appTheme: AppTheme
     @State private var showingShareSheet = false
     @State private var shareText = ""
     @State private var showingClearAlert = false
@@ -41,10 +40,6 @@ struct InteractionHistoryView: View {
     
     var filteredInteractions: [DrugInteraction] {
         interactionStore.filteredHistory
-    }
-
-    private var toolbarAccentColor: Color {
-        appTheme.isUsingDarkPalette ? Color(hex: "#F5F7F4") : Color(hexLiteral: "#2F352F")
     }
     
     var body: some View {
@@ -82,7 +77,7 @@ struct InteractionHistoryView: View {
                         Button("Done") {
                             dismiss()
                         }
-                        .foregroundColor(toolbarAccentColor)
+                        .foregroundColor(Color.pillrAccent)
                         .font(.system(size: 16, weight: .medium))
                     }
                 }
@@ -99,7 +94,7 @@ struct InteractionHistoryView: View {
                         } label: {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(toolbarAccentColor)
+                                .foregroundColor(Color(hex: "#F5F7F4"))
                                 .frame(width: 24, height: 24)
                         }
                         .buttonStyle(.plain)
@@ -114,7 +109,7 @@ struct InteractionHistoryView: View {
                         } label: {
                             Image(systemName: "trash")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(toolbarAccentColor)
+                                .foregroundColor(Color(hex: "#F5F7F4"))
                                 .frame(width: 24, height: 24)
                         }
                         .buttonStyle(.plain)
@@ -143,6 +138,7 @@ struct InteractionHistoryView: View {
                 Text("This will permanently delete all interaction history. This action cannot be undone.")
             }
         }
+        .preferredColorScheme(.dark)
     }
     
     // MARK: - Subviews

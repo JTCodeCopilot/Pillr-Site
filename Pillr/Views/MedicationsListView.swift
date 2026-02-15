@@ -1051,7 +1051,6 @@ fileprivate func MedicationsListHeader(
 
 fileprivate struct HealthSummaryWidget: View {
     @ObservedObject var manager: HealthKitManager
-    @Environment(\.colorScheme) private var colorScheme
     private static var defaultDistanceUnit: HealthDistanceUnit {
         Locale.current.measurementSystem == .metric ? .kilometers : .miles
     }
@@ -1121,9 +1120,9 @@ fileprivate struct HealthSummaryWidget: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(hex: "#1C1F23") : Color(hex: "#404C42"))
+                .fill(Color(hex: "#404C42"))
         )
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.36 : 0.25), radius: colorScheme == .dark ? 12 : 8, x: 0, y: colorScheme == .dark ? 8 : 4)
+        .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
         .accessibilityElement(children: .combine)
     }
 
@@ -1288,7 +1287,6 @@ fileprivate struct InteractionPromptCard: View {
     let onCheck: () -> Void
     let onUpgrade: () -> Void
     let onDismiss: () -> Void
-    @Environment(\.colorScheme) private var colorScheme
 
     private var displayName: String {
         let trimmed = medicationName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1354,7 +1352,7 @@ fileprivate struct InteractionPromptCard: View {
                 .frame(maxWidth: .infinity)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(canCheck && hasAccess ? Color(hex: "#F5F7F4") : (colorScheme == .dark ? Color(hex: "#24282D") : Color(hex: "#4C584F")))
+                        .fill(canCheck && hasAccess ? Color(hex: "#F5F7F4") : Color(hex: "#4C584F"))
                 )
             }
             .buttonStyle(ScaleButtonStyle())
@@ -1363,13 +1361,13 @@ fileprivate struct InteractionPromptCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(hex: "#1C1F23") : Color(hex: "#4C584F"))
+                .fill(Color(hex: "#4C584F"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(Color.white.opacity(0.08), lineWidth: 1)
                 )
         )
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.34 : 0.25), radius: colorScheme == .dark ? 12 : 10, x: 0, y: colorScheme == .dark ? 8 : 6)
+        .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
     }
 }
 
@@ -1971,7 +1969,7 @@ fileprivate struct MedicationsListMainContent: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            LinearGradient.pillrBackground
+            Color(hex: "#404C42")
                 .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
 
             ScrollViewReader { proxy in
@@ -2219,7 +2217,6 @@ fileprivate struct MedicationRowHeaderView: View {
     let highlightedDoseIndex: Int?
     let compactLayout: Bool
     let referenceDate: Date
-    @Environment(\.colorScheme) private var colorScheme
     
     private let timelineTimeWidth: CGFloat = 58
     private let logButtonMinWidth: CGFloat = 96
@@ -2433,7 +2430,7 @@ fileprivate struct MedicationRowHeaderView: View {
         } else {
             return (
                 fg: Color(hex: "#C7C7BD").opacity(0.6),
-                bg: colorScheme == .dark ? Color(hex: "#24282D") : Color.white.opacity(0.08),
+                bg: Color.white.opacity(0.08),
                 border: Color.white.opacity(0.05)
             )
         }
@@ -2445,7 +2442,7 @@ fileprivate struct MedicationRowHeaderView: View {
         } else {
             return (
                 fg: Color(hex: "#C7C7BD").opacity(0.6),
-                bg: colorScheme == .dark ? Color(hex: "#24282D") : Color.white.opacity(0.08),
+                bg: Color.white.opacity(0.08),
                 border: Color.white.opacity(0.05)
             )
         }
@@ -2661,7 +2658,7 @@ fileprivate struct MedicationRowHeaderView: View {
                 .frame(minWidth: logButtonMinWidth, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(colorScheme == .dark ? Color(hex: "#24282D") : Color.white.opacity(0.005))
+                        .fill(Color.white.opacity(0.005))
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
@@ -3024,11 +3021,11 @@ struct MedicationRow: View {
     }
 
     private var takenCardColor: Color {
-        colorScheme == .dark ? Color(hex: "#24282D") : Color(hex: "#A0A69B")
+        Color(hex: "#A0A69B")
     }
 
     private var cardBackgroundColor: Color {
-        let baseColor = colorScheme == .dark ? Color(hex: "#1C1F23") : Color(hex: "#5B695D")
+        let baseColor = Color(hex: "#5B695D")
         if usesLoggedCardStyle {
             return takenCardColor.opacity(0.65)
         }
@@ -3059,44 +3056,44 @@ struct MedicationRow: View {
 
     private var cardPrimaryShadowOpacity: Double {
         if usesLoggedCardStyle {
-            return colorScheme == .dark ? 0.22 : 0.015
+            return 0.015
         }
-        return colorScheme == .dark ? (isLoggedStatus ? 0.28 : 0.35) : (isLoggedStatus ? 0.18 : 0.25)
+        return isLoggedStatus ? 0.18 : 0.25
     }
 
     private var cardPrimaryShadowRadius: CGFloat {
         if usesLoggedCardStyle {
-            return colorScheme == .dark ? 10 : 2
+            return 2
         }
-        return colorScheme == .dark ? (isLoggedStatus ? 14 : 18) : (isLoggedStatus ? 10 : 12)
+        return isLoggedStatus ? 10 : 12
     }
 
     private var cardPrimaryShadowYOffset: CGFloat {
         if usesLoggedCardStyle {
-            return colorScheme == .dark ? 6 : 0.5
+            return 0.5
         }
-        return colorScheme == .dark ? (isLoggedStatus ? 8 : 10) : (isLoggedStatus ? 4 : 6)
+        return isLoggedStatus ? 4 : 6
     }
 
     private var cardSecondaryShadowOpacity: Double {
         if usesLoggedCardStyle {
             return 0
         }
-        return colorScheme == .dark ? (isLoggedStatus ? 0.12 : 0.15) : (isLoggedStatus ? 0.08 : 0.1)
+        return isLoggedStatus ? 0.08 : 0.1
     }
 
     private var cardSecondaryShadowRadius: CGFloat {
         if usesLoggedCardStyle {
             return 0
         }
-        return colorScheme == .dark ? (isLoggedStatus ? 6 : 8) : (isLoggedStatus ? 3 : 4)
+        return isLoggedStatus ? 3 : 4
     }
 
     private var cardSecondaryShadowYOffset: CGFloat {
         if usesLoggedCardStyle {
             return 0
         }
-        return colorScheme == .dark ? (isLoggedStatus ? 2 : 3) : (isLoggedStatus ? 1 : 2)
+        return isLoggedStatus ? 1 : 2
     }
 
     private var usesLoggedCardStyle: Bool {
@@ -3525,7 +3522,6 @@ fileprivate struct MedicationRowDetailsView: View {
     let referenceDate: Date
     let onEditTap: () -> Void
     @EnvironmentObject var store: MedicationStore
-    @Environment(\.colorScheme) private var colorScheme
 
     private var notificationsEnabled: Bool {
         return !(medication.notificationID == nil && medication.notificationIDs.isEmpty)
@@ -3724,7 +3720,7 @@ fileprivate struct MedicationRowDetailsView: View {
                     .padding(.horizontal, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(colorScheme == .dark ? Color(hex: "#24282D") : Color.black.opacity(0.1))
+                            .fill(Color.black.opacity(0.1))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color(hex: "#606A63").opacity(0.2), lineWidth: 1)
@@ -3752,8 +3748,8 @@ fileprivate struct MedicationRowDetailsView: View {
         .background(
             LinearGradient(
                 gradient: Gradient(colors: [
-                    colorScheme == .dark ? Color(hex: "#24282D").opacity(0.92) : Color.black.opacity(0.15),
-                    colorScheme == .dark ? Color(hex: "#24282D").opacity(0.72) : Color.black.opacity(0.08)
+                    Color.black.opacity(0.15),
+                    Color.black.opacity(0.08)
                 ]),
                 startPoint: .top,
                 endPoint: .bottom

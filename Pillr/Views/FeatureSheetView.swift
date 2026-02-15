@@ -66,6 +66,7 @@ struct FeatureSheetView: View {
             })
             .navigationBarTitleDisplayMode(.inline)
         }
+        .preferredColorScheme(.dark) // Assuming your app uses a dark theme primarily
     }
 }
 

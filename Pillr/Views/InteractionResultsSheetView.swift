@@ -50,6 +50,7 @@ struct InteractionResultsSheetView: View {
                 ShareSheet(activityItems: shareItems)
             }
         }
+        .preferredColorScheme(.dark)
         .onAppear {
             for interaction in interactions {
                 interactionStore.saveInteraction(interaction)

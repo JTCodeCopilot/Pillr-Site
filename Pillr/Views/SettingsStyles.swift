@@ -10,18 +10,16 @@ enum SettingsMetrics {
 }
 
 enum SettingsPalette {
-    private static var palette: AppThemePalette { AppTheme.shared.palette }
-
-    static var backgroundColor: Color { palette.backgroundPrimaryColor }
-    static var headerColor: Color { palette.textSecondaryColor.opacity(0.88) }
-    static var secondaryText: Color { palette.textSecondaryColor.opacity(0.78) }
-    static var mainText: Color { palette.textPrimaryColor }
-    static var cardBackground: Color { palette.surfacePrimaryColor.opacity(0.42) }
-    static var nestedCardBackground: Color { palette.surfaceSecondaryColor.opacity(0.5) }
-    static var cardStroke: Color { palette.borderColor.opacity(0.38) }
-    static var arrowColor: Color { palette.iconSecondaryColor }
-    static var closeStroke: Color { palette.borderColor.opacity(0.65) }
-    static var toggleActive: Color { palette.buttonSecondaryBackgroundColor }
+    static let backgroundColor = Color(hex: "#404C42")
+    static let headerColor = Color(hex: "#E0E7DC").opacity(0.85)
+    static let secondaryText = Color(hex: "#E0E7DC").opacity(0.78)
+    static let mainText = Color(hex: "#F5F7F4")
+    static let cardBackground = Color.white.opacity(0.04)
+    static let nestedCardBackground = Color.white.opacity(0.05)
+    static let cardStroke = Color.white.opacity(0.06)
+    static let arrowColor = Color(hex: "#E0E7DC")
+    static let closeStroke = Color(hex: "#F5F7F4").opacity(0.45)
+    static let toggleActive = Color(hex: "#2F352F")
 }
 
 struct SettingsCloseButton: View {
@@ -54,7 +52,7 @@ extension View {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(SettingsPalette.cardStroke, lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(AppTheme.shared.mode == .dark ? 0.28 : 0.2), radius: 10, x: 0, y: 6)
-            .shadow(color: SettingsPalette.mainText.opacity(AppTheme.shared.mode == .dark ? 0.03 : 0.06), radius: 2, x: 0, y: 1)
+            .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+            .shadow(color: Color.white.opacity(0.05), radius: 2, x: 0, y: 1)
     }
 }

@@ -157,7 +157,6 @@ struct PillrApp: App {
     @StateObject private var interactionStore = InteractionStore.shared
     @StateObject private var userSettings = UserSettings.shared
     @StateObject private var storeManager = StoreManager.shared
-    @StateObject private var appTheme = AppTheme.shared
     
     init() {
         // Set preview environment detection
@@ -181,40 +180,13 @@ struct PillrApp: App {
         #endif
         
         // Application appearance settings
-        configureAppAppearance(for: AppTheme.shared.mode)
+        configureAppAppearance()
         // Initialize TelemetryDeck analytics
         let telemetryConfig = TelemetryDeck.Config(appID: "1AEFCFCE-EC76-475D-A16E-8AC2A28ECF82")
         TelemetryDeck.initialize(config: telemetryConfig)
     }
     
-    private func configureAppAppearance(for mode: AppThemeMode) {
-        let palette: AppThemePalette
-        let isDarkPalette: Bool
-        switch mode {
-        case .light:
-            palette = .light
-            isDarkPalette = false
-        case .dark:
-            palette = .dark
-            isDarkPalette = true
-        case .system:
-            isDarkPalette = AppTheme.shared.systemColorScheme == .dark
-            palette = isDarkPalette ? .dark : .light
-        }
-        let navigationTitleColor = UIColor(hexLiteral: palette.navigationTitle)
-        let navigationTintColor = isDarkPalette
-            ? navigationTitleColor
-            : UIColor(hexLiteral: "#2F352F")
-        let navigationBackgroundColor = UIColor(hexLiteral: palette.navigationBackground)
-        let tabBarBackgroundColor = UIColor(hexLiteral: palette.tabBarBackground)
-        let tabBarSelectedItemColor = UIColor(hexLiteral: AppThemePalette.light.textPrimary)
-        let tabBarUnselectedItemColor = UIColor(hexLiteral: AppThemePalette.light.textPrimary)
-        let overdueBadgeColor = UIColor(hexLiteral: palette.warning)
-        let segmentedBackgroundColor = isDarkPalette ? UIColor(hexLiteral: palette.surfaceSecondary) : UIColor(hexLiteral: "#E5E9E5")
-        let segmentedSelectedColor = isDarkPalette ? UIColor(hexLiteral: palette.buttonPrimaryBackground) : UIColor.white
-        let segmentedNormalTextColor = isDarkPalette ? UIColor(hexLiteral: palette.textPrimary) : UIColor(hexLiteral: "#2F352F")
-        let segmentedSelectedTextColor = isDarkPalette ? UIColor(hexLiteral: palette.buttonPrimaryForeground) : UIColor(hexLiteral: "#2F352F")
-
+    private func configureAppAppearance() {
         // Configure navigation bar appearance
         if #available(iOS 26.0, *) {
             let appearance = UINavigationBarAppearance()
@@ -222,24 +194,24 @@ struct PillrApp: App {
             appearance.backgroundEffect = nil
             appearance.backgroundColor = .clear
             appearance.shadowColor = .clear
-            appearance.titleTextAttributes = [.foregroundColor: navigationTitleColor]
-            appearance.largeTitleTextAttributes = [.foregroundColor: navigationTitleColor]
+            appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
             UINavigationBar.appearance().standardAppearance = appearance
             UINavigationBar.appearance().compactAppearance = appearance
             UINavigationBar.appearance().scrollEdgeAppearance = appearance
         } else {
             let appearance = UINavigationBarAppearance()
             appearance.configureWithTransparentBackground()
-            appearance.backgroundColor = navigationBackgroundColor
-            appearance.titleTextAttributes = [.foregroundColor: navigationTitleColor]
-            appearance.largeTitleTextAttributes = [.foregroundColor: navigationTitleColor]
+            appearance.backgroundColor = UIColor(Color(hex: "#404C42"))
+            appearance.titleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
             UINavigationBar.appearance().standardAppearance = appearance
             UINavigationBar.appearance().compactAppearance = appearance
             UINavigationBar.appearance().scrollEdgeAppearance = appearance
         }
-        UINavigationBar.appearance().tintColor = navigationTintColor
         
         // Configure tab bar appearance
+        let overdueBadgeColor = UIColor(Color(hex: "#FFB74D"))
         func applyBadgeColors(to appearance: UITabBarAppearance) {
             let itemAppearances = [
                 appearance.stackedLayoutAppearance,
@@ -247,10 +219,6 @@ struct PillrApp: App {
                 appearance.compactInlineLayoutAppearance
             ]
             for itemAppearance in itemAppearances {
-                itemAppearance.normal.iconColor = tabBarUnselectedItemColor
-                itemAppearance.normal.titleTextAttributes = [.foregroundColor: tabBarUnselectedItemColor]
-                itemAppearance.selected.iconColor = tabBarSelectedItemColor
-                itemAppearance.selected.titleTextAttributes = [.foregroundColor: tabBarSelectedItemColor]
                 itemAppearance.normal.badgeBackgroundColor = overdueBadgeColor
                 itemAppearance.selected.badgeBackgroundColor = overdueBadgeColor
                 itemAppearance.normal.badgeTextAttributes = [.foregroundColor: UIColor.white]
@@ -261,11 +229,8 @@ struct PillrApp: App {
             let tabBarAppearance = UITabBarAppearance()
             tabBarAppearance.configureWithTransparentBackground()
             tabBarAppearance.backgroundEffect = nil
-            tabBarAppearance.backgroundColor = tabBarBackgroundColor
+            tabBarAppearance.backgroundColor = .clear
             tabBarAppearance.shadowColor = .clear
-            tabBarAppearance.selectionIndicatorTintColor = isDarkPalette
-                ? UIColor.clear
-                : UIColor.white.withAlphaComponent(0.24)
             applyBadgeColors(to: tabBarAppearance)
             UITabBar.appearance().standardAppearance = tabBarAppearance
             if #available(iOS 15.0, *) {
@@ -274,33 +239,13 @@ struct PillrApp: App {
         } else {
             let tabBarAppearance = UITabBarAppearance()
             tabBarAppearance.configureWithTransparentBackground()
-            tabBarAppearance.backgroundColor = tabBarBackgroundColor
-            tabBarAppearance.selectionIndicatorTintColor = isDarkPalette
-                ? UIColor.clear
-                : UIColor.white.withAlphaComponent(0.24)
+            tabBarAppearance.backgroundColor = UIColor(Color(hex: "#404C42"))
             applyBadgeColors(to: tabBarAppearance)
             UITabBar.appearance().standardAppearance = tabBarAppearance
             if #available(iOS 15.0, *) {
                 UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
             }
         }
-        UITabBar.appearance().tintColor = tabBarSelectedItemColor
-        UITabBar.appearance().unselectedItemTintColor = tabBarUnselectedItemColor
-        UITabBar.appearance().overrideUserInterfaceStyle = isDarkPalette ? .dark : .light
-
-        // Configure segmented controls for readability in both themes.
-        let segmentedAppearance = UISegmentedControl.appearance()
-        segmentedAppearance.backgroundColor = segmentedBackgroundColor
-        segmentedAppearance.selectedSegmentTintColor = segmentedSelectedColor
-        segmentedAppearance.overrideUserInterfaceStyle = isDarkPalette ? .dark : .light
-        segmentedAppearance.setTitleTextAttributes(
-            [.foregroundColor: segmentedNormalTextColor],
-            for: .normal
-        )
-        segmentedAppearance.setTitleTextAttributes(
-            [.foregroundColor: segmentedSelectedTextColor],
-            for: .selected
-        )
     }
     
     var body: some Scene {
@@ -310,20 +255,10 @@ struct PillrApp: App {
                 .environmentObject(interactionStore)
                 .environmentObject(userSettings)
                 .environmentObject(storeManager)
-                .environmentObject(appTheme)
-                .environment(\.pillrThemeMode, appTheme.mode)
-                .preferredColorScheme(appTheme.preferredColorScheme)
+                .preferredColorScheme(.dark)
                 .onAppear {
-                    configureAppAppearance(for: appTheme.mode)
                     // Update badge when ContentView appears
                     store.checkAndResetBadge()
-                }
-                .onChange(of: appTheme.mode) { _, newMode in
-                    configureAppAppearance(for: newMode)
-                }
-                .onChange(of: appTheme.systemColorScheme) { _, _ in
-                    guard appTheme.mode == .system else { return }
-                    configureAppAppearance(for: .system)
                 }
                 .task {
                     // Initialize StoreKit, load products and check for purchases

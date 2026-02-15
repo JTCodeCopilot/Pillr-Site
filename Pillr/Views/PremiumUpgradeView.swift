@@ -71,6 +71,7 @@ struct PremiumUpgradeView: View {
                 .padding(.bottom, 64)
             }
         }
+        .preferredColorScheme(.dark)
         .alert("Purchase Status", isPresented: $showingAlert) {
             Button("OK") {
                 if alertMessage.contains("successful") {
