@@ -119,6 +119,7 @@ struct Medication: Identifiable, Codable, Hashable {
     var notificationID: UUID? // Legacy support for single notification
     var notificationIDs: [UUID] = [] // IDs for multiple scheduled notifications
     var pillCount: Int? // Total count of pills available
+    var initialPillCount: Int? // Original total pills entered when medication was set up
     var pillsPerDose: Int = 1 // Number of pills taken per dose
     var refillThreshold: Int? // Threshold to trigger refill reminder
     var isSkipped: Bool = false // Whether to skip this medication for now
@@ -157,6 +158,7 @@ struct Medication: Identifiable, Codable, Hashable {
         case notificationID
         case notificationIDs
         case pillCount
+        case initialPillCount
         case pillsPerDose
         case refillThreshold
         case isSkipped
@@ -191,6 +193,7 @@ struct Medication: Identifiable, Codable, Hashable {
         notificationID: UUID? = nil,
         notificationIDs: [UUID] = [],
         pillCount: Int? = nil,
+        initialPillCount: Int? = nil,
         pillsPerDose: Int = 1,
         refillThreshold: Int? = nil,
         isSkipped: Bool = false,
@@ -222,6 +225,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.notificationID = notificationID
         self.notificationIDs = notificationIDs
         self.pillCount = pillCount
+        self.initialPillCount = initialPillCount
         self.pillsPerDose = pillsPerDose
         self.refillThreshold = refillThreshold
         self.isSkipped = isSkipped
@@ -260,6 +264,7 @@ struct Medication: Identifiable, Codable, Hashable {
         self.notificationID = try container.decodeIfPresent(UUID.self, forKey: .notificationID)
         self.notificationIDs = try container.decodeIfPresent([UUID].self, forKey: .notificationIDs) ?? []
         self.pillCount = try container.decodeIfPresent(Int.self, forKey: .pillCount)
+        self.initialPillCount = try container.decodeIfPresent(Int.self, forKey: .initialPillCount)
         self.pillsPerDose = try container.decodeIfPresent(Int.self, forKey: .pillsPerDose) ?? 1
         self.refillThreshold = try container.decodeIfPresent(Int.self, forKey: .refillThreshold)
         self.isSkipped = try container.decodeIfPresent(Bool.self, forKey: .isSkipped) ?? false
@@ -294,6 +299,7 @@ struct Medication: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(notificationID, forKey: .notificationID)
         try container.encode(notificationIDs, forKey: .notificationIDs)
         try container.encodeIfPresent(pillCount, forKey: .pillCount)
+        try container.encodeIfPresent(initialPillCount, forKey: .initialPillCount)
         try container.encode(pillsPerDose, forKey: .pillsPerDose)
         try container.encodeIfPresent(refillThreshold, forKey: .refillThreshold)
         try container.encode(isSkipped, forKey: .isSkipped)

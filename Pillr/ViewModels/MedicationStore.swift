@@ -257,6 +257,7 @@ class MedicationStore: ObservableObject {
             reminderTimes: finalReminderTimes,
             notes: notes,
             pillCount: finalPillCount,
+            initialPillCount: finalPillCount,
             pillsPerDose: finalPillsPerDose,
             refillThreshold: finalRefillThreshold,
             isOneTimeWithFollowUp: isOneTimeWithFollowUp,
@@ -315,6 +316,11 @@ class MedicationStore: ObservableObject {
                 }
             }
             updatedMedication.updatedAt = Date()
+            if updatedMedication.initialPillCount == nil {
+                updatedMedication.initialPillCount = oldMedication.initialPillCount
+                    ?? estimatedInitialPillCount(for: oldMedication)
+                    ?? updatedMedication.pillCount
+            }
             
             // Schedule new notifications if enabled
             let wantsNotifications = enableNotification && updatedMedication.frequency != "As needed"
@@ -416,6 +422,17 @@ class MedicationStore: ObservableObject {
         }
 
         return true
+    }
+
+    private func estimatedInitialPillCount(for medication: Medication) -> Int? {
+        guard let currentCount = medication.pillCount else { return nil }
+        let consumedTotal = logs
+            .filter { $0.medicationID == medication.id && $0.isDoseLog && !$0.skipped }
+            .reduce(0) { partial, log in
+                let consumed = log.pillsConsumed ?? medication.pillsPerDose
+                return partial + max(consumed, 0)
+            }
+        return currentCount + consumedTotal
     }
 
     @discardableResult

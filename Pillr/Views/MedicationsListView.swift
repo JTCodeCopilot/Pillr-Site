@@ -50,6 +50,7 @@ struct MedicationsListView: View {
     @State private var showingFocusTimeline = false
     @State private var showingCabinetSheet = false
     @State private var activeCustomLogRequest: CustomLogRequest?
+    @State private var refillPromptMedication: Medication?
     @State private var showCabinetIntroOverlay = false
     @State private var referenceDate = Date()
     private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
@@ -146,6 +147,7 @@ struct MedicationsListView: View {
                         onShowFocusTimeline: { showingFocusTimeline = true },
                         onPresentUndoToast: presentUndoToast,
                         onRequestCustomLogTimeAction: requestCustomLogTime,
+                        onRequestRefillResetAction: presentRefillPrompt,
                         onPresentDailyCheckIn: presentDailyCheckIn,
                     displayedMedications: displayedMedications,
                     cabinetMedications: cabinetMedications,
@@ -205,6 +207,22 @@ struct MedicationsListView: View {
                     onConfirm: { selectedTime in
                         logMedication(request.medication, at: selectedTime, reminderIndex: request.reminderIndex)
                         activeCustomLogRequest = nil
+                    }
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color(hex: "#1E201A").opacity(0.35))
+            }
+            .sheet(item: $refillPromptMedication) { med in
+                RefillResetSheet(
+                    medication: med,
+                    previousBottleAmount: previousRefillAmount(for: med),
+                    onCancel: {
+                        refillPromptMedication = nil
+                    },
+                    onSave: { newCount, newThreshold in
+                        applyRefillReset(for: med, pillCount: newCount, refillThreshold: newThreshold)
+                        refillPromptMedication = nil
                     }
                 )
                 .presentationDetents([.medium])
@@ -550,6 +568,76 @@ struct MedicationsListView: View {
         activeCustomLogRequest = CustomLogRequest(medication: medication, reminderIndex: reminderIndex)
     }
 
+    private func presentRefillPrompt(for medication: Medication) {
+        let resolvedMedication = store.findMedication(with: medication.logReferenceID ?? medication.id) ?? medication
+        refillPromptMedication = resolvedMedication
+    }
+
+    private func applyRefillReset(for medication: Medication, pillCount: Int, refillThreshold: Int) {
+        let resolvedMedication = store.findMedication(with: medication.logReferenceID ?? medication.id) ?? medication
+        var updatedMedication = resolvedMedication
+        updatedMedication.pillCount = pillCount
+        updatedMedication.refillThreshold = refillThreshold
+        if updatedMedication.pillsPerDose <= 0 {
+            updatedMedication.pillsPerDose = 1
+        }
+        store.updateMedication(updatedMedication, enableNotification: resolvedMedication.hasActiveReminder)
+        saveLastRefillValues(bottleAmount: pillCount, refillThreshold: refillThreshold, for: updatedMedication.id)
+        HapticManager.shared.successNotification()
+    }
+
+    private func refillAmountStorageKeyV2(for medicationID: UUID) -> String {
+        "last_refill_bottle_amount_v2_\(medicationID.uuidString)"
+    }
+
+    private func refillThresholdStorageKeyV2(for medicationID: UUID) -> String {
+        "last_refill_threshold_v2_\(medicationID.uuidString)"
+    }
+
+    private func lastRefillAmount(for medication: Medication) -> Int? {
+        let medicationID = medication.logReferenceID ?? medication.id
+        let bottleKeyV2 = refillAmountStorageKeyV2(for: medicationID)
+        if UserDefaults.standard.object(forKey: bottleKeyV2) != nil {
+            return UserDefaults.standard.integer(forKey: bottleKeyV2)
+        }
+        return nil
+    }
+
+    private func previousRefillAmount(for medication: Medication) -> Int? {
+        if let savedLast = lastRefillAmount(for: medication) {
+            return savedLast
+        }
+
+        if let originalTotal = medication.initialPillCount {
+            return originalTotal
+        }
+
+        return estimatedBottleAmount(for: medication)
+    }
+
+    private func estimatedBottleAmount(for medication: Medication) -> Int? {
+        guard let currentPillCount = medication.pillCount else { return nil }
+
+        let medicationID = medication.logReferenceID ?? medication.id
+        let consumedTotal = store.logs
+            .filter { log in
+                log.medicationID == medicationID && log.isDoseLog && !log.skipped
+            }
+            .reduce(0) { partial, log in
+                let consumed = log.pillsConsumed ?? medication.pillsPerDose
+                return partial + max(consumed, 0)
+            }
+
+        return currentPillCount + consumedTotal
+    }
+
+    private func saveLastRefillValues(bottleAmount: Int, refillThreshold: Int, for medicationID: UUID) {
+        let bottleKeyV2 = refillAmountStorageKeyV2(for: medicationID)
+        let thresholdKeyV2 = refillThresholdStorageKeyV2(for: medicationID)
+        UserDefaults.standard.set(bottleAmount, forKey: bottleKeyV2)
+        UserDefaults.standard.set(refillThreshold, forKey: thresholdKeyV2)
+    }
+
     private func logMedication(_ medication: Medication, at time: Date, reminderIndex: Int? = nil) {
         let resolvedMedication = store.findMedication(with: medication.id) ?? medication
         if let action = store.logMedicationTaken(
@@ -680,6 +768,180 @@ fileprivate struct LogUndoToastView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(subtitle)")
         .accessibilityHint("Undo to revert this action.")
+    }
+}
+
+fileprivate struct RefillResetSheet: View {
+    let medication: Medication
+    let previousBottleAmount: Int?
+    let onCancel: () -> Void
+    let onSave: (Int, Int) -> Void
+
+    @State private var pillCountText: String
+    @State private var refillThresholdText: String
+    @FocusState private var focusedField: Field?
+
+    private enum Field {
+        case count
+        case threshold
+    }
+
+    init(
+        medication: Medication,
+        previousBottleAmount: Int? = nil,
+        onCancel: @escaping () -> Void,
+        onSave: @escaping (Int, Int) -> Void
+    ) {
+        self.medication = medication
+        self.previousBottleAmount = previousBottleAmount
+        self.onCancel = onCancel
+        self.onSave = onSave
+        _pillCountText = State(initialValue: (previousBottleAmount ?? medication.pillCount).map(String.init) ?? "")
+        _refillThresholdText = State(initialValue: medication.refillThreshold.map(String.init) ?? "")
+    }
+
+    private var titleText: String {
+        let trimmed = medication.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Refill pill count" : "Refill \(trimmed)"
+    }
+
+    private var parsedPillCount: Int? {
+        Int(pillCountText.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private var parsedRefillThreshold: Int? {
+        Int(refillThresholdText.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private var validationMessage: String? {
+        guard let pillCount = parsedPillCount, let threshold = parsedRefillThreshold else {
+            return "Enter both numbers."
+        }
+        if pillCount <= 0 {
+            return "Pill count must be at least 1."
+        }
+        if threshold < 0 {
+            return "Refill reminder number cannot be negative."
+        }
+        if threshold > pillCount {
+            return "Refill reminder number should be less than or equal to the pill count."
+        }
+        return nil
+    }
+
+    private var canSave: Bool {
+        validationMessage == nil
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(titleText)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(Color(hex: "#F5F7F4"))
+
+            Text("Set your new bottle amount and choose when refill reminders should start.")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color(hex: "#C7C7BD"))
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let previousBottleAmount {
+                Text("Previous bottle amount: \(previousBottleAmount)")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E0E7DC"))
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Refill amount")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E0E7DC"))
+                    TextField("Example: 30", text: $pillCountText)
+                        .keyboardType(.numberPad)
+                        .focused($focusedField, equals: .count)
+                        .submitLabel(.next)
+                        .onSubmit {
+                            focusedField = .threshold
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 11)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Remind me to refill at")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(hex: "#E0E7DC"))
+                    TextField("Example: 7", text: $refillThresholdText)
+                        .keyboardType(.numberPad)
+                        .focused($focusedField, equals: .threshold)
+                        .submitLabel(.done)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 11)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                }
+            }
+
+            if let validationMessage {
+                Text(validationMessage)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "#FFB74D"))
+            }
+
+            HStack(spacing: 10) {
+                Button(action: onCancel) {
+                    Text("Cancel")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.12))
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Button(action: {
+                    guard let pillCount = parsedPillCount,
+                          let threshold = parsedRefillThreshold else { return }
+                    onSave(pillCount, threshold)
+                }) {
+                    Text("Save")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(Color(hex: "#2F352F"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(canSave ? Color(hex: "#FFB74D") : Color(hex: "#6D736C"))
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSave)
+            }
+
+            Spacer(minLength: 4)
+        }
+        .padding(20)
+        .onAppear {
+            focusedField = .count
+        }
     }
 }
 
@@ -943,6 +1205,7 @@ fileprivate func MedicationsListContent(
 	    onShowFocusTimeline: @escaping () -> Void,
 	    onPresentUndoToast: @escaping (MedicationStore.LogUndoAction) -> Void,
 	    onRequestCustomLogTimeAction: @escaping (Medication, Int?) -> Void,
+        onRequestRefillResetAction: @escaping (Medication) -> Void,
 	    onPresentDailyCheckIn: @escaping (Medication) -> Void,
 	    medications: [Medication],
 	    referenceDate: Date
@@ -956,6 +1219,10 @@ fileprivate func MedicationsListContent(
                 onRequestCustomLogTime: { resolvedMedication, resolvedIndex in
                     HapticManager.shared.lightImpact()
                     onRequestCustomLogTimeAction(resolvedMedication, resolvedIndex)
+                },
+                onRefillBannerTap: {
+                    HapticManager.shared.lightImpact()
+                    onRequestRefillResetAction(med)
                 },
                 onDailyCheckInTap: { onPresentDailyCheckIn(med) },
                 onEditTap: {
@@ -1937,6 +2204,7 @@ fileprivate struct MedicationsListMainContent: View {
     let onShowFocusTimeline: () -> Void
     let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
     let onRequestCustomLogTimeAction: (Medication, Int?) -> Void
+    let onRequestRefillResetAction: (Medication) -> Void
     let onPresentDailyCheckIn: (Medication) -> Void
     let displayedMedications: [Medication]
     let cabinetMedications: [Medication]
@@ -2031,6 +2299,7 @@ fileprivate struct MedicationsListMainContent: View {
                                 onShowFocusTimeline: onShowFocusTimeline,
                                 onPresentUndoToast: onPresentUndoToast,
                                 onRequestCustomLogTimeAction: onRequestCustomLogTimeAction,
+                                onRequestRefillResetAction: onRequestRefillResetAction,
                                 onPresentDailyCheckIn: onPresentDailyCheckIn,
                                 medications: displayedMedications,
                                 referenceDate: referenceDate
@@ -2806,6 +3075,7 @@ struct MedicationRow: View {
     let referenceDate: Date
     let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
     let onRequestCustomLogTime: (Medication, Int?) -> Void
+    let onRefillBannerTap: () -> Void
     let onDailyCheckInTap: () -> Void
     let onEditTap: () -> Void
     let onDeleteTap: (() -> Void)?
@@ -3109,6 +3379,15 @@ struct MedicationRow: View {
         Color(hex: "#FF6B6B")
     }
 
+    private var lowPillBannerText: String? {
+        guard let pillCount = medication.pillCount,
+              let refillThreshold = medication.refillThreshold,
+              pillCount <= refillThreshold else {
+            return nil
+        }
+        return "Refill • \(pillCount) left"
+    }
+
     var body: some View {
         let showsDetails = store.expandedMedicationID == medication.id
         let detailBinding = Binding<Bool>(
@@ -3195,16 +3474,38 @@ struct MedicationRow: View {
             }
         }
         .overlay(alignment: .topTrailing) {
-            Button(action: {
-                toggleExpansion()
-            }) {
-                Image(systemName: showsDetails ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.55))
-                    .padding(.top, 12)
+            VStack(alignment: .trailing, spacing: 8) {
+                if let bannerText = lowPillBannerText {
+                    Button(action: onRefillBannerTap) {
+                        Text(bannerText)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(Color(hex: "#2F352F"))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                Capsule()
+                                    .fill(Color(hex: "#FFB74D"))
+                            )
+                    }
+                    .buttonStyle(.plain)
                     .padding(.trailing, 12)
+                    .padding(.top, 10)
+                    .accessibilityLabel("Refill needed, \(bannerText)")
+                    .accessibilityHint("Double tap to update refill amount and reminder level")
+                }
+
+                Button(action: {
+                    toggleExpansion()
+                }) {
+                    Image(systemName: showsDetails ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.55))
+                        .padding(.top, lowPillBannerText == nil ? 12 : 0)
+                        .padding(.trailing, 12)
+                        .padding(.bottom, 10)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
