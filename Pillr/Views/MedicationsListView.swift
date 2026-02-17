@@ -3379,13 +3379,18 @@ struct MedicationRow: View {
         Color(hex: "#FF6B6B")
     }
 
-    private var lowPillBannerText: String? {
+    private var lowPillBanner: (text: String, isUrgent: Bool)? {
         guard let pillCount = medication.pillCount,
               let refillThreshold = medication.refillThreshold,
               pillCount <= refillThreshold else {
             return nil
         }
-        return "Refill • \(pillCount) left"
+        let pillsText = pillCount == 1 ? "pill" : "pills"
+        let urgentCutoff = max(1, refillThreshold / 2)
+        if pillCount <= urgentCutoff {
+            return ("Refill now • \(pillCount) \(pillsText) left", true)
+        }
+        return ("Low supply • \(pillCount) \(pillsText) left", false)
     }
 
     var body: some View {
@@ -3475,13 +3480,20 @@ struct MedicationRow: View {
         }
         .overlay(alignment: .topTrailing) {
             VStack(alignment: .trailing, spacing: 8) {
-                if let bannerText = lowPillBannerText {
+                if let banner = lowPillBanner {
                     Button(action: onRefillBannerTap) {
-                        Text(bannerText)
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(Color(hex: "#2F352F"))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
+                        HStack(spacing: 5) {
+                            if banner.isUrgent {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .font(.system(size: 10, weight: .bold))
+                            }
+                            Text(banner.text)
+                                .font(.system(size: 11, weight: .bold))
+                        }
+                        .foregroundColor(Color(hex: "#2F352F"))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .lineLimit(1)
                             .background(
                                 Capsule()
                                     .fill(Color(hex: "#FFB74D"))
@@ -3490,7 +3502,7 @@ struct MedicationRow: View {
                     .buttonStyle(.plain)
                     .padding(.trailing, 12)
                     .padding(.top, 10)
-                    .accessibilityLabel("Refill needed, \(bannerText)")
+                    .accessibilityLabel("Refill needed, \(banner.text)")
                     .accessibilityHint("Double tap to update refill amount and reminder level")
                 }
 
@@ -3500,7 +3512,7 @@ struct MedicationRow: View {
                     Image(systemName: showsDetails ? "chevron.up" : "chevron.down")
                         .font(.system(size: 13))
                         .foregroundColor(Color(hex: "#E0E7DC").opacity(0.55))
-                        .padding(.top, lowPillBannerText == nil ? 12 : 0)
+                        .padding(.top, lowPillBanner == nil ? 12 : 0)
                         .padding(.trailing, 12)
                         .padding(.bottom, 10)
                 }
