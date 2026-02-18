@@ -125,6 +125,7 @@ class MedicationStore: ObservableObject {
     private let medicationsBackupKey = "medicationsData_backup"
     private let logsBackupKey = "medicationLogsData_backup"
     private let deletedMedicationIDsKey = "deletedMedicationIDs"
+    private let legacyLogMedicationIDRepairV1Key = "legacyLogMedicationIDRepair_v1_complete"
     private var deletedMedicationIDs: Set<UUID> = []
     private let isPreviewMode: Bool
 
@@ -174,6 +175,7 @@ class MedicationStore: ObservableObject {
         if !isPreview {
             loadMedications()
             loadLogs()
+            runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: !shouldUseCloudSync)
             if shouldUseCloudSync {
                 fetchCloudData()
             }
@@ -1893,6 +1895,69 @@ class MedicationStore: ObservableObject {
         refreshOverdueMedicationIDs(referenceDate: Date())
     }
 
+    private func runLegacyLogMedicationIDRepair(
+        markCompleteWhenNoChanges: Bool,
+        allowInPreview: Bool = false
+    ) {
+        if isPreviewMode && !allowInPreview {
+            return
+        }
+        if !allowInPreview,
+           UserDefaults.standard.bool(forKey: legacyLogMedicationIDRepairV1Key) {
+            return
+        }
+
+        let validMedicationIDs = Set(medications.map { $0.id })
+        guard !logs.isEmpty else {
+            if markCompleteWhenNoChanges && !allowInPreview {
+                UserDefaults.standard.set(true, forKey: legacyLogMedicationIDRepairV1Key)
+            }
+            return
+        }
+
+        let logsByID = Dictionary(uniqueKeysWithValues: logs.map { ($0.id, $0) })
+        var repaired = false
+        var repairedLogs: [MedicationLog] = []
+
+        for index in logs.indices {
+            let current = logs[index]
+            if validMedicationIDs.contains(current.medicationID) {
+                continue
+            }
+
+            guard let sourceLog = logsByID[current.medicationID] else {
+                continue
+            }
+            let correctedMedicationID = sourceLog.medicationID
+            guard correctedMedicationID != current.medicationID,
+                  validMedicationIDs.contains(correctedMedicationID) else {
+                continue
+            }
+
+            logs[index].medicationID = correctedMedicationID
+            logs[index].updatedAt = Date()
+            repairedLogs.append(logs[index])
+            repaired = true
+        }
+
+        if repaired {
+            saveLogs()
+            for log in repairedLogs {
+                syncLogWithCloud(log)
+            }
+            resetBadgeIfNeeded()
+            refreshOverdueMedicationIDs(referenceDate: Date())
+            if !allowInPreview {
+                UserDefaults.standard.set(true, forKey: legacyLogMedicationIDRepairV1Key)
+            }
+            return
+        }
+
+        if markCompleteWhenNoChanges && !allowInPreview {
+            UserDefaults.standard.set(true, forKey: legacyLogMedicationIDRepairV1Key)
+        }
+    }
+
     private func startObservingDayChanges() {
         guard dayChangeObserver == nil else { return }
 
@@ -2143,6 +2208,7 @@ class MedicationStore: ObservableObject {
                 case let .success(payload):
                     self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: true)
                     self.mergeCloudLogs(payload.logs)
+                    self.runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
                     self.lastCloudSyncDate = Date()
                     completion?(.newData)
                 case let .failure(error):
@@ -2363,12 +2429,14 @@ class MedicationStore: ObservableObject {
                 case let .success(payload):
                     if payload.medications.isEmpty && payload.logs.isEmpty {
                         self.pushAllLocalDataToCloud()
+                        self.runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
                         self.lastCloudSyncDate = Date()
                         return
                     }
 
                     self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: false)
                     self.mergeCloudLogs(payload.logs)
+                    self.runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
                     self.pushLocalChangesToCloud(remoteMedications: payload.medications, remoteLogs: payload.logs)
                     self.lastCloudSyncDate = Date()
                 case let .failure(error):
@@ -2707,6 +2775,13 @@ extension MedicationStore {
 
     func _test_getDeletedMedicationIDs() -> Set<UUID> {
         deletedMedicationIDs
+    }
+
+    func _test_runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: Bool = true) {
+        runLegacyLogMedicationIDRepair(
+            markCompleteWhenNoChanges: markCompleteWhenNoChanges,
+            allowInPreview: true
+        )
     }
 }
 #endif

@@ -539,14 +539,15 @@ struct MedicationsListView: View {
     }
     
     private func presentLogSheet(for medication: Medication) {
+        let resolvedMedication = store.findMedication(with: medication.logReferenceID ?? medication.id) ?? medication
         if shouldAutoLogCabinetMedication(medication) {
-            quickLogCabinetMedication(medication)
+            quickLogCabinetMedication(resolvedMedication)
             return
         }
         
         showingCabinetSheet = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            showingLogSheetFor = medication
+            showingLogSheetFor = resolvedMedication
         }
     }
 
@@ -639,7 +640,7 @@ struct MedicationsListView: View {
     }
 
     private func logMedication(_ medication: Medication, at time: Date, reminderIndex: Int? = nil) {
-        let resolvedMedication = store.findMedication(with: medication.id) ?? medication
+        let resolvedMedication = store.findMedication(with: medication.logReferenceID ?? medication.id) ?? medication
         if let action = store.logMedicationTaken(
             medication: resolvedMedication,
             actualTime: time,
@@ -653,7 +654,7 @@ struct MedicationsListView: View {
 
     private func quickLogCabinetMedication(_ medication: Medication) {
         showingCabinetSheet = false
-        let resolvedMedication = store.findMedication(with: medication.id) ?? medication
+        let resolvedMedication = store.findMedication(with: medication.logReferenceID ?? medication.id) ?? medication
         if let action = store.logMedicationTaken(
             medication: resolvedMedication,
             actualTime: Date(),
@@ -1304,6 +1305,8 @@ fileprivate func MedicationsListHeader(
                         .foregroundColor(Color(hex: "#F5F7F4"))
                         .frame(width: 24, height: 24)
                 }
+                .accessibilityLabel("Add Medication")
+                .accessibilityIdentifier("addMedicationButton")
                 .buttonStyle(.plain)
                 .frame(width: 46, height: 46)
                 .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
@@ -3212,6 +3215,10 @@ struct MedicationRow: View {
         }
         return nil
     }
+
+    private var resolvedMedicationForLogging: Medication {
+        store.findMedication(with: medication.logReferenceID ?? medication.id) ?? medication
+    }
     
     // Helper to get the effective due time, considering the reset logic
     private var effectiveDueTime: Date {
@@ -3734,62 +3741,62 @@ struct MedicationRow: View {
     }
     
     // Quick log medication function for context menu
-	    private func quickLogMedication(taken: Bool) {
-	        guard hasRemainingDoseToday else { return }
-	        let now = Date()
-	        
-	        let reminderIndex = medication.reminderTimes.isEmpty ? nil : nextReminderIndexToLog()
+    private func quickLogMedication(taken: Bool) {
+        guard hasRemainingDoseToday else { return }
+        let now = Date()
+
+        let reminderIndex = medication.reminderTimes.isEmpty ? nil : nextReminderIndexToLog()
         
         if medication.reminderTimes.count > 0 && reminderIndex == nil {
             return
         }
         
-	        if let action = store.logMedicationTaken(
-	            medication: medication,
-	            actualTime: now,
-	            notes: nil,
-	            skipped: !taken,
-	            reminderIndex: reminderIndex
-	        ) {
-	            onPresentUndoToast(action)
-	        }
-	    }
+        if let action = store.logMedicationTaken(
+            medication: resolvedMedicationForLogging,
+            actualTime: now,
+            notes: nil,
+            skipped: !taken,
+            reminderIndex: reminderIndex
+        ) {
+            onPresentUndoToast(action)
+        }
+    }
 
-        private func skipDose(at index: Int) {
-            if medication.reminderTimes.isEmpty {
-                guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
-                if let action = store.skipMedication(
-                    medication: medication,
-                    actualTime: Date(),
-                    notes: nil,
-                    reminderIndex: nil
-                ) {
-                    onPresentUndoToast(action)
-                }
-                return
-            }
-
-            guard medication.reminderTimes.indices.contains(index) else { return }
-            guard !todaysLogsForMedication.contains(where: { $0.reminderIndex == index }) else { return }
-
+    private func skipDose(at index: Int) {
+        if medication.reminderTimes.isEmpty {
+            guard todaysLogsForMedication.first(where: { $0.reminderIndex == nil }) == nil else { return }
             if let action = store.skipMedication(
-                medication: medication,
+                medication: resolvedMedicationForLogging,
                 actualTime: Date(),
                 notes: nil,
-                reminderIndex: index
+                reminderIndex: nil
             ) {
                 onPresentUndoToast(action)
             }
+            return
         }
 
-        private func undoMostRecentLog(skipped: Bool) {
-            guard let log = todaysLogsForMedication
-                .filter({ $0.skipped == skipped })
-                .sorted(by: { $0.takenAt > $1.takenAt })
-                .first else { return }
+        guard medication.reminderTimes.indices.contains(index) else { return }
+        guard !todaysLogsForMedication.contains(where: { $0.reminderIndex == index }) else { return }
 
-            store.removeDoseLog(log)
+        if let action = store.skipMedication(
+            medication: resolvedMedicationForLogging,
+            actualTime: Date(),
+            notes: nil,
+            reminderIndex: index
+        ) {
+            onPresentUndoToast(action)
         }
+    }
+
+    private func undoMostRecentLog(skipped: Bool) {
+        guard let log = todaysLogsForMedication
+            .filter({ $0.skipped == skipped })
+            .sorted(by: { $0.takenAt > $1.takenAt })
+            .first else { return }
+
+        store.removeDoseLog(log)
+    }
     
     private func toggleExpansion() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {

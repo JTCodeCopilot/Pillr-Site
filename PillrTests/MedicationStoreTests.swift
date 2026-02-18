@@ -381,6 +381,34 @@ struct MedicationStoreTests {
     }
 
     @Test
+    func legacyLogMedicationIDRepairReconnectsMislinkedCabinetLogs() async throws {
+        clearPillrUserDefaults()
+        let store = MedicationStore(isPreview: true)
+        let baseTime = makeDate(year: 2025, month: 2, day: 1, hour: 9, minute: 0)
+        let medication = makeMedication(name: "Repair Target", time: baseTime, frequency: "As needed")
+        store.medications = [medication]
+
+        let sourceLog = MedicationLog(
+            id: UUID(),
+            medicationID: medication.id,
+            medicationName: medication.name,
+            takenAt: baseTime
+        )
+        let mislinkedLog = MedicationLog(
+            id: UUID(),
+            medicationID: sourceLog.id, // Legacy bug: points to another log id instead of medication id
+            medicationName: medication.name,
+            takenAt: baseTime.addingTimeInterval(1800)
+        )
+        store.logs = [mislinkedLog, sourceLog]
+
+        store._test_runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
+
+        let repaired = store.logs.first(where: { $0.id == mislinkedLog.id })
+        #expect(repaired?.medicationID == medication.id)
+    }
+
+    @Test
     func logMedicationTakenPreventsDuplicateReminderIndexLogs() async throws {
         clearPillrUserDefaults()
         let store = MedicationStore(isPreview: true)

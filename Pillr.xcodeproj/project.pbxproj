@@ -13,6 +13,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		4935BAB42F45BEEB00A11920 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 496470162DD3F0E9003964BD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4964701D2DD3F0E9003964BD;
+			remoteInfo = Pillr;
+		};
 		49DE6DB02F3477FC004110CF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 496470162DD3F0E9003964BD /* Project object */;
@@ -23,11 +30,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		4935BAAE2F45BEEB00A11920 /* PillrUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PillrUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4964701E2DD3F0E9003964BD /* Pillr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pillr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49DE6DAC2F3477FC004110CF /* PillrTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PillrTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		4935BAAF2F45BEEB00A11920 /* PillrUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PillrUITests;
+			sourceTree = "<group>";
+		};
 		496470202DD3F0E9003964BD /* Pillr */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Pillr;
@@ -41,6 +54,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4935BAAB2F45BEEB00A11920 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4964701B2DD3F0E9003964BD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -66,6 +86,7 @@
 			children = (
 				496470202DD3F0E9003964BD /* Pillr */,
 				49DE6DAD2F3477FC004110CF /* PillrTests */,
+				4935BAAF2F45BEEB00A11920 /* PillrUITests */,
 				4964701F2DD3F0E9003964BD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -75,6 +96,7 @@
 			children = (
 				4964701E2DD3F0E9003964BD /* Pillr.app */,
 				49DE6DAC2F3477FC004110CF /* PillrTests.xctest */,
+				4935BAAE2F45BEEB00A11920 /* PillrUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -82,6 +104,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		4935BAAD2F45BEEB00A11920 /* PillrUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4935BAB62F45BEEB00A11920 /* Build configuration list for PBXNativeTarget "PillrUITests" */;
+			buildPhases = (
+				4935BAAA2F45BEEB00A11920 /* Sources */,
+				4935BAAB2F45BEEB00A11920 /* Frameworks */,
+				4935BAAC2F45BEEB00A11920 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4935BAB52F45BEEB00A11920 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4935BAAF2F45BEEB00A11920 /* PillrUITests */,
+			);
+			name = PillrUITests;
+			packageProductDependencies = (
+			);
+			productName = PillrUITests;
+			productReference = 4935BAAE2F45BEEB00A11920 /* PillrUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		4964701D2DD3F0E9003964BD /* Pillr */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 496470292DD3F0EA003964BD /* Build configuration list for PBXNativeTarget "Pillr" */;
@@ -140,6 +185,10 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
+					4935BAAD2F45BEEB00A11920 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 4964701D2DD3F0E9003964BD;
+					};
 					4964701D2DD3F0E9003964BD = {
 						CreatedOnToolsVersion = 16.3;
 					};
@@ -170,11 +219,19 @@
 			targets = (
 				4964701D2DD3F0E9003964BD /* Pillr */,
 				49DE6DAB2F3477FC004110CF /* PillrTests */,
+				4935BAAD2F45BEEB00A11920 /* PillrUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4935BAAC2F45BEEB00A11920 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4964701C2DD3F0E9003964BD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -192,6 +249,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4935BAAA2F45BEEB00A11920 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4964701A2DD3F0E9003964BD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -209,6 +273,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		4935BAB52F45BEEB00A11920 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4964701D2DD3F0E9003964BD /* Pillr */;
+			targetProxy = 4935BAB42F45BEEB00A11920 /* PBXContainerItemProxy */;
+		};
 		49DE6DB12F3477FC004110CF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 4964701D2DD3F0E9003964BD /* Pillr */;
@@ -217,6 +286,48 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		4935BAB72F45BEEB00A11920 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A857RBQBM9;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.PillrUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Pillr;
+			};
+			name = Debug;
+		};
+		4935BAB82F45BEEB00A11920 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A857RBQBM9;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.PillrUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Pillr;
+			};
+			name = Release;
+		};
 		496470272DD3F0EA003964BD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -479,6 +590,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		4935BAB62F45BEEB00A11920 /* Build configuration list for PBXNativeTarget "PillrUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4935BAB72F45BEEB00A11920 /* Debug */,
+				4935BAB82F45BEEB00A11920 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		496470192DD3F0E9003964BD /* Build configuration list for PBXProject "Pillr" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

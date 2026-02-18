@@ -451,7 +451,8 @@ struct AddMedicationView: View {
                             text: $name,
                             field: .name,
                             isRequired: true,
-                            errorMessage: nameError
+                            errorMessage: nameError,
+                            accessibilityIdentifier: "medicationNameField"
                         )
                         .id(Field.name)
 
@@ -500,7 +501,8 @@ struct AddMedicationView: View {
                         iconName: nil,
                         isRequired: true,
                         errorMessage: dosageError,
-                        keyboardType: .decimalPad
+                        keyboardType: .decimalPad,
+                        accessibilityIdentifier: "medicationDosageField"
                     )
                     .id(Field.dosage)
 
@@ -1355,7 +1357,8 @@ struct AddMedicationView: View {
         iconName: String? = nil,
         isRequired: Bool = false,
         errorMessage: String? = nil,
-        keyboardType: UIKeyboardType = .default
+        keyboardType: UIKeyboardType = .default,
+        accessibilityIdentifier: String = ""
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -1382,6 +1385,7 @@ struct AddMedicationView: View {
                 .foregroundColor(Color(hex: "#E8E8E0"))
                 .padding(.horizontal, 16)
                 .frame(height: standardFieldHeight)
+                .accessibilityIdentifier(accessibilityIdentifier)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color.black.opacity(0.2))
