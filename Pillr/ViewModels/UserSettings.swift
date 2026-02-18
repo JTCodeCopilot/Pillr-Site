@@ -9,6 +9,13 @@ import Foundation
 import SwiftUI
 
 class UserSettings: ObservableObject {
+    static var isUITestMode: Bool {
+        let env = ProcessInfo.processInfo.environment
+        if env["PILLR_UI_TEST_MODE"] == "1" { return true }
+        if CommandLine.arguments.contains("--uitesting") { return true }
+        return false
+    }
+
     @Published var userName: String {
         didSet {
             if !isPreviewMode {
@@ -108,6 +115,7 @@ class UserSettings: ObservableObject {
     private let appleHealthVisibilityKey = "should_show_apple_health_data"
     private let customSideEffectsKey = "custom_side_effects"
     private let isPreviewMode: Bool
+    private let forceUITestMode: Bool
 
     #if DEBUG
     /// Set `PILLR_ENABLE_TEST_PREMIUM=1` in the scheme / environment to keep premium unlocked in debug builds.
@@ -128,6 +136,7 @@ class UserSettings: ObservableObject {
     
     init(isPreview: Bool = false) {
         self.isPreviewMode = isPreview
+        self.forceUITestMode = UserSettings.isUITestMode
         
         if isPreview {
             // Use default values for preview
@@ -140,6 +149,25 @@ class UserSettings: ObservableObject {
             self.hasSeenNotificationOnboardingPrompt = false
             self.shouldUseCloudSync = true
             self.shouldShowAppleHealthData = true
+            self.customSideEffects = []
+        } else if forceUITestMode {
+            // Stable defaults for UI automation so first-run prompts do not interrupt flows.
+            self.userName = "UI Test User"
+            self.hasShownPrivacyNotice = true
+            self.isPremiumUser = true
+            self.subscriptionType = "one-time-purchase"
+            self.seenOnboardingStages = [
+                "cloudSyncChoice",
+                "meds",
+                "history",
+                "checkIns",
+                "focus",
+                "more"
+            ]
+            self.hasSeenCabinetIntroOverlay = true
+            self.hasSeenNotificationOnboardingPrompt = true
+            self.shouldUseCloudSync = false
+            self.shouldShowAppleHealthData = false
             self.customSideEffects = []
         } else {
             // Load user name if available, otherwise use default
@@ -191,6 +219,11 @@ class UserSettings: ObservableObject {
     
     // Premium management methods
     func setPremiumStatus(_ isPremium: Bool) {
+        if forceUITestMode || forcePremiumFromEnv {
+            isPremiumUser = true
+            subscriptionType = "one-time-purchase"
+            return
+        }
         isPremiumUser = isPremium
         if isPremium {
             subscriptionType = "one-time-purchase"

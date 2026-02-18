@@ -155,6 +155,10 @@ class NotificationManager: ObservableObject {
     }
 
     func requestAuthorization(options: UNAuthorizationOptions? = nil, completion: ((Bool) -> Void)? = nil) {
+        if UserSettings.isUITestMode {
+            completion?(true)
+            return
+        }
         let authorizationOptions = options ?? defaultAuthorizationOptions
         UNUserNotificationCenter.current().requestAuthorization(options: authorizationOptions) { granted, _ in
             completion?(granted)

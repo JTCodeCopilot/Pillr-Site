@@ -161,10 +161,7 @@ struct PillrApp: App {
     init() {
         // Set preview environment detection
         #if DEBUG
-        if CommandLine.arguments.contains("--uitesting") || ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
-            // Prevent UserDefaults persistence during previews/tests
-            UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier!)
-            
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
             // Set flag for previews to optimize rendering speed
             UserDefaults.standard.set(true, forKey: "isRunningPreview")
             
@@ -172,6 +169,11 @@ struct PillrApp: App {
             UserDefaults.standard.set(true, forKey: "useMinimalDataForPreviews")
             
             // Disable animations in preview mode for faster rendering
+            UIView.setAnimationsEnabled(false)
+        } else if UserSettings.isUITestMode {
+            // Keep test runs stable without wiping user defaults each launch.
+            UserDefaults.standard.set(false, forKey: "isRunningPreview")
+            UserDefaults.standard.set(true, forKey: "useMinimalDataForPreviews")
             UIView.setAnimationsEnabled(false)
         } else {
             // Clear the preview flag so normal runs aren't treated as previews.

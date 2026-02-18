@@ -32,6 +32,7 @@ struct MainTabView: View {
     @AppStorage("reviewPromptLastDismissedTimeInterval") private var reviewPromptLastDismissedTimeInterval: Double = 0
     @AppStorage("reviewPromptSeeded") private var reviewPromptSeeded = false
     @AppStorage("appLaunchCount") private var appLaunchCount: Int = 0
+    private var isUITestMode: Bool { UserSettings.isUITestMode }
     
     private static let cloudSyncOnboardingKey = "cloudSyncChoice"
     private static let reviewPromptURL = "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?action=write-review"
@@ -202,6 +203,7 @@ struct MainTabView: View {
     }
 
     private func scheduleOnboarding(for tab: MainTab) {
+        guard !isUITestMode else { return }
         guard activeOnboardingStage == nil else { return }
         let key = tab.rawValue
         if tab == .meds && !userSettings.hasSeenOnboardingStage(Self.cloudSyncOnboardingKey) {
@@ -219,6 +221,7 @@ struct MainTabView: View {
     }
 
     private func scheduleReviewPromptIfNeeded() {
+        guard !isUITestMode else { return }
         guard !reviewPromptHasShown else { return }
         seedReviewPromptBaselineIfNeeded()
 
@@ -317,6 +320,12 @@ struct MainTabView: View {
     }
 
     private func handleCloudSyncCompletion() {
+        guard !isUITestMode else {
+            DispatchQueue.main.async {
+                scheduleOnboarding(for: selectedTab)
+            }
+            return
+        }
         guard !userSettings.hasSeenNotificationOnboardingPrompt else {
             DispatchQueue.main.async {
                 scheduleOnboarding(for: selectedTab)

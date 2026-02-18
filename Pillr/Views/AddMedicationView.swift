@@ -614,6 +614,7 @@ struct AddMedicationView: View {
                                 )
                         )
                     }
+                    .accessibilityIdentifier("frequencyMenuButton")
                     .onChange(of: frequency) { _, newValue in
                         validateField(.frequency, value: newValue)
                     }
@@ -686,6 +687,7 @@ struct AddMedicationView: View {
                                             showingPremiumUpgrade = true
                                         }
                                     )
+                                    .accessibilityIdentifier("oneTimeFollowUpToggle")
                                 }
                             }
                         }
@@ -715,6 +717,7 @@ struct AddMedicationView: View {
                             Text("No").tag(false)
                         }
                         .pickerStyle(.segmented)
+                        .accessibilityIdentifier("adhdMedicationPicker")
                     }
 
                     if isADHDMedication {
@@ -728,6 +731,7 @@ struct AddMedicationView: View {
                                 Text("Non-stimulant").tag(MedicationType.nonStimulant)
                             }
                             .pickerStyle(.segmented)
+                            .accessibilityIdentifier("medicationTypePicker")
                         }
                     }
                 }
@@ -744,6 +748,7 @@ struct AddMedicationView: View {
                                     .padding(.trailing, 12)
                             }
                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                            .accessibilityIdentifier("focusWindowToggle")
                             .onChange(of: enableStimulantPhaseNotifications) { _, enabled in
                                 if !enabled {
                                     onsetMinutesError = nil
@@ -751,6 +756,10 @@ struct AddMedicationView: View {
                                     effectsGoneMinutesError = nil
                                     enableDailyCheckIn = false
                                     useCustomDailyCheckInTime = false
+                                } else if UserSettings.isUITestMode {
+                                    if onsetMinutesString.isEmpty { onsetMinutesString = "45" }
+                                    if durationMinutesString.isEmpty { durationMinutesString = "180" }
+                                    if effectsGoneMinutesString.isEmpty { effectsGoneMinutesString = "360" }
                                 }
                             }
 
@@ -814,7 +823,8 @@ struct AddMedicationView: View {
                                     range: focusOnsetRange,
                                     field: .onsetMinutes,
                                     isRequired: true,
-                                    errorMessage: onsetMinutesError
+                                    errorMessage: onsetMinutesError,
+                                    accessibilityIdentifier: "onsetMinutesPicker"
                                 )
 
                                 minuteWheelPickerField(
@@ -823,7 +833,8 @@ struct AddMedicationView: View {
                                     range: focusDurationRange,
                                     field: .durationMinutes,
                                     isRequired: true,
-                                    errorMessage: durationMinutesError
+                                    errorMessage: durationMinutesError,
+                                    accessibilityIdentifier: "durationMinutesPicker"
                                 )
 
                                 minuteWheelPickerField(
@@ -832,7 +843,8 @@ struct AddMedicationView: View {
                                     range: focusEffectsGoneRange,
                                     field: .effectsGoneMinutes,
                                     isRequired: true,
-                                    errorMessage: effectsGoneMinutesError
+                                    errorMessage: effectsGoneMinutesError,
+                                    accessibilityIdentifier: "effectsGoneMinutesPicker"
                                 )
                             }
                         }
@@ -869,6 +881,7 @@ struct AddMedicationView: View {
                             .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                             .disabled(!userSettings.isPremiumUser)
                             .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
+                            .accessibilityIdentifier("focusReflectionToggle")
                             .onChange(of: enableDailyCheckIn) { _, newValue in
                                 guard userSettings.isPremiumUser else {
                                     enableDailyCheckIn = false
@@ -900,6 +913,7 @@ struct AddMedicationView: View {
                                             .foregroundColor(Color(hex: "#E8E8E0"))
                                     }
                                     .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                    .accessibilityIdentifier("customReflectionToggle")
                                     .onChange(of: useCustomDailyCheckInTime) { _, _ in
                                         triggerStrongHaptic()
                                     }
@@ -994,6 +1008,7 @@ struct AddMedicationView: View {
                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
+                        .accessibilityIdentifier("focusReflectionToggle")
                         .onChange(of: enableDailyCheckIn) { _, newValue in
                             guard userSettings.isPremiumUser else {
                                 enableDailyCheckIn = false
@@ -1058,6 +1073,7 @@ struct AddMedicationView: View {
                         .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
+                        .accessibilityIdentifier("trackPillCountToggle")
                         .onChange(of: trackPillCount) { _, newValue in
                             triggerStrongHaptic()
                             if !newValue {
@@ -1084,7 +1100,8 @@ struct AddMedicationView: View {
                                     field: .pillCount,
                                     isRequired: true,
                                     errorMessage: pillCountError,
-                                    keyboardType: .numberPad
+                                    keyboardType: .numberPad,
+                                    accessibilityIdentifier: "totalPillsField"
                                 )
                                 .id(Field.pillCount)
 
@@ -1093,7 +1110,8 @@ struct AddMedicationView: View {
                                     placeholder: "1",
                                     text: $pillsPerDoseString,
                                     field: .pillsPerDose,
-                                    keyboardType: .numberPad
+                                    keyboardType: .numberPad,
+                                    accessibilityIdentifier: "pillsPerDoseField"
                                 )
                                 .id(Field.pillsPerDose)
                             }
@@ -1105,7 +1123,8 @@ struct AddMedicationView: View {
                                 field: .refillThreshold,
                                 isRequired: true,
                                 errorMessage: refillThresholdError,
-                                keyboardType: .numberPad
+                                keyboardType: .numberPad,
+                                accessibilityIdentifier: "refillReminderField"
                             )
                             .id(Field.refillThreshold)
                         }
@@ -1139,6 +1158,7 @@ struct AddMedicationView: View {
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
                         .padding(12)
+                        .accessibilityIdentifier("medicationNotesField")
 
                     if notes.isEmpty {
                         Text("e.g., Take with food, side effects to watch for...")
@@ -1476,7 +1496,8 @@ struct AddMedicationView: View {
         range: ClosedRange<Int>,
         field: Field?,
         isRequired: Bool = false,
-        errorMessage: String? = nil
+        errorMessage: String? = nil,
+        accessibilityIdentifier: String = ""
     ) -> some View {
         let showError = showValidationErrors && errorMessage != nil
         let options = minuteOptions(range: range, currentValue: selection.wrappedValue)
@@ -1502,6 +1523,7 @@ struct AddMedicationView: View {
             .pickerStyle(.wheel)
             .labelsHidden()
             .colorScheme(.dark)
+            .accessibilityIdentifier(accessibilityIdentifier)
             .frame(height: focusPickerHeight)
             .frame(maxWidth: .infinity)
             .clipped()
