@@ -42,11 +42,10 @@
             </BuildableReference>
          </TestableReference>
          <TestableReference
-            skipped = "NO"
-            parallelizable = "NO">
+            skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "49ECC7602F446FC20055C642"
+               BlueprintIdentifier = "4935BAAD2F45BEEB00A11920"
                BuildableName = "PillrUITests.xctest"
                BlueprintName = "PillrUITests"
                ReferencedContainer = "container:Pillr.xcodeproj">

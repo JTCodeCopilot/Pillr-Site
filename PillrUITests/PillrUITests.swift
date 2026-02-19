@@ -83,23 +83,38 @@ func launchPillrAndClearFirstRunPrompts(_ app: XCUIApplication) {
 }
 
 final class PillrUITests: XCTestCase {
-    private func setSwitch(_ toggle: XCUIElement, to expectedOn: Bool) {
-        guard toggle.waitForExistence(timeout: 5) else { return }
-        let currentValue = (toggle.value as? String) == "1"
-        if currentValue != expectedOn {
+    @discardableResult
+    private func setSwitch(_ toggle: XCUIElement, to expectedOn: Bool) -> Bool {
+        guard toggle.waitForExistence(timeout: 5) else { return false }
+        for _ in 0..<3 {
+            let currentValue = (toggle.value as? String) == "1"
+            if currentValue == expectedOn {
+                return true
+            }
             toggle.tap()
         }
-        let expectedValue = expectedOn ? "1" : "0"
-        _ = NSPredicate(format: "value == %@", expectedValue)
-            .evaluate(with: toggle)
+        return (toggle.value as? String) == (expectedOn ? "1" : "0")
     }
 
-    private func scrollToElement(_ app: XCUIApplication, element: XCUIElement, maxSwipes: Int = 8) {
+    @discardableResult
+    private func scrollToElement(_ app: XCUIApplication, element: XCUIElement, maxSwipes: Int = 4) -> Bool {
+        if element.exists { return true }
+
         var attempts = 0
         while !element.exists && attempts < maxSwipes {
             app.swipeUp()
             attempts += 1
         }
+
+        if element.exists { return true }
+
+        attempts = 0
+        while !element.exists && attempts < maxSwipes {
+            app.swipeDown()
+            attempts += 1
+        }
+
+        return element.exists
     }
 
     override func setUpWithError() throws {
@@ -127,7 +142,7 @@ final class PillrUITests: XCTestCase {
     func testAddMedication() throws {
         let app = XCUIApplication()
         launchPillrAndClearFirstRunPrompts(app)
-
+        
         let myMedsTab = app.tabBars.buttons["My Meds"].firstMatch
         if myMedsTab.waitForExistence(timeout: 2) {
             myMedsTab.tap()
@@ -173,7 +188,7 @@ final class PillrUITests: XCTestCase {
         nextButton.tap()
 
         let adhdYes = app.segmentedControls["adhdMedicationPicker"].buttons["Yes"].firstMatch
-        scrollToElement(app, element: adhdYes)
+        XCTAssertTrue(scrollToElement(app, element: adhdYes))
         XCTAssertTrue(adhdYes.waitForExistence(timeout: 5))
         adhdYes.tap()
 
@@ -185,13 +200,13 @@ final class PillrUITests: XCTestCase {
         setSwitch(app.switches["focusWindowToggle"].firstMatch, to: true)
 
         let focusReflectionToggle = app.switches["focusReflectionToggle"].firstMatch
-        scrollToElement(app, element: focusReflectionToggle)
+        _ = scrollToElement(app, element: focusReflectionToggle)
         if focusReflectionToggle.exists {
             setSwitch(focusReflectionToggle, to: true)
         }
 
         let customReflectionToggle = app.switches["customReflectionToggle"].firstMatch
-        scrollToElement(app, element: customReflectionToggle)
+        _ = scrollToElement(app, element: customReflectionToggle)
         if customReflectionToggle.exists {
             setSwitch(customReflectionToggle, to: true)
         }
@@ -200,24 +215,24 @@ final class PillrUITests: XCTestCase {
         nextButton.tap()
 
         let trackPillCountToggle = app.switches["trackPillCountToggle"].firstMatch
-        scrollToElement(app, element: trackPillCountToggle)
+        XCTAssertTrue(scrollToElement(app, element: trackPillCountToggle))
         setSwitch(trackPillCountToggle, to: true)
         XCTAssertEqual(trackPillCountToggle.value as? String, "1")
 
         let totalPillsField = app.textFields["totalPillsField"].firstMatch
-        scrollToElement(app, element: totalPillsField)
+        XCTAssertTrue(scrollToElement(app, element: totalPillsField))
         XCTAssertTrue(totalPillsField.waitForExistence(timeout: 5))
         totalPillsField.tap()
         totalPillsField.typeText("30")
 
         let perDoseField = app.textFields["pillsPerDoseField"].firstMatch
-        scrollToElement(app, element: perDoseField)
+        XCTAssertTrue(scrollToElement(app, element: perDoseField))
         XCTAssertTrue(perDoseField.waitForExistence(timeout: 5))
         perDoseField.tap()
         perDoseField.typeText("1")
 
         let refillField = app.textFields["refillReminderField"].firstMatch
-        scrollToElement(app, element: refillField)
+        XCTAssertTrue(scrollToElement(app, element: refillField))
         XCTAssertTrue(refillField.waitForExistence(timeout: 5))
         refillField.tap()
         refillField.typeText("5")
@@ -226,7 +241,7 @@ final class PillrUITests: XCTestCase {
         nextButton.tap()
 
         let notesField = app.textViews["medicationNotesField"].firstMatch
-        scrollToElement(app, element: notesField)
+        _ = scrollToElement(app, element: notesField)
         if notesField.waitForExistence(timeout: 5) {
             notesField.tap()
             notesField.typeText("UI full-flow test note.")
@@ -237,6 +252,113 @@ final class PillrUITests: XCTestCase {
         addMedicationButton.tap()
 
         XCTAssertTrue(app.staticTexts[medName].waitForExistence(timeout: 15))
+    }
+
+    @MainActor
+    func testAddMedicationRecordedFlow() throws {
+        let app = XCUIApplication()
+        launchPillrAndClearFirstRunPrompts(app)
+
+        let myMedsTab = app.tabBars.buttons["My Meds"].firstMatch
+        if myMedsTab.waitForExistence(timeout: 2) {
+            myMedsTab.tap()
+        }
+
+        let addButton = app.buttons["addMedicationButton"].firstMatch
+        XCTAssertTrue(addButton.waitForExistence(timeout: 5))
+        addButton.tap()
+
+        let nameField = app.textFields["medicationNameField"].firstMatch
+        XCTAssertTrue(nameField.waitForExistence(timeout: 5))
+        nameField.tap()
+        nameField.typeText("this is a test medication")
+
+        let dosageField = app.textFields["medicationDosageField"].firstMatch
+        XCTAssertTrue(dosageField.waitForExistence(timeout: 5))
+        dosageField.tap()
+        dosageField.typeText("100")
+
+        let frequencyMenu = app.buttons["frequencyMenuButton"].firstMatch
+        XCTAssertTrue(frequencyMenu.waitForExistence(timeout: 5))
+        frequencyMenu.tap()
+        XCTAssertTrue(app.buttons["Once daily"].firstMatch.waitForExistence(timeout: 3))
+        app.buttons["Once daily"].firstMatch.tap()
+
+        setSwitch(app.switches["oneTimeFollowUpToggle"].firstMatch, to: true)
+
+        let nextStep = app.buttons["Next step"].firstMatch
+        XCTAssertTrue(nextStep.waitForExistence(timeout: 5))
+        nextStep.tap()
+
+        let adhdYes = app.segmentedControls["adhdMedicationPicker"].buttons["Yes"].firstMatch
+        XCTAssertTrue(scrollToElement(app, element: adhdYes))
+        XCTAssertTrue(adhdYes.waitForExistence(timeout: 5))
+        adhdYes.tap()
+
+        setSwitch(app.switches["focusWindowToggle"].firstMatch, to: true)
+
+        let onsetPicker = app.pickers["onsetMinutesPicker"].pickerWheels.firstMatch
+        if onsetPicker.waitForExistence(timeout: 5) {
+            onsetPicker.adjust(toPickerWheelValue: "46")
+        }
+        let durationPicker = app.pickers["durationMinutesPicker"].pickerWheels.firstMatch
+        if durationPicker.waitForExistence(timeout: 5) {
+            durationPicker.adjust(toPickerWheelValue: "181")
+        }
+        let effectsGonePicker = app.pickers["effectsGoneMinutesPicker"].pickerWheels.firstMatch
+        if effectsGonePicker.waitForExistence(timeout: 5) {
+            effectsGonePicker.adjust(toPickerWheelValue: "361")
+        }
+
+        let reflectionToggle = app.switches["focusReflectionToggle"].firstMatch
+        _ = scrollToElement(app, element: reflectionToggle)
+        if reflectionToggle.exists {
+            setSwitch(reflectionToggle, to: true)
+        }
+
+        let customReflectionToggle = app.switches["customReflectionToggle"].firstMatch
+        _ = scrollToElement(app, element: customReflectionToggle)
+        if customReflectionToggle.exists {
+            setSwitch(customReflectionToggle, to: true)
+        }
+
+        nextStep.tap()
+
+        let trackPillCount = app.switches["trackPillCountToggle"].firstMatch
+        XCTAssertTrue(scrollToElement(app, element: trackPillCount))
+        var didEnableTrackPillCount = setSwitch(trackPillCount, to: true)
+        if !didEnableTrackPillCount {
+            let trackPillCountText = app.staticTexts["Track Pill Count"].firstMatch
+            if trackPillCountText.exists {
+                trackPillCountText.tap()
+            }
+            didEnableTrackPillCount = setSwitch(trackPillCount, to: true)
+        }
+        XCTAssertTrue(didEnableTrackPillCount, "Track Pill Count did not turn on")
+
+        let totalPillsField = app.textFields["totalPillsField"].firstMatch
+        XCTAssertTrue(scrollToElement(app, element: totalPillsField))
+        XCTAssertTrue(totalPillsField.waitForExistence(timeout: 5))
+        totalPillsField.tap()
+        totalPillsField.typeText("100")
+
+        let refillReminderField = app.textFields["refillReminderField"].firstMatch
+        XCTAssertTrue(scrollToElement(app, element: refillReminderField))
+        XCTAssertTrue(refillReminderField.waitForExistence(timeout: 5))
+        refillReminderField.tap()
+        refillReminderField.typeText("10")
+
+        nextStep.tap()
+
+        let notesField = app.textViews["medicationNotesField"].firstMatch
+        _ = scrollToElement(app, element: notesField)
+        XCTAssertTrue(notesField.waitForExistence(timeout: 5))
+        notesField.tap()
+        notesField.typeText("Testing")
+
+        let saveButton = app.buttons["Add medication"].firstMatch
+        XCTAssertTrue(saveButton.waitForExistence(timeout: 5))
+        saveButton.tap()
     }
 
     @MainActor
