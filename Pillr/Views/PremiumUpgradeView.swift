@@ -12,6 +12,7 @@ struct PremiumUpgradeView: View {
     @State private var isPulseAnimating = false
     @StateObject private var healthKitManager = HealthKitManager()
     @State private var isHealthButtonLoading = false
+    @State private var hasPresentedStory = false
 
     private struct FeatureComparison: Identifiable {
         let id = UUID()
@@ -135,21 +136,41 @@ struct PremiumUpgradeView: View {
                         .foregroundColor(Color.white.opacity(0.65))
                 }
             }
+            .opacity(hasPresentedStory ? 1 : 0)
+            .offset(y: hasPresentedStory ? 0 : 14)
+            .animation(.spring(response: 0.45, dampingFraction: 0.86).delay(0.02), value: hasPresentedStory)
 
             socialProofRow
                 .padding(.top, 4)
+                .opacity(hasPresentedStory ? 1 : 0)
+                .offset(y: hasPresentedStory ? 0 : 14)
+                .animation(.spring(response: 0.45, dampingFraction: 0.86).delay(0.1), value: hasPresentedStory)
 
             purchaseButtonView(for: storeManager.getPremiumProduct())
+                .opacity(hasPresentedStory ? 1 : 0)
+                .offset(y: hasPresentedStory ? 0 : 14)
+                .animation(.spring(response: 0.45, dampingFraction: 0.86).delay(0.17), value: hasPresentedStory)
 
-            Rectangle()
-                .fill(Color.white.opacity(0.08))
-                .frame(height: 1)
+            VStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color.white.opacity(0.08))
+                    .frame(height: 1)
 
-            featureComparisonGrid
+                featureComparisonGrid
+            }
+            .opacity(hasPresentedStory ? 1 : 0)
+            .offset(y: hasPresentedStory ? 0 : 14)
+            .animation(.spring(response: 0.45, dampingFraction: 0.86).delay(0.24), value: hasPresentedStory)
         }
         .padding(.vertical, 34)
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onAppear {
+            hasPresentedStory = false
+            withAnimation(.easeOut(duration: 0.01)) {
+                hasPresentedStory = true
+            }
+        }
     }
 
     private var featureComparisonGrid: some View {

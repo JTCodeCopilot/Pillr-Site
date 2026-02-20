@@ -49,22 +49,33 @@ struct OnboardingStageInfo {
 struct OnboardingOverlayView: View {
     let info: OnboardingStageInfo
     let onDismiss: () -> Void
+    @State private var isPresented = false
 
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                Color.black.opacity(0.72)
+                Color.black.opacity(isPresented ? 0.72 : 0)
                     .ignoresSafeArea()
+                    .animation(.easeOut(duration: 0.2), value: isPresented)
 
                 VStack {
                     Spacer()
 
-                    OnboardingCardView(info: info, onDismiss: onDismiss)
-                        .offset(y: info.verticalOffset)
+                    OnboardingCardView(info: info, onDismiss: onDismiss, animateContent: isPresented)
+                        .opacity(isPresented ? 1 : 0)
+                        .scaleEffect(isPresented ? 1 : 0.97)
+                        .offset(y: info.verticalOffset + (isPresented ? 0 : 22))
                         .padding(.horizontal, 16)
                         .padding(.bottom, geometry.safeAreaInsets.bottom + 16)
+                        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: isPresented)
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height, alignment: .bottom)
+            }
+            .onAppear {
+                isPresented = true
+            }
+            .onDisappear {
+                isPresented = false
             }
         }
     }
@@ -73,6 +84,7 @@ struct OnboardingOverlayView: View {
 struct OnboardingCardView: View {
     let info: OnboardingStageInfo
     let onDismiss: () -> Void
+    let animateContent: Bool
 
     var body: some View {
         VStack(spacing: 24) {
@@ -92,6 +104,9 @@ struct OnboardingCardView: View {
                         .padding(.top, 2)
                 }
             }
+            .opacity(animateContent ? 1 : 0)
+            .offset(y: animateContent ? 0 : 10)
+            .animation(.easeOut(duration: 0.26).delay(0.04), value: animateContent)
 
             VStack(alignment: .leading, spacing: 16) {
                 info.description
@@ -119,6 +134,9 @@ struct OnboardingCardView: View {
                     .frame(maxWidth: 420, alignment: .leading)
                 }
             }
+            .opacity(animateContent ? 1 : 0)
+            .offset(y: animateContent ? 0 : 14)
+            .animation(.easeOut(duration: 0.28).delay(0.1), value: animateContent)
 
             Button(action: onDismiss) {
                 Text(info.buttonTitle)
@@ -138,6 +156,9 @@ struct OnboardingCardView: View {
             }
             .buttonStyle(ScaleButtonStyle())
             .accessibilityLabel(info.buttonAccessibilityLabel)
+            .opacity(animateContent ? 1 : 0)
+            .offset(y: animateContent ? 0 : 12)
+            .animation(.easeOut(duration: 0.24).delay(0.14), value: animateContent)
         }
         .padding(.all, 28)
         .frame(maxWidth: 460)

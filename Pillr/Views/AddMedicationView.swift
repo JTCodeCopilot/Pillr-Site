@@ -120,14 +120,22 @@ struct AddMedicationView: View {
 
         switch stepAnimationDirection {
         case .forward:
-            insertion = .move(edge: .trailing)
-            removal = .move(edge: .leading)
+            insertion = .move(edge: .trailing).combined(with: .opacity).combined(with: .scale(scale: 0.985))
+            removal = .move(edge: .leading).combined(with: .opacity)
         case .backward:
-            insertion = .move(edge: .leading)
-            removal = .move(edge: .trailing)
+            insertion = .move(edge: .leading).combined(with: .opacity).combined(with: .scale(scale: 0.985))
+            removal = .move(edge: .trailing).combined(with: .opacity)
         }
 
         return .asymmetric(insertion: insertion, removal: removal)
+    }
+
+    private var stepTransitionAnimation: Animation {
+        .interactiveSpring(response: 0.52, dampingFraction: 0.84, blendDuration: 0.12)
+    }
+
+    private var stepProgressFraction: Double {
+        Double(currentStep.rawValue + 1) / Double(AddMedicationStep.allCases.count)
     }
 
     private var isFocusTimingSheetVisible: Bool {
@@ -368,10 +376,16 @@ struct AddMedicationView: View {
                     notes = notesText
                 })
             }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color(hex: "#58655A"))
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
                 .environmentObject(StoreManager.shared)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color(hex: "#58655A"))
         }
     }
 
@@ -395,15 +409,35 @@ struct AddMedicationView: View {
 
     @ViewBuilder
     private var stepProgressView: some View {
-        ProgressView(
-            value: Double(currentStep.rawValue + 1),
-            total: Double(AddMedicationStep.allCases.count)
-        )
-        .tint(Color(hex: "#C7C7BD"))
-        .scaleEffect(x: 1, y: 1.6, anchor: .center)
+        VStack(spacing: 10) {
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.white.opacity(0.12))
+                    Capsule()
+                        .fill(Color(hex: "#C7C7BD"))
+                        .frame(width: max(10, geometry.size.width * stepProgressFraction))
+                }
+                .animation(stepTransitionAnimation, value: currentStep)
+            }
+            .frame(height: 8)
+
+            HStack(spacing: 8) {
+                ForEach(AddMedicationStep.allCases, id: \.self) { step in
+                    let isReached = step.rawValue <= currentStep.rawValue
+                    Circle()
+                        .fill(isReached ? Color(hex: "#E8E8E0") : Color.white.opacity(0.22))
+                        .frame(width: 6, height: 6)
+                        .scaleEffect(step == currentStep ? 1.3 : 1.0)
+                        .animation(stepTransitionAnimation, value: currentStep)
+                }
+            }
+        }
         .frame(maxWidth: .infinity)
         .padding(.top, 4)
         .padding(.bottom, 2)
+        .accessibilityLabel("Progress")
+        .accessibilityValue("Step \(currentStep.rawValue + 1) of \(AddMedicationStep.allCases.count)")
     }
 
     @ViewBuilder
@@ -1607,7 +1641,7 @@ struct AddMedicationView: View {
     }
 
     private func transition(to step: AddMedicationStep, direction: StepTransitionDirection) {
-        withAnimation(.interactiveSpring(response: 0.45, dampingFraction: 0.75, blendDuration: 0)) {
+        withAnimation(stepTransitionAnimation) {
             stepAnimationDirection = direction
             currentStep = step
         }

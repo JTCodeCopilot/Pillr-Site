@@ -60,6 +60,14 @@ struct MainTabView: View {
         max(0, store.overdueReminderCount(referenceDate: referenceDate))
     }
 
+    private var modalOverlayTransition: AnyTransition {
+        .move(edge: .bottom).combined(with: .opacity)
+    }
+
+    private var modalOverlayAnimation: Animation {
+        .spring(response: 0.42, dampingFraction: 0.86)
+    }
+
     var body: some View {
         ZStack {
             LinearGradient.pillrBackground
@@ -124,14 +132,14 @@ struct MainTabView: View {
                     OnboardingOverlayView(info: stage) {
                         dismissOnboarding()
                     }
-                    .transition(.opacity)
+                    .transition(modalOverlayTransition)
                     .zIndex(1)
                 }
                 if showCloudSyncChoice {
                     CloudSyncChoiceOverlay { choice in
                         handleCloudSyncSelection(choice)
                     }
-                    .transition(.opacity)
+                    .transition(modalOverlayTransition)
                     .zIndex(4)
                 }
                 if showNotificationOnboardingPrompt {
@@ -139,7 +147,7 @@ struct MainTabView: View {
                         onContinue: handleNotificationPromptContinue,
                         onSkip: handleNotificationPromptSkip
                     )
-                    .transition(.opacity)
+                    .transition(modalOverlayTransition)
                     .zIndex(3)
                 }
                 if showReviewPrompt {
@@ -147,7 +155,7 @@ struct MainTabView: View {
                         onDismiss: dismissReviewPrompt,
                         onLeaveReview: openReviewLink
                     )
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(modalOverlayTransition)
                     .zIndex(2)
                 }
             }
@@ -207,7 +215,7 @@ struct MainTabView: View {
         guard activeOnboardingStage == nil else { return }
         let key = tab.rawValue
         if tab == .meds && !userSettings.hasSeenOnboardingStage(Self.cloudSyncOnboardingKey) {
-            withAnimation(.easeInOut(duration: 0.25)) {
+            withAnimation(modalOverlayAnimation) {
                 showCloudSyncChoice = true
             }
             return
@@ -215,7 +223,7 @@ struct MainTabView: View {
         guard !userSettings.hasSeenOnboardingStage(key) else { return }
         guard let info = tab.onboardingInfo else { return }
         activeOnboardingTab = tab
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(modalOverlayAnimation) {
             activeOnboardingStage = info
         }
     }
@@ -246,7 +254,7 @@ struct MainTabView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.reviewPromptDelaySeconds) {
             guard !reviewPromptHasShown else { return }
             guard !isBlockingReviewPrompt else { return }
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(modalOverlayAnimation) {
                 showReviewPrompt = true
             }
         }
@@ -279,7 +287,7 @@ struct MainTabView: View {
     }
 
     private func dismissReviewPrompt() {
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(modalOverlayAnimation) {
             showReviewPrompt = false
         }
         reviewPromptLastDismissedTimeInterval = Date().timeIntervalSince1970
@@ -287,7 +295,7 @@ struct MainTabView: View {
 
     private func openReviewLink() {
         reviewPromptHasShown = true
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(modalOverlayAnimation) {
             showReviewPrompt = false
         }
         guard let url = URL(string: Self.reviewPromptURL), UIApplication.shared.canOpenURL(url) else {
@@ -301,7 +309,7 @@ struct MainTabView: View {
         if let tab = dismissedTab {
             userSettings.markOnboardingStageSeen(tab.rawValue)
         }
-        withAnimation(.easeInOut(duration: 0.15)) {
+        withAnimation(modalOverlayAnimation) {
             activeOnboardingStage = nil
             activeOnboardingTab = nil
         }
@@ -313,7 +321,7 @@ struct MainTabView: View {
         let enableSync = choice == .connect
         userSettings.setCloudSyncPreference(enableSync)
         userSettings.markOnboardingStageSeen(Self.cloudSyncOnboardingKey)
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(modalOverlayAnimation) {
             showCloudSyncChoice = false
         }
         handleCloudSyncCompletion()
@@ -351,7 +359,7 @@ struct MainTabView: View {
     private func presentNotificationPromptAfterCloudChoiceDismissal(attempt: Int = 0) {
         let maxAttempts = 10
         guard attempt <= maxAttempts else {
-            withAnimation(.easeInOut(duration: 0.25)) {
+            withAnimation(modalOverlayAnimation) {
                 showNotificationOnboardingPrompt = true
             }
             return
@@ -366,7 +374,7 @@ struct MainTabView: View {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            withAnimation(.easeInOut(duration: 0.25)) {
+            withAnimation(modalOverlayAnimation) {
                 showNotificationOnboardingPrompt = true
             }
         }
@@ -391,7 +399,7 @@ struct MainTabView: View {
     private func finishNotificationPromptFlow() {
         guard needsOnboardingAfterNotificationPrompt else { return }
         needsOnboardingAfterNotificationPrompt = false
-        withAnimation(.easeInOut(duration: 0.25)) {
+        withAnimation(modalOverlayAnimation) {
             showNotificationOnboardingPrompt = false
         }
         isRequestingNotificationAuthorization = false

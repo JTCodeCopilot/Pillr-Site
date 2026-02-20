@@ -515,7 +515,7 @@ struct SettingsView: View {
             .contentShape(Rectangle())
             .padding(.vertical, 10)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(SettingsActionRowButtonStyle())
     }
 
     private var notificationStatusValue: String {
@@ -711,6 +711,19 @@ struct SettingsView: View {
             return "Waiting for Pillr to finish its first sync"
         }
         return nil
+    }
+}
+
+private struct SettingsActionRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .opacity(configuration.isPressed ? 0.94 : 1)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(configuration.isPressed ? 0.08 : 0))
+            )
+            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
     }
 }
 

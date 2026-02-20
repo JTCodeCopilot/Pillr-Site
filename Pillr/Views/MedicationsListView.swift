@@ -1780,13 +1780,13 @@ fileprivate struct FloatingActionButton: View {
                 }
                 .rotationEffect(.degrees(isExpanded ? 540 : 0))
                 .scaleEffect(isExpanded ? 0.85 : 1.0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.6), value: isExpanded)
+                .animation(.spring(response: 0.42, dampingFraction: 0.78), value: isExpanded)
             }
             .shadow(color: Color.black.opacity(isExpanded ? 0.35 : 0.25), radius: isExpanded ? 15 : 12, x: 0, y: isExpanded ? 10 : 8)
             .shadow(color: Color(hex: "#2F352F").opacity(0.2), radius: 4, x: 0, y: 3)
             .shadow(color: Color.white.opacity(0.5), radius: 1, x: 0, y: -1)
-            .scaleEffect(isExpanded ? 1.08 : 1.0)
-            .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isExpanded)
+            .scaleEffect(isExpanded ? 1.05 : 1.0)
+            .animation(.spring(response: 0.45, dampingFraction: 0.82), value: isExpanded)
         }
         .buttonStyle(EnhancedScaleButtonStyle())
         .accessibilityLabel(isExpanded ? "Close actions menu" : "Show actions menu")
@@ -1855,14 +1855,13 @@ fileprivate struct FloatingActionButton: View {
         .transition(.asymmetric(
             insertion: .opacity
                 .combined(with: .move(edge: .bottom))
-                .combined(with: .scale(scale: 0.1))
-                .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(delay)),
+                .combined(with: .scale(scale: 0.92))
+                .animation(.spring(response: 0.45, dampingFraction: 0.82).delay(delay)),
             removal: .opacity
                 .combined(with: .move(edge: .bottom))
-                .combined(with: .scale(scale: 0.3))
-                .animation(.spring(response: 0.4, dampingFraction: 0.9))
+                .combined(with: .scale(scale: 0.95))
+                .animation(.spring(response: 0.32, dampingFraction: 0.9))
         ))
-        .modifier(ShakeAnimationModifier(isExpanded: isExpanded, delay: delay))
     }
 }
 
@@ -1876,36 +1875,6 @@ struct EnhancedScaleButtonStyle: ButtonStyle {
             .onChange(of: configuration.isPressed) { _, newValue in
                 if newValue {
                     HapticManager.shared.pulseButton()
-                }
-            }
-    }
-}
-
-// Shake animation modifier for floating action buttons
-struct ShakeAnimationModifier: ViewModifier {
-    let isExpanded: Bool
-    let delay: Double
-    @State private var shakeOffset: CGFloat = 0
-    
-    func body(content: Content) -> some View {
-        content
-            .offset(x: shakeOffset)
-            .onChange(of: isExpanded) { _, newValue in
-                if newValue {
-                    // Start shake animation after the spring delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + delay + 0.3) {
-                        // First intense shake
-                        withAnimation(.easeInOut(duration: 0.06).repeatCount(7, autoreverses: true)) {
-                            shakeOffset = 15
-                        }
-                        
-                        // Reset shake offset after animation
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            shakeOffset = 0
-                        }
-                    }
-                } else {
-                    shakeOffset = 0
                 }
             }
     }
@@ -3440,12 +3409,19 @@ struct MedicationRow: View {
                     onEditTap: onEditTap
                 )
                 .padding(.top, 12)
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .top)),
+                        removal: .opacity
+                    )
+                )
             }
         }
         .background(
             cardBackgroundColor
         )
         .cornerRadius(14)
+        .clipped()
         .overlay(notificationGlowOverlay)
         .overlay(alignment: .bottomTrailing) {
             if medication.enableDailyCheckIn && hasTakenDoseToday {
@@ -3533,6 +3509,7 @@ struct MedicationRow: View {
         .overlay(enhancedBorderOverlay)
         .shadow(color: Color.black.opacity(cardPrimaryShadowOpacity), radius: cardPrimaryShadowRadius, x: 0, y: cardPrimaryShadowYOffset)
         .shadow(color: Color.black.opacity(cardSecondaryShadowOpacity), radius: cardSecondaryShadowRadius, x: 0, y: cardSecondaryShadowYOffset)
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: showsDetails)
         .animation(.interactiveSpring(response: 0.42, dampingFraction: 0.72, blendDuration: 0.25), value: isLoggedStatus)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(medication.name), \(medication.dosage), \(medication.frequency), \(commonFormatTime(medication.timeToTake))")
