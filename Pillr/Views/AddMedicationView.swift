@@ -14,6 +14,7 @@ struct AddMedicationView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var medicationToEdit: Medication? = nil
     var onFinish: () -> Void
     var onProgressStateChange: (Bool) -> Void = { _ in }
@@ -106,6 +107,7 @@ struct AddMedicationView: View {
     private let focusEffectsGoneRange: ClosedRange<Int> = 30...1440
 
     private enum ScrollAnchor {
+        static let top = "AddMedicationViewTopAnchor"
         static let bottom = "AddMedicationViewBottomAnchor"
     }
 
@@ -115,6 +117,10 @@ struct AddMedicationView: View {
     }
 
     private var stepTransition: AnyTransition {
+        if reduceMotion {
+            return .opacity
+        }
+
         let insertion: AnyTransition
         let removal: AnyTransition
 
@@ -131,7 +137,15 @@ struct AddMedicationView: View {
     }
 
     private var stepTransitionAnimation: Animation {
-        .interactiveSpring(response: 0.52, dampingFraction: 0.84, blendDuration: 0.12)
+        reduceMotion
+            ? .easeOut(duration: 0.2)
+            : .interactiveSpring(response: 0.46, dampingFraction: 0.88, blendDuration: 0.1)
+    }
+
+    private var toggleTransitionAnimation: Animation {
+        reduceMotion
+            ? .easeOut(duration: 0.22)
+            : .spring(response: 0.38, dampingFraction: 0.86)
     }
 
     private var stepProgressFraction: Double {
@@ -189,6 +203,9 @@ struct AddMedicationView: View {
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 20) {
+                        Color.clear
+                            .frame(height: 1)
+                            .id(ScrollAnchor.top)
                         header
                         stepProgressView
 
@@ -228,6 +245,9 @@ struct AddMedicationView: View {
                 }
                 .onChange(of: contentExpansionKey) { _, _ in
                     scrollToBottom(using: scrollProxy)
+                }
+                .onChange(of: currentStep) { _, _ in
+                    scrollToTop(using: scrollProxy)
                 }
             }
             .onAppear {
@@ -428,7 +448,7 @@ struct AddMedicationView: View {
                     Circle()
                         .fill(isReached ? Color(hex: "#E8E8E0") : Color.white.opacity(0.22))
                         .frame(width: 6, height: 6)
-                        .scaleEffect(step == currentStep ? 1.3 : 1.0)
+                        .scaleEffect(step == currentStep ? 1.15 : 1.0)
                         .animation(stepTransitionAnimation, value: currentStep)
                 }
             }
@@ -685,7 +705,7 @@ struct AddMedicationView: View {
                         VStack(spacing: 12) {
                             if needsMultipleReminders || frequency == "Once daily" {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Toggle(isOn: $isOneTimeWithFollowUp.animation(.easeInOut)) {
+                                    Toggle(isOn: $isOneTimeWithFollowUp.animation(toggleTransitionAnimation)) {
                                         VStack(alignment: .leading, spacing: 4) {
                                             HStack {
                                                 Text("Remind me again")
@@ -775,7 +795,7 @@ struct AddMedicationView: View {
                 FormSection(title: "FOCUS WINDOW", icon: "hourglass") {
                     VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Toggle(isOn: $enableStimulantPhaseNotifications) {
+                            Toggle(isOn: $enableStimulantPhaseNotifications.animation(toggleTransitionAnimation)) {
                                 Text("Turn on focus window")
                                     .font(.system(size: 15, weight: .semibold))
                                     .foregroundColor(Color(hex: "#E8E8E0"))
@@ -888,7 +908,7 @@ struct AddMedicationView: View {
                 if enableStimulantPhaseNotifications {
                     FormSection(title: "REFLECTION", icon: "calendar.badge.clock") {
                         VStack(alignment: .leading, spacing: 12) {
-                            Toggle(isOn: $enableDailyCheckIn) {
+                            Toggle(isOn: $enableDailyCheckIn.animation(toggleTransitionAnimation)) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     HStack {
                                         Text("Reflection")
@@ -941,7 +961,7 @@ struct AddMedicationView: View {
                                         .font(.system(size: 12))
                                         .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
 
-                                    Toggle(isOn: $useCustomDailyCheckInTime) {
+                                    Toggle(isOn: $useCustomDailyCheckInTime.animation(toggleTransitionAnimation)) {
                                         Text("Choose a custom Reflection time")
                                             .font(.system(size: 14, weight: .medium))
                                             .foregroundColor(Color(hex: "#E8E8E0"))
@@ -1016,7 +1036,7 @@ struct AddMedicationView: View {
             if shouldShowStandaloneDailyCheckIn {
                 FormSection(title: "REFLECTION", icon: "calendar.badge.clock") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Toggle(isOn: $enableDailyCheckIn) {
+                        Toggle(isOn: $enableDailyCheckIn.animation(toggleTransitionAnimation)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text("Reflection")
@@ -1081,7 +1101,7 @@ struct AddMedicationView: View {
             FormSection(title: "INVENTORY", icon: "cube.box.fill") {
                 VStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Toggle(isOn: $trackPillCount.animation(.easeInOut)) {
+                        Toggle(isOn: $trackPillCount.animation(toggleTransitionAnimation)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text("Track Pill Count")
@@ -1162,7 +1182,12 @@ struct AddMedicationView: View {
                             )
                             .id(Field.refillThreshold)
                         }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(
+                            .asymmetric(
+                                insertion: .offset(y: -14).combined(with: .scale(scale: 0.985, anchor: .top)),
+                                removal: .opacity
+                            )
+                        )
                     }
                 }
             }
@@ -1982,8 +2007,14 @@ struct AddMedicationView: View {
     }
 
     private func scrollToBottom(using proxy: ScrollViewProxy) {
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(toggleTransitionAnimation) {
             proxy.scrollTo(ScrollAnchor.bottom, anchor: .bottom)
+        }
+    }
+
+    private func scrollToTop(using proxy: ScrollViewProxy) {
+        withAnimation(stepTransitionAnimation) {
+            proxy.scrollTo(ScrollAnchor.top, anchor: .top)
         }
     }
 
