@@ -47,6 +47,22 @@ class UserSettings: ObservableObject {
             }
         }
     }
+
+    @Published var hasCompletedAppOnboarding: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(hasCompletedAppOnboarding, forKey: appOnboardingCompleteKey)
+            }
+        }
+    }
+
+    @Published var isBiometricLockEnabled: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(isBiometricLockEnabled, forKey: biometricLockEnabledKey)
+            }
+        }
+    }
     
     @Published var isFirstLaunch: Bool = false
 
@@ -111,6 +127,8 @@ class UserSettings: ObservableObject {
     private let onboardingStagesKey = "seen_onboarding_stages"
     private let cabinetIntroOverlayKey = "hasSeenCabinetIntroOverlay"
     private let notificationOnboardingPromptKey = "hasSeenNotificationOnboardingPrompt"
+    private let appOnboardingCompleteKey = "has_completed_app_onboarding"
+    private let biometricLockEnabledKey = "is_biometric_lock_enabled"
     private let cloudSyncPreferenceKey = "should_use_cloud_sync"
     private let appleHealthVisibilityKey = "should_show_apple_health_data"
     private let customSideEffectsKey = "custom_side_effects"
@@ -147,6 +165,8 @@ class UserSettings: ObservableObject {
             self.seenOnboardingStages = []
             self.hasSeenCabinetIntroOverlay = false
             self.hasSeenNotificationOnboardingPrompt = false
+            self.hasCompletedAppOnboarding = true
+            self.isBiometricLockEnabled = false
             self.shouldUseCloudSync = true
             self.shouldShowAppleHealthData = true
             self.customSideEffects = []
@@ -166,6 +186,8 @@ class UserSettings: ObservableObject {
             ]
             self.hasSeenCabinetIntroOverlay = true
             self.hasSeenNotificationOnboardingPrompt = true
+            self.hasCompletedAppOnboarding = true
+            self.isBiometricLockEnabled = false
             self.shouldUseCloudSync = false
             self.shouldShowAppleHealthData = false
             self.customSideEffects = []
@@ -180,6 +202,8 @@ class UserSettings: ObservableObject {
             self.seenOnboardingStages = Set(UserDefaults.standard.stringArray(forKey: onboardingStagesKey) ?? [])
             self.hasSeenCabinetIntroOverlay = UserDefaults.standard.bool(forKey: cabinetIntroOverlayKey)
             self.hasSeenNotificationOnboardingPrompt = UserDefaults.standard.bool(forKey: notificationOnboardingPromptKey)
+            self.hasCompletedAppOnboarding = UserDefaults.standard.bool(forKey: appOnboardingCompleteKey)
+            self.isBiometricLockEnabled = UserDefaults.standard.bool(forKey: biometricLockEnabledKey)
             if let stored = UserDefaults.standard.object(forKey: cloudSyncPreferenceKey) as? Bool {
                 self.shouldUseCloudSync = stored
             } else {
@@ -272,6 +296,14 @@ class UserSettings: ObservableObject {
     func markNotificationOnboardingPromptSeen() {
         guard !hasSeenNotificationOnboardingPrompt else { return }
         hasSeenNotificationOnboardingPrompt = true
+    }
+
+    func markAppOnboardingComplete() {
+        hasCompletedAppOnboarding = true
+    }
+
+    func setBiometricLockEnabled(_ enabled: Bool) {
+        isBiometricLockEnabled = enabled
     }
 
     func addCustomSideEffect(_ effect: String) {

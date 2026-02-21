@@ -33,6 +33,8 @@
 	</dict>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>Pillr helps you stay on track with gentle reminders when it is time to take your medication. You can adjust or turn off these notifications in Settings.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Pillr uses Face ID to protect access to your medication information on this device.</string>
 	<key>SKInAppPurchaseHistoryIncludesConsumables</key>
 	<true/>
 	<key>SKPaymentTransactionObserverUseFinishTransaction</key>
