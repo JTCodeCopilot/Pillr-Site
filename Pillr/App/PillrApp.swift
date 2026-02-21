@@ -19,7 +19,7 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
         // Set notification delegate to handle user responses
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
 
-        application.registerForRemoteNotifications()
+        registerForRemoteNotificationsIfEligible(application)
         registerBackgroundTasks()
         scheduleCloudSyncRefresh()
         Task { @MainActor in
@@ -47,6 +47,8 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        registerForRemoteNotificationsIfEligible(application)
+
         // Update badge and refresh CloudKit whenever the app is active.
         // This covers both cold start and return-from-background.
         Task { @MainActor in
@@ -95,6 +97,23 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
         let key = "appLaunchCount"
         let currentCount = UserDefaults.standard.integer(forKey: key)
         UserDefaults.standard.set(currentCount + 1, forKey: key)
+    }
+
+    private func registerForRemoteNotificationsIfEligible(_ application: UIApplication) {
+        guard UserSettings.shared.hasCompletedAppOnboarding else { return }
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let isAllowed: Bool
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                isAllowed = true
+            default:
+                isAllowed = false
+            }
+            guard isAllowed else { return }
+            DispatchQueue.main.async {
+                application.registerForRemoteNotifications()
+            }
+        }
     }
 
     private func registerBackgroundTasks() {

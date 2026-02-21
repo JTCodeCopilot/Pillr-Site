@@ -2308,13 +2308,6 @@ class MedicationStore: ObservableObject {
     private func mergeCloudMedications(_ remote: [Medication], allowSnapshotDeletion: Bool) {
         guard !remote.isEmpty else { return }
         DispatchQueue.main.async {
-            let hasReminderEligibleMedication = remote.contains {
-                !$0.isDeleted && $0.frequency != "As needed"
-            }
-            if hasReminderEligibleMedication {
-                self.notificationManager.requestAuthorizationIfNeeded()
-            }
-
             var updated = self.medications
             var hasChanges = false
             let deletedIDs = self.deletedMedicationIDs

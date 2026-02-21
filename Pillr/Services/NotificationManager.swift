@@ -154,29 +154,59 @@ class NotificationManager: ObservableObject {
         }
     }
 
-    func requestAuthorization(options: UNAuthorizationOptions? = nil, completion: ((Bool) -> Void)? = nil) {
+    func requestAuthorization(
+        options: UNAuthorizationOptions? = nil,
+        allowBeforeOnboardingCompletion: Bool = false,
+        completion: ((Bool) -> Void)? = nil
+    ) {
         if UserSettings.isUITestMode {
             completion?(true)
             return
         }
+        guard allowBeforeOnboardingCompletion || UserSettings.shared.hasCompletedAppOnboarding else {
+            completion?(false)
+            return
+        }
         let authorizationOptions = options ?? defaultAuthorizationOptions
         UNUserNotificationCenter.current().requestAuthorization(options: authorizationOptions) { granted, _ in
+            if granted {
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            }
             completion?(granted)
         }
     }
 
-    func requestAuthorizationIfNeeded(completion: ((Bool) -> Void)? = nil) {
+    func requestAuthorizationIfNeeded(
+        allowBeforeOnboardingCompletion: Bool = false,
+        completion: ((Bool) -> Void)? = nil
+    ) {
+        guard allowBeforeOnboardingCompletion || UserSettings.shared.hasCompletedAppOnboarding else {
+            completion?(false)
+            return
+        }
         UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
             guard let self else { return }
             switch settings.authorizationStatus {
             case .notDetermined:
-                self.requestAuthorization(completion: completion)
+                self.requestAuthorization(
+                    allowBeforeOnboardingCompletion: allowBeforeOnboardingCompletion,
+                    completion: completion
+                )
             case .authorized, .provisional, .ephemeral:
                 completion?(true)
             default:
                 completion?(false)
             }
         }
+    }
+
+    func requestAuthorizationIfNeeded(completion: ((Bool) -> Void)? = nil) {
+        requestAuthorizationIfNeeded(
+            allowBeforeOnboardingCompletion: false,
+            completion: completion
+        )
     }
 
     private func prioritizeMedicationReminder(_ content: UNMutableNotificationContent) {
@@ -313,6 +343,12 @@ class NotificationManager: ObservableObject {
     }
 
     private func isNotificationSchedulingAllowed() async -> Bool {
+        // Keep startup calm for first-time users: never trigger the iOS popup
+        // from background scheduling before onboarding has been completed.
+        if !UserSettings.shared.hasCompletedAppOnboarding {
+            return false
+        }
+
         let status = await notificationAuthorizationStatus()
         switch status {
         case .authorized, .provisional, .ephemeral:

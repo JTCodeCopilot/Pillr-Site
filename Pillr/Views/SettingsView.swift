@@ -3,6 +3,7 @@ import StoreKit
 import UIKit
 import UserNotifications
 import CloudKit
+import LocalAuthentication
 
 struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
@@ -18,6 +19,8 @@ struct SettingsView: View {
     @State private var isPremiumSettingsExpanded = false
     @State private var showingCloudSyncChoiceAgain = false
     @State private var cloudSyncRotation: Double = 0
+    @State private var isUpdatingBiometricLock = false
+    @State private var biometricAlertMessage: String?
 
     private var isPremiumActive: Bool {
         storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
@@ -37,6 +40,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         headerView
                         generalSettingsSection
+                        securitySection
                         interactionsSection
                         notificationPermissionsSection
                         iCloudSyncSection
@@ -83,6 +87,21 @@ struct SettingsView: View {
             await storeManager.updatePurchasedProducts()
             refreshNotificationSettings()
             await refreshICloudStatus()
+        }
+        .alert(
+            "App Lock",
+            isPresented: Binding(
+                get: { biometricAlertMessage != nil },
+                set: { newValue in
+                    if !newValue { biometricAlertMessage = nil }
+                }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                biometricAlertMessage = nil
+            }
+        } message: {
+            Text(biometricAlertMessage ?? "")
         }
     }
 
@@ -321,6 +340,24 @@ struct SettingsView: View {
         }
     }
 
+    private var securitySection: some View {
+        settingsSection(title: "Security") {
+            Toggle(isOn: biometricLockBinding) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(biometricToggleTitle)
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundColor(SettingsPalette.mainText)
+
+                    Text(biometricToggleSubtitle)
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
+                        .foregroundColor(SettingsPalette.secondaryText)
+                }
+            }
+            .toggleStyle(SwitchToggleStyle(tint: SettingsPalette.toggleActive))
+            .disabled(isUpdatingBiometricLock || availableBiometryType == .none)
+        }
+    }
+
     private func refreshNotificationSettings() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             DispatchQueue.main.async {
@@ -342,6 +379,117 @@ struct SettingsView: View {
             get: { userSettings.shouldShowAppleHealthData },
             set: { userSettings.shouldShowAppleHealthData = $0 }
         )
+    }
+
+    private enum SettingsBiometryType {
+        case none
+        case faceID
+        case touchID
+    }
+
+    private var availableBiometryType: SettingsBiometryType {
+        if UserSettings.isUITestMode {
+            return .faceID
+        }
+
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            return .none
+        }
+
+        switch context.biometryType {
+        case .faceID:
+            return .faceID
+        case .touchID:
+            return .touchID
+        default:
+            return .none
+        }
+    }
+
+    private var biometricToggleTitle: String {
+        switch availableBiometryType {
+        case .faceID:
+            return "Lock app with Face ID"
+        case .touchID:
+            return "Lock app with Touch ID"
+        case .none:
+            return "Biometric app lock"
+        }
+    }
+
+    private var biometricToggleSubtitle: String {
+        switch availableBiometryType {
+        case .faceID:
+            return "Require Face ID before opening your medications."
+        case .touchID:
+            return "Require Touch ID before opening your medications."
+        case .none:
+            return "Face ID or Touch ID is not available on this device."
+        }
+    }
+
+    private var biometricLockBinding: Binding<Bool> {
+        Binding(
+            get: { userSettings.isBiometricLockEnabled },
+            set: { wantsEnabled in
+                updateBiometricLockState(wantsEnabled)
+            }
+        )
+    }
+
+    private func updateBiometricLockState(_ wantsEnabled: Bool) {
+        if !wantsEnabled {
+            userSettings.setBiometricLockEnabled(false)
+            return
+        }
+
+        guard availableBiometryType != .none else {
+            biometricAlertMessage = "Face ID or Touch ID is not available on this device."
+            userSettings.setBiometricLockEnabled(false)
+            return
+        }
+
+        guard !isUpdatingBiometricLock else { return }
+        isUpdatingBiometricLock = true
+
+        if UserSettings.isUITestMode {
+            userSettings.setBiometricLockEnabled(true)
+            isUpdatingBiometricLock = false
+            return
+        }
+
+        let context = LAContext()
+        context.localizedCancelTitle = "Not now"
+
+        context.evaluatePolicy(
+            .deviceOwnerAuthenticationWithBiometrics,
+            localizedReason: "Enable app lock to protect your medications."
+        ) { success, error in
+            DispatchQueue.main.async {
+                isUpdatingBiometricLock = false
+                userSettings.setBiometricLockEnabled(success)
+
+                guard !success else { return }
+                if let laError = error as? LAError {
+                    switch laError.code {
+                    case .userCancel, .systemCancel, .appCancel:
+                        return
+                    case .biometryNotEnrolled:
+                        biometricAlertMessage = "Set up Face ID or Touch ID in iPhone Settings, then try again."
+                    case .biometryNotAvailable:
+                        biometricAlertMessage = "Face ID or Touch ID is not available on this device."
+                    case .biometryLockout:
+                        biometricAlertMessage = "Biometrics are temporarily locked. Unlock with your passcode, then try again."
+                    default:
+                        biometricAlertMessage = "Couldn’t enable app lock right now. Please try again."
+                    }
+                } else {
+                    biometricAlertMessage = "Couldn’t enable app lock right now. Please try again."
+                }
+            }
+        }
     }
 
     private var supportLinksSection: some View {

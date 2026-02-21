@@ -79,65 +79,78 @@ struct MainTabView: View {
         .spring(response: 0.5, dampingFraction: 0.88)
     }
 
+    private var shouldBlockWithBiometricGate: Bool {
+        userSettings.isBiometricLockEnabled
+            && !showWelcomeOnboardingFlow
+            && requiresBiometricOnNextActive
+    }
+
+    private var shouldShowBiometricLockOverlay: Bool {
+        !showWelcomeOnboardingFlow
+            && (showBiometricAppLock || shouldBlockWithBiometricGate)
+    }
+
     var body: some View {
         ZStack {
             LinearGradient.pillrBackground
                 .ignoresSafeArea()
-            
-            TabView(selection: tabSelection) {
-                MedicationsHomeView(addFlowCoordinator: addFlowCoordinator)
-                    .tabItem {
-                        Image(systemName: "pill")
-                            .symbolVariant(.none)
-                            .accessibilityLabel("My Meds")
-                    }
-                    .badge(overdueBadgeCount)
-                    .tag(MainTab.meds)
-                
-                DailyCheckInHistoryView()
-                    .tabItem {
-                        Image(systemName: "book.pages")
-                            .accessibilityLabel("Check-Ins")
-                    }
-                    .tag(MainTab.checkIns)
 
-                FocusTimelineView(isModal: false)
-                    .tabItem {
-                        Image(systemName: "hourglass")
-                            .accessibilityLabel("Focus")
-                    }
-                    .tag(MainTab.focus)
+            if !shouldBlockWithBiometricGate {
+                TabView(selection: tabSelection) {
+                    MedicationsHomeView(addFlowCoordinator: addFlowCoordinator)
+                        .tabItem {
+                            Image(systemName: "pill")
+                                .symbolVariant(.none)
+                                .accessibilityLabel("My Meds")
+                        }
+                        .badge(overdueBadgeCount)
+                        .tag(MainTab.meds)
 
-                MedicationHistoryView()
-                    .tabItem {
-                        Image(systemName: "calendar")
-                            .accessibilityLabel("History")
-                    }
-                    .tag(MainTab.history)
-                
-                SettingsView()
-                    .tabItem {
-                        Image(systemName: "ellipsis")
-                            .accessibilityLabel("More")
-                    }
-                    .tag(MainTab.more)
+                    DailyCheckInHistoryView()
+                        .tabItem {
+                            Image(systemName: "book.pages")
+                                .accessibilityLabel("Check-Ins")
+                        }
+                        .tag(MainTab.checkIns)
+
+                    FocusTimelineView(isModal: false)
+                        .tabItem {
+                            Image(systemName: "hourglass")
+                                .accessibilityLabel("Focus")
+                        }
+                        .tag(MainTab.focus)
+
+                    MedicationHistoryView()
+                        .tabItem {
+                            Image(systemName: "calendar")
+                                .accessibilityLabel("History")
+                        }
+                        .tag(MainTab.history)
+
+                    SettingsView()
+                        .tabItem {
+                            Image(systemName: "ellipsis")
+                                .accessibilityLabel("More")
+                        }
+                        .tag(MainTab.more)
+                }
+                .onChange(of: selectedTab) { _, _ in
+                    HapticManager.shared.strongImpact()
+                }
+                .accentColor(Color.pillrAccent)
+                .onReceive(badgeRefreshTimer) { output in
+                    guard scenePhase == .active else { return }
+                    referenceDate = output
+                    store.refreshOverdueMedicationIDs(referenceDate: output)
+                }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 8)
+                        .onChanged { value in
+                            guard shouldSuppressTabSelection(for: value) else { return }
+                            suppressTabSelectionUntil = Date().addingTimeInterval(0.35)
+                        }
+                )
             }
-            .onChange(of: selectedTab) { _, _ in
-                HapticManager.shared.strongImpact()
-            }
-            .accentColor(Color.pillrAccent)
-            .onReceive(badgeRefreshTimer) { output in
-                guard scenePhase == .active else { return }
-                referenceDate = output
-                store.refreshOverdueMedicationIDs(referenceDate: output)
-            }
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 8)
-                    .onChanged { value in
-                        guard shouldSuppressTabSelection(for: value) else { return }
-                        suppressTabSelectionUntil = Date().addingTimeInterval(0.35)
-                    }
-            )
 
                 if !showWelcomeOnboardingFlow {
                     if let stage = activeOnboardingStage {
@@ -178,7 +191,7 @@ struct MainTabView: View {
                     .transition(.opacity)
                     .zIndex(5)
                 }
-                if showBiometricAppLock && !showWelcomeOnboardingFlow {
+                if shouldShowBiometricLockOverlay {
                     BiometricAppLockOverlay(
                         biometryType: BiometricLockCoordinator.availableBiometryType(),
                         isUnlocking: isBiometricAuthInProgress,
@@ -1155,7 +1168,7 @@ private struct PillrWelcomeOnboardingFlow: View {
             }
         case .notifications:
             isWorking = true
-            NotificationManager.shared.requestAuthorization { _ in
+            NotificationManager.shared.requestAuthorization(allowBeforeOnboardingCompletion: true) { _ in
                 DispatchQueue.main.async {
                     isWorking = false
                     advanceStep()
