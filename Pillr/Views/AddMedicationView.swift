@@ -227,7 +227,8 @@ struct AddMedicationView: View {
 
                         animatedStepSections
 
-                        navigationFooter
+                        Color.clear
+                            .frame(height: 1)
                             .id(ScrollAnchor.bottom)
                     }
                     .padding(.horizontal, 20)
@@ -248,6 +249,23 @@ struct AddMedicationView: View {
                 }
                 .onChange(of: currentStep) { _, _ in
                     scrollToTop(using: scrollProxy)
+                }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    navigationFooter
+                        .padding(.horizontal, 20)
+                        .frame(maxWidth: 620)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(hex: "#3A443D").opacity(0.0),
+                                    Color(hex: "#3A443D").opacity(0.94)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .ignoresSafeArea(edges: .bottom)
+                        )
                 }
             }
             .onAppear {
@@ -1254,7 +1272,8 @@ struct AddMedicationView: View {
                         icon: "chevron.left",
                         variant: .secondary,
                         isDisabled: false,
-                        forceFullWidth: true
+                        forceFullWidth: true,
+                        useBlurBackground: true
                     ) {
                         triggerStrongHaptic()
                         goToPreviousStep()

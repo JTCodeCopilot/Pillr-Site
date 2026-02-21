@@ -595,6 +595,7 @@ struct NavigationActionButton: View {
     let variant: Variant
     let isDisabled: Bool
     let forceFullWidth: Bool
+    let useBlurBackground: Bool
     let action: () -> Void
 
     init(
@@ -603,6 +604,7 @@ struct NavigationActionButton: View {
         variant: Variant,
         isDisabled: Bool,
         forceFullWidth: Bool = false,
+        useBlurBackground: Bool = false,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -610,6 +612,7 @@ struct NavigationActionButton: View {
         self.variant = variant
         self.isDisabled = isDisabled
         self.forceFullWidth = forceFullWidth
+        self.useBlurBackground = useBlurBackground
         self.action = action
     }
 
@@ -656,8 +659,16 @@ struct NavigationActionButton: View {
             .padding(.vertical, 14)
             .padding(.horizontal, variant == .primary ? 24 : 18)
             .background(
-                RoundedRectangle(cornerRadius: 22)
-                    .fill(fillStyle)
+                ZStack {
+                    if useBlurBackground && variant == .secondary {
+                        RoundedRectangle(cornerRadius: 22)
+                            .fill(.ultraThinMaterial)
+                    }
+
+                    RoundedRectangle(cornerRadius: 22)
+                        .fill(fillStyle)
+                        .opacity(useBlurBackground && variant == .secondary ? 0.18 : 1)
+                }
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 22)
