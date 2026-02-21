@@ -396,6 +396,7 @@ struct SettingsView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Button {
+                HapticManager.shared.softImpact()
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.85, blendDuration: 0.2)) {
                     isExpanded.wrappedValue.toggle()
                 }
