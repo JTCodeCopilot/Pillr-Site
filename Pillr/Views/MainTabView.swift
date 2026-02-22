@@ -857,15 +857,40 @@ private struct PillrWelcomeOnboardingFlow: View {
     @State private var isWorking = false
     @State private var helperMessage: String?
     @State private var runDoneConfetti = false
+    @State private var biometricHeroShakeOffset: CGFloat = 0
+    @State private var biometricHeroJoltScale: CGFloat = 1
+    @State private var biometricHeroJoltYOffset: CGFloat = 0
+    @State private var storageHeroDriftOffset: CGFloat = 0
+    @State private var notificationHeroRingRotation: Double = 0
+    @State private var welcomeHeroRotation: Double = 14
+    @State private var welcomeHeroOpacity: Double = 1
+    @State private var welcomeHeroScale: CGFloat = 1
+    @State private var titleSectionVisible = false
+    @State private var messageSectionVisible = false
+    @State private var detailSectionVisible = false
+    @State private var actionsSectionVisible = false
 
     private let biometryType = BiometricLockCoordinator.availableBiometryType()
 
     private enum Step: Int, CaseIterable {
         case welcome
-        case biometric
         case notifications
         case storage
+        case biometric
         case done
+    }
+
+    private var orderedSteps: [Step] {
+        var steps: [Step] = [.welcome, .notifications, .storage]
+        if biometryType != .none {
+            steps.append(.biometric)
+        }
+        steps.append(.done)
+        return steps
+    }
+
+    private var usesEditorialLayout: Bool {
+        step == .welcome || step == .notifications || step == .storage || step == .biometric || step == .done
     }
 
     var body: some View {
@@ -880,6 +905,36 @@ private struct PillrWelcomeOnboardingFlow: View {
                     endPoint: .bottom
                 )
                 .ignoresSafeArea()
+
+                if step == .welcome {
+                    welcomePillSilhouette
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
+
+                if step == .notifications {
+                    notificationBellSilhouette
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
+
+                if step == .storage {
+                    storageCloudSilhouette
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
+
+                if step == .biometric {
+                    biometricSilhouette
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
+
+                if step == .done {
+                    doneSilhouette
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
 
                 if step == .done {
                     DoneConfettiBackgroundView(animate: runDoneConfetti)
@@ -903,116 +958,365 @@ private struct PillrWelcomeOnboardingFlow: View {
 
                     VStack(spacing: 26) {
                         Group {
-                            if step == .done {
+                            if step == .welcome {
                                 Color.clear
-                                    .frame(width: 248, height: 170)
+                                    .frame(width: 248, height: 72)
+                            } else if step == .notifications {
+                                Color.clear
+                                    .frame(width: 248, height: 72)
+                            } else if step == .storage {
+                                Color.clear
+                                    .frame(width: 248, height: 72)
+                            } else if step == .biometric {
+                                Color.clear
+                                    .frame(width: 248, height: 72)
+                            } else if step == .done {
+                                Color.clear
+                                    .frame(width: 248, height: 72)
                             } else {
                                 onboardingHeroImage(
                                     assetName: heroAssetName,
                                     fallbackSystemName: iconName,
-                                    size: 248
+                                    size: step == .welcome ? 285 : 248
                                 )
+                                .rotationEffect(.degrees(step == .welcome ? welcomeHeroRotation : 0))
+                                .rotationEffect(
+                                    .degrees(step == .notifications ? notificationHeroRingRotation : 0),
+                                    anchor: .top
+                                )
+                                .offset(
+                                    x: (step == .biometric ? biometricHeroShakeOffset : 0)
+                                        + (step == .storage ? storageHeroDriftOffset : 0),
+                                    y: 0
+                                )
+                                .scaleEffect(step == .welcome ? welcomeHeroScale : 1)
+                                .opacity(step == .welcome ? welcomeHeroOpacity : 1)
                                 .shadow(color: Color.black.opacity(0.3), radius: 14, x: 0, y: 7)
                             }
                         }
-                        .frame(maxWidth: .infinity, minHeight: 170, maxHeight: 170, alignment: .top)
-                        .padding(.bottom, 64)
+                        .frame(maxWidth: .infinity, minHeight: usesEditorialLayout ? 72 : 170, maxHeight: usesEditorialLayout ? 72 : 170, alignment: .top)
+                        .padding(.bottom, usesEditorialLayout ? 20 : 64)
 
                         VStack(spacing: 12) {
                             Text(title)
-                                .font(.system(size: 48, weight: .regular, design: .rounded))
+                                .font(.system(size: step == .welcome ? 96 : ((step == .notifications || step == .storage || step == .biometric || step == .done) ? 58 : 48), weight: .regular, design: .rounded))
                                 .foregroundColor(Color(hex: "#F5F7F4"))
-                                .multilineTextAlignment(.center)
+                                .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.75)
+                                .opacity(titleSectionVisible ? 1 : 0)
+                                .offset(y: titleSectionVisible ? 0 : -10)
+                                .frame(maxWidth: .infinity, alignment: usesEditorialLayout ? .leading : .center)
 
-                            Text(message)
-                                .font(step == .welcome ? .system(size: 22, weight: .semibold, design: .rounded) : .system(size: 18, weight: .medium, design: .rounded))
-                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.94))
-                                .multilineTextAlignment(.center)
-                                .lineSpacing(4)
-                                .padding(.top, step == .welcome ? 14 : 0)
-                                .padding(.horizontal, 16)
-                        }
-
-                        if step == .storage {
-                            VStack(spacing: 10) {
-                                PillrOnboardingOptionCard(
-                                    title: "Use iCloud Sync",
-                                    subtitle: "Back up and sync across your Apple devices.",
-                                    isSelected: useCloudSync
-                                ) {
-                                    useCloudSync = true
-                                }
-
-                                PillrOnboardingOptionCard(
-                                    title: "Keep data on this iPhone",
-                                    subtitle: "Store everything only on this device.",
-                                    isSelected: !useCloudSync
-                                ) {
-                                    useCloudSync = false
+                            Group {
+                                if step == .welcome {
+                                    Text(message)
+                                        .font(.system(size: 22, weight: .regular, design: .default))
+                                        .italic()
+                                } else {
+                                    Text(message)
+                                        .font(.system(size: 18, weight: .medium, design: .rounded))
                                 }
                             }
-                            .padding(.top, 4)
+                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.94))
+                            .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
+                            .lineSpacing(4)
+                            .frame(maxWidth: .infinity, alignment: usesEditorialLayout ? .leading : .center)
+                            .padding(.top, usesEditorialLayout ? 18 : 0)
+                            .padding(.horizontal, usesEditorialLayout ? 0 : 16)
+                            .opacity(messageSectionVisible ? 1 : 0)
+                            .offset(y: messageSectionVisible ? 0 : 12)
                         }
+                        .padding(.horizontal, usesEditorialLayout ? 14 : 0)
+                        .offset(y: usesEditorialLayout ? 34 : 0)
 
-                        if let helperMessage {
-                            Text(helperMessage)
-                                .font(.system(size: 14, weight: .medium, design: .rounded))
-                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 18)
+                        Group {
+                            if step == .welcome {
+                                HStack {
+                                    Button(action: handlePrimaryAction) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.white.opacity(0.12))
+                                                .frame(width: 62, height: 62)
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.32), lineWidth: 1.5)
+                                                .frame(width: 66, height: 66)
+                                            Image(systemName: "arrow.right")
+                                                .font(.system(size: 22, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                        }
+                                    }
+                                    .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
+                                    .disabled(isWorking)
+
+                                    Spacer()
+                                }
+                                .padding(.top, 32)
+                                .padding(.horizontal, 14)
+                            }
+
+                            if step == .done {
+                                HStack {
+                                    Button(action: handlePrimaryAction) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color(hex: "#F5F7F4"))
+                                                .frame(width: 68, height: 68)
+                                            Image(systemName: "arrow.right")
+                                                .font(.system(size: 22, weight: .semibold))
+                                                .foregroundColor(Color(hex: "#11140F"))
+                                        }
+                                    }
+                                    .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
+                                    .disabled(isWorking)
+
+                                    Spacer()
+                                }
+                                .padding(.top, 30)
+                                .padding(.horizontal, 14)
+                            }
+
+                            if step == .notifications {
+                                HStack(spacing: 22) {
+                                    Button(action: handlePrimaryAction) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color(hex: "#F5F7F4"))
+                                                .frame(width: 68, height: 68)
+
+                                            if isWorking {
+                                                ProgressView()
+                                                    .tint(Color(hex: "#11140F"))
+                                            } else {
+                                                Text("On")
+                                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                                    .foregroundColor(Color(hex: "#11140F"))
+                                            }
+                                        }
+                                    }
+                                    .buttonStyle(ScaleButtonStyle())
+                                    .disabled(isWorking)
+                                    .overlay(alignment: .bottom) {
+                                        Text("(recommended)")
+                                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                                            .fixedSize(horizontal: true, vertical: false)
+                                            .offset(y: 24)
+                                    }
+
+                                    Button(action: handleSecondaryAction) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.white.opacity(0.08))
+                                                .frame(width: 68, height: 68)
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
+                                                .frame(width: 68, height: 68)
+                                            Text("Off")
+                                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.95))
+                                        }
+                                    }
+                                    .buttonStyle(ScaleButtonStyle())
+                                    .disabled(isWorking)
+
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, 30)
+                                .padding(.horizontal, 14)
+                                .padding(.bottom, 18)
+                            }
+
+                            if step == .storage {
+                                VStack(spacing: 10) {
+                                    PillrOnboardingOptionCard(
+                                        title: "Use iCloud Sync (recommended)",
+                                        subtitle: "Back up and sync across your Apple devices.",
+                                        isSelected: useCloudSync
+                                    ) {
+                                        useCloudSync = true
+                                    }
+
+                                    PillrOnboardingOptionCard(
+                                        title: "Keep data on this iPhone",
+                                        subtitle: "Store everything only on this device.",
+                                        isSelected: !useCloudSync
+                                    ) {
+                                        useCloudSync = false
+                                    }
+                                }
+                                .padding(.top, 22)
+                            }
+
+                            if step == .biometric && biometryType != .none {
+                                HStack(spacing: 22) {
+                                    Button(action: handlePrimaryAction) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color(hex: "#F5F7F4"))
+                                                .frame(width: 68, height: 68)
+
+                                            if isWorking {
+                                                ProgressView()
+                                                    .tint(Color(hex: "#11140F"))
+                                            } else {
+                                                Text("On")
+                                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                                    .foregroundColor(Color(hex: "#11140F"))
+                                            }
+                                        }
+                                    }
+                                    .buttonStyle(ScaleButtonStyle())
+                                    .disabled(isWorking)
+
+                                    Button(action: handleSecondaryAction) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.white.opacity(0.08))
+                                                .frame(width: 68, height: 68)
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
+                                                .frame(width: 68, height: 68)
+                                            Text("Off")
+                                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.95))
+                                        }
+                                    }
+                                    .buttonStyle(ScaleButtonStyle())
+                                    .disabled(isWorking)
+
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, 30)
+                                .padding(.horizontal, 14)
+                                .padding(.bottom, 18)
+                            }
+
+                            if let helperMessage {
+                                Text(helperMessage)
+                                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 18)
+                            }
                         }
+                        .opacity(detailSectionVisible ? 1 : 0)
+                        .offset(y: detailSectionVisible ? 0 : -10)
                     }
                     .padding(.top, 26)
                     .padding(.horizontal, 22)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    .animation(.spring(response: 0.42, dampingFraction: 0.84), value: step)
 
                     Spacer(minLength: 20)
 
-                    VStack(spacing: 14) {
-                        Button(action: handlePrimaryAction) {
-                            HStack(spacing: 10) {
-                                if isWorking {
-                                    ProgressView()
-                                        .tint(Color(hex: "#11140F"))
-                                } else if step == .biometric && biometryType != .none {
-                                    Image(systemName: biometryType.iconName)
-                                        .font(.system(size: 18, weight: .semibold))
+                    if step != .welcome && step != .notifications && step != .biometric && step != .done {
+                        VStack(spacing: 14) {
+                            if step == .storage {
+                                HStack {
+                                    Button(action: handlePrimaryAction) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color(hex: "#F5F7F4"))
+                                                .frame(width: 68, height: 68)
+
+                                            if isWorking {
+                                                ProgressView()
+                                                    .tint(Color(hex: "#11140F"))
+                                            } else {
+                                                Image(systemName: "arrow.right")
+                                                    .font(.system(size: 22, weight: .semibold))
+                                                    .foregroundColor(Color(hex: "#11140F"))
+                                            }
+                                        }
+                                    }
+                                    .buttonStyle(ScaleButtonStyle())
+                                    .disabled(isWorking)
+
+                                    Spacer()
                                 }
+                            } else {
+                                Button(action: handlePrimaryAction) {
+                                    HStack(spacing: 10) {
+                                        if isWorking {
+                                            ProgressView()
+                                                .tint(Color(hex: "#11140F"))
+                                        } else if step == .biometric && biometryType != .none {
+                                            Image(systemName: biometryType.iconName)
+                                                .font(.system(size: 18, weight: .semibold))
+                                        }
 
-                                Text(primaryButtonTitle)
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        Text(primaryButtonTitle)
+                                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    }
+                                    .foregroundColor(Color(hex: "#11140F"))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 17)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color(hex: "#F5F7F4"))
+                                    )
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                                .disabled(isWorking)
                             }
-                            .foregroundColor(Color(hex: "#11140F"))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 17)
-                            .background(
-                                Capsule()
-                                    .fill(Color(hex: "#F5F7F4"))
-                            )
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        .disabled(isWorking)
 
-                        if let secondaryTitle = secondaryButtonTitle {
-                            Button(action: handleSecondaryAction) {
-                                Text(secondaryTitle)
-                                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.88))
-                                    .underline()
+                            if let secondaryTitle = secondaryButtonTitle {
+                                Button(action: handleSecondaryAction) {
+                                    Text(secondaryTitle)
+                                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.88))
+                                        .underline()
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(isWorking)
                             }
-                            .buttonStyle(.plain)
-                            .disabled(isWorking)
                         }
+                        .opacity(actionsSectionVisible ? 1 : 0)
+                        .offset(y: actionsSectionVisible ? 0 : -8)
+                        .padding(.horizontal, 22)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom + (step == .storage ? 170 : 22))
                     }
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom + 22)
                 }
             }
         }
+        .onAppear {
+            if step == .welcome {
+                runWelcomeHeroArrival()
+            }
+            runStepSoftReveal(for: step)
+        }
         .onChange(of: step) { _, newStep in
+            if newStep == .welcome {
+                runWelcomeHeroArrival()
+            } else {
+                welcomeHeroRotation = 0
+                welcomeHeroOpacity = 1
+                welcomeHeroScale = 1
+            }
+
+            runStepSoftReveal(for: newStep)
+
+            if newStep == .notifications {
+                runNotificationHeroRing()
+            } else {
+                notificationHeroRingRotation = 0
+            }
+
+            if newStep == .biometric {
+                runBiometricHeroShake()
+            } else {
+                biometricHeroShakeOffset = 0
+                biometricHeroJoltScale = 1
+                biometricHeroJoltYOffset = 0
+            }
+
+            if newStep == .storage {
+                runStorageHeroDriftIn()
+            } else {
+                storageHeroDriftOffset = 0
+            }
+
             if newStep == .done {
                 runDoneConfetti = false
                 DispatchQueue.main.async {
@@ -1025,7 +1329,164 @@ private struct PillrWelcomeOnboardingFlow: View {
     }
 
     private var progressFraction: CGFloat {
-        CGFloat(step.rawValue + 1) / CGFloat(Step.allCases.count)
+        guard let index = orderedSteps.firstIndex(of: step) else { return 0 }
+        return CGFloat(index + 1) / CGFloat(orderedSteps.count)
+    }
+
+    @ViewBuilder
+    private var welcomePillSilhouette: some View {
+        GeometryReader { _ in
+            Group {
+                if UIImage(named: "pill") != nil {
+                    Image("pill")
+                        .resizable()
+                        .scaledToFit()
+                        .saturation(0)
+                        .brightness(0.85)
+                        .opacity(0.10)
+                        .rotationEffect(.degrees(18))
+                        .frame(width: 560, height: 560)
+                        .offset(x: 5, y: 255)
+                } else {
+                    Image(systemName: "capsule.portrait.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(Color.white.opacity(0.08))
+                        .rotationEffect(.degrees(18))
+                        .frame(width: 470, height: 470)
+                        .offset(x: 0, y: 235)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
+    }
+
+    @ViewBuilder
+    private var notificationBellSilhouette: some View {
+        GeometryReader { _ in
+            Group {
+                if UIImage(named: "notification") != nil {
+                    Image("notification")
+                        .resizable()
+                        .scaledToFit()
+                        .saturation(0)
+                        .brightness(0.85)
+                        .opacity(0.08)
+                        .rotationEffect(.degrees(22 + notificationHeroRingRotation), anchor: .top)
+                        .frame(width: 640, height: 640)
+                        .offset(x: 70, y: 280)
+                } else {
+                    Image(systemName: "bell.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(Color.white.opacity(0.08))
+                        .rotationEffect(.degrees(18 + notificationHeroRingRotation), anchor: .top)
+                        .frame(width: 430, height: 430)
+                        .offset(x: 90, y: 320)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var storageCloudSilhouette: some View {
+        GeometryReader { _ in
+            Group {
+                if UIImage(named: "cloud") != nil {
+                    Image("cloud")
+                        .resizable()
+                        .scaledToFit()
+                        .saturation(0)
+                        .brightness(0.85)
+                        .opacity(0.08)
+                        .frame(width: 620, height: 620)
+                        .offset(x: 90 + storageHeroDriftOffset, y: 330)
+                } else {
+                    Image(systemName: "icloud.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(Color.white.opacity(0.08))
+                        .frame(width: 360, height: 360)
+                        .offset(x: 120 + storageHeroDriftOffset, y: 380)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var doneSilhouette: some View {
+        GeometryReader { _ in
+            Group {
+                if UIImage(named: "tick") != nil {
+                    Image("tick")
+                        .resizable()
+                        .scaledToFit()
+                        .saturation(0)
+                        .brightness(0.9)
+                        .opacity(0.08)
+                        .frame(width: 560, height: 560)
+                        .offset(x: 60, y: 330)
+                } else {
+                    Image(systemName: "checkmark.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(Color.white.opacity(0.08))
+                        .frame(width: 340, height: 340)
+                        .offset(x: 90, y: 390)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var biometricSilhouette: some View {
+        GeometryReader { _ in
+            Group {
+                if biometryType == .faceID, UIImage(named: "faceid") != nil {
+                    Image("faceid")
+                        .resizable()
+                        .scaledToFit()
+                        .saturation(0)
+                        .brightness(0.85)
+                        .opacity(0.08)
+                        .frame(width: 620, height: 620)
+                        .scaleEffect(biometricHeroJoltScale)
+                        .offset(x: -20, y: 320 + biometricHeroJoltYOffset)
+                } else if UIImage(named: "Feather Cloud Icon") != nil {
+                    Image("Feather Cloud Icon")
+                        .resizable()
+                        .scaledToFit()
+                        .saturation(0)
+                        .brightness(0.85)
+                        .opacity(0.08)
+                        .frame(width: 620, height: 620)
+                        .scaleEffect(biometricHeroJoltScale)
+                        .offset(x: 95, y: 320 + biometricHeroJoltYOffset)
+                } else if UIImage(named: "lock") != nil {
+                    Image("lock")
+                        .resizable()
+                        .scaledToFit()
+                        .saturation(0)
+                        .brightness(0.85)
+                        .opacity(0.08)
+                        .frame(width: 560, height: 560)
+                        .scaleEffect(biometricHeroJoltScale)
+                        .offset(x: 95, y: 330 + biometricHeroJoltYOffset)
+                } else {
+                    Image(systemName: biometryType.iconName)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(Color.white.opacity(0.08))
+                        .frame(width: 340, height: 340)
+                        .scaleEffect(biometricHeroJoltScale)
+                        .offset(x: 130, y: 380 + biometricHeroJoltYOffset)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     private var iconName: String {
@@ -1089,33 +1550,36 @@ private struct PillrWelcomeOnboardingFlow: View {
     private var title: String {
         switch step {
         case .welcome:
-            return "Welcome to Pillr"
+            return "Pillr"
         case .biometric:
-            return "Protect your medications"
+            return "Privacy"
         case .notifications:
-            return "Stay on schedule"
+            return "Notifications"
         case .storage:
-            return "Choose your storage"
+            return biometryType == .none ? "Storage" : "Storage"
         case .done:
-            return "You’re all set"
+            return "That's all!"
         }
     }
 
     private var message: String {
         switch step {
         case .welcome:
-            return "Designed by the ADHD community for the ADHD community"
+            return "Designed by the ADHD community\nfor the ADHD community."
         case .biometric:
             if biometryType == .none {
                 return "This device does not support Face ID or Touch ID. You can continue without app lock."
             }
             return "Use \(biometryType.displayName) so only you can open Pillr."
         case .notifications:
-            return "Turn on reminders so you do not miss a dose."
+            return "Tap On to let Pillr remember for you."
         case .storage:
-            return "Choose where Pillr stores your medication data."
+            if biometryType == .none {
+                return "Choose to keep your medication data on this iPhone or sync it across your Apple devices."
+            }
+            return "Choose to keep your medication data on this iPhone or sync it across your Apple devices."
         case .done:
-            return "Your medication tracker is ready to use."
+            return "Let’s make remembering easier."
         }
     }
 
@@ -1126,11 +1590,11 @@ private struct PillrWelcomeOnboardingFlow: View {
         case .biometric:
             return biometryType == .none ? "Continue" : "Enable \(biometryType.displayName)"
         case .notifications:
-            return "Turn on notifications"
+            return "Turn on notifications (recommended)"
         case .storage:
             return "Continue"
         case .done:
-            return "Continue to My Meds"
+            return "Let’s go"
         }
     }
 
@@ -1199,9 +1663,145 @@ private struct PillrWelcomeOnboardingFlow: View {
     }
 
     private func advanceStep() {
-        guard let next = Step(rawValue: step.rawValue + 1) else { return }
+        guard let currentIndex = orderedSteps.firstIndex(of: step) else { return }
+        guard orderedSteps.indices.contains(currentIndex + 1) else { return }
+        let next = orderedSteps[currentIndex + 1]
         withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
             step = next
+        }
+    }
+
+    private func runBiometricHeroShake() {
+        biometricHeroShakeOffset = 0
+        biometricHeroJoltScale = 1
+        biometricHeroJoltYOffset = 0
+        let startDelay: TimeInterval = 0.5
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + startDelay) {
+            guard step == .biometric else { return }
+            withAnimation(.easeIn(duration: 0.16)) {
+                biometricHeroJoltScale = 0.93
+                biometricHeroJoltYOffset = 12
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + startDelay + 0.20) {
+            guard step == .biometric else { return }
+            withAnimation(.spring(response: 0.60, dampingFraction: 0.72)) {
+                biometricHeroJoltScale = 1.02
+                biometricHeroJoltYOffset = -2
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + startDelay + 1.20) {
+            guard step == .biometric else { return }
+            withAnimation(.easeOut(duration: 0.80)) {
+                biometricHeroJoltScale = 1
+                biometricHeroJoltYOffset = 0
+            }
+        }
+    }
+
+    private func runHeroDropIn() {
+        // No-op: icon drop-in removed so icons are immediately visible on each screen.
+    }
+
+    private func runNotificationHeroRing() {
+        notificationHeroRingRotation = 0
+        let startDelay: TimeInterval = 0.5
+        let sequence: [(TimeInterval, Double)] = [
+            (0.18, -7),
+            (0.48, 7),
+            (0.80, -5.5),
+            (1.12, 5.5),
+            (1.42, -4),
+            (1.70, 4),
+            (1.88, -2),
+            (1.96, 2),
+            (2.00, 0)
+        ]
+
+        for (delay, angle) in sequence {
+            DispatchQueue.main.asyncAfter(deadline: .now() + startDelay + delay) {
+                guard step == .notifications else { return }
+                withAnimation(.easeOut(duration: 0.22)) {
+                    notificationHeroRingRotation = angle
+                }
+            }
+        }
+    }
+
+    private func runStorageHeroDriftIn() {
+        storageHeroDriftOffset = 220
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+            guard step == .storage else { return }
+            withAnimation(.linear(duration: 14.0)) {
+                storageHeroDriftOffset = -760
+            }
+        }
+    }
+
+    private func runWelcomeHeroArrival() {
+        welcomeHeroOpacity = 0
+        welcomeHeroScale = 0.92
+        welcomeHeroRotation = -12
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) {
+            guard step == .welcome else { return }
+            withAnimation(.easeOut(duration: 3.2)) {
+                welcomeHeroOpacity = 1
+                welcomeHeroScale = 1.03
+                welcomeHeroRotation = 22
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) {
+            guard step == .welcome else { return }
+            withAnimation(.easeInOut(duration: 1.8)) {
+                welcomeHeroScale = 1
+                welcomeHeroRotation = 14
+            }
+        }
+    }
+
+    private func runStepSoftReveal(for step: Step) {
+        titleSectionVisible = false
+        messageSectionVisible = false
+        detailSectionVisible = false
+        actionsSectionVisible = false
+
+        let titleDelay: TimeInterval = step == .welcome ? 0.62 : 0.10
+        let messageDelay: TimeInterval = step == .welcome ? 0.82 : 0.24
+        let detailDelay: TimeInterval = step == .welcome ? 1.02 : 0.30
+        let actionsDelay: TimeInterval = step == .welcome ? 1.14 : 0.38
+        let titleDuration: TimeInterval = step == .welcome ? 0.35 : 0.30
+        let messageDuration: TimeInterval = step == .welcome ? 0.45 : 0.35
+        let detailDuration: TimeInterval = step == .welcome ? 0.35 : 0.35
+        let actionsDuration: TimeInterval = step == .welcome ? 0.40 : 0.35
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + titleDelay) {
+            guard self.step == step else { return }
+            withAnimation(.easeOut(duration: titleDuration)) {
+                titleSectionVisible = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + messageDelay) {
+            guard self.step == step else { return }
+            withAnimation(.easeOut(duration: messageDuration)) {
+                messageSectionVisible = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + detailDelay) {
+            guard self.step == step else { return }
+            withAnimation(.easeOut(duration: detailDuration)) {
+                detailSectionVisible = true
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + actionsDelay) {
+            guard self.step == step else { return }
+            withAnimation(.easeOut(duration: actionsDuration)) {
+                actionsSectionVisible = true
+            }
         }
     }
 }
