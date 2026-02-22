@@ -1558,7 +1558,7 @@ private struct PillrWelcomeOnboardingFlow: View {
         case .storage:
             return biometryType == .none ? "Storage" : "Storage"
         case .done:
-            return "That's all!"
+            return "Good to go!"
         }
     }
 
@@ -1579,7 +1579,7 @@ private struct PillrWelcomeOnboardingFlow: View {
             }
             return "Choose to keep your medication data on this iPhone or sync it across your Apple devices."
         case .done:
-            return "Let’s make remembering easier."
+            return "Let's get started."
         }
     }
 
@@ -1732,10 +1732,10 @@ private struct PillrWelcomeOnboardingFlow: View {
     }
 
     private func runStorageHeroDriftIn() {
-        storageHeroDriftOffset = 220
+        storageHeroDriftOffset = 40
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
             guard step == .storage else { return }
-            withAnimation(.linear(duration: 14.0)) {
+            withAnimation(.linear(duration: 20.0)) {
                 storageHeroDriftOffset = -760
             }
         }
