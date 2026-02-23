@@ -988,7 +988,7 @@ struct ADHDDoseTimelineSheet: View {
     }
 
     private var focusWindowDuration: String {
-        let minutes = Int(entry.fadeTime.timeIntervalSince(entry.onsetTime) / 60)
+        let minutes = Int(entry.fadeTime.timeIntervalSince(entry.actualTime) / 60)
         if minutes <= 0 {
             return "—"
         }
@@ -1066,6 +1066,31 @@ struct ADHDDoseTimelineSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    @ViewBuilder
+    private func timelineStep(icon: String, title: String, time: String) -> some View {
+        VStack(alignment: .center, spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.08))
+                    .frame(width: 42, height: 42)
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.78))
+            }
+
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .multilineTextAlignment(.center)
+
+            Text(time)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -1081,7 +1106,7 @@ struct ADHDDoseTimelineSheet: View {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 10) {
-                        Text("Focus Timeline")
+                        Text("Focus Window")
                             .font(.system(size: 22, weight: .semibold))
                             .foregroundColor(.white)
 
@@ -1143,40 +1168,33 @@ struct ADHDDoseTimelineSheet: View {
                 .padding(.top, 4)
 
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Timing recap")
+                    Text("Estimated focus window")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(hex: "#E8E8E0"))
 
-                    HStack(spacing: 14) {
-                        if let scheduled = entry.scheduledTime {
-                            statBlock(title: "Scheduled", value: formatTime(scheduled))
-                        }
-                        statBlock(title: "Logged", value: formatTime(entry.actualTime))
-                        if let delta = timingDeltaValue {
-                            statBlock(title: "Delta", value: delta)
-                        }
-                    }
-                }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: cardCornerRadius)
-                        .fill(Color.white.opacity(0.06))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: cardCornerRadius)
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    HStack(spacing: 12) {
+                        timelineStep(
+                            icon: "arrow.up",
+                            title: "Starts",
+                            time: formatTime(entry.onsetTime)
                         )
-                )
-
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Focus window estimate")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
-
-                    HStack(spacing: 14) {
-                        statBlock(title: "Starts", value: formatTime(entry.onsetTime))
-                        statBlock(title: "Fades", value: formatTime(entry.fadeTime))
-                        statBlock(title: "Duration", value: focusWindowDuration)
+                        timelineStep(
+                            icon: "arrow.down",
+                            title: "Fades",
+                            time: formatTime(entry.fadeTime)
+                        )
+                        timelineStep(
+                            icon: "clock",
+                            title: "Length",
+                            time: focusWindowDuration
+                        )
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 4)
+
+                    Text("Based on the time you logged this dose.")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.72))
 
                     if let shift = shiftDescription {
                         Text(shift)
