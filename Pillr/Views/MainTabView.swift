@@ -32,6 +32,7 @@ struct MainTabView: View {
     @State private var isBiometricAuthInProgress = false
     @State private var biometricLockErrorMessage: String?
     @State private var requiresBiometricOnNextActive = true
+    @State private var showPostOnboardingCelebration = false
     @State private var referenceDate = Date()
     @State private var suppressTabSelectionUntil = Date.distantPast
     @AppStorage("reviewPromptFirstLaunchTimeInterval") private var reviewPromptFirstLaunchTimeInterval: Double = 0
@@ -39,6 +40,7 @@ struct MainTabView: View {
     @AppStorage("reviewPromptLastDismissedTimeInterval") private var reviewPromptLastDismissedTimeInterval: Double = 0
     @AppStorage("reviewPromptSeeded") private var reviewPromptSeeded = false
     @AppStorage("appLaunchCount") private var appLaunchCount: Int = 0
+    @AppStorage("hasShownOnboardingSuccessCelebration") private var hasShownOnboardingSuccessCelebration = false
     private var isUITestMode: Bool { UserSettings.isUITestMode }
     
     private static let cloudSyncOnboardingKey = "cloudSyncChoice"
@@ -201,6 +203,15 @@ struct MainTabView: View {
                     .transition(.opacity)
                     .zIndex(6)
                 }
+
+                if showPostOnboardingCelebration && selectedTab == .meds && !showWelcomeOnboardingFlow {
+                    DoneConfettiBackgroundView(animate: showPostOnboardingCelebration)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                        .transition(.opacity)
+                        .zIndex(7)
+                }
+
             }
         .alert("Discard medication?", isPresented: $showDiscardAlert) {
             Button("Discard", role: .destructive) {
@@ -393,8 +404,26 @@ struct MainTabView: View {
             showNotificationOnboardingPrompt = false
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            selectedTab = .meds
+            triggerPostOnboardingCelebrationIfNeeded()
             scheduleOnboarding(for: selectedTab)
             scheduleReviewPromptIfNeeded()
+        }
+    }
+
+    private func triggerPostOnboardingCelebrationIfNeeded() {
+        guard !hasShownOnboardingSuccessCelebration else { return }
+        hasShownOnboardingSuccessCelebration = true
+
+        HapticManager.shared.successNotification()
+
+        withAnimation(.easeOut(duration: 0.2)) {
+            showPostOnboardingCelebration = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.1) {
+            withAnimation(.easeOut(duration: 0.35)) {
+                showPostOnboardingCelebration = false
+            }
         }
     }
 
@@ -647,7 +676,7 @@ struct NotificationPermissionOnboardingPrompt: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
-                        VStack(spacing: 12) {
+                        VStack(spacing: 18) {
                             Button(action: onContinue) {
                                 Text("Continue")
                                     .font(.system(size: 16, weight: .semibold, design: .rounded))
@@ -857,14 +886,21 @@ private struct PillrWelcomeOnboardingFlow: View {
     @State private var isWorking = false
     @State private var helperMessage: String?
     @State private var runDoneConfetti = false
+    @StateObject private var onboardingHealthKitManager = HealthKitManager()
     @State private var biometricHeroShakeOffset: CGFloat = 0
     @State private var biometricHeroJoltScale: CGFloat = 1
     @State private var biometricHeroJoltYOffset: CGFloat = 0
-    @State private var storageHeroDriftOffset: CGFloat = 0
+    @State private var storageHeroFloatYOffset: CGFloat = 0
     @State private var notificationHeroRingRotation: Double = 0
+    @State private var healthHeroPulseScale: CGFloat = 1
+    @State private var healthHeroPulseOpacity: Double = 0.08
+    @State private var healthHeartbeatLoopToken: Int = 0
     @State private var welcomeHeroRotation: Double = 14
     @State private var welcomeHeroOpacity: Double = 1
     @State private var welcomeHeroScale: CGFloat = 1
+    @State private var welcomePrimaryButtonPulseScale: CGFloat = 1
+    @State private var welcomePrimaryButtonPulseGlow: Double = 0
+    @State private var welcomePrimaryButtonPulseToken: Int = 0
     @State private var titleSectionVisible = false
     @State private var messageSectionVisible = false
     @State private var detailSectionVisible = false
@@ -876,21 +912,24 @@ private struct PillrWelcomeOnboardingFlow: View {
         case welcome
         case notifications
         case storage
+        case health
         case biometric
         case done
     }
 
     private var orderedSteps: [Step] {
         var steps: [Step] = [.welcome, .notifications, .storage]
+        if onboardingHealthKitManager.isHealthDataAvailable {
+            steps.append(.health)
+        }
         if biometryType != .none {
             steps.append(.biometric)
         }
-        steps.append(.done)
         return steps
     }
 
     private var usesEditorialLayout: Bool {
-        step == .welcome || step == .notifications || step == .storage || step == .biometric || step == .done
+        step == .welcome || step == .notifications || step == .storage || step == .health || step == .biometric || step == .done
     }
 
     var body: some View {
@@ -924,6 +963,12 @@ private struct PillrWelcomeOnboardingFlow: View {
                         .allowsHitTesting(false)
                 }
 
+                if step == .health {
+                    healthSilhouette
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
+
                 if step == .biometric {
                     biometricSilhouette
                         .ignoresSafeArea()
@@ -943,18 +988,23 @@ private struct PillrWelcomeOnboardingFlow: View {
                 }
 
                 VStack(spacing: 0) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.18))
-                        .frame(height: 3)
-                        .overlay(alignment: .leading) {
-                            GeometryReader { progressGeo in
-                                Capsule()
-                                    .fill(Color(hex: "#F5F7F4"))
-                                    .frame(width: progressGeo.size.width * progressFraction, height: 3)
-                            }
+                    HStack(spacing: 7) {
+                        ForEach(Array(orderedSteps.enumerated()), id: \.offset) { index, _ in
+                            Capsule()
+                                .fill(index <= completedProgressIndex ? Color.white.opacity(0.88) : Color.white.opacity(0.20))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 4)
+                                .shadow(
+                                    color: index <= completedProgressIndex ? Color.white.opacity(0.12) : .clear,
+                                    radius: 4,
+                                    x: 0,
+                                    y: 0
+                                )
                         }
-                        .padding(.horizontal, 22)
-                        .padding(.top, geometry.safeAreaInsets.top + 6)
+                    }
+                    .animation(.easeInOut(duration: 0.22), value: completedProgressIndex)
+                    .padding(.horizontal, 22)
+                    .padding(.top, geometry.safeAreaInsets.top + 6)
 
                     VStack(spacing: 26) {
                         Group {
@@ -965,6 +1015,9 @@ private struct PillrWelcomeOnboardingFlow: View {
                                 Color.clear
                                     .frame(width: 248, height: 72)
                             } else if step == .storage {
+                                Color.clear
+                                    .frame(width: 248, height: 72)
+                            } else if step == .health {
                                 Color.clear
                                     .frame(width: 248, height: 72)
                             } else if step == .biometric {
@@ -984,11 +1037,11 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     .degrees(step == .notifications ? notificationHeroRingRotation : 0),
                                     anchor: .top
                                 )
-                                .offset(
-                                    x: (step == .biometric ? biometricHeroShakeOffset : 0)
-                                        + (step == .storage ? storageHeroDriftOffset : 0),
-                                    y: 0
-                                )
+                                        .offset(
+                                            x: (step == .biometric ? biometricHeroShakeOffset : 0)
+                                        + 0,
+                                            y: 0
+                                        )
                                 .scaleEffect(step == .welcome ? welcomeHeroScale : 1)
                                 .opacity(step == .welcome ? welcomeHeroOpacity : 1)
                                 .shadow(color: Color.black.opacity(0.3), radius: 14, x: 0, y: 7)
@@ -999,7 +1052,13 @@ private struct PillrWelcomeOnboardingFlow: View {
 
                         VStack(spacing: 12) {
                             Text(title)
-                                .font(.system(size: step == .welcome ? 96 : ((step == .notifications || step == .storage || step == .biometric || step == .done) ? 58 : 48), weight: .regular, design: .rounded))
+                                .font(
+                                    .system(
+                                        size: step == .welcome ? 96 : (step == .done ? 52 : ((step == .notifications || step == .storage || step == .health || step == .biometric) ? 58 : 48)),
+                                        weight: .regular,
+                                        design: .rounded
+                                    )
+                                )
                                 .foregroundColor(Color(hex: "#F5F7F4"))
                                 .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
                                 .lineLimit(2)
@@ -1012,17 +1071,18 @@ private struct PillrWelcomeOnboardingFlow: View {
                                 if step == .welcome {
                                     Text(message)
                                         .font(.system(size: 22, weight: .regular, design: .default))
-                                        .italic()
                                 } else {
                                     Text(message)
-                                        .font(.system(size: 18, weight: .medium, design: .rounded))
+                                        .font(.system(size: step == .storage ? 17 : 18, weight: .medium, design: .rounded))
                                 }
                             }
                             .foregroundColor(Color(hex: "#E0E7DC").opacity(0.94))
                             .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
                             .lineSpacing(4)
+                            .lineLimit(step == .storage ? 3 : nil)
+                            .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: usesEditorialLayout ? .leading : .center)
-                            .padding(.top, usesEditorialLayout ? 18 : 0)
+                            .padding(.top, (usesEditorialLayout ? 18 : 0) + (step == .storage ? 2 : 0))
                             .padding(.horizontal, usesEditorialLayout ? 0 : 16)
                             .opacity(messageSectionVisible ? 1 : 0)
                             .offset(y: messageSectionVisible ? 0 : 12)
@@ -1047,6 +1107,8 @@ private struct PillrWelcomeOnboardingFlow: View {
                                         }
                                     }
                                     .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
+                                    .scaleEffect(welcomePrimaryButtonPulseScale)
+                                    .shadow(color: Color.white.opacity(welcomePrimaryButtonPulseGlow), radius: 14)
                                     .disabled(isWorking)
 
                                     Spacer()
@@ -1056,7 +1118,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                             }
 
                             if step == .done {
-                                HStack {
+                                HStack(spacing: 14) {
                                     Button(action: handlePrimaryAction) {
                                         ZStack {
                                             Circle()
@@ -1070,9 +1132,13 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
                                     .disabled(isWorking)
 
+                                    Text("Start using Pillr")
+                                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.95))
+
                                     Spacer()
                                 }
-                                .padding(.top, 30)
+                                .padding(.top, 18)
                                 .padding(.horizontal, 14)
                             }
 
@@ -1149,6 +1215,58 @@ private struct PillrWelcomeOnboardingFlow: View {
                                 .padding(.top, 22)
                             }
 
+                            if step == .health {
+                                HStack(spacing: 22) {
+                                    Button(action: handlePrimaryAction) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color(hex: "#F5F7F4"))
+                                                .frame(width: 68, height: 68)
+
+                                            if isWorking {
+                                                ProgressView()
+                                                    .tint(Color(hex: "#11140F"))
+                                            } else {
+                                                Text("On")
+                                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                                    .foregroundColor(Color(hex: "#11140F"))
+                                            }
+                                        }
+                                    }
+                                    .buttonStyle(ScaleButtonStyle())
+                                    .disabled(isWorking)
+                                    .overlay(alignment: .bottom) {
+                                        Text("(recommended)")
+                                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                                            .fixedSize(horizontal: true, vertical: false)
+                                            .offset(y: 24)
+                                    }
+
+                                    Button(action: handleSecondaryAction) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.white.opacity(0.08))
+                                                .frame(width: 68, height: 68)
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
+                                                .frame(width: 68, height: 68)
+                                            Text("Off")
+                                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.95))
+                                        }
+                                    }
+                                    .buttonStyle(ScaleButtonStyle())
+                                    .disabled(isWorking)
+
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, 30)
+                                .padding(.horizontal, 14)
+                                .padding(.bottom, 18)
+                            }
+
                             if step == .biometric && biometryType != .none {
                                 HStack(spacing: 22) {
                                     Button(action: handlePrimaryAction) {
@@ -1210,7 +1328,7 @@ private struct PillrWelcomeOnboardingFlow: View {
 
                     Spacer(minLength: 20)
 
-                    if step != .welcome && step != .notifications && step != .biometric && step != .done {
+                    if step != .welcome && step != .notifications && step != .health && step != .biometric && step != .done {
                         VStack(spacing: 14) {
                             if step == .storage {
                                 HStack {
@@ -1283,16 +1401,19 @@ private struct PillrWelcomeOnboardingFlow: View {
         .onAppear {
             if step == .welcome {
                 runWelcomeHeroArrival()
+                scheduleWelcomePrimaryButtonPulseHint()
             }
             runStepSoftReveal(for: step)
         }
         .onChange(of: step) { _, newStep in
             if newStep == .welcome {
                 runWelcomeHeroArrival()
+                scheduleWelcomePrimaryButtonPulseHint()
             } else {
                 welcomeHeroRotation = 0
                 welcomeHeroOpacity = 1
                 welcomeHeroScale = 1
+                stopWelcomePrimaryButtonPulseHint()
             }
 
             runStepSoftReveal(for: newStep)
@@ -1314,7 +1435,15 @@ private struct PillrWelcomeOnboardingFlow: View {
             if newStep == .storage {
                 runStorageHeroDriftIn()
             } else {
-                storageHeroDriftOffset = 0
+                storageHeroFloatYOffset = 0
+            }
+
+            if newStep == .health {
+                runHealthHeroPulse()
+            } else {
+                healthHeroPulseScale = 1
+                healthHeroPulseOpacity = 0.08
+                healthHeartbeatLoopToken += 1
             }
 
             if newStep == .done {
@@ -1328,9 +1457,9 @@ private struct PillrWelcomeOnboardingFlow: View {
         }
     }
 
-    private var progressFraction: CGFloat {
-        guard let index = orderedSteps.firstIndex(of: step) else { return 0 }
-        return CGFloat(index + 1) / CGFloat(orderedSteps.count)
+    private var completedProgressIndex: Int {
+        if step == .done { return max(orderedSteps.count - 1, 0) }
+        return orderedSteps.firstIndex(of: step) ?? -1
     }
 
     @ViewBuilder
@@ -1346,7 +1475,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                         .opacity(0.10)
                         .rotationEffect(.degrees(18))
                         .frame(width: 560, height: 560)
-                        .offset(x: 5, y: 255)
+                        .offset(x: 0, y: 180)
                 } else {
                     Image(systemName: "capsule.portrait.fill")
                         .resizable()
@@ -1354,7 +1483,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                         .foregroundColor(Color.white.opacity(0.08))
                         .rotationEffect(.degrees(18))
                         .frame(width: 470, height: 470)
-                        .offset(x: 0, y: 235)
+                        .offset(x: 0, y: 165)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -1401,14 +1530,42 @@ private struct PillrWelcomeOnboardingFlow: View {
                         .brightness(0.85)
                         .opacity(0.08)
                         .frame(width: 620, height: 620)
-                        .offset(x: 90 + storageHeroDriftOffset, y: 330)
+                        .offset(x: 12, y: 332 + storageHeroFloatYOffset)
                 } else {
                     Image(systemName: "icloud.fill")
                         .resizable()
                         .scaledToFit()
                         .foregroundColor(Color.white.opacity(0.08))
                         .frame(width: 360, height: 360)
-                        .offset(x: 120 + storageHeroDriftOffset, y: 380)
+                        .offset(x: 22, y: 388 + storageHeroFloatYOffset)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var healthSilhouette: some View {
+        GeometryReader { _ in
+            Group {
+                if UIImage(named: "heart") != nil {
+                    Image("heart")
+                        .resizable()
+                        .scaledToFit()
+                        .saturation(0)
+                        .brightness(0.86)
+                        .opacity(healthHeroPulseOpacity)
+                        .frame(width: 520, height: 520)
+                        .scaleEffect(healthHeroPulseScale)
+                        .offset(x: 55, y: 360)
+                } else {
+                    Image(systemName: "heart.text.square.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(Color.white.opacity(healthHeroPulseOpacity))
+                        .frame(width: 300, height: 300)
+                        .scaleEffect(healthHeroPulseScale)
+                        .offset(x: 95, y: 410)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1499,6 +1656,8 @@ private struct PillrWelcomeOnboardingFlow: View {
             return "bell.badge.fill"
         case .storage:
             return "icloud.fill"
+        case .health:
+            return "heart.text.square.fill"
         case .done:
             return "checkmark.shield.fill"
         }
@@ -1514,6 +1673,8 @@ private struct PillrWelcomeOnboardingFlow: View {
             return "notification"
         case .storage:
             return "cloud"
+        case .health:
+            return "heart.text.square"
         case .done:
             return "tick"
         }
@@ -1557,6 +1718,8 @@ private struct PillrWelcomeOnboardingFlow: View {
             return "Notifications"
         case .storage:
             return biometryType == .none ? "Storage" : "Storage"
+        case .health:
+            return "Apple Health"
         case .done:
             return "Good to go!"
         }
@@ -1572,14 +1735,16 @@ private struct PillrWelcomeOnboardingFlow: View {
             }
             return "Use \(biometryType.displayName) so only you can open Pillr."
         case .notifications:
-            return "Tap On to let Pillr remember for you."
+            return "Turn on notifications so Pillr can remind you when it’s time for your meds."
         case .storage:
             if biometryType == .none {
-                return "Choose to keep your medication data on this iPhone or sync it across your Apple devices."
+                return "Choose where to keep your medication data: on this iPhone only, or synced with iCloud across your Apple devices."
             }
-            return "Choose to keep your medication data on this iPhone or sync it across your Apple devices."
+            return "Choose where to keep your medication data: on this iPhone only, or synced with iCloud across your Apple devices."
+        case .health:
+            return "Connect your Apple Health data with Pillr to show key health metrics right on your home screen."
         case .done:
-            return "Let's get started."
+            return ""
         }
     }
 
@@ -1593,8 +1758,10 @@ private struct PillrWelcomeOnboardingFlow: View {
             return "Turn on notifications (recommended)"
         case .storage:
             return "Continue"
+        case .health:
+            return "Connect Apple Health"
         case .done:
-            return "Let’s go"
+            return "Start using Pillr"
         }
     }
 
@@ -1603,6 +1770,8 @@ private struct PillrWelcomeOnboardingFlow: View {
         case .biometric where biometryType != .none:
             return "Not now"
         case .notifications:
+            return "Maybe later"
+        case .health:
             return "Maybe later"
         default:
             return nil
@@ -1640,6 +1809,15 @@ private struct PillrWelcomeOnboardingFlow: View {
             }
         case .storage:
             advanceStep()
+        case .health:
+            isWorking = true
+            Task {
+                await onboardingHealthKitManager.requestAuthorizationIfNeeded()
+                await MainActor.run {
+                    isWorking = false
+                    advanceStep()
+                }
+            }
         case .done:
             onFinish(
                 PillrOnboardingResult(
@@ -1657,6 +1835,8 @@ private struct PillrWelcomeOnboardingFlow: View {
             advanceStep()
         case .notifications:
             advanceStep()
+        case .health:
+            advanceStep()
         default:
             break
         }
@@ -1664,7 +1844,15 @@ private struct PillrWelcomeOnboardingFlow: View {
 
     private func advanceStep() {
         guard let currentIndex = orderedSteps.firstIndex(of: step) else { return }
-        guard orderedSteps.indices.contains(currentIndex + 1) else { return }
+        guard orderedSteps.indices.contains(currentIndex + 1) else {
+            onFinish(
+                PillrOnboardingResult(
+                    useCloudSync: useCloudSync,
+                    enableBiometricLock: enableBiometricLock
+                )
+            )
+            return
+        }
         let next = orderedSteps[currentIndex + 1]
         withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
             step = next
@@ -1709,6 +1897,7 @@ private struct PillrWelcomeOnboardingFlow: View {
     private func runNotificationHeroRing() {
         notificationHeroRingRotation = 0
         let startDelay: TimeInterval = 0.5
+        runNotificationSimulationHaptic(startDelay: startDelay)
         let sequence: [(TimeInterval, Double)] = [
             (0.18, -7),
             (0.48, 7),
@@ -1731,13 +1920,65 @@ private struct PillrWelcomeOnboardingFlow: View {
         }
     }
 
-    private func runStorageHeroDriftIn() {
-        storageHeroDriftOffset = 40
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
-            guard step == .storage else { return }
-            withAnimation(.linear(duration: 20.0)) {
-                storageHeroDriftOffset = -760
+    private func runNotificationSimulationHaptic(startDelay: TimeInterval) {
+        let taps: [(TimeInterval, () -> Void)] = [
+            (0.08, { HapticManager.shared.strongImpact() }),
+            (0.26, { HapticManager.shared.rigidImpact() }),
+            (0.56, { HapticManager.shared.mediumImpact() }),
+            (0.92, { HapticManager.shared.selectionChanged() }),
+            (1.28, { HapticManager.shared.lightImpact() })
+        ]
+
+        for (delay, haptic) in taps {
+            DispatchQueue.main.asyncAfter(deadline: .now() + startDelay + delay) {
+                guard step == .notifications else { return }
+                haptic()
             }
+        }
+    }
+
+    private func runStorageHeroDriftIn() {
+        storageHeroFloatYOffset = 8
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            guard step == .storage else { return }
+            withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) {
+                storageHeroFloatYOffset = -12
+            }
+        }
+    }
+
+    private func runHealthHeroPulse() {
+        healthHeroPulseScale = 0.96
+        healthHeroPulseOpacity = 0.06
+        startHealthHeartbeatLoop()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+            guard step == .health else { return }
+            withAnimation(.easeInOut(duration: 1.15).repeatForever(autoreverses: true)) {
+                healthHeroPulseScale = 1.03
+                healthHeroPulseOpacity = 0.11
+            }
+        }
+    }
+
+    private func startHealthHeartbeatLoop() {
+        healthHeartbeatLoopToken += 1
+        let token = healthHeartbeatLoopToken
+        scheduleHealthHeartbeatCycle(token: token, delay: 0.35)
+    }
+
+    private func scheduleHealthHeartbeatCycle(token: Int, delay: TimeInterval) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            guard step == .health, token == healthHeartbeatLoopToken else { return }
+            HapticManager.shared.rigidImpact()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+                guard step == .health, token == healthHeartbeatLoopToken else { return }
+                HapticManager.shared.softImpact()
+            }
+
+            // Repeat once per second while the user stays on the Apple Health onboarding screen.
+            scheduleHealthHeartbeatCycle(token: token, delay: 1.0)
         }
     }
 
@@ -1762,6 +2003,25 @@ private struct PillrWelcomeOnboardingFlow: View {
                 welcomeHeroRotation = 14
             }
         }
+    }
+
+    private func scheduleWelcomePrimaryButtonPulseHint() {
+        stopWelcomePrimaryButtonPulseHint()
+        let token = welcomePrimaryButtonPulseToken
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            guard step == .welcome, token == welcomePrimaryButtonPulseToken else { return }
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                welcomePrimaryButtonPulseScale = 1.035
+                welcomePrimaryButtonPulseGlow = 0.10
+            }
+        }
+    }
+
+    private func stopWelcomePrimaryButtonPulseHint() {
+        welcomePrimaryButtonPulseToken += 1
+        welcomePrimaryButtonPulseScale = 1
+        welcomePrimaryButtonPulseGlow = 0
     }
 
     private func runStepSoftReveal(for step: Step) {
