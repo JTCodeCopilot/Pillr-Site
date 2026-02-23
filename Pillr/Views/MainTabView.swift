@@ -27,11 +27,13 @@ struct MainTabView: View {
     @State private var needsOnboardingAfterNotificationPrompt = false
     @State private var isRequestingNotificationAuthorization = false
     @State private var showReviewPrompt = false
+    @State private var showWhatsNewSheet = false
     @State private var showWelcomeOnboardingFlow = false
     @State private var showBiometricAppLock = false
     @State private var isBiometricAuthInProgress = false
     @State private var biometricLockErrorMessage: String?
     @State private var requiresBiometricOnNextActive = true
+    @State private var wasExistingUserAtLaunch = false
     @State private var showPostOnboardingCelebration = false
     @State private var referenceDate = Date()
     @State private var suppressTabSelectionUntil = Date.distantPast
@@ -41,10 +43,12 @@ struct MainTabView: View {
     @AppStorage("reviewPromptSeeded") private var reviewPromptSeeded = false
     @AppStorage("appLaunchCount") private var appLaunchCount: Int = 0
     @AppStorage("hasShownOnboardingSuccessCelebration") private var hasShownOnboardingSuccessCelebration = false
+    @AppStorage("lastSeenWhatsNewAnnouncementID") private var lastSeenWhatsNewAnnouncementID = ""
     private var isUITestMode: Bool { UserSettings.isUITestMode }
     
     private static let cloudSyncOnboardingKey = "cloudSyncChoice"
     private static let reviewPromptURL = "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?action=write-review"
+    private static let whatsNewAnnouncementID = "whatsnew-menu-tabs-faceid-2026-02"
     private static let reviewPromptDelaySeconds: TimeInterval = 1.2
     private static let reviewPromptMinimumDays: Double = 3
     private static let reviewPromptSnoozeDays: Double = 30
@@ -81,6 +85,14 @@ struct MainTabView: View {
         .spring(response: 0.5, dampingFraction: 0.88)
     }
 
+    private var tabVisibilitySignature: String {
+        [
+            userSettings.isHistoryTabEnabled ? "1" : "0",
+            userSettings.isReflectionTabEnabled ? "1" : "0",
+            userSettings.isTimelineTabEnabled ? "1" : "0"
+        ].joined()
+    }
+
     private var shouldBlockWithBiometricGate: Bool {
         userSettings.isBiometricLockEnabled
             && !showWelcomeOnboardingFlow
@@ -108,26 +120,32 @@ struct MainTabView: View {
                         .badge(overdueBadgeCount)
                         .tag(MainTab.meds)
 
-                    DailyCheckInHistoryView()
-                        .tabItem {
-                            Image(systemName: "book.pages")
-                                .accessibilityLabel("Check-Ins")
-                        }
-                        .tag(MainTab.checkIns)
+                    if userSettings.isReflectionTabEnabled {
+                        DailyCheckInHistoryView()
+                            .tabItem {
+                                Image(systemName: "book.pages")
+                                    .accessibilityLabel("Check-Ins")
+                            }
+                            .tag(MainTab.checkIns)
+                    }
 
-                    FocusTimelineView(isModal: false)
-                        .tabItem {
-                            Image(systemName: "hourglass")
-                                .accessibilityLabel("Focus")
-                        }
-                        .tag(MainTab.focus)
+                    if userSettings.isTimelineTabEnabled {
+                        FocusTimelineView(isModal: false)
+                            .tabItem {
+                                Image(systemName: "hourglass")
+                                    .accessibilityLabel("Focus")
+                            }
+                            .tag(MainTab.focus)
+                    }
 
-                    MedicationHistoryView()
-                        .tabItem {
-                            Image(systemName: "calendar")
-                                .accessibilityLabel("History")
-                        }
-                        .tag(MainTab.history)
+                    if userSettings.isHistoryTabEnabled {
+                        MedicationHistoryView()
+                            .tabItem {
+                                Image(systemName: "calendar")
+                                    .accessibilityLabel("History")
+                            }
+                            .tag(MainTab.history)
+                    }
 
                     SettingsView()
                         .tabItem {
@@ -186,6 +204,11 @@ struct MainTabView: View {
                     .transition(modalOverlayTransition)
                     .zIndex(2)
                 }
+                if showWhatsNewSheet {
+                    WhatsNewSheet(onDismiss: dismissWhatsNewSheet)
+                        .transition(modalOverlayTransition)
+                        .zIndex(2.5)
+                }
                 if showWelcomeOnboardingFlow {
                     PillrWelcomeOnboardingFlow { result in
                         completeWelcomeOnboarding(using: result)
@@ -227,10 +250,13 @@ struct MainTabView: View {
             Text("Any progress you've made on this medication will be discarded.")
         }
         .onAppear {
+            wasExistingUserAtLaunch = isLikelyExistingUser
             startWelcomeOnboardingIfNeeded()
+            ensureSelectedTabIsVisible()
             if !showWelcomeOnboardingFlow {
                 scheduleOnboarding(for: selectedTab)
             }
+            scheduleWhatsNewIfNeeded()
             scheduleReviewPromptIfNeeded()
             store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
             handleBiometricGateIfNeeded()
@@ -241,6 +267,7 @@ struct MainTabView: View {
                 referenceDate = Date()
                 store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
                 handleBiometricGateIfNeeded()
+                scheduleWhatsNewIfNeeded()
             case .background:
                 if userSettings.isBiometricLockEnabled {
                     requiresBiometricOnNextActive = true
@@ -266,17 +293,41 @@ struct MainTabView: View {
                 handleBiometricGateIfNeeded()
             }
         }
+        .onChange(of: tabVisibilitySignature) { _, _ in
+            ensureSelectedTabIsVisible()
+        }
         .onChange(of: showWelcomeOnboardingFlow) { _, showing in
             if !showing {
                 handleBiometricGateIfNeeded()
+                scheduleWhatsNewIfNeeded()
             }
         }
         .preferredColorScheme(.dark)
     }
 
     private func applySelectedTab(_ tab: MainTab) {
-        selectedTab = tab
-        scheduleOnboarding(for: tab)
+        let resolvedTab = resolvedVisibleTab(tab)
+        selectedTab = resolvedTab
+        scheduleOnboarding(for: resolvedTab)
+    }
+
+    private func ensureSelectedTabIsVisible() {
+        let resolvedTab = resolvedVisibleTab(selectedTab)
+        guard selectedTab != resolvedTab else { return }
+        selectedTab = resolvedTab
+    }
+
+    private func resolvedVisibleTab(_ tab: MainTab) -> MainTab {
+        switch tab {
+        case .meds, .more:
+            return tab
+        case .history:
+            return userSettings.isHistoryTabEnabled ? tab : .meds
+        case .checkIns:
+            return userSettings.isReflectionTabEnabled ? tab : .meds
+        case .focus:
+            return userSettings.isTimelineTabEnabled ? tab : .meds
+        }
     }
 
     private var isTabSelectionTemporarilySuppressed: Bool {
@@ -349,6 +400,7 @@ struct MainTabView: View {
             || showNotificationOnboardingPrompt
             || showWelcomeOnboardingFlow
             || showBiometricAppLock
+            || showWhatsNewSheet
     }
 
     private func seedReviewPromptBaselineIfNeeded() {
@@ -387,6 +439,10 @@ struct MainTabView: View {
     }
 
     private func completeWelcomeOnboarding(using result: PillrOnboardingResult) {
+        // Fresh installs should not see this release's "What's New" popup later.
+        if !wasExistingUserAtLaunch {
+            lastSeenWhatsNewAnnouncementID = Self.whatsNewAnnouncementID
+        }
         userSettings.setCloudSyncPreference(result.useCloudSync)
         userSettings.setBiometricLockEnabled(result.enableBiometricLock)
         userSettings.markNotificationOnboardingPromptSeen()
@@ -502,6 +558,36 @@ struct MainTabView: View {
             return
         }
         UIApplication.shared.open(url)
+    }
+
+    private func scheduleWhatsNewIfNeeded() {
+        guard !isUITestMode else { return }
+        guard !showWhatsNewSheet else { return }
+        guard !showWelcomeOnboardingFlow else { return }
+        guard userSettings.hasCompletedAppOnboarding else { return }
+        guard wasExistingUserAtLaunch else { return }
+        guard lastSeenWhatsNewAnnouncementID != Self.whatsNewAnnouncementID else { return }
+        guard activeOnboardingStage == nil else { return }
+        guard !showCloudSyncChoice else { return }
+        guard !showNotificationOnboardingPrompt else { return }
+        guard !showBiometricAppLock else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            guard !showWhatsNewSheet else { return }
+            guard !showWelcomeOnboardingFlow else { return }
+            guard lastSeenWhatsNewAnnouncementID != Self.whatsNewAnnouncementID else { return }
+            withAnimation(modalOverlayAnimation) {
+                showWhatsNewSheet = true
+            }
+        }
+    }
+
+    private func dismissWhatsNewSheet() {
+        lastSeenWhatsNewAnnouncementID = Self.whatsNewAnnouncementID
+        withAnimation(modalOverlayAnimation) {
+            showWhatsNewSheet = false
+        }
+        scheduleReviewPromptIfNeeded()
     }
 
     private func dismissOnboarding() {
@@ -780,6 +866,102 @@ struct ReviewPromptSheet: View {
                 }
             }
         }
+    }
+}
+
+struct WhatsNewSheet: View {
+    let onDismiss: () -> Void
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Color.black.opacity(0.35)
+                    .ignoresSafeArea()
+                    .onTapGesture(perform: onDismiss)
+
+                VStack {
+                    Spacer()
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("What's New")
+                            .font(.system(size: 22, weight: .semibold, design: .rounded))
+                            .foregroundColor(.white)
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            whatsNewRow(
+                                icon: "slider.horizontal.3",
+                                title: "Customize menu tabs",
+                                detail: "Turn History, Reflection, and Timeline tabs on or off."
+                            )
+
+                            whatsNewRow(
+                                icon: "faceid",
+                                title: "Face ID app lock",
+                                detail: "Lock Pillr with Face ID (or Touch ID)."
+                            )
+                        }
+
+                        Button(action: onDismiss) {
+                            Text("Got it")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundColor(Color(hex: "#11140F"))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Color(hex: "#F5F7F4"))
+                                )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .padding(.top, 2)
+                    }
+                    .padding(22)
+                    .frame(maxWidth: 460)
+                    .background(
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(Color(hex: "#2A2D28").opacity(0.98))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.35), radius: 16, x: 0, y: 8)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, geometry.safeAreaInsets.bottom + 20)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func whatsNewRow(icon: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "#F5F7F4"))
+                .frame(width: 30, height: 30)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.white.opacity(0.06))
+                )
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+
+                Text(detail)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.78))
+                    .lineSpacing(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white.opacity(0.03))
+        )
     }
 }
 

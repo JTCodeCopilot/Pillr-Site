@@ -142,6 +142,7 @@ struct MedicationsListView: View {
                         showingInteractionSheet: $showingInteractionSheet,
                         isCheckingInteractions: $isCheckingInteractions,
                         onCheckAllInteractions: showMedicationSelectionSheet,
+                        onOpenInteractionChecker: openInteractionCheckerSheet,
                         onShowPremiumUpgrade: { showingPremiumUpgrade = true },
                         onAddMedication: handleAddMedication,
                         onShowFocusTimeline: { showingFocusTimeline = true },
@@ -406,6 +407,11 @@ struct MedicationsListView: View {
         } else {
             showingPremiumUpgrade = true
         }
+    }
+
+    private func openInteractionCheckerSheet() {
+        showingMedicationSelectionSheet = true
+        store.lastAddedMedicationID = nil
     }
 
     private func refreshReferenceDate(resetBadge: Bool) {
@@ -1641,6 +1647,73 @@ fileprivate struct InteractionPromptCard: View {
     }
 }
 
+fileprivate struct InteractionShortcutCard: View {
+    let isPremiumEnabled: Bool
+    let canRunCheckNow: Bool
+    let onTap: () -> Void
+
+    private var subtitleText: String {
+        if !canRunCheckNow {
+            return "Open the checker and choose 2 or more medications."
+        }
+        return "Check how your medications work together."
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.white.opacity(0.08))
+                        .frame(width: 46, height: 46)
+
+                    Image(systemName: "point.3.connected.trianglepath")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F7F4"))
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text("Interaction Checker")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F5F7F4"))
+                            .lineLimit(1)
+
+                        if !isPremiumEnabled {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(Color(hex: "#C7C7BD"))
+                        }
+                    }
+
+                    Text(subtitleText)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .multilineTextAlignment(.leading)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color(hex: "#C7C7BD"))
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(hex: "#4C584F"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
+        }
+        .buttonStyle(ScaleButtonStyle())
+        .accessibilityLabel("Interaction Checker")
+    }
+}
+
 fileprivate struct FloatingActionButton: View {
     @Binding var showingAddSheet: Bool
     @Binding var isCheckingInteractions: Bool
@@ -2171,6 +2244,7 @@ fileprivate struct MedicationsListMainContent: View {
     @Binding var showingInteractionSheet: Bool
     @Binding var isCheckingInteractions: Bool
     let onCheckAllInteractions: () async -> Void
+    let onOpenInteractionChecker: () -> Void
     let onShowPremiumUpgrade: () -> Void
     let onAddMedication: () -> Void
     let onShowFocusTimeline: () -> Void

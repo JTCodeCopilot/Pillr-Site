@@ -17,6 +17,7 @@ struct SettingsView: View {
     @State private var iCloudAccountStatus: CKAccountStatus?
     @State private var isHealthSettingsExpanded = false
     @State private var isPremiumSettingsExpanded = false
+    @State private var isHomeShortcutsExpanded = false
     @State private var showingCloudSyncChoiceAgain = false
     @State private var cloudSyncRotation: Double = 0
     @State private var isUpdatingBiometricLock = false
@@ -40,6 +41,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         headerView
                         generalSettingsSection
+                        homeShortcutsSection
                         securitySection
                         interactionsSection
                         notificationPermissionsSection
@@ -308,6 +310,64 @@ struct SettingsView: View {
                         ) {
                             showingPremiumUpgrade = true
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    private var homeShortcutsSection: some View {
+        settingsSection(title: "Home Shortcuts") {
+            collapsibleSettingsSection(
+                title: "Customize Menu Tabs",
+                isExpanded: $isHomeShortcutsExpanded,
+                titleFont: .system(size: 16, weight: .medium, design: .rounded),
+                titleColor: SettingsPalette.mainText
+            ) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Choose which bottom menu tabs show up. My Meds and More always stay on.")
+                        .font(.system(size: 14, design: .rounded))
+                        .foregroundColor(SettingsPalette.secondaryText)
+                        .lineSpacing(4)
+                        .padding(.horizontal, 4)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        homeShortcutLockedRow(
+                            title: "My Meds",
+                            subtitle: "Always visible"
+                        )
+
+                        homeShortcutLockedRow(
+                            title: "More",
+                            subtitle: "Always visible"
+                        )
+
+                        homeShortcutToggleRow(
+                            title: "History",
+                            subtitle: "Show the History tab",
+                            isOn: Binding(
+                                get: { userSettings.isHistoryTabEnabled },
+                                set: { userSettings.isHistoryTabEnabled = $0 }
+                            )
+                        )
+
+                        homeShortcutToggleRow(
+                            title: "Reflection",
+                            subtitle: "Show the Reflection tab",
+                            isOn: Binding(
+                                get: { userSettings.isReflectionTabEnabled },
+                                set: { userSettings.isReflectionTabEnabled = $0 }
+                            )
+                        )
+
+                        homeShortcutToggleRow(
+                            title: "Timeline",
+                            subtitle: "Show the Timeline tab",
+                            isOn: Binding(
+                                get: { userSettings.isTimelineTabEnabled },
+                                set: { userSettings.isTimelineTabEnabled = $0 }
+                            )
+                        )
                     }
                 }
             }
@@ -665,6 +725,55 @@ struct SettingsView: View {
             .padding(.vertical, 10)
         }
         .buttonStyle(SettingsActionRowButtonStyle())
+    }
+
+    private func homeShortcutToggleRow(
+        title: String,
+        subtitle: String,
+        isOn: Binding<Bool>
+    ) -> some View {
+        Toggle(isOn: isOn) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(SettingsPalette.mainText)
+
+                Text(subtitle)
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .foregroundColor(SettingsPalette.secondaryText)
+            }
+        }
+        .toggleStyle(SwitchToggleStyle(tint: SettingsPalette.toggleActive))
+    }
+
+    private func homeShortcutLockedRow(
+        title: String,
+        subtitle: String
+    ) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(SettingsPalette.mainText)
+
+                Text(subtitle)
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
+                    .foregroundColor(SettingsPalette.secondaryText)
+            }
+
+            Spacer()
+
+            Text("On")
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundColor(SettingsPalette.secondaryText)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.06))
+                )
+        }
+        .padding(.vertical, 4)
     }
 
     private var notificationStatusValue: String {

@@ -99,6 +99,38 @@ class UserSettings: ObservableObject {
         }
     }
 
+    @Published var isHistoryTabEnabled: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(isHistoryTabEnabled, forKey: historyTabEnabledKey)
+            }
+        }
+    }
+
+    @Published var isReflectionTabEnabled: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(isReflectionTabEnabled, forKey: reflectionTabEnabledKey)
+            }
+        }
+    }
+
+    @Published var isTimelineTabEnabled: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(isTimelineTabEnabled, forKey: timelineTabEnabledKey)
+            }
+        }
+    }
+
+    @Published var isInteractionCheckerShortcutEnabled: Bool {
+        didSet {
+            if !isPreviewMode {
+                UserDefaults.standard.set(isInteractionCheckerShortcutEnabled, forKey: interactionCheckerShortcutEnabledKey)
+            }
+        }
+    }
+
     @Published var customSideEffects: [String] {
         didSet {
             if !isPreviewMode {
@@ -131,6 +163,10 @@ class UserSettings: ObservableObject {
     private let biometricLockEnabledKey = "is_biometric_lock_enabled"
     private let cloudSyncPreferenceKey = "should_use_cloud_sync"
     private let appleHealthVisibilityKey = "should_show_apple_health_data"
+    private let historyTabEnabledKey = "is_history_tab_enabled"
+    private let reflectionTabEnabledKey = "is_reflection_tab_enabled"
+    private let timelineTabEnabledKey = "is_timeline_tab_enabled"
+    private let interactionCheckerShortcutEnabledKey = "is_interaction_checker_shortcut_enabled"
     private let customSideEffectsKey = "custom_side_effects"
     private let isPreviewMode: Bool
     private let forceUITestMode: Bool
@@ -169,6 +205,10 @@ class UserSettings: ObservableObject {
             self.isBiometricLockEnabled = false
             self.shouldUseCloudSync = true
             self.shouldShowAppleHealthData = true
+            self.isHistoryTabEnabled = true
+            self.isReflectionTabEnabled = true
+            self.isTimelineTabEnabled = true
+            self.isInteractionCheckerShortcutEnabled = true
             self.customSideEffects = []
         } else if forceUITestMode {
             // Stable defaults for UI automation so first-run prompts do not interrupt flows.
@@ -190,6 +230,10 @@ class UserSettings: ObservableObject {
             self.isBiometricLockEnabled = false
             self.shouldUseCloudSync = false
             self.shouldShowAppleHealthData = false
+            self.isHistoryTabEnabled = true
+            self.isReflectionTabEnabled = true
+            self.isTimelineTabEnabled = true
+            self.isInteractionCheckerShortcutEnabled = true
             self.customSideEffects = []
         } else {
             // Load user name if available, otherwise use default
@@ -214,6 +258,26 @@ class UserSettings: ObservableObject {
             } else {
                 self.shouldShowAppleHealthData = true
             }
+            if let stored = UserDefaults.standard.object(forKey: historyTabEnabledKey) as? Bool {
+                self.isHistoryTabEnabled = stored
+            } else {
+                self.isHistoryTabEnabled = true
+            }
+            if let stored = UserDefaults.standard.object(forKey: reflectionTabEnabledKey) as? Bool {
+                self.isReflectionTabEnabled = stored
+            } else {
+                self.isReflectionTabEnabled = true
+            }
+            if let stored = UserDefaults.standard.object(forKey: timelineTabEnabledKey) as? Bool {
+                self.isTimelineTabEnabled = stored
+            } else {
+                self.isTimelineTabEnabled = true
+            }
+            if let stored = UserDefaults.standard.object(forKey: interactionCheckerShortcutEnabledKey) as? Bool {
+                self.isInteractionCheckerShortcutEnabled = stored
+            } else {
+                self.isInteractionCheckerShortcutEnabled = true
+            }
             self.customSideEffects = UserDefaults.standard.stringArray(forKey: customSideEffectsKey) ?? []
         }
 
@@ -225,6 +289,18 @@ class UserSettings: ObservableObject {
             // Ensure visibility flag is persisted even if not set earlier
             if UserDefaults.standard.object(forKey: appleHealthVisibilityKey) == nil {
                 UserDefaults.standard.set(true, forKey: appleHealthVisibilityKey)
+            }
+            if UserDefaults.standard.object(forKey: historyTabEnabledKey) == nil {
+                UserDefaults.standard.set(true, forKey: historyTabEnabledKey)
+            }
+            if UserDefaults.standard.object(forKey: reflectionTabEnabledKey) == nil {
+                UserDefaults.standard.set(true, forKey: reflectionTabEnabledKey)
+            }
+            if UserDefaults.standard.object(forKey: timelineTabEnabledKey) == nil {
+                UserDefaults.standard.set(true, forKey: timelineTabEnabledKey)
+            }
+            if UserDefaults.standard.object(forKey: interactionCheckerShortcutEnabledKey) == nil {
+                UserDefaults.standard.set(true, forKey: interactionCheckerShortcutEnabledKey)
             }
         }
     }
