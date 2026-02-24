@@ -4,7 +4,6 @@ struct FocusTimelineView: View {
     @EnvironmentObject var store: MedicationStore
     let isModal: Bool
     @Environment(\.dismiss) var dismiss
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     enum DoseStatus {
         case pending
@@ -319,7 +318,7 @@ struct FocusTimelineView: View {
                             emptyState
                         }
                     }
-                    .padding(.horizontal, timelineHorizontalPadding)
+                    .padding(.horizontal, 18)
                     .padding(.top, 16)
                     .padding(.bottom, 24)
                 }
@@ -337,17 +336,6 @@ struct FocusTimelineView: View {
             }
         }
         .preferredColorScheme(.dark)
-    }
-    
-    private var horizontalInsets: CGFloat {
-        if horizontalSizeClass == .regular {
-            return 32
-        }
-        return 20
-    }
-
-    private var timelineHorizontalPadding: CGFloat {
-        horizontalInsets + 12
     }
     
     private var headerSection: some View {
@@ -666,7 +654,7 @@ private struct FocusWindowRow: View {
                     .padding(.bottom, 4)
                     
                     HStack(spacing: 14) {
-                        infoRow(title: "Kicks in", value: formatTime(window.onsetTime))
+                        infoRow(title: "Starts", value: formatTime(window.onsetTime))
                         infoRow(title: "Fades", value: formatTime(window.fadeTime))
                     }
                     .padding(.top, 6)
