@@ -63,9 +63,13 @@ class NotificationManager: ObservableObject {
     private let notificationMutationQueue = NotificationMutationQueue()
     private let reliabilityTelemetryQueue = DispatchQueue(label: "NotificationManager.reliabilityTelemetryQueue")
     private var trackedMedicationIDs = Set<UUID>()
-    private let reminderSchedulingWindowDays = 30
-    private let followUpSchedulingWindowDays = 30
+    // iOS only keeps a limited number of pending local notifications.
+    // A shorter rolling window keeps near-term reminders queued more reliably.
+    private let reminderSchedulingWindowDays = 7
+    private let followUpSchedulingWindowDays = 7
     private let maxPendingMedicationNotifications = 60
+    private let maxPendingCoreMedicationNotifications = 48
+    private let maxPendingFollowUpMedicationNotifications = 12
 
     func updateTrackedMedicationIDs(_ ids: Set<UUID>) {
         trackedMedicationIDsQueue.sync(flags: .barrier) {
@@ -221,6 +225,28 @@ class NotificationManager: ObservableObject {
         let now = Date()
         let components = calendar.dateComponents([.hour, .minute], from: time)
         return calendar.nextDate(after: now, matching: components, matchingPolicy: .nextTime) ?? now
+    }
+
+    private func reminderTimesPrioritizedForScheduling(_ times: [(index: Int, time: Date)]) -> [(index: Int, time: Date)] {
+        let now = Date()
+        let calendar = Calendar.current
+        return times.sorted { lhs, rhs in
+            let lhsComponents = calendar.dateComponents([.hour, .minute], from: lhs.time)
+            let rhsComponents = calendar.dateComponents([.hour, .minute], from: rhs.time)
+            let lhsNext = calendar.nextDate(after: now, matching: lhsComponents, matchingPolicy: .nextTime) ?? .distantFuture
+            let rhsNext = calendar.nextDate(after: now, matching: rhsComponents, matchingPolicy: .nextTime) ?? .distantFuture
+            if lhsNext != rhsNext { return lhsNext < rhsNext }
+            return lhs.index < rhs.index
+        }
+    }
+
+    private func isMedicationReminderRequest(_ request: UNNotificationRequest) -> Bool {
+        request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder
+    }
+
+    private func isFollowUpMedicationReminderRequest(_ request: UNNotificationRequest) -> Bool {
+        guard isMedicationReminderRequest(request) else { return false }
+        return (request.content.userInfo["isFollowUp"] as? Bool) == true
     }
 
     private func applyBadge(_ content: UNMutableNotificationContent, fireDate: Date) {
@@ -437,17 +463,53 @@ class NotificationManager: ObservableObject {
         
         // Use reminderTimes if available, otherwise fall back to legacy timeToTake
         let times = medication.reminderTimes.isEmpty ? [medication.timeToTake] : medication.reminderTimes
-        
-        for (index, reminderTime) in times.enumerated() {
+        let prioritizedTimes = reminderTimesPrioritizedForScheduling(
+            Array(times.enumerated()).map { (index: $0.offset, time: $0.element) }
+        )
+
+        for item in prioritizedTimes {
             let notificationID = scheduleNotificationForTime(
                 medication: medication,
-                time: reminderTime,
-                index: index
+                time: item.time,
+                index: item.index
             )
             notificationIDs.append(notificationID)
         }
         
         return notificationIDs
+    }
+
+    func scheduleTestReminder(afterSeconds: TimeInterval = 10, completion: ((Bool) -> Void)? = nil) {
+        let delay = max(5, afterSeconds)
+        requestAuthorizationIfNeeded { [weak self] granted in
+            guard let self, granted else {
+                completion?(false)
+                return
+            }
+
+            let content = UNMutableNotificationContent()
+            content.title = "Pillr Test Reminder"
+            content.body = "This is a test. If you saw this, reminders are working on this device."
+            content.sound = .default
+            content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
+            content.threadIdentifier = "medication-reminders"
+            self.prioritizeMedicationReminder(content)
+
+            let request = UNNotificationRequest(
+                identifier: "pillr_test_\(UUID().uuidString)",
+                content: content,
+                trigger: UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
+            )
+
+            self.enqueueNotificationMutation { [weak self] in
+                guard let self else {
+                    DispatchQueue.main.async { completion?(false) }
+                    return
+                }
+                await self.addNotificationRequest(request, context: "test reminder")
+                DispatchQueue.main.async { completion?(true) }
+            }
+        }
     }
     
     private func scheduleNotificationForTime(medication: Medication, time: Date, index: Int) -> UUID {
@@ -485,9 +547,14 @@ class NotificationManager: ObservableObject {
 
         enqueueNotificationMutation { [weak self] in
             guard let self else { return }
-            let existingIdentifiers = Set((await self.pendingRequestsSnapshot()).map { $0.identifier })
+            let pendingRequests = await self.pendingRequestsSnapshot()
+            let medicationReminderRequests = pendingRequests.filter { self.isMedicationReminderRequest($0) }
+            let existingIdentifiers = Set(medicationReminderRequests.map { $0.identifier })
             var knownIdentifiers = existingIdentifiers
-            var remainingSlots = max(0, self.maxPendingMedicationNotifications - knownIdentifiers.count)
+            let corePendingCount = medicationReminderRequests.filter { !self.isFollowUpMedicationReminderRequest($0) }.count
+            let remainingTotalSlots = max(0, self.maxPendingMedicationNotifications - medicationReminderRequests.count)
+            let remainingCoreSlots = max(0, self.maxPendingCoreMedicationNotifications - corePendingCount)
+            var remainingSlots = min(remainingTotalSlots, remainingCoreSlots)
             guard remainingSlots > 0 else { return }
             let now = Date()
             let startOfDay = calendar.startOfDay(for: now)
@@ -589,13 +656,17 @@ class NotificationManager: ObservableObject {
     ) {
         guard medication.frequency != "As needed" else { return }
         let calendar = Calendar.current
-        let dayStart = calendar.startOfDay(for: referenceDate)
         let components = calendar.dateComponents([.hour, .minute], from: time)
-        guard let fireDate = localTimeOnDay(
-            calendar: calendar,
-            hour: components.hour ?? 8,
-            minute: components.minute ?? 0,
-            day: dayStart
+        guard let fireDate = calendar.nextDate(
+            after: referenceDate,
+            matching: DateComponents(
+                hour: components.hour ?? 8,
+                minute: components.minute ?? 0,
+                second: 0
+            ),
+            matchingPolicy: .nextTime,
+            repeatedTimePolicy: .first,
+            direction: .forward
         ), fireDate > referenceDate else {
             return
         }
@@ -713,9 +784,14 @@ class NotificationManager: ObservableObject {
 
         enqueueNotificationMutation { [weak self] in
             guard let self else { return }
-            let existingIdentifiers = Set((await self.pendingRequestsSnapshot()).map { $0.identifier })
+            let pendingRequests = await self.pendingRequestsSnapshot()
+            let medicationReminderRequests = pendingRequests.filter { self.isMedicationReminderRequest($0) }
+            let existingIdentifiers = Set(medicationReminderRequests.map { $0.identifier })
             var knownIdentifiers = existingIdentifiers
-            var remainingSlots = max(0, self.maxPendingMedicationNotifications - knownIdentifiers.count)
+            let followUpPendingCount = medicationReminderRequests.filter { self.isFollowUpMedicationReminderRequest($0) }.count
+            let remainingTotalSlots = max(0, self.maxPendingMedicationNotifications - medicationReminderRequests.count)
+            let remainingFollowUpSlots = max(0, self.maxPendingFollowUpMedicationNotifications - followUpPendingCount)
+            var remainingSlots = min(remainingTotalSlots, remainingFollowUpSlots)
             guard remainingSlots > 0 else { return }
             let now = Date()
             let startOfDay = calendar.startOfDay(for: now)

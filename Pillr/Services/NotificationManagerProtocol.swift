@@ -9,6 +9,7 @@ protocol NotificationManagerProtocol: AnyObject {
     func unregisterTrackedMedicationID(_ id: UUID)
 
     func requestAuthorizationIfNeeded(completion: ((Bool) -> Void)?)
+    func scheduleTestReminder(afterSeconds: TimeInterval, completion: ((Bool) -> Void)?)
 
     func scheduleNotification(for medication: Medication) -> UUID?
     func scheduleMultipleNotifications(for medication: Medication) -> [UUID]
@@ -68,5 +69,9 @@ extension NotificationManagerProtocol {
             reminderIndex: nil,
             scheduledDoseDate: nil
         )
+    }
+
+    func scheduleTestReminder(completion: ((Bool) -> Void)? = nil) {
+        scheduleTestReminder(afterSeconds: 10, completion: completion)
     }
 }

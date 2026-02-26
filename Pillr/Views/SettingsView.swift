@@ -22,6 +22,8 @@ struct SettingsView: View {
     @State private var cloudSyncRotation: Double = 0
     @State private var isUpdatingBiometricLock = false
     @State private var biometricAlertMessage: String?
+    @State private var notificationTestMessage: String?
+    @State private var isSchedulingTestReminder = false
 
     private var isPremiumActive: Bool {
         storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
@@ -104,6 +106,21 @@ struct SettingsView: View {
             }
         } message: {
             Text(biometricAlertMessage ?? "")
+        }
+        .alert(
+            "Test Reminder",
+            isPresented: Binding(
+                get: { notificationTestMessage != nil },
+                set: { newValue in
+                    if !newValue { notificationTestMessage = nil }
+                }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                notificationTestMessage = nil
+            }
+        } message: {
+            Text(notificationTestMessage ?? "")
         }
     }
 
@@ -391,12 +408,28 @@ struct SettingsView: View {
                     .foregroundColor(SettingsPalette.secondaryText)
             }
 
+            Text("For the most reliable reminders, leave Pillr running in the background and avoid force-closing it after setting up medications.")
+                .font(.system(size: 13, design: .rounded))
+                .foregroundColor(SettingsPalette.secondaryText.opacity(0.95))
+                .lineSpacing(4)
+                .padding(.horizontal, 4)
+
             settingsActionRow(
                 title: "Manage Notifications",
                 subtitle: "Open the iOS notification settings for Pillr",
                 leadingIcon: "bell.badge.fill",
                 action: openNotificationSettings
             )
+
+            settingsActionRow(
+                title: isSchedulingTestReminder ? "Scheduling test reminder..." : "Send test reminder",
+                subtitle: "Schedules a test Pillr reminder in about 10 seconds",
+                showChevron: false,
+                leadingIcon: "bell.and.waves.left.and.right.fill",
+                action: sendTestReminder
+            )
+            .disabled(isSchedulingTestReminder)
+            .opacity(isSchedulingTestReminder ? 0.75 : 1)
         }
     }
 
@@ -431,6 +464,19 @@ struct SettingsView: View {
             openLink(UIApplication.openNotificationSettingsURLString)
         } else {
             openLink(UIApplication.openSettingsURLString)
+        }
+    }
+
+    private func sendTestReminder() {
+        guard !isSchedulingTestReminder else { return }
+        isSchedulingTestReminder = true
+        NotificationManager.shared.scheduleTestReminder { success in
+            isSchedulingTestReminder = false
+            if success {
+                notificationTestMessage = "Test reminder scheduled. You should get a Pillr notification in about 10 seconds."
+            } else {
+                notificationTestMessage = "Pillr could not schedule a test reminder. Please allow notifications for Pillr in iPhone Settings and try again."
+            }
         }
     }
     

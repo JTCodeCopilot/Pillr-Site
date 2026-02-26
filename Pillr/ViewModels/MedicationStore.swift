@@ -2112,7 +2112,7 @@ class MedicationStore: ObservableObject {
         withPendingRequests requests: [UNNotificationRequest],
         referenceDate: Date
     ) {
-        let pendingIDs = Set(requests.map { $0.identifier })
+        var pendingIDs = Set(requests.map { $0.identifier })
         var didRepair = false
         var repairsApplied = 0
 
@@ -2137,6 +2137,7 @@ class MedicationStore: ObservableObject {
                     )
                     didRepair = true
                     repairsApplied += 1
+                    pendingIDs.insert(dayID)
                 }
                 continue
             }
@@ -2162,13 +2163,83 @@ class MedicationStore: ObservableObject {
                 )
                 didRepair = true
                 repairsApplied += 1
+                pendingIDs.insert(dayID)
             }
+        }
+
+        let healthCheckRepairs = runReminderHealthCheck(
+            pendingIDs: &pendingIDs,
+            referenceDate: referenceDate
+        )
+        if healthCheckRepairs > 0 {
+            didRepair = true
+            repairsApplied += healthCheckRepairs
+            recordNotificationReliabilityMetric("health_check_repair_applied", amount: healthCheckRepairs)
         }
 
         if didRepair {
             recordNotificationReliabilityMetric("repair_applied", amount: repairsApplied)
             resetBadgeIfNeeded()
         }
+    }
+
+    private func runReminderHealthCheck(
+        pendingIDs: inout Set<String>,
+        referenceDate: Date
+    ) -> Int {
+        var repairsApplied = 0
+
+        for medication in activeMedications where medication.hasActiveReminder {
+            if medication.reminderTimes.isEmpty {
+                guard let baseID = medication.notificationID else { continue }
+                guard let nextFireDate = nextReminderFireDate(for: medication.timeToTake, after: referenceDate) else { continue }
+                let expectedID = reminderIdentifier(baseID: baseID, fireDate: nextFireDate)
+                guard !pendingIDs.contains(expectedID) else { continue }
+
+                notificationManager.rescheduleReminderOccurrenceIfPending(
+                    medication: medication,
+                    time: medication.timeToTake,
+                    baseID: baseID,
+                    reminderIndex: nil,
+                    referenceDate: referenceDate
+                )
+                pendingIDs.insert(expectedID)
+                repairsApplied += 1
+                continue
+            }
+
+            for (index, time) in medication.reminderTimes.enumerated() {
+                guard medication.notificationIDs.indices.contains(index) else { continue }
+                let baseID = medication.notificationIDs[index]
+                guard let nextFireDate = nextReminderFireDate(for: time, after: referenceDate) else { continue }
+                let expectedID = reminderIdentifier(baseID: baseID, fireDate: nextFireDate)
+                guard !pendingIDs.contains(expectedID) else { continue }
+
+                notificationManager.rescheduleReminderOccurrenceIfPending(
+                    medication: medication,
+                    time: time,
+                    baseID: baseID,
+                    reminderIndex: index,
+                    referenceDate: referenceDate
+                )
+                pendingIDs.insert(expectedID)
+                repairsApplied += 1
+            }
+        }
+
+        return repairsApplied
+    }
+
+    private func nextReminderFireDate(for time: Date, after referenceDate: Date) -> Date? {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.hour, .minute], from: time)
+        return calendar.nextDate(
+            after: referenceDate,
+            matching: components,
+            matchingPolicy: .nextTime,
+            repeatedTimePolicy: .first,
+            direction: .forward
+        )
     }
 
     private func recordNotificationReliabilityMetric(_ metric: String, amount: Int = 1) {
