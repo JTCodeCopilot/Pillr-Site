@@ -36,6 +36,10 @@ final class FakeNotificationManager: NotificationManagerProtocol {
         completion?(true)
     }
 
+    func scheduleTestReminder(afterSeconds: TimeInterval, completion: ((Bool) -> Void)?) {
+        completion?(true)
+    }
+
     func scheduleNotification(for medication: Medication) -> UUID? {
         scheduledSingle.append(medication)
         return UUID()
