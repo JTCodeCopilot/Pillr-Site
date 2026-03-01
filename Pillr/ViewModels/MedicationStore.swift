@@ -104,6 +104,7 @@ class MedicationStore: ObservableObject {
     private var isPerformingInitialCloudSync = false
     private var lastReminderKickstartDate: Date?
     private let reminderKickstartMinimumInterval: TimeInterval = 30
+    private var hasPerformedInitialReminderWindowRefresh = false
     private var lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
     private var pendingCheckIns: [PendingCheckIn] = []
     
@@ -713,23 +714,25 @@ class MedicationStore: ObservableObject {
         notificationManager.requestAuthorizationIfNeeded { [weak self] granted in
             guard let self, granted else { return }
             DispatchQueue.main.async {
-                var updatedMedications = self.medications
-                var didRefresh = false
+                if force {
+                    var updatedMedications = self.medications
+                    var didRefresh = false
 
-                for index in updatedMedications.indices {
-                    let medication = updatedMedications[index]
-                    guard !medication.isDeleted,
-                          medication.frequency != "As needed",
-                          medication.hasActiveReminder else {
-                        continue
+                    for index in updatedMedications.indices {
+                        let medication = updatedMedications[index]
+                        guard !medication.isDeleted,
+                              medication.frequency != "As needed",
+                              medication.hasActiveReminder else {
+                            continue
+                        }
+                        updatedMedications[index] = self.refreshNotificationSchedule(for: medication)
+                        didRefresh = true
                     }
-                    updatedMedications[index] = self.refreshNotificationSchedule(for: medication)
-                    didRefresh = true
-                }
 
-                if didRefresh {
-                    self.medications = updatedMedications
-                    self.saveMedications()
+                    if didRefresh {
+                        self.medications = updatedMedications
+                        self.saveMedications()
+                    }
                 }
                 self.reconcileNotificationSchedules(referenceDate: referenceDate)
                 self.resetBadgeIfNeeded()
@@ -1822,14 +1825,21 @@ class MedicationStore: ObservableObject {
                 let activeMedicationIDs = Set(self.medications.filter { !$0.isDeleted }.map { $0.id })
                 notificationManager.updateTrackedMedicationIDs(activeMedicationIDs)
                 notificationManager.purgeNotifications(excluding: activeMedicationIDs)
-                
-                // Reschedule notifications on app launch (in case app was terminated)
-                for index in medications.indices {
-                    if !medications[index].isDeleted {
-                        medications[index] = refreshNotificationSchedule(for: medications[index])
+
+                // Do one full rebuild after launch, then use lightweight reconciles.
+                if !hasPerformedInitialReminderWindowRefresh {
+                    var didRefresh = false
+                    for index in medications.indices {
+                        if !medications[index].isDeleted {
+                            medications[index] = refreshNotificationSchedule(for: medications[index])
+                            didRefresh = true
+                        }
                     }
+                    if didRefresh {
+                        saveMedications()
+                    }
+                    hasPerformedInitialReminderWindowRefresh = true
                 }
-                saveMedications()
                 scheduleDailyCheckInReminders(referenceDate: Date())
                 lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
                 
@@ -1856,12 +1866,19 @@ class MedicationStore: ObservableObject {
             notificationManager.updateTrackedMedicationIDs(activeMedicationIDs)
             notificationManager.purgeNotifications(excluding: activeMedicationIDs)
 
-            for index in medications.indices {
-                if !medications[index].isDeleted {
-                    medications[index] = refreshNotificationSchedule(for: medications[index])
+            if !hasPerformedInitialReminderWindowRefresh {
+                var didRefresh = false
+                for index in medications.indices {
+                    if !medications[index].isDeleted {
+                        medications[index] = refreshNotificationSchedule(for: medications[index])
+                        didRefresh = true
+                    }
                 }
+                if didRefresh {
+                    saveMedications()
+                }
+                hasPerformedInitialReminderWindowRefresh = true
             }
-            saveMedications()
             scheduleDailyCheckInReminders(referenceDate: Date())
             lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
             resetBadgeIfNeeded()

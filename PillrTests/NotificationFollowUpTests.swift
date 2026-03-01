@@ -5,7 +5,7 @@ import Testing
 @MainActor
 struct NotificationFollowUpTests {
     @Test
-    func trackNowCancelsFollowUpForLoggedMedication() async throws {
+    func trackNowCancelsOnlyCurrentFollowUpOccurrenceForLoggedMedication() async throws {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
@@ -72,7 +72,12 @@ struct NotificationFollowUpTests {
         )
 
         #expect(store.logs.count == 1)
-        #expect(notificationManager.canceledFollowUps.contains(baseNotificationID) == true)
+        #expect(
+            notificationManager.canceledFollowUpOccurrences.contains(where: { entry in
+                entry.0 == baseNotificationID
+            })
+        )
+        #expect(notificationManager.canceledFollowUps.contains(baseNotificationID) == false)
     }
 
     @Test

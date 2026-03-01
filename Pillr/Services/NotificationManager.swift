@@ -65,11 +65,10 @@ class NotificationManager: ObservableObject {
     private var trackedMedicationIDs = Set<UUID>()
     // iOS only keeps a limited number of pending local notifications.
     // A shorter rolling window keeps near-term reminders queued more reliably.
-    private let reminderSchedulingWindowDays = 7
-    private let followUpSchedulingWindowDays = 7
+    private let reminderSchedulingWindowDays = 10
+    private let followUpSchedulingWindowDays = 10
     private let maxPendingMedicationNotifications = 60
     private let maxPendingCoreMedicationNotifications = 48
-    private let maxPendingFollowUpMedicationNotifications = 12
 
     func updateTrackedMedicationIDs(_ ids: Set<UUID>) {
         trackedMedicationIDsQueue.sync(flags: .barrier) {
@@ -459,10 +458,9 @@ class NotificationManager: ObservableObject {
             return []
         }
 
-        var notificationIDs: [UUID] = []
-        
         // Use reminderTimes if available, otherwise fall back to legacy timeToTake
         let times = medication.reminderTimes.isEmpty ? [medication.timeToTake] : medication.reminderTimes
+        var notificationIDsByIndex = Array<UUID?>(repeating: nil, count: times.count)
         let prioritizedTimes = reminderTimesPrioritizedForScheduling(
             Array(times.enumerated()).map { (index: $0.offset, time: $0.element) }
         )
@@ -473,10 +471,10 @@ class NotificationManager: ObservableObject {
                 time: item.time,
                 index: item.index
             )
-            notificationIDs.append(notificationID)
+            notificationIDsByIndex[item.index] = notificationID
         }
-        
-        return notificationIDs
+
+        return notificationIDsByIndex.compactMap { $0 }
     }
 
     func scheduleTestReminder(afterSeconds: TimeInterval = 10, completion: ((Bool) -> Void)? = nil) {
@@ -788,10 +786,8 @@ class NotificationManager: ObservableObject {
             let medicationReminderRequests = pendingRequests.filter { self.isMedicationReminderRequest($0) }
             let existingIdentifiers = Set(medicationReminderRequests.map { $0.identifier })
             var knownIdentifiers = existingIdentifiers
-            let followUpPendingCount = medicationReminderRequests.filter { self.isFollowUpMedicationReminderRequest($0) }.count
             let remainingTotalSlots = max(0, self.maxPendingMedicationNotifications - medicationReminderRequests.count)
-            let remainingFollowUpSlots = max(0, self.maxPendingFollowUpMedicationNotifications - followUpPendingCount)
-            var remainingSlots = min(remainingTotalSlots, remainingFollowUpSlots)
+            var remainingSlots = remainingTotalSlots
             guard remainingSlots > 0 else { return }
             let now = Date()
             let startOfDay = calendar.startOfDay(for: now)
@@ -1605,16 +1601,6 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                     skipped: false,
                     reminderIndex: reminderIndex
                 )
-            }
-            cancelNotifications(
-                userInfo: userInfo,
-                notificationIdentifier: notificationIdentifier
-            )
-            if let baseUUID = resolveBaseNotificationUUID(
-                userInfo: userInfo,
-                notificationIdentifier: notificationIdentifier
-            ) {
-                notificationManager.cancelFollowUpNotifications(for: baseUUID)
             }
             medicationStore.checkAndResetBadge()
 
