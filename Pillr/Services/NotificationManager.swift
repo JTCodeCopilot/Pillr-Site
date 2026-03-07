@@ -41,12 +41,6 @@ fileprivate enum NotificationIdentifierKey {
     }
 }
 
-private actor NotificationMutationQueue {
-    func run<T>(_ operation: @escaping () async -> T) async -> T {
-        await operation()
-    }
-}
-
 class NotificationManager: ObservableObject {
     static let shared = NotificationManager()
     
@@ -60,9 +54,12 @@ class NotificationManager: ObservableObject {
         label: "NotificationManager.trackedMedicationIDsQueue",
         attributes: .concurrent
     )
-    private let notificationMutationQueue = NotificationMutationQueue()
+    private let notificationMutationSubmissionQueue = DispatchQueue(
+        label: "NotificationManager.notificationMutationSubmissionQueue"
+    )
     private let reliabilityTelemetryQueue = DispatchQueue(label: "NotificationManager.reliabilityTelemetryQueue")
     private var trackedMedicationIDs = Set<UUID>()
+    private var pendingNotificationMutationTask: Task<Void, Never>?
     // iOS only keeps a limited number of pending local notifications.
     // A shorter rolling window keeps near-term reminders queued more reliably.
     private let reminderSchedulingWindowDays = 10
@@ -325,8 +322,16 @@ class NotificationManager: ObservableObject {
     }
 
     private func enqueueNotificationMutation(_ operation: @escaping () async -> Void) {
-        Task {
-            _ = await notificationMutationQueue.run(operation)
+        notificationMutationSubmissionQueue.async { [weak self] in
+            guard let self else { return }
+            let previousTask = self.pendingNotificationMutationTask
+            let nextTask = Task {
+                if let previousTask {
+                    _ = await previousTask.result
+                }
+                await operation()
+            }
+            self.pendingNotificationMutationTask = nextTask
         }
     }
 
@@ -1047,32 +1052,18 @@ class NotificationManager: ObservableObject {
     }
 
     func fetchDeliveredMedicationReminders(completion: @escaping ([UNNotification]) -> Void) {
-        Task { [weak self] in
-            guard let self else {
-                completion([])
-                return
-            }
-            let reminders = await notificationMutationQueue.run {
-                let notifications = await self.deliveredNotificationsSnapshot()
-                return notifications.filter { notification in
-                    notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder
-                }
+        UNUserNotificationCenter.current().getDeliveredNotifications { notifications in
+            let reminders = notifications.filter { notification in
+                notification.request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder
             }
             completion(reminders)
         }
     }
 
     func fetchPendingMedicationReminders(completion: @escaping ([UNNotificationRequest]) -> Void) {
-        Task { [weak self] in
-            guard let self else {
-                completion([])
-                return
-            }
-            let reminders = await notificationMutationQueue.run {
-                let requests = await self.pendingRequestsSnapshot()
-                return requests.filter { request in
-                    request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder
-                }
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            let reminders = requests.filter { request in
+                request.content.categoryIdentifier == NotificationCategoryIdentifier.medicationReminder
             }
             completion(reminders)
         }
@@ -1367,9 +1358,7 @@ class NotificationManager: ObservableObject {
     func surfaceDeliveredStimulantCheckInsIfNeeded() {
         Task { [weak self] in
             guard let self else { return }
-            let notifications = await notificationMutationQueue.run {
-                await self.deliveredNotificationsSnapshot()
-            }
+            let notifications = await self.deliveredNotificationsSnapshot()
             await MainActor.run {
                 let candidates = notifications
                     .filter { $0.request.content.categoryIdentifier == NotificationCategoryIdentifier.stimulantReminder }

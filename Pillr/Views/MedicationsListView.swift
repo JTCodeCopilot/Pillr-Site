@@ -75,7 +75,7 @@ struct MedicationsListView: View {
             if !notificationsEnabledForReminders {
                 return true
             }
-            return medication.hasActiveReminder
+            return medication.shouldScheduleReminder
         }
     }
     
@@ -87,7 +87,7 @@ struct MedicationsListView: View {
             if !notificationsEnabledForReminders {
                 return false
             }
-            return !medication.hasActiveReminder
+            return !medication.shouldScheduleReminder
         }
     }
 
@@ -588,7 +588,7 @@ struct MedicationsListView: View {
         if updatedMedication.pillsPerDose <= 0 {
             updatedMedication.pillsPerDose = 1
         }
-        store.updateMedication(updatedMedication, enableNotification: resolvedMedication.hasActiveReminder)
+        store.updateMedication(updatedMedication, enableNotification: resolvedMedication.shouldScheduleReminder)
         saveLastRefillValues(bottleAmount: pillCount, refillThreshold: refillThreshold, for: updatedMedication.id)
         HapticManager.shared.successNotification()
     }

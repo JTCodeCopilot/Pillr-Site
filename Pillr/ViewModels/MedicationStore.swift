@@ -258,6 +258,7 @@ class MedicationStore: ObservableObject {
             dailyCheckInTime: finalDailyCheckInTime,
             timeToTake: timeToTake,
             reminderTimes: finalReminderTimes,
+            reminderNotificationsEnabled: enableNotification && finalFrequency != "As needed",
             notes: notes,
             pillCount: finalPillCount,
             initialPillCount: finalPillCount,
@@ -271,7 +272,7 @@ class MedicationStore: ObservableObject {
         notificationManager.registerTrackedMedicationID(newMed.id)
 
         // Schedule notifications only if enabled
-        if enableNotification && finalFrequency != "As needed" {
+        if newMed.shouldScheduleReminder {
             notificationManager.requestAuthorizationIfNeeded()
             if !newMed.reminderTimes.isEmpty {
                 // Multiple notifications support
@@ -319,6 +320,7 @@ class MedicationStore: ObservableObject {
                 }
             }
             updatedMedication.updatedAt = Date()
+            updatedMedication.reminderNotificationsEnabled = enableNotification && updatedMedication.frequency != "As needed"
             if updatedMedication.initialPillCount == nil {
                 updatedMedication.initialPillCount = oldMedication.initialPillCount
                     ?? estimatedInitialPillCount(for: oldMedication)
@@ -326,15 +328,14 @@ class MedicationStore: ObservableObject {
             }
             
             // Schedule new notifications if enabled
-            let wantsNotifications = enableNotification && updatedMedication.frequency != "As needed"
             let reminderSettingsChanged = medicationReminderSettingsChanged(
                 old: oldMedication,
                 updated: updatedMedication
             )
-            let shouldRescheduleMedicationReminders = wantsNotifications
-                && (!oldMedication.hasActiveReminder || reminderSettingsChanged)
+            let shouldRescheduleMedicationReminders = updatedMedication.shouldScheduleReminder
+                && (!oldMedication.shouldScheduleReminder || !oldMedication.hasActiveReminder || reminderSettingsChanged)
 
-            if wantsNotifications {
+            if updatedMedication.shouldScheduleReminder {
                 notificationManager.registerTrackedMedicationID(updatedMedication.id)
                 notificationManager.requestAuthorizationIfNeeded()
                 if shouldRescheduleMedicationReminders {
@@ -397,6 +398,14 @@ class MedicationStore: ObservableObject {
     }
 
     private func medicationReminderSettingsChanged(old: Medication, updated: Medication) -> Bool {
+        if old.reminderNotificationsEnabled != updated.reminderNotificationsEnabled {
+            return true
+        }
+
+        if old.frequency != updated.frequency {
+            return true
+        }
+
         if old.isOneTimeWithFollowUp != updated.isOneTimeWithFollowUp {
             return true
         }
@@ -707,7 +716,7 @@ class MedicationStore: ObservableObject {
         lastReminderKickstartDate = now
 
         let hasActiveReminderMedication = medications.contains {
-            !$0.isDeleted && $0.frequency != "As needed" && $0.hasActiveReminder
+            !$0.isDeleted && $0.shouldScheduleReminder
         }
         guard hasActiveReminderMedication else { return }
 
@@ -721,8 +730,7 @@ class MedicationStore: ObservableObject {
                     for index in updatedMedications.indices {
                         let medication = updatedMedications[index]
                         guard !medication.isDeleted,
-                              medication.frequency != "As needed",
-                              medication.hasActiveReminder else {
+                              medication.shouldScheduleReminder else {
                             continue
                         }
                         updatedMedications[index] = self.refreshNotificationSchedule(for: medication)
@@ -2053,7 +2061,7 @@ class MedicationStore: ObservableObject {
         for index in updatedMedications.indices {
             let medication = updatedMedications[index]
             if medication.isDeleted { continue }
-            guard medication.hasActiveReminder else { continue }
+            guard medication.shouldScheduleReminder else { continue }
             updatedMedications[index] = refreshNotificationSchedule(for: medication)
             didReschedule = true
         }
@@ -2067,7 +2075,6 @@ class MedicationStore: ObservableObject {
     }
 
     private func refreshNotificationSchedule(for medication: Medication) -> Medication {
-        guard medication.hasActiveReminder else { return medication }
         var updatedMedication = medication
 
         if let notificationID = medication.notificationID {
@@ -2078,7 +2085,13 @@ class MedicationStore: ObservableObject {
             notificationManager.cancelMultipleNotifications(ids: medication.notificationIDs)
         }
 
-            notificationManager.cancelMedicationNotifications(for: medication.id)
+        notificationManager.cancelMedicationNotifications(for: medication.id)
+
+        guard updatedMedication.shouldScheduleReminder else {
+            updatedMedication.notificationID = nil
+            updatedMedication.notificationIDs = []
+            return updatedMedication
+        }
 
         if !updatedMedication.reminderTimes.isEmpty {
             let notificationIDs = notificationManager.scheduleMultipleNotifications(for: updatedMedication)
@@ -2087,7 +2100,7 @@ class MedicationStore: ObservableObject {
         } else if updatedMedication.isOneTimeWithFollowUp {
             updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
             updatedMedication.notificationIDs = []
-        } else if updatedMedication.notificationID != nil {
+        } else {
             updatedMedication.notificationID = notificationManager.scheduleNotification(for: updatedMedication)
             updatedMedication.notificationIDs = []
         }
@@ -2111,7 +2124,7 @@ class MedicationStore: ObservableObject {
 
     func reconcileNotificationSchedules(referenceDate: Date = Date()) {
         guard !isPreviewMode else { return }
-        let active = activeMedications.filter { $0.hasActiveReminder }
+        let active = activeMedications.filter { $0.shouldScheduleReminder }
         guard !active.isEmpty else { return }
 
         notificationManager.fetchPendingMedicationReminders { [weak self] requests in
@@ -2133,7 +2146,7 @@ class MedicationStore: ObservableObject {
         var didRepair = false
         var repairsApplied = 0
 
-        for medication in activeMedications where medication.hasActiveReminder {
+        for medication in activeMedications where medication.shouldScheduleReminder {
             if medication.reminderTimes.isEmpty {
                 guard let baseID = medication.notificationID else { continue }
                 guard let scheduled = scheduledTimeForToday(
@@ -2206,7 +2219,7 @@ class MedicationStore: ObservableObject {
     ) -> Int {
         var repairsApplied = 0
 
-        for medication in activeMedications where medication.hasActiveReminder {
+        for medication in activeMedications where medication.shouldScheduleReminder {
             if medication.reminderTimes.isEmpty {
                 guard let baseID = medication.notificationID else { continue }
                 guard let nextFireDate = nextReminderFireDate(for: medication.timeToTake, after: referenceDate) else { continue }
@@ -2294,7 +2307,7 @@ class MedicationStore: ObservableObject {
                 defer { self.endCloudSyncOperation() }
                 switch result {
                 case let .success(payload):
-                    self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: true)
+                    self.mergeCloudMedications(payload.medications)
                     self.mergeCloudLogs(payload.logs)
                     self.runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
                     self.lastCloudSyncDate = Date()
@@ -2390,33 +2403,12 @@ class MedicationStore: ObservableObject {
     }
 
     private func mergeCloudMedications(_ remote: [Medication]) {
-        mergeCloudMedications(remote, allowSnapshotDeletion: true)
-    }
-
-    private func mergeCloudMedications(_ remote: [Medication], allowSnapshotDeletion: Bool) {
         guard !remote.isEmpty else { return }
         DispatchQueue.main.async {
             var updated = self.medications
             var hasChanges = false
             let deletedIDs = self.deletedMedicationIDs
             let remoteIDs = Set(remote.map { $0.id })
-
-            // CloudKit is the source of truth when sync is enabled.
-            // Remove any local medications that are missing from the remote snapshot.
-            if self.shouldUseCloudSync && allowSnapshotDeletion {
-                let missingLocals = updated.filter { !remoteIDs.contains($0.id) }
-                if !missingLocals.isEmpty {
-                    for medication in missingLocals {
-                        self.notificationManager.cancelMedicationNotifications(for: medication.id)
-                        self.notificationManager.unregisterTrackedMedicationID(medication.id)
-                        self.clearReminderState(for: medication)
-                        self.deletedMedicationIDs.insert(medication.id)
-                    }
-                    self.persistDeletedMedicationIDs()
-                    updated.removeAll { !remoteIDs.contains($0.id) }
-                    hasChanges = true
-                }
-            }
 
             for remoteMedication in remote {
                 if remoteMedication.isDeleted {
@@ -2451,15 +2443,19 @@ class MedicationStore: ObservableObject {
 
                 if let index = updated.firstIndex(where: { $0.id == remoteMedication.id }) {
                     if self.shouldReplace(local: updated[index], with: remoteMedication) {
-                        self.notificationManager.registerTrackedMedicationID(remoteMedication.id)
-                        let scheduled = self.scheduleNotificationsForCloudMedication(remoteMedication)
-                        updated[index] = scheduled
+                        let merged = self.scheduleNotificationsForCloudMedication(
+                            remoteMedication,
+                            preservingLocalReminderStateFrom: updated[index]
+                        )
+                        updated[index] = merged
                         hasChanges = true
                     }
                 } else {
-                    self.notificationManager.registerTrackedMedicationID(remoteMedication.id)
-                    let scheduled = self.scheduleNotificationsForCloudMedication(remoteMedication)
-                    updated.append(scheduled)
+                    let merged = self.scheduleNotificationsForCloudMedication(
+                        remoteMedication,
+                        preservingLocalReminderStateFrom: nil
+                    )
+                    updated.append(merged)
                     hasChanges = true
                 }
             }
@@ -2515,7 +2511,7 @@ class MedicationStore: ObservableObject {
                         return
                     }
 
-                    self.mergeCloudMedications(payload.medications, allowSnapshotDeletion: false)
+                    self.mergeCloudMedications(payload.medications)
                     self.mergeCloudLogs(payload.logs)
                     self.runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
                     self.pushLocalChangesToCloud(remoteMedications: payload.medications, remoteLogs: payload.logs)
@@ -2673,25 +2669,35 @@ class MedicationStore: ObservableObject {
         }
     }
 
-    private func scheduleNotificationsForCloudMedication(_ medication: Medication) -> Medication {
+    private func scheduleNotificationsForCloudMedication(
+        _ medication: Medication,
+        preservingLocalReminderStateFrom localMedication: Medication?
+    ) -> Medication {
         var mutable = medication
+        mutable.notificationID = localMedication?.notificationID
+        mutable.notificationIDs = localMedication?.notificationIDs ?? []
 
-        if let notificationID = mutable.notificationID {
-            notificationManager.cancelNotification(with: notificationID)
-            mutable.notificationID = nil
-        }
-
-        if !mutable.notificationIDs.isEmpty {
-            notificationManager.cancelMultipleNotifications(ids: mutable.notificationIDs)
-            mutable.notificationIDs = []
-        }
-
-        if mutable.reminderTimes.isEmpty {
-            mutable.notificationID = notificationManager.scheduleNotification(for: mutable)
-            mutable.notificationIDs = []
+        if mutable.shouldScheduleReminder {
+            notificationManager.registerTrackedMedicationID(mutable.id)
         } else {
-            mutable.notificationIDs = notificationManager.scheduleMultipleNotifications(for: mutable)
+            notificationManager.unregisterTrackedMedicationID(mutable.id)
+        }
+
+        guard let localMedication else {
+            return refreshNotificationSchedule(for: mutable)
+        }
+
+        guard mutable.shouldScheduleReminder else {
+            notificationManager.cancelMedicationNotifications(for: mutable.id)
             mutable.notificationID = nil
+            mutable.notificationIDs = []
+            return mutable
+        }
+
+        if !localMedication.shouldScheduleReminder
+            || !mutable.hasActiveReminder
+            || medicationReminderSettingsChanged(old: localMedication, updated: mutable) {
+            return refreshNotificationSchedule(for: mutable)
         }
 
         return mutable
@@ -2745,9 +2751,11 @@ class MedicationStore: ObservableObject {
                 var updatedMedication = medication
                 
             if !medication.reminderTimes.isEmpty {
+                updatedMedication.reminderNotificationsEnabled = true
                 updatedMedication.notificationIDs = notificationManager.scheduleMultipleNotifications(for: medication)
                 updatedMedication.notificationID = nil
             } else {
+                updatedMedication.reminderNotificationsEnabled = true
                 updatedMedication.notificationID = notificationManager.scheduleNotification(for: medication)
                 updatedMedication.notificationIDs = []
             }
@@ -2834,7 +2842,7 @@ extension MedicationStore {
     }
 
     func _test_mergeCloudMedications(_ remote: [Medication]) {
-        mergeCloudMedications(remote, allowSnapshotDeletion: true)
+        mergeCloudMedications(remote)
     }
 
     func _test_mergeCloudLogs(_ remote: [MedicationLog]) {

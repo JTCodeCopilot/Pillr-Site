@@ -30,6 +30,7 @@ struct MedicationUpdateSyncTests {
             reminderTimes: [morning]
         )
         existing.notificationIDs = [UUID()]
+        existing.reminderNotificationsEnabled = true
 
         store.medications = [existing]
 

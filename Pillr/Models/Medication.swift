@@ -115,6 +115,7 @@ struct Medication: Identifiable, Codable, Hashable {
     
     var timeToTake: Date // Primary time to take - legacy support
     var reminderTimes: [Date] = [] // Multiple reminder times for medications
+    var reminderNotificationsEnabled: Bool = false
     var notes: String?
     var notificationID: UUID? // Legacy support for single notification
     var notificationIDs: [UUID] = [] // IDs for multiple scheduled notifications
@@ -132,8 +133,12 @@ struct Medication: Identifiable, Codable, Hashable {
         notificationID != nil || !notificationIDs.isEmpty
     }
 
+    var shouldScheduleReminder: Bool {
+        reminderNotificationsEnabled && frequency != "As needed"
+    }
+
     var isCabinetMedication: Bool {
-        frequency == "As needed" || !hasActiveReminder
+        frequency == "As needed" || !shouldScheduleReminder
     }
 
     enum CodingKeys: String, CodingKey {
@@ -154,6 +159,7 @@ struct Medication: Identifiable, Codable, Hashable {
         case dailyCheckInTime
         case timeToTake
         case reminderTimes
+        case reminderNotificationsEnabled
         case notes
         case notificationID
         case notificationIDs
@@ -189,6 +195,7 @@ struct Medication: Identifiable, Codable, Hashable {
         dailyCheckInTime: Date? = nil,
         timeToTake: Date,
         reminderTimes: [Date] = [],
+        reminderNotificationsEnabled: Bool = false,
         notes: String? = nil,
         notificationID: UUID? = nil,
         notificationIDs: [UUID] = [],
@@ -221,6 +228,9 @@ struct Medication: Identifiable, Codable, Hashable {
         self.dailyCheckInTime = dailyCheckInTime
         self.timeToTake = timeToTake
         self.reminderTimes = reminderTimes
+        self.reminderNotificationsEnabled = reminderNotificationsEnabled
+            || notificationID != nil
+            || !notificationIDs.isEmpty
         self.notes = notes
         self.notificationID = notificationID
         self.notificationIDs = notificationIDs
@@ -263,6 +273,8 @@ struct Medication: Identifiable, Codable, Hashable {
         self.notes = try container.decodeIfPresent(String.self, forKey: .notes)
         self.notificationID = try container.decodeIfPresent(UUID.self, forKey: .notificationID)
         self.notificationIDs = try container.decodeIfPresent([UUID].self, forKey: .notificationIDs) ?? []
+        self.reminderNotificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .reminderNotificationsEnabled)
+            ?? (self.notificationID != nil || !self.notificationIDs.isEmpty)
         self.pillCount = try container.decodeIfPresent(Int.self, forKey: .pillCount)
         self.initialPillCount = try container.decodeIfPresent(Int.self, forKey: .initialPillCount)
         self.pillsPerDose = try container.decodeIfPresent(Int.self, forKey: .pillsPerDose) ?? 1
@@ -295,6 +307,7 @@ struct Medication: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(dailyCheckInTime, forKey: .dailyCheckInTime)
         try container.encode(timeToTake, forKey: .timeToTake)
         try container.encode(reminderTimes, forKey: .reminderTimes)
+        try container.encode(reminderNotificationsEnabled, forKey: .reminderNotificationsEnabled)
         try container.encodeIfPresent(notes, forKey: .notes)
         try container.encodeIfPresent(notificationID, forKey: .notificationID)
         try container.encode(notificationIDs, forKey: .notificationIDs)

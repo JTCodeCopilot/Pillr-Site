@@ -45,7 +45,7 @@ struct CloudSyncTests {
     }
 
     @Test
-    func mergeCloudMedicationsRemovesMissingLocalsWhenSyncEnabled() async throws {
+    func mergeCloudMedicationsKeepsMissingLocalsWhenSyncSnapshotIsIncomplete() async throws {
         clearPillrUserDefaults()
         UserSettings.shared.setPremiumStatus(false)
         UserSettings.shared.setCloudSyncPreference(true)
@@ -60,8 +60,8 @@ struct CloudSyncTests {
         await Task.yield()
 
         #expect(store.medications.contains(where: { $0.id == med1.id }) == true)
-        #expect(store.medications.contains(where: { $0.id == med2.id }) == false)
-        #expect(store._test_getDeletedMedicationIDs().contains(med2.id) == true)
+        #expect(store.medications.contains(where: { $0.id == med2.id }) == true)
+        #expect(store._test_getDeletedMedicationIDs().contains(med2.id) == false)
     }
 
     @Test

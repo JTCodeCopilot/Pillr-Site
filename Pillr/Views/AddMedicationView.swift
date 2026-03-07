@@ -2265,7 +2265,7 @@ struct AddMedicationView: View {
             reminderTimes = defaultReminderTimes(for: frequency)
         }
         notes = medication.notes ?? ""
-        enableNotification = (medication.notificationID != nil || !medication.notificationIDs.isEmpty)
+        enableNotification = medication.shouldScheduleReminder
         pillCountString = medication.pillCount.map { "\($0)" } ?? ""
         pillsPerDoseString = "\(medication.pillsPerDose)"
         refillThresholdString = medication.refillThreshold.map { "\($0)" } ?? ""

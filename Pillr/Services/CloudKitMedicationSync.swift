@@ -35,6 +35,7 @@ final class CloudKitMedicationSync {
         static let timeToTake = "timeToTake"
         static let reminderTimes = "reminderTimes"
         static let scheduledReminderTimes = "scheduledReminderTimes"
+        static let reminderNotificationsEnabled = "reminderNotificationsEnabled"
         static let notes = "notes"
         static let pillCount = "pillCount"
         static let pillsPerDose = "pillsPerDose"
@@ -335,6 +336,7 @@ final class CloudKitMedicationSync {
         if !medication.reminderTimes.isEmpty {
             record[Field.scheduledReminderTimes] = medication.reminderTimes as NSArray
         }
+        record[Field.reminderNotificationsEnabled] = medication.reminderNotificationsEnabled as CKRecordValue
         if let notes = medication.notes {
             record[Field.notes] = notes as CKRecordValue
         }
@@ -435,6 +437,7 @@ final class CloudKitMedicationSync {
         } else {
             reminderTimes = []
         }
+        let reminderNotificationsEnabled = record[Field.reminderNotificationsEnabled] as? Bool ?? false
         let notes = record[Field.notes] as? String
         let pillCount = record[Field.pillCount] as? Int
         let pillsPerDose = record[Field.pillsPerDose] as? Int ?? 1
@@ -494,6 +497,7 @@ final class CloudKitMedicationSync {
             dailyCheckInTime: dailyCheckInTime,
             timeToTake: timeToTake,
             reminderTimes: reminderTimes,
+            reminderNotificationsEnabled: reminderNotificationsEnabled,
             notes: notes,
             pillCount: pillCount,
             pillsPerDose: pillsPerDose,

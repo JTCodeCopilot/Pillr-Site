@@ -34,11 +34,14 @@ struct ModelTests {
             timeToTake: Date()
         )
         med.notificationID = UUID()
+        med.reminderNotificationsEnabled = true
         #expect(med.hasActiveReminder == true)
+        #expect(med.shouldScheduleReminder == true)
         #expect(med.isCabinetMedication == false)
 
         med.notificationID = nil
         med.notificationIDs = []
+        med.reminderNotificationsEnabled = false
         med.frequency = "As needed"
         #expect(med.isCabinetMedication == true)
     }

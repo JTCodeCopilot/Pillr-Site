@@ -360,6 +360,7 @@ struct MedicationStoreTests {
         let baseTime = makeDate(year: 2025, month: 1, day: 3, hour: 8, minute: 0)
         var med = makeMedication(time: baseTime)
         med.notificationID = UUID()
+        med.reminderNotificationsEnabled = true
         store.medications = [med]
 
         let first = store.logMedicationTaken(
@@ -416,6 +417,7 @@ struct MedicationStoreTests {
         let evening = makeDate(year: 2025, month: 1, day: 4, hour: 20, minute: 0)
         var med = makeMedication(time: morning, reminderTimes: [morning, evening])
         med.notificationIDs = [UUID(), UUID()]
+        med.reminderNotificationsEnabled = true
         store.medications = [med]
 
         let first = store.logMedicationTaken(

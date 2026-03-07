@@ -130,7 +130,7 @@ struct EditMedicationView: View {
         _timeToTake = State(initialValue: medication.timeToTake)
         _reminderTimes = State(initialValue: medication.reminderTimes)
         _notes = State(initialValue: medication.notes ?? "")
-        _enableNotification = State(initialValue: medication.notificationIDs.count > 0 || medication.notificationID != nil)
+        _enableNotification = State(initialValue: medication.shouldScheduleReminder)
         
         // Set up pill count tracking
         if let pillCount = medication.pillCount {
