@@ -4,6 +4,11 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>Pillr copy.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>3</integer>
+		</dict>
 		<key>Pillr.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>isShown</key>
@@ -31,6 +36,11 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>4920B0152F5C2AAC002735AB</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>4964701D2DD3F0E9003964BD</key>
 		<dict>
 			<key>primary</key>

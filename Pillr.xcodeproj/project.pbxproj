@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		4901EA942DE700CB000B3979 /* AIProxy in Frameworks */ = {isa = PBXBuildFile; productRef = 4901EA932DE700CB000B3979 /* AIProxy */; };
 		4911A1532E88B7070009E975 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = 4911A1522E88B7070009E975 /* TelemetryDeck */; };
+		4920B01E2F5C2AAC002735AB /* AIProxy in Frameworks */ = {isa = PBXBuildFile; productRef = 4920B0162F5C2AAC002735AB /* AIProxy */; };
+		4920B01F2F5C2AAC002735AB /* TikTokBusinessSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 4920B01A2F5C2AAC002735AB /* TikTokBusinessSDK */; };
+		4920B0202F5C2AAC002735AB /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = 4920B0182F5C2AAC002735AB /* TelemetryDeck */; };
 		499088612F13272C00E7147A /* TikTokBusinessSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 499088602F13272C00E7147A /* TikTokBusinessSDK */; };
 /* End PBXBuildFile section */
 
@@ -30,10 +33,33 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		4920B0252F5C2AAC002735AB /* Xcode Pillr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Xcode Pillr.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4920B0272F5C2AAC002735AB /* Pillr copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Pillr copy-Info.plist"; path = "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr copy-Info.plist"; sourceTree = "<absolute>"; };
 		4935BAAE2F45BEEB00A11920 /* PillrUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PillrUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4964701E2DD3F0E9003964BD /* Pillr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pillr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49DE6DAC2F3477FC004110CF /* PillrTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PillrTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4920B0262F5C2AAC002735AB /* Exceptions for "Pillr" folder in "Xcode Pillr" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Product.storekit,
+			);
+			target = 4920B0152F5C2AAC002735AB /* Xcode Pillr */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		4920B0582F5C2E4B002735AB /* Exceptions for "Pillr" folder in "Compile Sources" phase from "Xcode Pillr" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 4920B01C2F5C2AAC002735AB /* Sources */;
+			membershipExceptions = (
+				Pillr.entitlements,
+				Product.storekit,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4935BAAF2F45BEEB00A11920 /* PillrUITests */ = {
@@ -43,6 +69,10 @@
 		};
 		496470202DD3F0E9003964BD /* Pillr */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4920B0262F5C2AAC002735AB /* Exceptions for "Pillr" folder in "Xcode Pillr" target */,
+				4920B0582F5C2E4B002735AB /* Exceptions for "Pillr" folder in "Compile Sources" phase from "Xcode Pillr" target */,
+			);
 			path = Pillr;
 			sourceTree = "<group>";
 		};
@@ -54,6 +84,16 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4920B01D2F5C2AAC002735AB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4920B01E2F5C2AAC002735AB /* AIProxy in Frameworks */,
+				4920B01F2F5C2AAC002735AB /* TikTokBusinessSDK in Frameworks */,
+				4920B0202F5C2AAC002735AB /* TelemetryDeck in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4935BAAB2F45BEEB00A11920 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -87,6 +127,7 @@
 				496470202DD3F0E9003964BD /* Pillr */,
 				49DE6DAD2F3477FC004110CF /* PillrTests */,
 				4935BAAF2F45BEEB00A11920 /* PillrUITests */,
+				4920B0272F5C2AAC002735AB /* Pillr copy-Info.plist */,
 				4964701F2DD3F0E9003964BD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -97,6 +138,7 @@
 				4964701E2DD3F0E9003964BD /* Pillr.app */,
 				49DE6DAC2F3477FC004110CF /* PillrTests.xctest */,
 				4935BAAE2F45BEEB00A11920 /* PillrUITests.xctest */,
+				4920B0252F5C2AAC002735AB /* Xcode Pillr.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -104,6 +146,31 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		4920B0152F5C2AAC002735AB /* Xcode Pillr */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4920B0222F5C2AAC002735AB /* Build configuration list for PBXNativeTarget "Xcode Pillr" */;
+			buildPhases = (
+				4920B01C2F5C2AAC002735AB /* Sources */,
+				4920B01D2F5C2AAC002735AB /* Frameworks */,
+				4920B0212F5C2AAC002735AB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				496470202DD3F0E9003964BD /* Pillr */,
+			);
+			name = "Xcode Pillr";
+			packageProductDependencies = (
+				4920B0162F5C2AAC002735AB /* AIProxy */,
+				4920B0182F5C2AAC002735AB /* TelemetryDeck */,
+				4920B01A2F5C2AAC002735AB /* TikTokBusinessSDK */,
+			);
+			productName = Pillr;
+			productReference = 4920B0252F5C2AAC002735AB /* Xcode Pillr.app */;
+			productType = "com.apple.product-type.application";
+		};
 		4935BAAD2F45BEEB00A11920 /* PillrUITests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4935BAB62F45BEEB00A11920 /* Build configuration list for PBXNativeTarget "PillrUITests" */;
@@ -220,11 +287,19 @@
 				4964701D2DD3F0E9003964BD /* Pillr */,
 				49DE6DAB2F3477FC004110CF /* PillrTests */,
 				4935BAAD2F45BEEB00A11920 /* PillrUITests */,
+				4920B0152F5C2AAC002735AB /* Xcode Pillr */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4920B0212F5C2AAC002735AB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4935BAAC2F45BEEB00A11920 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -249,6 +324,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4920B01C2F5C2AAC002735AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4935BAAA2F45BEEB00A11920 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -286,6 +368,90 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		4920B0232F5C2AAC002735AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconXcodePillr;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Pillr/Pillr.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2.0.307;
+				DEVELOPMENT_TEAM = A857RBQBM9;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Pillr copy-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Xcode Pillr";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pillr uses Face ID to protect access to your medication information on this device.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "No personal or health information is used. We only use this to measure advertising performance.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 2.0.307;
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-ObjC",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.PillrXcode;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4920B0242F5C2AAC002735AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconXcodePillr;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Pillr/Pillr.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2.0.307;
+				DEVELOPMENT_TEAM = A857RBQBM9;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Pillr copy-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Xcode Pillr";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pillr uses Face ID to protect access to your medication information on this device.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "No personal or health information is used. We only use this to measure advertising performance.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 2.0.307;
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-ObjC",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.PillrXcode;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		4935BAB72F45BEEB00A11920 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -590,6 +756,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		4920B0222F5C2AAC002735AB /* Build configuration list for PBXNativeTarget "Xcode Pillr" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4920B0232F5C2AAC002735AB /* Debug */,
+				4920B0242F5C2AAC002735AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		4935BAB62F45BEEB00A11920 /* Build configuration list for PBXNativeTarget "PillrUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -645,6 +820,30 @@
 				minimumVersion = 2.9.4;
 			};
 		};
+		4920B0172F5C2AAC002735AB /* XCRemoteSwiftPackageReference "AIProxySwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/lzell/AIProxySwift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.101.3;
+			};
+		};
+		4920B0192F5C2AAC002735AB /* XCRemoteSwiftPackageReference "SwiftSDK" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/TelemetryDeck/SwiftSDK";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.4;
+			};
+		};
+		4920B01B2F5C2AAC002735AB /* XCRemoteSwiftPackageReference "tiktok-business-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tiktok/tiktok-business-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.0;
+			};
+		};
 		4990885F2F13272C00E7147A /* XCRemoteSwiftPackageReference "tiktok-business-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tiktok/tiktok-business-ios-sdk";
@@ -665,6 +864,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4911A1512E88B7070009E975 /* XCRemoteSwiftPackageReference "SwiftSDK" */;
 			productName = TelemetryDeck;
+		};
+		4920B0162F5C2AAC002735AB /* AIProxy */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4920B0172F5C2AAC002735AB /* XCRemoteSwiftPackageReference "AIProxySwift" */;
+			productName = AIProxy;
+		};
+		4920B0182F5C2AAC002735AB /* TelemetryDeck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4920B0192F5C2AAC002735AB /* XCRemoteSwiftPackageReference "SwiftSDK" */;
+			productName = TelemetryDeck;
+		};
+		4920B01A2F5C2AAC002735AB /* TikTokBusinessSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4920B01B2F5C2AAC002735AB /* XCRemoteSwiftPackageReference "tiktok-business-ios-sdk" */;
+			productName = TikTokBusinessSDK;
 		};
 		499088602F13272C00E7147A /* TikTokBusinessSDK */ = {
 			isa = XCSwiftPackageProductDependency;

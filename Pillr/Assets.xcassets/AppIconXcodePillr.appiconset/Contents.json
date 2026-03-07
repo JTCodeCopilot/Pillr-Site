@@ -13,7 +13,19 @@
           "value" : "dark"
         }
       ],
-      "filename" : "Brand Assets.png",
+      "filename" : "Brand Assets Logo 1.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "tinted"
+        }
+      ],
+      "filename" : "Brand Assets Logo 2.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
