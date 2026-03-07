@@ -50,17 +50,6 @@
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		4920B0582F5C2E4B002735AB /* Exceptions for "Pillr" folder in "Compile Sources" phase from "Xcode Pillr" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = 4920B01C2F5C2AAC002735AB /* Sources */;
-			membershipExceptions = (
-				Pillr.entitlements,
-				Product.storekit,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4935BAAF2F45BEEB00A11920 /* PillrUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -71,7 +60,6 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				4920B0262F5C2AAC002735AB /* Exceptions for "Pillr" folder in "Xcode Pillr" target */,
-				4920B0582F5C2E4B002735AB /* Exceptions for "Pillr" folder in "Compile Sources" phase from "Xcode Pillr" target */,
 			);
 			path = Pillr;
 			sourceTree = "<group>";
