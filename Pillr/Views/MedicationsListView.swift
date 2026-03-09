@@ -1326,7 +1326,13 @@ fileprivate func MedicationsListHeader(
 }
 
 fileprivate struct HealthSummaryWidget: View {
+    enum Style {
+        case standalone
+        case embedded
+    }
+
     @ObservedObject var manager: HealthKitManager
+    let style: Style
     private static var defaultDistanceUnit: HealthDistanceUnit {
         Locale.current.measurementSystem == .metric ? .kilometers : .miles
     }
@@ -1365,9 +1371,14 @@ fileprivate struct HealthSummaryWidget: View {
         ]
     }
 
+    init(manager: HealthKitManager, style: Style = .standalone) {
+        self.manager = manager
+        self.style = style
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if shouldShowHeader {
+            if shouldShowHeader || style == .embedded {
                 header
             }
 
@@ -1393,12 +1404,16 @@ fileprivate struct HealthSummaryWidget: View {
                     .lineLimit(2)
             }
         }
-        .padding(10)
+        .padding(style == .embedded ? 0 : 10)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(hex: "#404C42"))
+            Group {
+                if style == .standalone {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(hex: "#404C42"))
+                }
+            }
         )
-        .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
+        .shadow(color: style == .embedded ? .clear : Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
         .accessibilityElement(children: .combine)
     }
 
@@ -1415,7 +1430,7 @@ fileprivate struct HealthSummaryWidget: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Apple Health Snapshot")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    .foregroundColor(Color(hex: "#C7C7BD").opacity(style == .embedded ? 0.92 : 0.8))
             }
             
             Spacer()
@@ -2261,6 +2276,47 @@ fileprivate struct MedicationsListMainContent: View {
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    fileprivate struct NextScheduledDose {
+        let medicationName: String
+        let dueTime: Date
+    }
+
+    fileprivate struct TodaySummaryData {
+        let overdueCount: Int
+        let takenCount: Int
+        let lowSupplyCount: Int
+        let nextDose: NextScheduledDose?
+
+        var title: String {
+            if overdueCount > 0 {
+                return overdueCount == 1 ? "1 reminder needs attention" : "\(overdueCount) reminders need attention"
+            }
+            if nextDose != nil {
+                return "Your next dose is lined up"
+            }
+            if takenCount > 0 {
+                return "You’re caught up for now"
+            }
+            return "Nothing is due yet"
+        }
+
+        var subtitle: String {
+            if overdueCount > 0 {
+                return "Start with the overdue medication at the top of your list."
+            }
+            if let nextDose {
+                return "\(nextDose.medicationName) is next."
+            }
+            if lowSupplyCount > 0 {
+                return lowSupplyCount == 1 ? "One medication is running low." : "\(lowSupplyCount) medications are running low."
+            }
+            if takenCount > 0 {
+                return takenCount == 1 ? "You’ve logged 1 dose today." : "You’ve logged \(takenCount) doses today."
+            }
+            return "Your medications will show up here as they become due."
+        }
+    }
+
     private var recentlyAddedMedication: Medication? {
         guard let lastAddedID = store.lastAddedMedicationID else { return nil }
         return store.findMedication(with: lastAddedID)
@@ -2274,11 +2330,94 @@ fileprivate struct MedicationsListMainContent: View {
         userSettings.hasAIAccess()
     }
 
+    private var todaySummary: TodaySummaryData? {
+        guard !store.activeMedications.isEmpty else { return nil }
+
+        let overdueCount = store.overdueReminderCount(referenceDate: referenceDate)
+        let takenCount = doseLogsToday.filter { !$0.skipped }.count
+        let lowSupplyCount = store.activeMedications.filter { medication in
+            guard let pillCount = medication.pillCount,
+                  let refillThreshold = medication.refillThreshold else {
+                return false
+            }
+            return pillCount <= refillThreshold
+        }.count
+
+        return TodaySummaryData(
+            overdueCount: overdueCount,
+            takenCount: takenCount,
+            lowSupplyCount: lowSupplyCount,
+            nextDose: nextScheduledDose
+        )
+    }
+
+    private var doseLogsToday: [MedicationLog] {
+        let calendar = Calendar.current
+        return store.logs.filter { log in
+            log.isDoseLog && calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
+        }
+    }
+
+    private var nextScheduledDose: NextScheduledDose? {
+        store.activeMedications
+            .compactMap { medication -> NextScheduledDose? in
+                guard let dueTime = nextPendingDueTime(for: medication),
+                      dueTime >= referenceDate else {
+                    return nil
+                }
+
+                return NextScheduledDose(
+                    medicationName: medication.name,
+                    dueTime: dueTime
+                )
+            }
+            .sorted { $0.dueTime < $1.dueTime }
+            .first
+    }
+
     private func horizontalInsets(for width: CGFloat) -> CGFloat {
         if horizontalSizeClass == .regular && width > 768 {
             return max((width - 650) / 2, 16)
         }
         return 16
+    }
+
+    private func medicationLogsToday(for medication: Medication) -> [MedicationLog] {
+        let calendar = Calendar.current
+        return store.logs.filter { log in
+            log.medicationID == medication.id &&
+            log.isDoseLog &&
+            calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
+        }
+    }
+
+    private func nextPendingDueTime(for medication: Medication) -> Date? {
+        guard medication.frequency != "As needed" else { return nil }
+
+        let logs = medicationLogsToday(for: medication)
+
+        if medication.reminderTimes.isEmpty {
+            return logs.isEmpty ? calculateEffectiveDueTime(for: medication, at: referenceDate) : nil
+        }
+
+        var assignedReminderIndices = Set(logs.compactMap(\.reminderIndex))
+        var unassignedLogCount = logs.filter { $0.reminderIndex == nil }.count
+
+        for index in medication.reminderTimes.indices {
+            if assignedReminderIndices.contains(index) {
+                continue
+            }
+
+            if unassignedLogCount > 0 {
+                unassignedLogCount -= 1
+                assignedReminderIndices.insert(index)
+                continue
+            }
+
+            return calculateDueTime(for: medication, reminderIndex: index, referenceDate: referenceDate)
+        }
+
+        return nil
     }
 
     var body: some View {
@@ -2298,8 +2437,13 @@ fileprivate struct MedicationsListMainContent: View {
                             cabinetCount: cabinetMedications.count
                         )
 
-                        if userSettings.shouldShowAppleHealthData {
-                            HealthSummaryWidget(manager: healthKitManager)
+                        if let todaySummary {
+                            TodaySummaryCard(
+                                summary: todaySummary,
+                                healthKitManager: healthKitManager,
+                                showsHealthSummary: userSettings.shouldShowAppleHealthData,
+                                referenceDate: referenceDate
+                            )
                                 .environmentObject(userSettings)
                                 .padding(.horizontal, horizontalInset)
                         }
@@ -2394,6 +2538,170 @@ fileprivate struct MedicationsListMainContent: View {
     }
 }
 
+fileprivate struct TodaySummaryCard: View {
+    let summary: MedicationsListMainContent.TodaySummaryData
+    let healthKitManager: HealthKitManager
+    let showsHealthSummary: Bool
+    let referenceDate: Date
+
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter
+    }()
+
+    private static let headerDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.setLocalizedDateFormatFromTemplate("EEE MMM d")
+        return formatter
+    }()
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
+    private var dashboardDateLabel: String {
+        Self.headerDateFormatter.string(from: referenceDate)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(dashboardDateLabel)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F1F5E8").opacity(0.82))
+                        .textCase(.uppercase)
+                        .tracking(0.8)
+
+                    Text(summary.title)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(Color(hex: "#F8FAF2"))
+
+                    Text(summary.subtitle)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "#E7ECD9").opacity(0.86))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 8)
+
+                if let nextDose = summary.nextDose {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Next dose")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F1F5E8").opacity(0.72))
+
+                        Text(Self.timeFormatter.string(from: nextDose.dueTime))
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(Color(hex: "#FFF2D6"))
+
+                        Text(nextDose.medicationName)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(hex: "#E7ECD9").opacity(0.84))
+                            .lineLimit(1)
+                    }
+                }
+            }
+
+            LazyVGrid(columns: columns, spacing: 12) {
+                summaryTile(
+                    title: "Overdue",
+                    value: "\(summary.overdueCount)",
+                    detail: summary.overdueCount > 0
+                        ? (summary.overdueCount == 1 ? "needs attention" : "need attention")
+                        : "all clear",
+                    accent: summary.overdueCount > 0 ? Color(hex: "#FFB86C") : Color(hex: "#C8D0BC")
+                )
+
+                summaryTile(
+                    title: "Taken",
+                    value: "\(summary.takenCount)",
+                    detail: "logged today",
+                    accent: Color(hex: "#B8E1AE")
+                )
+
+                summaryTile(
+                    title: "Next up",
+                    value: summary.nextDose.map { Self.timeFormatter.string(from: $0.dueTime) } ?? "None",
+                    detail: summary.nextDose?.medicationName ?? "nothing pending",
+                    accent: Color(hex: "#FFF0C2")
+                )
+
+                summaryTile(
+                    title: "Low supply",
+                    value: "\(summary.lowSupplyCount)",
+                    detail: summary.lowSupplyCount > 0
+                        ? (summary.lowSupplyCount == 1 ? "medication" : "medications")
+                        : "all set",
+                    accent: summary.lowSupplyCount > 0 ? Color(hex: "#FFD27D") : Color(hex: "#C8D0BC")
+                )
+            }
+
+            if showsHealthSummary {
+                Rectangle()
+                    .fill(Color.white.opacity(0.08))
+                    .frame(height: 1)
+                    .padding(.top, 2)
+
+                HealthSummaryWidget(manager: healthKitManager, style: .embedded)
+            }
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(hex: "#53624E"),
+                            Color(hex: "#465343")
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
+    }
+
+    private func summaryTile(title: String, value: String, detail: String, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Color(hex: "#E7ECD9").opacity(0.72))
+                .textCase(.uppercase)
+                .tracking(0.6)
+
+            Text(value)
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
+            Text(detail)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Color(hex: "#E7ECD9").opacity(0.82))
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(accent.opacity(0.18), lineWidth: 1)
+                )
+        )
+    }
+}
+
 // MARK: - Preference Key for Scroll Position
 struct ScrollOffsetPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -2478,9 +2786,9 @@ fileprivate struct DoseButtonState: Identifiable {
         case .pending:
             return Color(hex: "#F5F7F4")
         case .taken:
-            return Color(hex: "#4A5A4A")
+            return Color(hex: "#23422D")
         case .skipped:
-            return Color(hex: "#FFE4E6")
+            return Color(hex: "#FFF0F1")
         }
     }
     
@@ -2489,9 +2797,9 @@ fileprivate struct DoseButtonState: Identifiable {
         case .pending:
             return Color.white.opacity(0.08)
         case .taken:
-            return Color(hex: "#D7CCC8")
+            return Color(hex: "#CDE5C8")
         case .skipped:
-            return Color(hex: "#8C3A37")
+            return Color(hex: "#8B3E44")
         }
     }
     
@@ -2576,14 +2884,17 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     private var headerTitleOpacity: Double {
-        if cycleStatus == .taken || cycleStatus == .skipped {
-            return 0.55
+        if cycleStatus == .taken {
+            return 0.82
+        }
+        if cycleStatus == .skipped {
+            return 0.9
         }
         return headerIsLoggedStatus ? 0.9 : 1.0
     }
 
     private var detailTextOpacity: Double {
-        cycleStatus == .taken ? 0.45 : 1.0
+        cycleStatus == .taken ? 0.72 : 1.0
     }
 
     private var allDosesLogged: Bool {
@@ -2625,12 +2936,12 @@ fileprivate struct MedicationRowHeaderView: View {
         case .skipped:
             return ("", .clear, false) // No status text when skipped, button shows "Skipped"
         case .overdue(let minutesPast):
-            return ("Overdue by \(formatTimeText(minutes: minutesPast))", Color(hex: "#FFA726"), true)
+            return ("Overdue by \(formatTimeText(minutes: minutesPast))", Color(hex: "#FFD08A"), true)
         case .due(let minutesRemaining):
             if minutesRemaining > 0 {
-                return ("Due in \(formatTimeText(minutes: minutesRemaining))", Color(hex: "#D7CCC8"), true)
+                return ("Due in \(formatTimeText(minutes: minutesRemaining))", Color(hex: "#F0F4D8"), true)
             }
-            return ("Due now", Color(hex: "#D7CCC8"), true)
+            return ("Due now", Color(hex: "#FFF0C2"), true)
         case .asNeeded: // Add .asNeeded case
             return ("", .clear, false)
         }
@@ -2730,13 +3041,17 @@ fileprivate struct MedicationRowHeaderView: View {
     private var baseTakeButtonColors: (fg: Color, bg: Color, border: Color) {
         (
             fg: Color(hex: "#2F352F"),
-            bg: Color(hex: "#E0E7DC"),
-            border: Color.white.opacity(0.18)
+            bg: Color(hex: "#F0F4D8"),
+            border: Color(hex: "#F9FBF2").opacity(0.5)
         )
     }
 
     private var baseSkipButtonColors: (fg: Color, bg: Color, border: Color) {
-        baseTakeButtonColors
+        (
+            fg: Color(hex: "#2F352F"),
+            bg: Color(hex: "#E0E7DC"),
+            border: Color.white.opacity(0.18)
+        )
     }
 
     private var takeButtonStyle: (fg: Color, bg: Color, border: Color) {
@@ -3341,36 +3656,51 @@ struct MedicationRow: View {
     }
 
     private var takenCardColor: Color {
-        Color(hex: "#A0A69B")
+        Color(hex: "#788A72")
     }
 
     private var cardBackgroundColor: Color {
-        let baseColor = Color(hex: "#5B695D")
-        if usesLoggedCardStyle {
-            return takenCardColor.opacity(0.65)
+        switch cycleStatus {
+        case .overdue:
+            return Color(hex: "#6B4C35")
+        case .due:
+            return Color(hex: "#56665A")
+        case .taken:
+            return takenCardColor
+        case .skipped:
+            return Color(hex: "#5F3C40")
+        case .asNeeded:
+            return Color(hex: "#4D5B50")
         }
-        return isLoggedStatus ? baseColor.opacity(1.0) : baseColor.opacity(0.92)
     }
 
     private var innerStrokeColor: Color {
         switch cycleStatus {
         case .taken:
-            return Color.white.opacity(0.01)
+            return Color(hex: "#E5F0D8").opacity(0.22)
         case .skipped:
+            return Color(hex: "#F3B3B7").opacity(0.34)
+        case .overdue:
+            return Color(hex: "#FFD08A").opacity(0.38)
+        case .due:
+            return Color(hex: "#F0F4D8").opacity(0.18)
+        case .asNeeded:
             return Color.white.opacity(0.08)
-        default:
-            return .clear
         }
     }
 
     private var innerStrokeWidth: CGFloat {
         switch cycleStatus {
         case .taken:
-            return 0.3
+            return 1
         case .skipped:
             return 1
-        default:
-            return 0
+        case .overdue:
+            return 1.2
+        case .due:
+            return 0.8
+        case .asNeeded:
+            return 0.6
         }
     }
 
@@ -3671,22 +4001,21 @@ struct MedicationRow: View {
 
         switch cycleStatus {
         case .taken:
-            borderColor = Color(hex: "#D7CCC8").opacity(0.35)
-            borderWidth = 0.6
+            borderColor = Color(hex: "#D8F0CD")
+            borderWidth = 1.1
         case .skipped:
-            borderColor = skippedAccentColor
-            borderWidth = 1.4
+            borderColor = Color(hex: "#F2A7AE")
+            borderWidth = 1.6
             showSkippedGlow = true
         case .overdue(_):
-            borderColor = Color(hex: "#FFB74D")
+            borderColor = Color(hex: "#FFCB7C")
             borderWidth = 2.0
         case .due(_):
-            // No colored border for due medications
-            borderColor = Color.clear
-            borderWidth = 0.0
+            borderColor = Color(hex: "#F0F4D8").opacity(0.5)
+            borderWidth = 1.0
         case .asNeeded:
-            borderColor = Color.clear
-            borderWidth = 0.0
+            borderColor = Color.white.opacity(0.14)
+            borderWidth = 0.8
         }
         
         return ZStack {
