@@ -1377,7 +1377,7 @@ fileprivate struct HealthSummaryWidget: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             if shouldShowHeader || style == .embedded {
                 header
             }
@@ -1404,12 +1404,16 @@ fileprivate struct HealthSummaryWidget: View {
                     .lineLimit(2)
             }
         }
-        .padding(style == .embedded ? 0 : 10)
+        .padding(style == .embedded ? 0 : 8)
         .background(
             Group {
                 if style == .standalone {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(hex: "#404C42"))
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color(hex: "#445044"))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
                 }
             }
         )
@@ -1429,7 +1433,7 @@ fileprivate struct HealthSummaryWidget: View {
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Apple Health Snapshot")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(Color(hex: "#C7C7BD").opacity(style == .embedded ? 0.92 : 0.8))
             }
             
@@ -1438,7 +1442,7 @@ fileprivate struct HealthSummaryWidget: View {
     }
 
     private var metricGrid: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             ForEach(metrics.indices, id: \.self) { index in
                 metricSquare(metric: metrics[index])
                 if index < metrics.count - 1 {
@@ -1467,9 +1471,9 @@ fileprivate struct HealthSummaryWidget: View {
                 }
             } label: {
                 Text("Connect to Health")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(Color(hex: "#2F352F"))
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 8)
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
@@ -1502,9 +1506,9 @@ fileprivate struct HealthSummaryWidget: View {
                 }
             } label: {
                 Text(manager.hasDeniedHeartRatePermission ? "Open Settings" : "Enable Heart Rate")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(Color(hex: "#2F352F"))
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 7)
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
@@ -1516,30 +1520,30 @@ fileprivate struct HealthSummaryWidget: View {
     }
 
     private func metricSquare(metric: Metric) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 1) {
             Text(metric.title)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
 
             Text(metric.value)
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 17, weight: .bold))
                 .foregroundColor(Color(hex: "#F5F7F4"))
 
             Text(metric.unit)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
         }
-        .frame(height: 70)
+        .frame(height: 54)
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
     }
 
     private var verticalDivider: some View {
         Rectangle()
             .frame(width: 1)
             .foregroundColor(Color.white.opacity(0.12))
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
     }
 
     private func formattedSteps(_ value: Int?) -> String {
@@ -2285,6 +2289,7 @@ fileprivate struct MedicationsListMainContent: View {
         let overdueCount: Int
         let takenCount: Int
         let lowSupplyCount: Int
+        let overdueDose: NextScheduledDose?
         let nextDose: NextScheduledDose?
 
         var title: String {
@@ -2347,6 +2352,7 @@ fileprivate struct MedicationsListMainContent: View {
             overdueCount: overdueCount,
             takenCount: takenCount,
             lowSupplyCount: lowSupplyCount,
+            overdueDose: nextOverdueDose,
             nextDose: nextScheduledDose
         )
     }
@@ -2363,6 +2369,23 @@ fileprivate struct MedicationsListMainContent: View {
             .compactMap { medication -> NextScheduledDose? in
                 guard let dueTime = nextPendingDueTime(for: medication),
                       dueTime >= referenceDate else {
+                    return nil
+                }
+
+                return NextScheduledDose(
+                    medicationName: medication.name,
+                    dueTime: dueTime
+                )
+            }
+            .sorted { $0.dueTime < $1.dueTime }
+            .first
+    }
+
+    private var nextOverdueDose: NextScheduledDose? {
+        store.activeMedications
+            .compactMap { medication -> NextScheduledDose? in
+                guard let dueTime = nextPendingDueTime(for: medication),
+                      dueTime < referenceDate else {
                     return nil
                 }
 
@@ -2440,11 +2463,13 @@ fileprivate struct MedicationsListMainContent: View {
                         if let todaySummary {
                             TodaySummaryCard(
                                 summary: todaySummary,
-                                healthKitManager: healthKitManager,
-                                showsHealthSummary: userSettings.shouldShowAppleHealthData,
                                 referenceDate: referenceDate
                             )
-                                .environmentObject(userSettings)
+                            .padding(.horizontal, horizontalInset)
+                        }
+
+                        if userSettings.shouldShowAppleHealthData {
+                            HealthSummaryWidget(manager: healthKitManager)
                                 .padding(.horizontal, horizontalInset)
                         }
 
@@ -2540,8 +2565,6 @@ fileprivate struct MedicationsListMainContent: View {
 
 fileprivate struct TodaySummaryCard: View {
     let summary: MedicationsListMainContent.TodaySummaryData
-    let healthKitManager: HealthKitManager
-    let showsHealthSummary: Bool
     let referenceDate: Date
 
     private static let timeFormatter: DateFormatter = {
@@ -2557,99 +2580,53 @@ fileprivate struct TodaySummaryCard: View {
         return formatter
     }()
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
-
     private var dashboardDateLabel: String {
         Self.headerDateFormatter.string(from: referenceDate)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(dashboardDateLabel)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F1F5E8").opacity(0.82))
-                        .textCase(.uppercase)
-                        .tracking(0.8)
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(dashboardDateLabel)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F1F5E8").opacity(0.82))
+                    .textCase(.uppercase)
+                    .tracking(0.7)
 
-                    Text(summary.title)
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(Color(hex: "#F8FAF2"))
+                Text(primaryTitle)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(Color(hex: "#FFF2D6"))
+                    .lineLimit(2)
 
-                    Text(summary.subtitle)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#E7ECD9").opacity(0.86))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 8)
-
-                if let nextDose = summary.nextDose {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("Next dose")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(Color(hex: "#F1F5E8").opacity(0.72))
-
-                        Text(Self.timeFormatter.string(from: nextDose.dueTime))
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Color(hex: "#FFF2D6"))
-
-                        Text(nextDose.medicationName)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(Color(hex: "#E7ECD9").opacity(0.84))
-                            .lineLimit(1)
-                    }
-                }
+                Text(primarySubtitle)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(hex: "#E7ECD9").opacity(0.86))
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            LazyVGrid(columns: columns, spacing: 12) {
-                summaryTile(
-                    title: "Overdue",
-                    value: "\(summary.overdueCount)",
-                    detail: summary.overdueCount > 0
-                        ? (summary.overdueCount == 1 ? "needs attention" : "need attention")
-                        : "all clear",
-                    accent: summary.overdueCount > 0 ? Color(hex: "#FFB86C") : Color(hex: "#C8D0BC")
-                )
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    summaryChip(
+                        title: "Overdue",
+                        value: "\(summary.overdueCount)",
+                        accent: summary.overdueCount > 0 ? Color(hex: "#FFB86C") : Color(hex: "#D7DEC9")
+                    )
 
-                summaryTile(
-                    title: "Taken",
-                    value: "\(summary.takenCount)",
-                    detail: "logged today",
-                    accent: Color(hex: "#B8E1AE")
-                )
+                    summaryChip(
+                        title: "Taken",
+                        value: "\(summary.takenCount)",
+                        accent: Color(hex: "#B8E1AE")
+                    )
 
-                summaryTile(
-                    title: "Next up",
-                    value: summary.nextDose.map { Self.timeFormatter.string(from: $0.dueTime) } ?? "None",
-                    detail: summary.nextDose?.medicationName ?? "nothing pending",
-                    accent: Color(hex: "#FFF0C2")
-                )
-
-                summaryTile(
-                    title: "Low supply",
-                    value: "\(summary.lowSupplyCount)",
-                    detail: summary.lowSupplyCount > 0
-                        ? (summary.lowSupplyCount == 1 ? "medication" : "medications")
-                        : "all set",
-                    accent: summary.lowSupplyCount > 0 ? Color(hex: "#FFD27D") : Color(hex: "#C8D0BC")
-                )
-            }
-
-            if showsHealthSummary {
-                Rectangle()
-                    .fill(Color.white.opacity(0.08))
-                    .frame(height: 1)
-                    .padding(.top, 2)
-
-                HealthSummaryWidget(manager: healthKitManager, style: .embedded)
+                    summaryChip(
+                        title: "Low supply",
+                        value: "\(summary.lowSupplyCount)",
+                        accent: summary.lowSupplyCount > 0 ? Color(hex: "#FFD27D") : Color(hex: "#D7DEC9")
+                    )
+                }
             }
         }
-        .padding(18)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(
@@ -2670,33 +2647,61 @@ fileprivate struct TodaySummaryCard: View {
         .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
     }
 
-    private func summaryTile(title: String, value: String, detail: String, accent: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(Color(hex: "#E7ECD9").opacity(0.72))
-                .textCase(.uppercase)
-                .tracking(0.6)
+    private var primaryTitle: String {
+        if summary.overdueCount > 0 {
+            if let overdueDose = summary.overdueDose {
+                if summary.overdueCount > 1 {
+                    let additionalCount = summary.overdueCount - 1
+                    return additionalCount == 1
+                        ? "\(overdueDose.medicationName) and 1 more are overdue"
+                        : "\(overdueDose.medicationName) and \(additionalCount) more are overdue"
+                }
+                return "\(overdueDose.medicationName) is overdue"
+            }
+            return summary.overdueCount == 1 ? "1 dose is overdue" : "\(summary.overdueCount) doses are overdue"
+        }
+        if let nextDose = summary.nextDose {
+            return "Your next dose at \(Self.timeFormatter.string(from: nextDose.dueTime))"
+        }
+        return "All clear for now"
+    }
 
+    private var primarySubtitle: String {
+        if summary.overdueCount > 0 {
+            if summary.overdueCount > 1 {
+                return "\(summary.overdueCount) overdue doses are waiting at the top of your list."
+            }
+            return "This dose is waiting at the top of your list."
+        }
+        if let nextDose = summary.nextDose {
+            return nextDose.medicationName
+        }
+        if summary.takenCount > 0 {
+            return summary.takenCount == 1 ? "1 dose logged today." : "\(summary.takenCount) doses logged today."
+        }
+        return "Your medication list will update as reminders come due."
+    }
+
+    private func summaryChip(title: String, value: String, accent: Color) -> some View {
+        HStack(spacing: 8) {
             Text(value)
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: 16, weight: .bold))
                 .foregroundColor(accent)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
 
-            Text(detail)
-                .font(.system(size: 12, weight: .medium))
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(Color(hex: "#E7ECD9").opacity(0.82))
-                .lineLimit(2)
+                .lineLimit(1)
         }
-        .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
-        .padding(14)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.06))
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(0.07))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(accent.opacity(0.18), lineWidth: 1)
+                    Capsule(style: .continuous)
+                        .stroke(accent.opacity(0.2), lineWidth: 1)
                 )
         )
     }

@@ -1583,6 +1583,18 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                    let medicationID = UUID(uuidString: medicationIDString),
                    let medication = medicationStore.findMedication(with: medicationID) {
                 let reminderIndex = reminderIndex(from: userInfo)
+                let scheduledDoseDate = scheduledDoseDate(from: userInfo) ?? notificationDate
+                if let baseUUID = resolveBaseNotificationUUID(
+                    userInfo: userInfo,
+                    notificationIdentifier: notificationIdentifier
+                ) {
+                    let followUpDate = Calendar.current.date(
+                        byAdding: .minute,
+                        value: 30,
+                        to: scheduledDoseDate
+                    ) ?? scheduledDoseDate
+                    notificationManager.cancelFollowUpNotification(for: baseUUID, on: followUpDate)
+                }
                 medicationStore.logMedicationTaken(
                     medication: medication,
                     actualTime: Date(),

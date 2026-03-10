@@ -81,6 +81,84 @@ struct NotificationFollowUpTests {
     }
 
     @Test
+    func trackNowUsesReminderContextToCancelMatchingFollowUp() async throws {
+        clearPillrUserDefaults()
+
+        let notificationManager = FakeNotificationManager()
+        let cloudSync = FakeCloudKitSync()
+        let store = MedicationStore(
+            isPreview: true,
+            notificationManager: notificationManager,
+            cloudSync: cloudSync
+        )
+
+        let baseTime = makeDate(year: 2025, month: 2, day: 1, hour: 8, minute: 0)
+        let followUpTime = Calendar.current.date(byAdding: .minute, value: 30, to: baseTime) ?? baseTime
+        let baseNotificationID = UUID()
+
+        let medication = Medication(
+            id: UUID(),
+            name: "FollowUp Med",
+            dosage: "10",
+            dosageUnit: "mg",
+            iconName: "pill",
+            createdAt: baseTime,
+            updatedAt: baseTime,
+            frequency: "Once daily",
+            medicationType: .other,
+            isExtendedRelease: false,
+            onsetMinutes: nil,
+            durationMinutes: nil,
+            effectsGoneMinutes: nil,
+            enableDailyCheckIn: false,
+            enableStimulantPhaseNotifications: false,
+            dailyCheckInTime: nil,
+            timeToTake: baseTime,
+            reminderTimes: [baseTime],
+            notes: nil,
+            notificationID: baseNotificationID,
+            notificationIDs: [baseNotificationID],
+            pillCount: nil,
+            pillsPerDose: 1,
+            refillThreshold: nil,
+            isSkipped: false,
+            isOneTimeWithFollowUp: true,
+            isDeleted: false,
+            logReferenceID: nil,
+            logEntryID: nil,
+            cloudLastModified: nil
+        )
+        store.medications = [medication]
+
+        let delegate = NotificationDelegate(
+            notificationManager: notificationManager,
+            medicationStore: store
+        )
+
+        let identifier = "\(baseNotificationID.uuidString)_day_20250201"
+        let userInfo: [AnyHashable: Any] = [
+            "medicationID": medication.id.uuidString,
+            "reminderBaseID": baseNotificationID.uuidString,
+            "scheduledDoseAt": baseTime.timeIntervalSince1970,
+            "reminderIndex": 0
+        ]
+
+        delegate._test_handleNotification(
+            actionIdentifier: "TRACK_NOW_ACTION",
+            userInfo: userInfo,
+            notificationIdentifier: identifier,
+            categoryIdentifier: "MEDICATION_REMINDER",
+            notificationDate: baseTime
+        )
+
+        #expect(
+            notificationManager.canceledFollowUpOccurrences.contains(where: { entry in
+                entry.0 == baseNotificationID && entry.1 == followUpTime
+            })
+        )
+    }
+
+    @Test
     func duplicateTrackNowActionIsIgnored() async throws {
         clearPillrUserDefaults()
 
