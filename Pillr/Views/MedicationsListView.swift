@@ -8,6 +8,7 @@
 import SwiftUI
 import UIKit
 import UserNotifications
+import Combine
 
 final class AddMedicationFlowCoordinator: ObservableObject {
     @Published var isShowing = false
@@ -53,10 +54,12 @@ struct MedicationsListView: View {
     @State private var refillPromptMedication: Medication?
     @State private var showCabinetIntroOverlay = false
     @State private var referenceDate = Date()
-    private let referenceTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+    private let referenceTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
     private let healthRefreshTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
     @State private var undoToastAction: MedicationStore.LogUndoAction?
     @State private var undoToastDismissWorkItem: DispatchWorkItem?
+    @State private var dashboardHighlightedMedicationIDs = Set<UUID>()
+    @State private var dashboardHighlightResetWorkItem: DispatchWorkItem?
     private let undoToastDuration: TimeInterval = 5.0
     @State private var isViewActive = false
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
@@ -131,10 +134,11 @@ struct MedicationsListView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                MedicationsListMainContent(
+                        MedicationsListMainContent(
                         store: store,
                         showingAddSheet: $showingAddSheet,
                         scrolledOffset: $scrolledOffset,
+                        dashboardHighlightedMedicationIDs: $dashboardHighlightedMedicationIDs,
                         selectedMedicationToEdit: $selectedMedicationToEdit,
                         medicationToDelete: $medicationToDelete,
                         logToDelete: $logToDelete,
@@ -152,9 +156,11 @@ struct MedicationsListView: View {
                         onPresentDailyCheckIn: presentDailyCheckIn,
                     displayedMedications: displayedMedications,
                     cabinetMedications: cabinetMedications,
-                    onShowCabinet: handleCabinetTap,
-                    healthKitManager: healthKitManager,
-                    referenceDate: referenceDate,
+                        onShowCabinet: handleCabinetTap,
+                        healthKitManager: healthKitManager,
+                        referenceDate: referenceDate,
+                        onHighlightOverdueMedications: highlightOverdueMedications,
+                        onHighlightLowSupplyMedications: highlightLowSupplyMedications,
                 )
                 .overlay(alignment: .bottom) {
                     if let action = undoToastAction {
@@ -329,6 +335,14 @@ struct MedicationsListView: View {
                 store.refreshOverdueMedicationIDs(referenceDate: output)
                 store.refreshCloudSyncIfNeeded()
             }
+            .onChange(of: store.logs) { _, _ in
+                guard scenePhase == .active else { return }
+                refreshReferenceDate(resetBadge: false)
+            }
+            .onChange(of: store.medications) { _, _ in
+                guard scenePhase == .active else { return }
+                refreshReferenceDate(resetBadge: false)
+            }
             .refreshable {
                 await performPullToRefresh()
             }
@@ -352,6 +366,7 @@ struct MedicationsListView: View {
             }
             .onDisappear {
                 isViewActive = false
+                dashboardHighlightResetWorkItem?.cancel()
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
@@ -454,6 +469,55 @@ struct MedicationsListView: View {
             refreshReferenceDate(resetBadge: true)
             refreshNotificationPermissionStatus()
         }
+    }
+
+    private func highlightOverdueMedications() {
+        let overdueIDs = store.overdueMedicationIDs
+        guard !overdueIDs.isEmpty else { return }
+
+        dashboardHighlightResetWorkItem?.cancel()
+        dashboardHighlightedMedicationIDs = overdueIDs
+
+        if let firstOverdue = sortedMedications(displayedMedications, logs: store.logs, referenceDate: referenceDate)
+            .first(where: { overdueIDs.contains($0.logReferenceID ?? $0.id) }) {
+            store.highlightedMedicationID = firstOverdue.id
+            store.expandedMedicationID = firstOverdue.id
+        }
+
+        let workItem = DispatchWorkItem {
+            dashboardHighlightedMedicationIDs = []
+        }
+        dashboardHighlightResetWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: workItem)
+    }
+
+    private func highlightLowSupplyMedications() {
+        let lowSupplyIDs = Set(
+            store.activeMedications.compactMap { medication -> UUID? in
+                guard let pillCount = medication.pillCount,
+                      let refillThreshold = medication.refillThreshold,
+                      pillCount <= refillThreshold else {
+                    return nil
+                }
+                return medication.id
+            }
+        )
+        guard !lowSupplyIDs.isEmpty else { return }
+
+        dashboardHighlightResetWorkItem?.cancel()
+        dashboardHighlightedMedicationIDs = lowSupplyIDs
+
+        if let firstLowSupply = sortedMedications(displayedMedications, logs: store.logs, referenceDate: referenceDate)
+            .first(where: { lowSupplyIDs.contains($0.logReferenceID ?? $0.id) }) {
+            store.highlightedMedicationID = firstLowSupply.id
+            store.expandedMedicationID = firstLowSupply.id
+        }
+
+        let workItem = DispatchWorkItem {
+            dashboardHighlightedMedicationIDs = []
+        }
+        dashboardHighlightResetWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: workItem)
     }
 
     private var notificationEnableBanner: some View {
@@ -1215,6 +1279,7 @@ fileprivate func MedicationsListContent(
         onRequestRefillResetAction: @escaping (Medication) -> Void,
 	    onPresentDailyCheckIn: @escaping (Medication) -> Void,
 	    medications: [Medication],
+        dashboardHighlightedMedicationIDs: Set<UUID>,
 	    referenceDate: Date
 	) -> some View {
 	    VStack(alignment: .leading, spacing: 16) {
@@ -1222,6 +1287,7 @@ fileprivate func MedicationsListContent(
             MedicationRow(
                 medication: med,
                 referenceDate: referenceDate,
+                isDashboardHighlighted: dashboardHighlightedMedicationIDs.contains(med.logReferenceID ?? med.id),
                 onPresentUndoToast: onPresentUndoToast,
                 onRequestCustomLogTime: { resolvedMedication, resolvedIndex in
                     HapticManager.shared.lightImpact()
@@ -2256,6 +2322,7 @@ fileprivate struct MedicationsListMainContent: View {
     @ObservedObject var store: MedicationStore
     @Binding var showingAddSheet: Bool
     @Binding var scrolledOffset: CGFloat
+    @Binding var dashboardHighlightedMedicationIDs: Set<UUID>
     @Binding var selectedMedicationToEdit: Medication?
     @Binding var medicationToDelete: Medication?
     @Binding var logToDelete: MedicationLog?
@@ -2276,6 +2343,8 @@ fileprivate struct MedicationsListMainContent: View {
     let onShowCabinet: () -> Void
     let healthKitManager: HealthKitManager
     let referenceDate: Date
+    let onHighlightOverdueMedications: () -> Void
+    let onHighlightLowSupplyMedications: () -> Void
     @EnvironmentObject private var userSettings: UserSettings
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -2463,14 +2532,13 @@ fileprivate struct MedicationsListMainContent: View {
                         if let todaySummary {
                             TodaySummaryCard(
                                 summary: todaySummary,
-                                referenceDate: referenceDate
+                                referenceDate: referenceDate,
+                                onOverdueTap: onHighlightOverdueMedications,
+                                onLowSupplyTap: onHighlightLowSupplyMedications,
+                                healthKitManager: healthKitManager,
+                                showsHealthSummary: userSettings.shouldShowAppleHealthData
                             )
                             .padding(.horizontal, horizontalInset)
-                        }
-
-                        if userSettings.shouldShowAppleHealthData {
-                            HealthSummaryWidget(manager: healthKitManager)
-                                .padding(.horizontal, horizontalInset)
                         }
 
                         if canCheckInteractions, let recentMedication = recentlyAddedMedication {
@@ -2517,6 +2585,7 @@ fileprivate struct MedicationsListMainContent: View {
                                 onRequestRefillResetAction: onRequestRefillResetAction,
                                 onPresentDailyCheckIn: onPresentDailyCheckIn,
                                 medications: displayedMedications,
+                                dashboardHighlightedMedicationIDs: dashboardHighlightedMedicationIDs,
                                 referenceDate: referenceDate
                             )
 
@@ -2566,6 +2635,10 @@ fileprivate struct MedicationsListMainContent: View {
 fileprivate struct TodaySummaryCard: View {
     let summary: MedicationsListMainContent.TodaySummaryData
     let referenceDate: Date
+    let onOverdueTap: () -> Void
+    let onLowSupplyTap: () -> Void
+    let healthKitManager: HealthKitManager
+    let showsHealthSummary: Bool
 
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -2577,6 +2650,12 @@ fileprivate struct TodaySummaryCard: View {
     private static let headerDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.setLocalizedDateFormatFromTemplate("EEE MMM d")
+        return formatter
+    }()
+
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.setLocalizedDateFormatFromTemplate("EEEE")
         return formatter
     }()
 
@@ -2606,11 +2685,7 @@ fileprivate struct TodaySummaryCard: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    summaryChip(
-                        title: "Overdue",
-                        value: "\(summary.overdueCount)",
-                        accent: summary.overdueCount > 0 ? Color(hex: "#FFB86C") : Color(hex: "#D7DEC9")
-                    )
+                    overdueSummaryChip
 
                     summaryChip(
                         title: "Taken",
@@ -2618,12 +2693,18 @@ fileprivate struct TodaySummaryCard: View {
                         accent: Color(hex: "#B8E1AE")
                     )
 
-                    summaryChip(
-                        title: "Low supply",
-                        value: "\(summary.lowSupplyCount)",
-                        accent: summary.lowSupplyCount > 0 ? Color(hex: "#FFD27D") : Color(hex: "#D7DEC9")
-                    )
+                    lowSupplySummaryChip
                 }
+            }
+
+            if showsHealthSummary {
+                Rectangle()
+                    .fill(Color.white.opacity(0.08))
+                    .frame(height: 1)
+                    .padding(.top, 2)
+
+                HealthSummaryWidget(manager: healthKitManager, style: .embedded)
+                    .padding(.top, 2)
             }
         }
         .padding(16)
@@ -2647,6 +2728,57 @@ fileprivate struct TodaySummaryCard: View {
         .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
     }
 
+    private var overdueSummaryChip: some View {
+        Button(action: onOverdueTap) {
+            HStack(spacing: 8) {
+                Text(overdueChipText)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(summary.overdueCount > 0 ? Color(hex: "#FFB86C") : Color(hex: "#E7ECD9").opacity(0.82))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.07))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke((summary.overdueCount > 0 ? Color(hex: "#FFB86C") : Color(hex: "#D7DEC9")).opacity(0.2), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(summary.overdueCount == 0)
+    }
+
+    private var lowSupplySummaryChip: some View {
+        Button(action: onLowSupplyTap) {
+            HStack(spacing: 8) {
+                Text("\(summary.lowSupplyCount)")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(summary.lowSupplyCount > 0 ? Color(hex: "#FFD27D") : Color(hex: "#D7DEC9"))
+                    .lineLimit(1)
+
+                Text("Low supply")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "#E7ECD9").opacity(0.82))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.07))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke((summary.lowSupplyCount > 0 ? Color(hex: "#FFD27D") : Color(hex: "#D7DEC9")).opacity(0.2), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(summary.lowSupplyCount == 0)
+    }
+
     private var primaryTitle: String {
         if summary.overdueCount > 0 {
             if let overdueDose = summary.overdueDose {
@@ -2661,9 +2793,12 @@ fileprivate struct TodaySummaryCard: View {
             return summary.overdueCount == 1 ? "1 dose is overdue" : "\(summary.overdueCount) doses are overdue"
         }
         if let nextDose = summary.nextDose {
-            return "Your next dose at \(Self.timeFormatter.string(from: nextDose.dueTime))"
+            return "Your next dose is at \(Self.timeFormatter.string(from: nextDose.dueTime))\(nextDoseDayText(for: nextDose.dueTime))"
         }
-        return "All clear for now"
+        if summary.takenCount > 0 {
+            return "All meds taken today"
+        }
+        return "No meds to take today"
     }
 
     private var primarySubtitle: String {
@@ -2677,9 +2812,28 @@ fileprivate struct TodaySummaryCard: View {
             return nextDose.medicationName
         }
         if summary.takenCount > 0 {
-            return summary.takenCount == 1 ? "1 dose logged today." : "\(summary.takenCount) doses logged today."
+            return "No more reminders for today."
         }
-        return "Your medication list will update as reminders come due."
+        return "Your reminders will show here when they are due."
+    }
+
+    private var overdueChipText: String {
+        summary.overdueCount == 1 ? "1 overdue" : "\(summary.overdueCount) overdue"
+    }
+
+    private func nextDoseDayText(for dueTime: Date) -> String {
+        let calendar = Calendar.current
+
+        if calendar.isDate(dueTime, inSameDayAs: referenceDate) {
+            return ""
+        }
+
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: referenceDate),
+           calendar.isDate(dueTime, inSameDayAs: tomorrow) {
+            return " tomorrow"
+        }
+
+        return " on \(Self.weekdayFormatter.string(from: dueTime))"
     }
 
     private func summaryChip(title: String, value: String, accent: Color) -> some View {
@@ -3439,6 +3593,7 @@ fileprivate struct MedicationRowHeaderView: View {
 struct MedicationRow: View {
     let medication: Medication
     let referenceDate: Date
+    let isDashboardHighlighted: Bool
     let onPresentUndoToast: (MedicationStore.LogUndoAction) -> Void
     let onRequestCustomLogTime: (Medication, Int?) -> Void
     let onRefillBannerTap: () -> Void
@@ -3451,6 +3606,10 @@ struct MedicationRow: View {
     @State private var isNotificationGlowActive = false
     @State private var notificationGlowResetWorkItem: DispatchWorkItem?
     private let notificationGlowDuration: TimeInterval = 2.0
+
+    private var isHighlightGlowActive: Bool {
+        isNotificationGlowActive || isDashboardHighlighted
+    }
     
     private var todaysLogsForMedication: [MedicationLog] {
         let calendar = Calendar.current
@@ -3989,13 +4148,13 @@ struct MedicationRow: View {
     
     private var notificationGlowOverlay: some View {
         RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .stroke(Color(hex: "#F6FFE0").opacity(isNotificationGlowActive ? 0.95 : 0), lineWidth: isNotificationGlowActive ? 2.5 : 0)
-            .shadow(color: Color(hex: "#DFFFC0").opacity(isNotificationGlowActive ? 0.9 : 0), radius: isNotificationGlowActive ? 18 : 0)
-            .blur(radius: isNotificationGlowActive ? 0.5 : 0)
+            .stroke(Color(hex: "#F6FFE0").opacity(isHighlightGlowActive ? 0.95 : 0), lineWidth: isHighlightGlowActive ? 2.5 : 0)
+            .shadow(color: Color(hex: "#DFFFC0").opacity(isHighlightGlowActive ? 0.9 : 0), radius: isHighlightGlowActive ? 18 : 0)
+            .blur(radius: isHighlightGlowActive ? 0.5 : 0)
             .padding(-6)
             .blendMode(.screen)
             .allowsHitTesting(false)
-            .animation(.easeInOut(duration: 0.35), value: isNotificationGlowActive)
+            .animation(.easeInOut(duration: 0.35), value: isHighlightGlowActive)
     }
 
     // Enhanced border overlay with better visual feedback
