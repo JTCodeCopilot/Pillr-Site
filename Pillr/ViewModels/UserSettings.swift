@@ -168,14 +168,19 @@ class UserSettings: ObservableObject {
     private let timelineTabEnabledKey = "is_timeline_tab_enabled"
     private let interactionCheckerShortcutEnabledKey = "is_interaction_checker_shortcut_enabled"
     private let customSideEffectsKey = "custom_side_effects"
+    private let debugPremiumOverrideKey = "debug_premium_override_enabled"
     private let isPreviewMode: Bool
     private let forceUITestMode: Bool
 
     #if DEBUG
     /// Set `PILLR_ENABLE_TEST_PREMIUM=1` in the scheme / environment to keep premium unlocked in debug builds.
     private let forcePremiumFromEnv = ProcessInfo.processInfo.environment["PILLR_ENABLE_TEST_PREMIUM"] == "1"
+    var isDebugPremiumOverrideEnabled: Bool {
+        forcePremiumFromEnv || UserDefaults.standard.bool(forKey: debugPremiumOverrideKey)
+    }
     #else
     private let forcePremiumFromEnv = false
+    var isDebugPremiumOverrideEnabled: Bool { false }
     #endif
     
     // Free tier limitations
@@ -284,6 +289,12 @@ class UserSettings: ObservableObject {
         if forcePremiumFromEnv {
             isPremiumUser = true
             subscriptionType = "one-time-purchase"
+            if !isPreviewMode {
+                // Keep the local test unlock after the app is relaunched outside Xcode.
+                UserDefaults.standard.set(true, forKey: debugPremiumOverrideKey)
+                UserDefaults.standard.set(true, forKey: premiumStatusKey)
+                UserDefaults.standard.set("one-time-purchase", forKey: subscriptionTypeKey)
+            }
         }
         if !isPreviewMode {
             // Ensure visibility flag is persisted even if not set earlier
@@ -319,7 +330,7 @@ class UserSettings: ObservableObject {
     
     // Premium management methods
     func setPremiumStatus(_ isPremium: Bool) {
-        if forceUITestMode || forcePremiumFromEnv {
+        if forceUITestMode || isDebugPremiumOverrideEnabled {
             isPremiumUser = true
             subscriptionType = "one-time-purchase"
             return

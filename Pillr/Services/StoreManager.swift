@@ -121,7 +121,9 @@ class StoreManager: ObservableObject {
     // Update purchased products
     @MainActor
     func updatePurchasedProducts() async {
-        if isTestMode {
+        if isTestMode || UserSettings.shared.isDebugPremiumOverrideEnabled {
+            purchasedProductIDs.insert(premiumIdentifier)
+            OpenAIService.shared.setPremiumPurchased()
             print("TEST MODE: Skipping purchased products update")
             return
         }
