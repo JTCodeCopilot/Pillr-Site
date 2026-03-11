@@ -6,13 +6,13 @@ struct FeatureSheetView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#404C42").ignoresSafeArea() // Background color consistent with the app
+                Color.pillrPrimary.ignoresSafeArea() // Background color consistent with the app
 
                 VStack(spacing: 20) {
                     Text("Pillr Features")
                         .font(.largeTitle)
                         .fontWeight(.regular)
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                         .padding(.top, 40)
 
                     FeatureRow(
@@ -47,10 +47,10 @@ struct FeatureSheetView: View {
                     }) {
                         Text("Explore More")
                             .font(.headline)
-                            .foregroundColor(Color(hex: "#404C42"))
+                            .foregroundColor(Color.pillrPrimary)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(Color(hex: "#C7C7BD"))
+                            .background(Color.pillrSecondary)
                             .cornerRadius(10)
                             .padding(.horizontal, 20)
                     }
@@ -61,7 +61,7 @@ struct FeatureSheetView: View {
                 isPresented = false
             }) {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                     .font(.title2)
             })
             .navigationBarTitleDisplayMode(.inline)
@@ -79,17 +79,17 @@ struct FeatureRow: View {
         HStack(spacing: 15) {
             Image(systemName: iconName)
                 .font(.title)
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
                 .frame(width: 40)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.headline)
                     .fontWeight(.semibold)
-                    .foregroundColor(Color(hex: "#E0E0E0"))
+                    .foregroundColor(Color.pillrBackground)
                 Text(description)
                     .font(.subheadline)
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
             }
             Spacer()
         }

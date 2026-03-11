@@ -228,17 +228,17 @@ import UIKit
         HStack(spacing: 12) {
             Image(systemName: medicationToLog.iconName.isEmpty ? "pill" : medicationToLog.iconName)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(medicationToLog.name)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
 
                 if !medicationToLog.dosageWithUnit.isEmpty {
                     Text(medicationToLog.dosageWithUnit)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                 }
             }
 
@@ -246,7 +246,7 @@ import UIKit
 
             Image(systemName: "chevron.up.chevron.down")
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(Color.pillrSecondary.opacity(0.7))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 12)
@@ -265,11 +265,11 @@ import UIKit
         HStack {
             Text("Dose #\(selectedDoseIndex + 1) (\(formatTime(medicationToLog.reminderTimes[selectedDoseIndex])))")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
             Spacer()
             Image(systemName: "chevron.up.chevron.down")
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(Color.pillrSecondary.opacity(0.7))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 12)
@@ -289,8 +289,8 @@ import UIKit
                 // Background
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(hex: "#3C463E"),
-                        Color(hex: "#343D36")
+                        Color.pillrPrimary,
+                        Color.pillrPrimary
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
@@ -306,7 +306,7 @@ import UIKit
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(isDailyCheckIn ? "Reflection" : "Log Medication")
                                         .font(.system(size: 28, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                        .foregroundColor(Color.pillrBackground)
                                 }
                                 
                                 Spacer()
@@ -317,14 +317,14 @@ import UIKit
                                         HStack(spacing: 6) {
                                             Image(systemName: "pills.circle.fill")
                                                 .font(.system(size: 14))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                                .foregroundColor(Color.pillrBackground)
                                             Text("\(pillCount)")
                                                 .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                                .foregroundColor(Color.pillrBackground)
                                         }
                                         Text("remaining")
                                             .font(.system(size: 11, weight: .medium))
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                            .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
@@ -343,14 +343,14 @@ import UIKit
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(reflectStepIndicatorText)
                                         .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                         .tracking(0.6)
 
                                     ProgressView(
                                         value: Double(clampedReflectStepIndex + 1),
                                         total: Double(max(reflectSteps.count, 1))
                                     )
-                                    .tint(Color(hex: "#C7C7BD"))
+                                    .tint(Color.pillrSecondary)
                                     .scaleEffect(x: 1, y: 1.4, anchor: .center)
                                 }
                             }
@@ -368,11 +368,11 @@ import UIKit
                                 VStack(alignment: .leading, spacing: 16) {
                                     HStack {
                                         Image(systemName: "clock.badge.checkmark")
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                            .foregroundColor(Color.pillrSecondary)
                                             .font(.system(size: 18))
                                         Text("Which dose are you logging?")
                                             .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                            .foregroundColor(Color.pillrBackground)
                                     }
                                     
                                     Menu {
@@ -408,7 +408,7 @@ import UIKit
                                             }) {
                                                 Text(option.rawValue)
                                                     .font(.system(size: 14, weight: .semibold))
-                                                    .foregroundColor(selectedQuickTime == option ? Color(hex: "#E8E8E0") : Color(hex: "#C7C7BD"))
+                                                    .foregroundColor(selectedQuickTime == option ? Color.pillrBackground : Color.pillrSecondary)
                                                     .padding(.vertical, 12)
                                                     .padding(.horizontal, 8)
                                                     .frame(maxWidth: .infinity)
@@ -430,18 +430,18 @@ import UIKit
                                         VStack(alignment: .leading, spacing: 12) {
                                             HStack {
                                                 Image(systemName: "clock.arrow.circlepath")
-                                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                                    .foregroundColor(Color.pillrSecondary)
                                                     .font(.system(size: 16))
                                                 Text("Select custom time")
                                                     .font(.system(size: 14, weight: .medium))
-                                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                                    .foregroundColor(Color.pillrSecondary)
                                             }
                                             
                                             DatePicker("", selection: $actualTimeTaken, displayedComponents: [.date, .hourAndMinute])
                                                 .datePickerStyle(.compact)
                                                 .labelsHidden()
                                                 .colorScheme(.dark)
-                                                .accentColor(Color(hex: "#F5F5F5"))
+                                                .accentColor(Color.pillrBackground)
                                                 .background(
                                                     RoundedRectangle(cornerRadius: 12)
                                                         .fill(Color.white.opacity(0.05))
@@ -471,7 +471,7 @@ import UIKit
                                         TextEditor(text: $logNotes)
                                             .frame(minHeight: 80, maxHeight: 120)
                                             .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                            .foregroundColor(Color.pillrBackground)
                                             .scrollContentBackground(.hidden)
                                             .background(Color.clear)
                                             .padding(.horizontal, 16)
@@ -488,7 +488,7 @@ import UIKit
                                         if logNotes.isEmpty {
                                             Text("Add anything you want to remember for this dose.")
                                                 .font(.system(size: 16))
-                                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                                                .foregroundColor(Color.pillrSecondary.opacity(0.5))
                                                 .padding(.leading, 20)
                                                 .padding(.top, 20)
                                                 .allowsHitTesting(false)
@@ -506,12 +506,12 @@ import UIKit
                                 } label: {
                                     Text("Log Medication")
                                         .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#2C332D"))
+                                        .foregroundColor(Color.pillrPrimary)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 18)
                                         .background(
                                             RoundedRectangle(cornerRadius: 20)
-                                                .fill(Color(hex: "#E8E8E0"))
+                                                .fill(Color.pillrBackground)
                                         )
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 20)
@@ -541,7 +541,7 @@ import UIKit
                         HapticManager.shared.lightImpact()
                         dismiss()
                     }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                 }
             }
             .onAppear {
@@ -600,7 +600,7 @@ import UIKit
         VStack(alignment: .leading, spacing: 6) {
             Text("OVERVIEW")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .foregroundColor(Color.pillrSecondary.opacity(0.8))
                 .tracking(0.5)
 
             reflectSummaryCard
@@ -661,7 +661,7 @@ import UIKit
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
+                        .stroke(Color.pillrSecondary.opacity(0.25), lineWidth: 1)
                 )
         )
         .onAppear(perform: updateSummaryItemOrder)
@@ -679,7 +679,7 @@ import UIKit
         VStack(alignment: .leading, spacing: 8) {
             Text("Medication")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .foregroundColor(Color.pillrSecondary.opacity(0.8))
                 .tracking(0.6)
 
             Menu {
@@ -731,7 +731,7 @@ import UIKit
         ReflectCard {
             Text("Which day are you reflecting on?")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
 
             DatePicker(
                 "",
@@ -742,7 +742,7 @@ import UIKit
             .datePickerStyle(.compact)
             .labelsHidden()
             .colorScheme(.dark)
-            .accentColor(Color(hex: "#F5F5F5"))
+            .accentColor(Color.pillrBackground)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white.opacity(0.05))
@@ -754,7 +754,7 @@ import UIKit
         ReflectCard {
             Text("How much did your medication help today?")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
 
             RatingControl(
                 title: "Feeling",
@@ -769,7 +769,7 @@ import UIKit
         ReflectCard {
             Text("How did your mood feel overall?")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 ForEach(EmotionalTone.allCases, id: \.self) { tone in
@@ -779,15 +779,15 @@ import UIKit
                     }) {
                         Text(tone.label)
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(emotionalTone == tone ? Color(hex: "#2C332D") : Color(hex: "#E8E8E0"))
+                            .foregroundColor(emotionalTone == tone ? Color.pillrPrimary : Color.pillrBackground)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(emotionalTone == tone ? Color(hex: "#E8E8E0") : Color.white.opacity(0.06))
+                                    .fill(emotionalTone == tone ? Color.pillrBackground : Color.white.opacity(0.06))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                            .stroke(Color(hex: "#C7C7BD").opacity(0.35), lineWidth: 1)
+                                            .stroke(Color.pillrSecondary.opacity(0.35), lineWidth: 1)
                                     )
                             )
                             .lineLimit(1)
@@ -804,10 +804,10 @@ import UIKit
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(term)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                .foregroundColor(Color.pillrSecondary.opacity(0.9))
             Text("= \(description)")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                .foregroundColor(Color.pillrSecondary.opacity(0.85))
         }
     }
 
@@ -816,7 +816,7 @@ import UIKit
         return ReflectCard {
             Text("How was your focus and clarity today?")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
 
             RatingControl(
                 title: "Focus",
@@ -831,7 +831,7 @@ import UIKit
         ReflectCard {
             Text("How much did side effects get in your way?")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
 
             RatingControl(
                 title: "Side effects",
@@ -846,7 +846,7 @@ import UIKit
         ReflectCard {
             Text("What side effects showed up, if any?")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                 ForEach(availableSideEffects, id: \.self) { effect in
@@ -861,12 +861,12 @@ import UIKit
                         }) {
                             Text(effect)
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(sideEffectTags.contains(effect) ? Color(hex: "#2C332D") : Color(hex: "#E8E8E0"))
+                                .foregroundColor(sideEffectTags.contains(effect) ? Color.pillrPrimary : Color.pillrBackground)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 14)
-                                        .fill(sideEffectTags.contains(effect) ? Color(hex: "#E8E8E0") : Color.white.opacity(0.04))
+                                        .fill(sideEffectTags.contains(effect) ? Color.pillrBackground : Color.white.opacity(0.04))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 14)
                                                 .stroke(Color.white.opacity(sideEffectTags.contains(effect) ? 0.2 : 0.12), lineWidth: 1)
@@ -885,7 +885,7 @@ import UIKit
                             }) {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.system(size: 14))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color.pillrSecondary)
                                     .background(Color.black.opacity(0.35).clipShape(Circle()))
                             }
                             .offset(x: 6, y: -6)
@@ -904,7 +904,7 @@ import UIKit
                         Text("Add custom")
                             .font(.system(size: 12, weight: .medium))
                     }
-                    .foregroundColor(Color(hex: "#F5F5F5"))
+                    .foregroundColor(Color.pillrBackground)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                     .background(
@@ -925,7 +925,7 @@ import UIKit
                 }) {
                     Text(isEditingCustomSideEffects ? "Done" : "Edit")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(
@@ -945,13 +945,13 @@ import UIKit
         ReflectCard {
             Text("Anything else worth noting?")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
 
             ZStack(alignment: .topLeading) {
                 TextEditor(text: $logNotes)
                     .frame(minHeight: 80, maxHeight: 150)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
                     .padding(.horizontal, 16)
@@ -968,7 +968,7 @@ import UIKit
                 if logNotes.isEmpty {
                     Text("Timing, appetite, sleep, rebound, or anything unusual.")
                         .font(.system(size: 16))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.5))
                         .padding(.leading, 20)
                         .padding(.top, 20)
                         .allowsHitTesting(false)
@@ -986,7 +986,7 @@ import UIKit
                 } label: {
                     Text("Back")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                         .background(
@@ -1009,12 +1009,12 @@ import UIKit
             } label: {
                 Text(isLastReflectStep ? "See Reflection & Log" : "Next")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "#2C332D"))
+                    .foregroundColor(Color.pillrPrimary)
                     .padding(.horizontal, 22)
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 18)
-                            .fill(Color(hex: "#E8E8E0"))
+                            .fill(Color.pillrBackground)
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 18)
@@ -1035,15 +1035,15 @@ import UIKit
             VStack(alignment: .leading, spacing: 16) {
                 Text("Upon Reflection")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
 
                 if isGeneratingReflectionSummary {
                     HStack(spacing: 12) {
                         ProgressView()
-                            .tint(Color(hex: "#E8E8E0"))
+                            .tint(Color.pillrBackground)
                         Text("Generating summary...")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                     }
                 } else if let reflectionSummaryError {
                     Text(reflectionSummaryError)
@@ -1052,7 +1052,7 @@ import UIKit
                 } else {
                     Text(reflectionSummaryText)
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -1064,7 +1064,7 @@ import UIKit
                     } label: {
                         Text("Edit")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
                             .background(
@@ -1080,12 +1080,12 @@ import UIKit
                     } label: {
                         Text("Save Reflection")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#2C332D"))
+                            .foregroundColor(Color.pillrPrimary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
                             .background(
                                 RoundedRectangle(cornerRadius: 14)
-                                    .fill(Color(hex: "#E8E8E0"))
+                                    .fill(Color.pillrBackground)
                             )
                     }
                     .buttonStyle(ScaleButtonStyle())
@@ -1096,7 +1096,7 @@ import UIKit
             .frame(maxWidth: 320)
             .background(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color(hex: "#3B433C"))
+                    .fill(Color.pillrPrimary)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .stroke(Color.white.opacity(0.12), lineWidth: 1)
@@ -1188,11 +1188,11 @@ import UIKit
         return VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                .foregroundColor(Color.pillrSecondary.opacity(0.75))
                 .tracking(0.5)
             Text(value)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(isUnset ? Color(hex: "#C7C7BD").opacity(0.6) : Color(hex: "#E8E8E0"))
+                .foregroundColor(isUnset ? Color.pillrSecondary.opacity(0.6) : Color.pillrBackground)
         }
     }
 
@@ -1201,10 +1201,10 @@ import UIKit
         return VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                .foregroundColor(Color.pillrSecondary.opacity(0.75))
             Text(value)
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(isUnset ? Color(hex: "#C7C7BD").opacity(0.6) : Color(hex: "#E8E8E0"))
+                .foregroundColor(isUnset ? Color.pillrSecondary.opacity(0.6) : Color.pillrBackground)
         }
         .padding(.vertical, 8)
     }
@@ -1248,13 +1248,13 @@ import UIKit
                 HStack {
                     if !icon.isEmpty {
                         Image(systemName: icon)
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.9))
                             .font(.system(size: 14, weight: .semibold))
                     }
                     if !title.isEmpty {
                         Text(title)
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.75))
                             .tracking(0.6)
                     }
                 }
@@ -1492,7 +1492,7 @@ struct RatingControl: View {
         value: Binding<Int>,
         lowLabel: String,
         highLabel: String,
-        activeColor: Color = Color(hex: "#D7CCC8")
+        activeColor: Color = Color.pillrSecondary
     ) {
         self.title = title
         self._value = value
@@ -1506,13 +1506,13 @@ struct RatingControl: View {
             HStack(spacing: 8) {
                 Text(lowLabel)
                     .font(.system(size: 11))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
 
                 Spacer()
 
                 Text(highLabel)
                     .font(.system(size: 11))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
             }
             
             HStack(spacing: 8) {
@@ -1533,7 +1533,7 @@ struct RatingControl: View {
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .stroke(Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 1)
+                                    .stroke(Color.pillrSecondary.opacity(0.4), lineWidth: 1)
                             )
                             .overlay(
                                 Group {

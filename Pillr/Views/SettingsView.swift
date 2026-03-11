@@ -129,11 +129,11 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Settings")
                     .font(.system(size: 36, weight: .bold))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .foregroundColor(Color.pillrBackground)
 
                 Text("Tailor your Pillr experience")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.9))
             }
 
             Spacer()
@@ -144,7 +144,7 @@ struct SettingsView: View {
                 } label: {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
@@ -158,7 +158,7 @@ struct SettingsView: View {
                 } label: {
                     Image(systemName: "envelope.fill")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
@@ -861,7 +861,7 @@ struct SettingsView: View {
 
         switch status {
         case .authorized, .provisional, .ephemeral:
-            return Color(hex: "#C8F365")
+            return Color.pillrAccent
         case .denied, .notDetermined:
             return Color(hex: "#F87171")
         @unknown default:
@@ -987,7 +987,7 @@ struct SettingsView: View {
         }
         switch iCloudAccountStatus {
         case .available:
-            return Color(hex: "#C8F365")
+            return Color.pillrAccent
         case .noAccount, .restricted, .temporarilyUnavailable:
             return Color(hex: "#F87171")
         case .couldNotDetermine, .none:
@@ -1039,13 +1039,13 @@ struct InfoRow: View {
         HStack {
             Text(title)
                 .font(.subheadline)
-                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                .foregroundColor(Color.pillrSecondary.opacity(0.9))
             
             Spacer()
             
             Text(value)
                 .font(.subheadline)
-                .foregroundColor(Color(hex: "#E0E7DC"))
+                .foregroundColor(Color.pillrSecondary)
         }
     }
 }

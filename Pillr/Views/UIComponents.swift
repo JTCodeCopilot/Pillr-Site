@@ -11,7 +11,7 @@ struct InteractionHeaderView: View {
         HStack {
             Text(title)
                 .font(.system(size: 18, weight: .medium))
-                .foregroundColor(Color(hex: "#F5F7F4"))
+                .foregroundColor(Color.pillrBackground)
             
             Spacer()
             
@@ -19,7 +19,7 @@ struct InteractionHeaderView: View {
                 Button(action: onApiKeyTap) {
                     Image(systemName: "star")
                         .font(.system(size: 16))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                         .padding(8)
                 }
             }
@@ -33,11 +33,11 @@ struct PremiumBadgeView: View {
     var body: some View {
         HStack {
             Image(systemName: "checkmark")
-                .foregroundColor(Color(hex: "#E0E7DC"))
+                .foregroundColor(Color.pillrSecondary)
 
             Text("Premium Mode Active")
                 .font(.system(size: 13))
-                .foregroundColor(Color(hex: "#E0E7DC"))
+                .foregroundColor(Color.pillrSecondary)
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
@@ -54,7 +54,7 @@ struct PremiumLockIcon: View {
     var body: some View {
         Image(systemName: "lock")
             .font(.system(size: 10, weight: .bold))
-            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+            .foregroundColor(Color.pillrSecondary.opacity(0.8))
     }
 }
 
@@ -75,14 +75,14 @@ struct InteractionSearchInputView: View {
             Button(action: onSearch) {
                 Text("Check Interaction")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .foregroundColor(Color.pillrBackground)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                     .background(Color.black.opacity(0.15))
                     .cornerRadius(6)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color(hex: "#C7C7BD").opacity(0.08), lineWidth: 0.8)
+                            .stroke(Color.pillrSecondary.opacity(0.08), lineWidth: 0.8)
                     )
             }
             .disabled(isButtonDisabled)
@@ -100,18 +100,18 @@ struct APIKeyWarningView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "exclamationmark.triangle")
-                    .foregroundColor(Color(hex: "#E0E7DC"))
+                    .foregroundColor(Color.pillrSecondary)
                 
                 Text("Premium Access Required")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .foregroundColor(Color.pillrBackground)
                 
                 Spacer()
             }
             
             Text(warningText)
                 .font(.system(size: 13))
-                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                .foregroundColor(Color.pillrSecondary.opacity(0.8))
             
             Button(action: onEnablePremium) {
                 HStack {
@@ -121,7 +121,7 @@ struct APIKeyWarningView: View {
                     Text("Enable Premium Mode")
                         .font(.system(size: 13, weight: .medium))
                 }
-                .foregroundColor(Color(hex: "#404C42"))
+                .foregroundColor(Color.pillrPrimary)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 16)
                 .background(Color.pillrAccent)
@@ -147,7 +147,7 @@ struct LoadingView: View {
             ZStack {
                 // Background circle
                 Circle()
-                    .stroke(Color(hex: "#F5F5F5").opacity(0.2), lineWidth: 4)
+                    .stroke(Color.pillrBackground.opacity(0.2), lineWidth: 4)
                     .frame(width: 60, height: 60)
                 
                 // Animated progress circle
@@ -156,8 +156,8 @@ struct LoadingView: View {
                     .stroke(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color(hex: "#F5F5F5"),
-                                Color(hex: "#F5F5F5").opacity(0.3)
+                                Color.pillrBackground,
+                                Color.pillrBackground.opacity(0.3)
                             ]),
                             startPoint: .leading,
                             endPoint: .trailing
@@ -176,7 +176,7 @@ struct LoadingView: View {
                 
                 // Center dot
                 Circle()
-                    .fill(Color(hex: "#F5F5F5"))
+                    .fill(Color.pillrBackground)
                     .frame(width: 8, height: 8)
                     .scaleEffect(animationOffset > 180 ? 1.2 : 0.8)
                     .animation(
@@ -188,12 +188,12 @@ struct LoadingView: View {
             VStack(spacing: 8) {
                 Text(message)
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .foregroundColor(Color.pillrBackground)
                     .multilineTextAlignment(.center)
                 
                 Text("Please wait...")
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
             }
         }
         .frame(maxWidth: .infinity)
@@ -201,10 +201,10 @@ struct LoadingView: View {
         .padding(.horizontal, 32)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(hex: "#5B695D"))
+                .fill(Color.pillrAccent)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color(hex: "#F5F5F5").opacity(0.2), lineWidth: 1)
+                        .stroke(Color.pillrBackground.opacity(0.2), lineWidth: 1)
                 )
         )
         .padding(.horizontal)
@@ -245,12 +245,12 @@ struct ErrorStateView: View {
                 VStack(spacing: 12) {
                     Text(title)
                         .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
                         .multilineTextAlignment(.center)
                     
                     Text(message)
                         .font(.system(size: 16))
-                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .lineLimit(nil)
                         .lineSpacing(2)
@@ -265,13 +265,13 @@ struct ErrorStateView: View {
                         Text(actionTitle)
                             .font(.system(size: 18, weight: .semibold))
                     }
-                    .foregroundColor(Color(hex: "#404C42"))
+                    .foregroundColor(Color.pillrPrimary)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color(hex: "#F5F5F5"),
+                                Color.pillrBackground,
                                 Color(hex: "#C7A76B")
                             ]),
                             startPoint: .top,
@@ -279,7 +279,7 @@ struct ErrorStateView: View {
                         )
                     )
                     .cornerRadius(14)
-                    .shadow(color: Color(hex: "#F5F5F5").opacity(0.4), radius: 12, x: 0, y: 6)
+                    .shadow(color: Color.pillrBackground.opacity(0.4), radius: 12, x: 0, y: 6)
                 }
                 .buttonStyle(HapticButtonStyle(style: .medium))
             }
@@ -318,18 +318,18 @@ struct EmptyStateView: View {
             VStack(spacing: 20) {
                 Image(systemName: icon)
                     .font(.system(size: 52, weight: .light))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.6))
                     .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                 
                 VStack(spacing: 12) {
                     Text(title)
                         .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
                         .multilineTextAlignment(.center)
                     
                     Text(message)
                         .font(.system(size: 16))
-                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .lineLimit(nil)
                         .lineSpacing(2)
@@ -344,14 +344,14 @@ struct EmptyStateView: View {
                         Text(actionTitle)
                             .font(.system(size: 18, weight: .semibold))
                     }
-                    .foregroundColor(Color(hex: "#404C42"))
+                    .foregroundColor(Color.pillrPrimary)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color(hex: "#E8E8E0"),
-                                Color(hex: "#D0D0C8")
+                                Color.pillrBackground,
+                                Color.pillrBackground
                             ]),
                             startPoint: .top,
                             endPoint: .bottom
@@ -377,7 +377,7 @@ struct InteractionResultView: View {
             HStack {
                 Text("Interaction Results")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                 
                 Spacer()
                 
@@ -391,15 +391,15 @@ struct InteractionResultView: View {
             }
             
             Divider()
-                .background(Color(hex: "#C7C7BD").opacity(0.05))
+                .background(Color.pillrSecondary.opacity(0.05))
             
             Text(medicationCombinationText)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
             
             Text(interaction.description)
                 .font(.system(size: 14))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                .foregroundColor(Color.pillrSecondary.opacity(0.9))
             
             VStack(alignment: .leading, spacing: 6) {
                 Text("Recommended Action")
@@ -412,7 +412,7 @@ struct InteractionResultView: View {
             }
             
             Divider()
-                .background(Color(hex: "#C7C7BD").opacity(0.05))
+                .background(Color.pillrSecondary.opacity(0.05))
             
             Text("Remember: This information is generated by AI and should not replace professional medical advice.")
                 .font(.system(size: 12))
@@ -445,7 +445,7 @@ private struct MinimalTextFieldModifier: ViewModifier {
             .cornerRadius(6)
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color(hex: "#D8B4F8").opacity(0.07), lineWidth: 0.8)
+                    .stroke(Color.pillrAccent.opacity(0.07), lineWidth: 0.8)
             )
     }
 }
@@ -577,7 +577,7 @@ struct GlassHapticButton: View {
             .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color(hex: "#D8B4F8").opacity(0.12), lineWidth: 0.8)
+                    .stroke(Color.pillrAccent.opacity(0.12), lineWidth: 0.8)
             )
         }
             .buttonStyle(HapticButtonStyle(style: style))
@@ -619,8 +619,8 @@ struct NavigationActionButton: View {
     private var primaryGradient: LinearGradient {
         LinearGradient(
             gradient: Gradient(colors: [
-                Color(hex: "#F5F7F4"),
-                Color(hex: "#DCD8CF")
+                Color.pillrBackground,
+                Color.pillrBackground
             ]),
             startPoint: .top,
             endPoint: .bottom
@@ -632,11 +632,11 @@ struct NavigationActionButton: View {
     }
 
     private var primaryForeground: Color {
-        Color(hex: "#404C42")
+        Color.pillrPrimary
     }
 
     private var secondaryForeground: Color {
-        Color(hex: "#F5F7F4")
+        Color.pillrBackground
     }
 
     private var fillStyle: AnyShapeStyle {
@@ -675,7 +675,7 @@ struct NavigationActionButton: View {
                     .stroke(
                         variant == .primary
                             ? Color.white.opacity(0.08)
-                            : Color(hex: "#C7C7BD").opacity(0.35),
+                            : Color.pillrSecondary.opacity(0.35),
                         lineWidth: 1
                     )
             )

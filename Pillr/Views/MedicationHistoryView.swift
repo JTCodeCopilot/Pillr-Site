@@ -131,7 +131,7 @@ struct MedicationHistoryView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#424C43")
+                Color.pillrPrimary
                     .ignoresSafeArea()
                 
                 ScrollView(showsIndicators: false) {
@@ -154,14 +154,14 @@ struct MedicationHistoryView: View {
                 ToolbarItem(placement: .principal) {
                     Text("History")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                 }
                 if isModal {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button("Close") {
                             dismiss()
                         }
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -183,7 +183,7 @@ struct MedicationHistoryView: View {
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                     }
                     .disabled(filteredLogs.isEmpty)
                     .accessibilityLabel("Export history")
@@ -220,11 +220,11 @@ struct MedicationHistoryView: View {
         VStack(alignment: .leading, spacing: 1) {
             Text("History")
                 .font(.system(size: 30, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
             
             Text("Logged doses: \(rangeTakenCount)  •  Adherence: \(rangeAdherenceRate)")
                 .font(.system(size: 15, weight: .regular))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.65))
+                .foregroundColor(Color.pillrSecondary.opacity(0.65))
         }
         .padding(.top, 16)
     }
@@ -234,8 +234,8 @@ struct MedicationHistoryView: View {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(hex: "#3D463F"),
-                        Color(hex: "#2E352F")
+                        Color.pillrPrimary,
+                        Color.pillrPrimary
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
@@ -254,7 +254,7 @@ struct MedicationHistoryView: View {
                     Button("Close") {
                         showingDateRangePopover = false
                     }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                 }
             }
         }
@@ -267,7 +267,7 @@ struct MedicationHistoryView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Choose a date range")
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                 }
 
                 VStack(spacing: 12) {
@@ -278,7 +278,7 @@ struct MedicationHistoryView: View {
                         DatePicker("", selection: $selectedStartDate, in: ...selectedEndDate, displayedComponents: .date)
                             .labelsHidden()
                             .datePickerStyle(.wheel)
-                            .tint(Color(hex: "#E8E8E0"))
+                            .tint(Color.pillrBackground)
                             .scaleEffect(y: 0.8, anchor: .center)
                             .frame(height: 120)
                     }
@@ -290,7 +290,7 @@ struct MedicationHistoryView: View {
                         DatePicker("", selection: $selectedEndDate, in: selectedStartDate...Date(), displayedComponents: .date)
                             .labelsHidden()
                             .datePickerStyle(.wheel)
-                            .tint(Color(hex: "#E8E8E0"))
+                            .tint(Color.pillrBackground)
                             .scaleEffect(y: 0.8, anchor: .center)
                             .frame(height: 120)
                     }
@@ -299,11 +299,11 @@ struct MedicationHistoryView: View {
                 HStack(spacing: 10) {
                     Label("\(rangeDaysDisplayed) days selected", systemImage: "calendar.badge.clock")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                     Spacer()
                     Text("\(rangeTakenCount) logged • \(rangeNotesCount) notes")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                 }
                 .padding(.horizontal, 6)
 
@@ -338,10 +338,10 @@ struct MedicationHistoryView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label.uppercased())
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
                 Text(selectionText)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
             }
             .padding(.horizontal, 4)
 
@@ -386,10 +386,10 @@ struct MedicationHistoryView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Quick ranges")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                     Text("Jump to a recent window")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.7))
                 }
                 Spacer()
                 HStack(spacing: 6) {
@@ -398,7 +398,7 @@ struct MedicationHistoryView: View {
                         .foregroundColor(Color(hex: "#7FE3FF"))
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                 }
             }
             .padding(.vertical, 14)
@@ -448,7 +448,7 @@ struct MedicationHistoryView: View {
         } label: {
             Image(systemName: includeSkipped ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(includeSkipped ? Color(hex: "#C7C7BD") : Color.white.opacity(0.7))
+                .foregroundColor(includeSkipped ? Color.pillrSecondary : Color.white.opacity(0.7))
                 .accessibilityLabel(includeSkipped ? "Exclude skipped doses" : "Include skipped doses")
         }
     }
@@ -458,7 +458,7 @@ struct MedicationHistoryView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Refine history")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.6))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.6))
 
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 14) {
@@ -524,8 +524,8 @@ struct MedicationHistoryView: View {
                             .font(.system(size: isToday ? 13 : 18, weight: isToday ? .semibold : .bold))
                             .foregroundColor(
                                 isToday
-                                    ? Color(hex: "#C7C7BD").opacity(0.55)
-                                    : Color(hex: "#E8E8E0")
+                                    ? Color.pillrSecondary.opacity(0.55)
+                                    : Color.pillrBackground
                             )
                     }
                     
@@ -616,17 +616,17 @@ private struct MedicationTimelineRow: View {
                     HStack(spacing: 8) {
                         Image(systemName: resolvedIconName)
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "#D7CCC8"))
+                            .foregroundColor(Color.pillrSecondary)
                         
                         VStack(alignment: .leading, spacing: 1) {
                             Text(log.medicationName)
                                 .font(.body.weight(.semibold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .foregroundColor(Color.pillrBackground)
                             
                             if let dosageText {
                                 Text(dosageText)
                                     .font(.body.weight(.regular))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.65))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.65))
                             }
                         }
                     }
@@ -635,7 +635,7 @@ private struct MedicationTimelineRow: View {
                     
                     Text(timeText)
                         .font(.body.weight(.semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(Color.white.opacity(0.015))
@@ -647,14 +647,14 @@ private struct MedicationTimelineRow: View {
                     HistoryChip(
                         icon: log.skipped ? "xmark.circle.fill" : "checkmark.circle.fill",
                         text: log.skipped ? "Skipped" : "Taken",
-                        tint: log.skipped ? Color(hex: "#D78B7E") : Color(hex: "#C7C7BD")
+                        tint: log.skipped ? Color(hex: "#D78B7E") : Color.pillrSecondary
                     )
                     
                     if let pills = log.pillsConsumed {
                         HistoryChip(
                             icon: "capsule.fill",
                             text: pills == 1 ? "1 pill" : "\(pills) pills",
-                            tint: Color(hex: "#C7C7BD").opacity(0.9)
+                            tint: Color.pillrSecondary.opacity(0.9)
                         )
                     }
                     
@@ -663,7 +663,7 @@ private struct MedicationTimelineRow: View {
                         HistoryChip(
                             icon: "bell.badge.fill",
                             text: "Dose \(reminder + 1)",
-                            tint: Color(hex: "#C7C7BD").opacity(0.9)
+                            tint: Color.pillrSecondary.opacity(0.9)
                         )
                     }
                 }
@@ -672,7 +672,7 @@ private struct MedicationTimelineRow: View {
                     HistoryChip(
                         icon: "heart.fill",
                         text: "Feeling \(feeling)/5",
-                        tint: Color(hex: "#D7CCC8").opacity(0.95)
+                        tint: Color.pillrSecondary.opacity(0.95)
                     )
                 }
 
@@ -680,7 +680,7 @@ private struct MedicationTimelineRow: View {
                     HistoryChip(
                         icon: "hourglass",
                         text: "Focus \(focus)/5",
-                        tint: Color(hex: "#D7CCC8")
+                        tint: Color.pillrSecondary
                     )
                 }
                 
@@ -688,7 +688,7 @@ private struct MedicationTimelineRow: View {
                     HistoryChip(
                         icon: "waveform.path.ecg",
                         text: "Side effects \(sideEffects)/5",
-                        tint: Color(hex: "#D7CCC8").opacity(0.9)
+                        tint: Color.pillrSecondary.opacity(0.9)
                     )
                 }
                 
@@ -696,11 +696,11 @@ private struct MedicationTimelineRow: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Notes")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.9))
                         
                         Text(notes)
                             .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(12)
@@ -766,8 +766,8 @@ private struct LogDateEditSheet: View {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(hex: "#3D463F"),
-                        Color(hex: "#2E352F")
+                        Color.pillrPrimary,
+                        Color.pillrPrimary
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
@@ -777,11 +777,11 @@ private struct LogDateEditSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Edit Log Date")
                         .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
 
                     Text(log.medicationName)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
 
                     DatePicker(
                         "Log time",
@@ -791,7 +791,7 @@ private struct LogDateEditSheet: View {
                     )
                     .datePickerStyle(.wheel)
                     .labelsHidden()
-                    .tint(Color(hex: "#E8E8E0"))
+                    .tint(Color.pillrBackground)
                     .padding(.vertical, 8)
 
                     Spacer()
@@ -804,13 +804,13 @@ private struct LogDateEditSheet: View {
                     Button("Cancel") {
                         onCancel()
                     }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         onSave(selectedDate)
                     }
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                 }
             }
         }
@@ -830,7 +830,7 @@ private struct HistoryChip: View {
             Text(text)
                 .font(.caption.weight(.medium))
         }
-        .foregroundColor(Color(hex: "#404C42"))
+        .foregroundColor(Color.pillrPrimary)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(minHeight: 28)
@@ -1150,7 +1150,7 @@ private struct HistoryControlButton: View {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
                 .frame(width: 36, height: 36)
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
                 .background(
                     Circle()
                         .fill(Color.white.opacity(0.08))
@@ -1164,18 +1164,18 @@ private struct HistoryControlButton: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(title.uppercased())
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                     .kerning(0.6)
 
                 Text(value)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                     .lineLimit(1)
 
                 if let detail {
                     Text(detail)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                         .lineLimit(1)
                 }
             }
@@ -1184,7 +1184,7 @@ private struct HistoryControlButton: View {
 
             Image(systemName: "chevron.down")
                 .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
                 .opacity(0.35)
         }
         .padding(.horizontal, 24)
@@ -1207,15 +1207,15 @@ private struct HistoryEmptyState: View {
         VStack(spacing: 14) {
             Image(systemName: "clock.arrow.circlepath")
                 .font(.system(size: 42))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(Color.pillrSecondary.opacity(0.7))
             
             Text("No history yet")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
             
             Text("Log a medication to see your dose timeline, notes, and progress.")
                 .font(.system(size: 14))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
                 .multilineTextAlignment(.center)
         }
         .padding(20)

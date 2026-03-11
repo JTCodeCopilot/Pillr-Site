@@ -44,7 +44,7 @@ struct MedicationInteractionSelectionSheet: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#404C42").ignoresSafeArea()
+                Color.pillrPrimary.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Header section
@@ -84,7 +84,7 @@ struct MedicationInteractionSelectionSheet: View {
                             dismiss()
                         }
                     }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -98,12 +98,12 @@ struct MedicationInteractionSelectionSheet: View {
                                 }
                             }
                         }
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                     } else {
                         Button("Done") {
                             dismiss()
                         }
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                     }
                 }
             }
@@ -156,16 +156,16 @@ struct MedicationInteractionSelectionSheet: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "checkmark.shield.fill")
                                     .font(.system(size: 24))
-                                    .foregroundColor(Color(hex: "#F5F7F4"))
+                                    .foregroundColor(Color.pillrBackground)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("No Interactions Found")
                                         .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(Color(hex: "#F5F7F4"))
+                                        .foregroundColor(Color.pillrBackground)
                                     
                                     Text("Your selected medications appear safe together")
                                         .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                        .foregroundColor(Color.pillrSecondary)
                                 }
                                 
                                 Spacer()
@@ -179,7 +179,7 @@ struct MedicationInteractionSelectionSheet: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("\(interactions.count) Interaction\(interactions.count == 1 ? "" : "s") Found")
                                         .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(Color(hex: "#F5F7F4"))
+                                        .foregroundColor(Color.pillrBackground)
                                     
                                     if let highestSeverity = interactions.map(\.severity).max(by: { severity1, severity2 in
                                         let order: [DrugInteraction.InteractionSeverity] = [.unknown, .minor, .moderate, .major, .contraindicated]
@@ -210,11 +210,11 @@ struct MedicationInteractionSelectionSheet: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Interactions")
                         .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
                     
                     Text("\(totalSelectedCount) medication\(totalSelectedCount == 1 ? "" : "s") selected")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.9))
 
                     Button {
                         showingInteractionHistory = true
@@ -225,7 +225,7 @@ struct MedicationInteractionSelectionSheet: View {
                             Text("Past Interactions")
                                 .font(.system(size: 14, weight: .semibold))
                         }
-                        .foregroundColor(Color(hex: "#404C42"))
+                        .foregroundColor(Color.pillrPrimary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                         .background(Color.pillrAccent)
@@ -240,7 +240,7 @@ struct MedicationInteractionSelectionSheet: View {
                             .foregroundColor(.orange)
                         Text("Select at least 2 medications to check interactions")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(hex: "#F5F7F4"))
+                            .foregroundColor(Color.pillrBackground)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
@@ -268,7 +268,7 @@ struct MedicationInteractionSelectionSheet: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Your Active Medications")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.9))
                             .padding(.horizontal, 4)
                         
                         ForEach(store.activeMedications) { medication in
@@ -290,14 +290,14 @@ struct MedicationInteractionSelectionSheet: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Selected Medications:")
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                .foregroundColor(Color.pillrBackground)
                             
                             FlowLayout(spacing: 8) {
                                 // Active medications
                                 ForEach(selectedMedications, id: \.id) { medication in
                                     Text(medication.name)
                                         .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(Color(hex: "#F5F7F4"))
+                                        .foregroundColor(Color.pillrBackground)
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 4)
                                         .background(
@@ -314,7 +314,7 @@ struct MedicationInteractionSelectionSheet: View {
                                 ForEach(additionalMedications, id: \.self) { medicationName in
                                     Text(medicationName)
                                         .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(Color(hex: "#F5F7F4"))
+                                        .foregroundColor(Color.pillrBackground)
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 4)
                                         .background(
@@ -351,12 +351,12 @@ struct MedicationInteractionSelectionSheet: View {
                                     .opacity(0.8)
                             }
                         }
-                        .foregroundColor(canCheckInteractions ? Color(hex: "#404C42") : Color(hex: "#F5F7F4"))
+                        .foregroundColor(canCheckInteractions ? Color.pillrPrimary : Color.pillrBackground)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(canCheckInteractions ? Color.pillrAccent : Color(hex: "#4C584F"))
+                                .fill(canCheckInteractions ? Color.pillrAccent : Color.pillrAccent)
                         )
                     }
                     .disabled(!canCheckInteractions)
@@ -378,16 +378,16 @@ struct MedicationInteractionSelectionSheet: View {
                         VStack(spacing: 20) {
                             Image(systemName: "checkmark.shield.fill")
                                 .font(.system(size: 60))
-                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                .foregroundColor(Color.pillrBackground)
                             
                             VStack(spacing: 8) {
                                 Text("All Clear!")
                                     .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(Color(hex: "#F5F7F4"))
+                                    .foregroundColor(Color.pillrBackground)
                                 
                                 Text("No significant interactions were found among your selected medications.")
                                     .font(.system(size: 16))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color.pillrSecondary)
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal)
                             }
@@ -398,12 +398,12 @@ struct MedicationInteractionSelectionSheet: View {
                                         .foregroundColor(Color.blue)
                                     Text("This doesn't mean interactions are impossible")
                                         .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                 }
                                 
                                 Text("Always consult your healthcare provider about potential interactions, especially when starting new medications.")
                                     .font(.system(size: 13))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                     .multilineTextAlignment(.center)
                             }
                             .padding()
@@ -430,7 +430,7 @@ struct MedicationInteractionSelectionSheet: View {
                                     title: "Total Pairs",
                                     value: "\(totalInteractionPairs)",
                                     subtitle: "checked",
-                                    color: Color(hex: "#F5F7F4")
+                                    color: Color.pillrBackground
                                 )
                                 
                                 SummaryCard(
@@ -447,7 +447,7 @@ struct MedicationInteractionSelectionSheet: View {
                                 HStack {
                                     Text("Interaction Details")
                                         .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(Color(hex: "#F5F7F4"))
+                                        .foregroundColor(Color.pillrBackground)
                                     
                                     Spacer()
                                     
@@ -517,7 +517,7 @@ struct MedicationInteractionSelectionSheet: View {
                 .fill(Color.clear)
                 .frame(height: 20)
         }
-        .background(Color(hex: "#404C42"))
+        .background(Color.pillrPrimary)
     }
 
     private var searchingOverlay: some View {
@@ -698,7 +698,7 @@ struct SummaryCard: View {
         VStack(spacing: 8) {
             Text(title)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
             
             Text(value)
                 .font(.system(size: 24, weight: .bold))
@@ -706,7 +706,7 @@ struct SummaryCard: View {
             
             Text(subtitle)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .foregroundColor(Color.pillrSecondary.opacity(0.8))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -729,7 +729,7 @@ struct CompactInteractionRow: View {
             HStack {
                 Text("\(interaction.drugA) + \(interaction.drugB)")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .foregroundColor(Color.pillrBackground)
                 
                 Spacer()
                 
@@ -750,7 +750,7 @@ struct CompactInteractionRow: View {
             
             Text(interaction.description)
                 .font(.system(size: 14))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                .foregroundColor(Color.pillrSecondary.opacity(0.9))
                 .lineLimit(2)
         }
         .padding(12)
@@ -779,19 +779,19 @@ struct AdditionalMedicationRow: View {
                     
                     Image(systemName: "pills.fill")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
             }
             
             // Medication info
             VStack(alignment: .leading, spacing: 2) {
                 Text(medicationName)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .foregroundColor(Color.pillrBackground)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
                                         Text("Additional medication")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             
@@ -839,7 +839,7 @@ struct MedicationSelectionRow: View {
                     if isSelected {
                         Image(systemName: "checkmark")
                             .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(Color(hex: "#404C42"))
+                            .foregroundColor(Color.pillrPrimary)
                     }
                 }
                 
@@ -847,18 +847,18 @@ struct MedicationSelectionRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(medication.name)
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
                     Text("\(medication.dosage) - \(medication.frequency)")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
                     if let notes = medication.notes, !notes.isEmpty {
                         Text(notes)
                             .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.7))
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }

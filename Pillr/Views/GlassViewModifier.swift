@@ -48,7 +48,6 @@ struct GyroGlassViewModifier: ViewModifier {
     
     @StateObject private var motionManager = MotionManager.shared
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
     @State private var shimmerOffset: CGFloat = 0
     
@@ -82,10 +81,10 @@ struct GyroGlassViewModifier: ViewModifier {
                                         .strokeBorder(
                                             LinearGradient(
                                                 colors: [
-                                                    Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(shineOpacity * 0.15 * shineIntensity),
-                                                    Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(shineOpacity * 0.3 * normalizedRoll * shineIntensity),
-                                                    Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(shineOpacity * 0.1 * shineIntensity),
-                                                    Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(shineOpacity * 0.2 * normalizedPitch * shineIntensity)
+                                                    Color.pillrAccent.opacity(shineOpacity * 0.15 * shineIntensity),
+                                                    Color.pillrAccent.opacity(shineOpacity * 0.3 * normalizedRoll * shineIntensity),
+                                                    Color.pillrAccent.opacity(shineOpacity * 0.1 * shineIntensity),
+                                                    Color.pillrAccent.opacity(shineOpacity * 0.2 * normalizedPitch * shineIntensity)
                                                 ],
                                                 startPoint: UnitPoint(x: 0.2 + (normalizedRoll * 0.6), y: 0.1 + (normalizedPitch * 0.2)),
                                                 endPoint: UnitPoint(x: 0.8 - (normalizedPitch * 0.3), y: 0.9 - (normalizedRoll * 0.3))
@@ -140,7 +139,7 @@ struct GyroGlassViewModifier: ViewModifier {
                         lineWidth: borderWidth
                     )
             )
-            .shadow(color: Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(0.15), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color.pillrAccent.opacity(0.15), radius: 2, x: 0, y: 1) // Inner shadow at top
             .shadow(color: Color.black.opacity(shadowOpacity), radius: 2, x: 0, y: -1) // Inner shadow at bottom
     }
 }
@@ -155,7 +154,6 @@ struct GlassViewModifier: ViewModifier {
     var shadowRadius: CGFloat = 8  // Match gyro version
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
@@ -176,7 +174,7 @@ struct GlassViewModifier: ViewModifier {
                         lineWidth: borderWidth
                     )
             )
-            .shadow(color: Color(hex: colorScheme == .dark ? "#D8B4F8" : "#D8B4F8").opacity(0.05), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color.pillrAccent.opacity(0.05), radius: 2, x: 0, y: 1) // Inner shadow at top
             .shadow(color: Color.black.opacity(shadowOpacity), radius: 2, x: 0, y: -1) // Inner shadow at bottom
     }
 }
@@ -249,7 +247,7 @@ struct GlassTextFieldStyle: TextFieldStyle {
             )
             .cornerRadius(10)
             .foregroundColor(colorScheme == .dark ? .white : .primary)
-            .accentColor(Color(hex: "#D8B4F8").opacity(0.8)) // Cursor color
+            .accentColor(Color.pillrAccent.opacity(0.8)) // Cursor color
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(
@@ -264,7 +262,7 @@ struct GlassTextFieldStyle: TextFieldStyle {
                         lineWidth: 0.8
                     )
             )
-            .shadow(color: Color(hex: "#D8B4F8").opacity(0.04), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color.pillrAccent.opacity(0.04), radius: 2, x: 0, y: 1) // Inner shadow at top
             .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: -1) // Inner shadow at bottom
             .font(horizontalSizeClass == .regular ? .body : .callout)
     }
@@ -301,7 +299,7 @@ struct GlassTextEditorStyle: ViewModifier {
                         lineWidth: 0.8
                     )
             )
-            .shadow(color: Color(hex: "#D8B4F8").opacity(0.04), radius: 2, x: 0, y: 1) // Inner shadow at top
+            .shadow(color: Color.pillrAccent.opacity(0.04), radius: 2, x: 0, y: 1) // Inner shadow at top
             .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: -1) // Inner shadow at bottom
     }
 }

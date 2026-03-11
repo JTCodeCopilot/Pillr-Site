@@ -10,15 +10,19 @@ import WebKit
 
 // MARK: - Global Background Definition
 extension Color {
-    static let pillrNavy = Color.black
-    static let pillrSoftBlue = Color.black
-    static let pillrDeepBlue = Color.black
+    static let pillrPrimary = Color(hex: "#1F3B2D")
+    static let pillrSecondary = Color(hex: "#B7C8AE")
+    static let pillrBackground = Color(hex: "#F4F6F2")
+    static let pillrAccent = Color(hex: "#6F8F7B")
+    static let pillrNavy = pillrPrimary
+    static let pillrSoftBlue = pillrAccent
+    static let pillrDeepBlue = pillrPrimary
 }
 
 extension LinearGradient {
     static let pillrBackground = LinearGradient(
         gradient: Gradient(colors: [
-            Color(hex: "#404C42"),  // Solid background color
+            .pillrPrimary,
         ]),
         startPoint: .topTrailing,
         endPoint: .bottomLeading
@@ -29,17 +33,6 @@ extension LinearGradient {
 extension View {
     func pillrNavyBackground() -> some View {
         self.background(LinearGradient.pillrBackground)
-    }
-}
-
-// MARK: - Color Extension for Theme Colors
-extension Color {
-    static var pillrAccent: Color {
-        return Color(hex: "#F5F5F5") // Tan accent color
-    }
-    
-    static var pillrSecondary: Color {
-        return Color(hex: "#F5F5F5") // Tan secondary color
     }
 }
 
@@ -152,12 +145,12 @@ struct ContentView: View {
                 ZStack {
                     // Single large solid background
                     Rectangle()
-                        .fill(Color(hex: "#404C42"))
+                        .fill(Color.pillrPrimary)
                         .ignoresSafeArea()
                     
                     // Top navbar area
                     Rectangle()
-                        .fill(Color(hex: "#404C42"))
+                        .fill(Color.pillrPrimary)
                         .frame(height: geometry.safeAreaInsets.top + 44)
                         .ignoresSafeArea(edges: .top)
                 }
@@ -258,7 +251,7 @@ struct MenuButton: View {
                 // Outer glow ring when menu is open
                 if showingPopoutMenu {
                     Circle()
-                        .stroke(Color(hex: "#F5F1E8").opacity(0.4), lineWidth: 2)
+                        .stroke(Color.pillrBackground.opacity(0.4), lineWidth: 2)
                         .frame(width: 76, height: 76)
                         .scaleEffect(pulseAnimation ? 1.1 : 1.0)
                         .opacity(pulseAnimation ? 0.3 : 0.6)
@@ -281,7 +274,7 @@ struct MenuButton: View {
                 } else {
                     Image(systemName: "line.3.horizontal")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                 }
             }
         }
@@ -439,12 +432,12 @@ struct MenuItemButton: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                     .frame(width: 24)
                 
                 Text(title)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                 Spacer()
             }
             .padding(.horizontal, 20)
@@ -499,7 +492,7 @@ struct MedicationLogViewSheet: View {
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .foregroundColor(Color.pillrSecondary)
                         }
                     }
                 }
@@ -525,7 +518,7 @@ struct SettingsViewSheet: View {
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .foregroundColor(Color.pillrSecondary)
                         }
                     }
                 }
@@ -603,7 +596,7 @@ struct MedicationLogContentView: View {
         GeometryReader { geometry in
             ZStack {
                 // Background color
-                Color(hex: "#404C42")
+                Color.pillrPrimary
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
@@ -612,7 +605,7 @@ struct MedicationLogContentView: View {
                         HStack {
                             Text("History")
                                 .font(.system(size: 32, weight: .bold))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .foregroundColor(Color.pillrSecondary)
                             
                             Spacer()
                             
@@ -626,10 +619,10 @@ struct MedicationLogContentView: View {
                                     Text("Export")
                                         .font(.system(size: 14, weight: .medium))
                                 }
-                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .foregroundColor(Color.pillrSecondary)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
-                                .background(Color(hex: "#525E55"))
+                                .background(Color.pillrAccent)
                                 .cornerRadius(20)
                             }
                             
@@ -654,7 +647,7 @@ struct MedicationLogContentView: View {
                                         .font(.system(size: 12, weight: .semibold))
                                         .opacity(0.6)
                                 }
-                                .foregroundColor(Color(hex: "#525E55"))
+                                .foregroundColor(Color.pillrAccent)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 10)
                                 .contentShape(RoundedRectangle(cornerRadius: 20))
@@ -676,11 +669,11 @@ struct MedicationLogContentView: View {
                             HStack {
                                 Image(systemName: "calendar")
                                     .font(.system(size: 14))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                 
                                 Text(dateFormatter.string(from: selectedDate))
                                     .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color.pillrSecondary)
                                 
                                 Spacer()
                             }
@@ -693,7 +686,7 @@ struct MedicationLogContentView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                     .padding(.bottom, 16)
-                    .background(Color(hex: "#404C42"))
+                    .background(Color.pillrPrimary)
                     .zIndex(1)
                     
                     // Content area
@@ -938,7 +931,7 @@ struct SettingsContentView: View {
     var body: some View {
         ZStack {
             // Background
-            Color(hex: "#404C42")
+            Color.pillrPrimary
                 .ignoresSafeArea()
             
             ScrollView {
@@ -993,14 +986,14 @@ struct SettingsContentView: View {
             HStack {
                 Image(systemName: "gearshape")
                     .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                 Text("App Settings")
                     .font(.headline)
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                 Spacer()
             }
             Divider()
-                .background(Color(hex: "#525E55").opacity(0.15))
+                .background(Color.pillrAccent.opacity(0.15))
             
             // Interaction History
             Button(action: {
@@ -1008,23 +1001,23 @@ struct SettingsContentView: View {
             }) {
                 HStack {
                     Image(systemName: "clock.arrow.circlepath")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                         .frame(width: 20)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Interaction History")
-                            .foregroundColor(Color(hex: "#525E55"))
+                            .foregroundColor(Color.pillrAccent)
                             .font(.system(size: 16, weight: .medium))
                         
                         Text("View and manage your interaction checks")
-                            .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                            .foregroundColor(Color.pillrAccent.opacity(0.7))
                             .font(.system(size: 14))
                     }
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                        .foregroundColor(Color.pillrAccent.opacity(0.4))
                         .font(.system(size: 14))
                 }
                 .padding(.vertical, 4)
@@ -1044,36 +1037,36 @@ struct SettingsContentView: View {
             HStack {
                 Image(systemName: "hourglass")
                     .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                 Text("AI Features")
                     .font(.headline)
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                 Spacer()
             }
             
             Divider()
-                .background(Color(hex: "#525E55").opacity(0.15))
+                .background(Color.pillrAccent.opacity(0.15))
             
             // Premium Subscription
             if OpenAIService.shared.isPremiumUser() {
                 // Non-tappable premium status display
                 HStack {
                     Image(systemName: "lock")
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                         .frame(width: 20)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Premium Active")
-                            .foregroundColor(Color(hex: "#525E55"))
+                            .foregroundColor(Color.pillrAccent)
                             .font(.system(size: 16, weight: .medium))
                         
                         if let subscriptionType = OpenAIService.shared.getSubscriptionType() {
                             Text("\(subscriptionType.capitalized) subscription")
-                                .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                                .foregroundColor(Color.pillrAccent.opacity(0.7))
                                 .font(.system(size: 14))
                         } else {
                             Text("AI-powered interaction checking enabled")
-                                .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                                .foregroundColor(Color.pillrAccent.opacity(0.7))
                                 .font(.system(size: 14))
                         }
                     }
@@ -1081,7 +1074,7 @@ struct SettingsContentView: View {
                     Spacer()
                     
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                         .font(.system(size: 16))
                 }
                 .padding(.vertical, 4)
@@ -1092,23 +1085,23 @@ struct SettingsContentView: View {
                 }) {
                     HStack {
                         Image(systemName: "hourglass")
-                            .foregroundColor(Color(hex: "#525E55"))
+                            .foregroundColor(Color.pillrAccent)
                             .frame(width: 20)
                         
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Upgrade to Premium")
-                                .foregroundColor(Color(hex: "#525E55"))
+                                .foregroundColor(Color.pillrAccent)
                                 .font(.system(size: 16, weight: .medium))
                             
                             Text("Unlock AI-powered medication analysis")
-                                .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                                .foregroundColor(Color.pillrAccent.opacity(0.7))
                                 .font(.system(size: 14))
                         }
                         
                         Spacer()
                         
                         Image(systemName: "chevron.right")
-                            .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                            .foregroundColor(Color.pillrAccent.opacity(0.4))
                             .font(.system(size: 14))
                     }
                     .padding(.vertical, 4)
@@ -1129,15 +1122,15 @@ struct SettingsContentView: View {
             HStack {
                 Image(systemName: "link")
                     .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                 Text("Support & Resources")
                     .font(.headline)
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                 Spacer()
             }
             
             Divider()
-                .background(Color(hex: "#525E55").opacity(0.15))
+                .background(Color.pillrAccent.opacity(0.15))
             
             // Privacy Policy Link
             Button(action: {
@@ -1145,17 +1138,17 @@ struct SettingsContentView: View {
             }) {
                 HStack {
                     Image(systemName: "hand.raised.fill")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                         .frame(width: 20)
                     
                     Text("Privacy Policy")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                         .font(.system(size: 16, weight: .medium))
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                        .foregroundColor(Color.pillrAccent.opacity(0.4))
                         .font(.system(size: 14))
                 }
                 .padding(.vertical, 4)
@@ -1168,17 +1161,17 @@ struct SettingsContentView: View {
             }) {
                 HStack {
                     Image(systemName: "message.fill")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                         .frame(width: 20)
                     
                     Text("Feedback")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                         .font(.system(size: 16, weight: .medium))
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                        .foregroundColor(Color.pillrAccent.opacity(0.4))
                         .font(.system(size: 14))
                 }
                 .padding(.vertical, 4)
@@ -1191,17 +1184,17 @@ struct SettingsContentView: View {
             }) {
                 HStack {
                     Image(systemName: "envelope.fill")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                         .frame(width: 20)
                     
                     Text("Contact Us")
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                         .font(.system(size: 16, weight: .medium))
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .foregroundColor(Color(hex: "#525E55").opacity(0.4))
+                        .foregroundColor(Color.pillrAccent.opacity(0.4))
                         .font(.system(size: 14))
                 }
                 .padding(.vertical, 4)
@@ -1227,7 +1220,7 @@ struct EmbeddedWebView: View {
         NavigationView {
             ZStack {
                 // Background color
-                Color(hex: "#404C42")
+                Color.pillrPrimary
                     .ignoresSafeArea()
                 
                 VStack {
@@ -1236,10 +1229,10 @@ struct EmbeddedWebView: View {
                             ZStack {
                                 if isLoading {
                                     ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#C7C7BD")))
+                                        .progressViewStyle(CircularProgressViewStyle(tint: Color.pillrSecondary))
                                         .scaleEffect(1.5)
                                         .frame(width: 50, height: 50)
-                                        .background(Color(hex: "#404C42").opacity(0.7))
+                                        .background(Color.pillrPrimary.opacity(0.7))
                                         .cornerRadius(10)
                                 }
                             }
@@ -1334,7 +1327,7 @@ struct HistoryDatePickerOverlay: View {
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 28))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                     }
                 }
                 .padding(.horizontal)
@@ -1348,10 +1341,10 @@ struct HistoryDatePickerOverlay: View {
                 )
                 .datePickerStyle(.graphical)
                 .labelsHidden()
-                .tint(Color(hex: "#C7C7BD"))
+                .tint(Color.pillrSecondary)
                 .environment(\.colorScheme, .dark)
                 .padding(12)
-                .background(Color(hex: "#404C42"))
+                .background(Color.pillrPrimary)
                 .cornerRadius(12)
 
                 Spacer()
@@ -1360,7 +1353,7 @@ struct HistoryDatePickerOverlay: View {
             .frame(maxWidth: 350)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(hex: "#404C42"))
+                    .fill(Color.pillrPrimary)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)

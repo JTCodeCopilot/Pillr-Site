@@ -23,8 +23,8 @@ struct AISearchMedicationView: View {
             // Background
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#404C42"),
-                    Color(hex: "#3A443D")
+                    Color.pillrPrimary,
+                    Color.pillrPrimary
                 ]),
                 startPoint: .top,
                 endPoint: .bottom
@@ -36,7 +36,7 @@ struct AISearchMedicationView: View {
                 HStack {
                     Text("AI Medication Search")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                     
                     Spacer()
                     
@@ -56,11 +56,11 @@ struct AISearchMedicationView: View {
                 HStack(spacing: 8) {
                     HStack {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                             .font(.system(size: 16, weight: .medium))
                         
                         TextField("Search for a medication...", text: $searchQuery)
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
                             .font(.system(size: 16, weight: .medium))
                             .disableAutocorrection(true)
                             .autocapitalization(.none)
@@ -72,7 +72,7 @@ struct AISearchMedicationView: View {
                                 errorMessage = nil
                             }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                     .font(.system(size: 16, weight: .medium))
                             }
                         }
@@ -83,7 +83,7 @@ struct AISearchMedicationView: View {
                             .fill(Color.black.opacity(0.2))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                    .stroke(Color.pillrSecondary.opacity(0.3), lineWidth: 1)
                             )
                     )
                     
@@ -100,7 +100,7 @@ struct AISearchMedicationView: View {
                         }
                     }) {
                         Image(systemName: "arrow.up.circle.fill")
-                            .foregroundColor(!searchQuery.isEmpty ? Color(hex: "#E8E8E0") : Color(hex: "#C7C7BD").opacity(0.5))
+                            .foregroundColor(!searchQuery.isEmpty ? Color.pillrBackground : Color.pillrSecondary.opacity(0.5))
                             .font(.system(size: 36, weight: .medium))
                     }
                     .disabled(searchQuery.isEmpty)
@@ -116,7 +116,7 @@ struct AISearchMedicationView: View {
                         if isSearching {
                             ProgressView()
                                 .scaleEffect(1.2)
-                                .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#C7C7BD")))
+                                .progressViewStyle(CircularProgressViewStyle(tint: Color.pillrSecondary))
                                 .padding()
                         } else if let error = errorMessage {
                             VStack(spacing: 12) {
@@ -125,7 +125,7 @@ struct AISearchMedicationView: View {
                                     .font(.system(size: 28, weight: .medium))
                                 
                                 Text(error)
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .foregroundColor(Color.pillrBackground)
                                     .multilineTextAlignment(.center)
                                     .padding()
                             }
@@ -136,15 +136,15 @@ struct AISearchMedicationView: View {
                             VStack(spacing: 16) {
                                 Image(systemName: "pills.circle")
                                     .font(.system(size: 40))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                 
                                 Text("No medications found")
                                     .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .foregroundColor(Color.pillrBackground)
                                 
                                 Text("Try a different search term or add your medication manually")
                                     .font(.system(size: 14))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal)
                             }
@@ -169,7 +169,7 @@ struct AISearchMedicationView: View {
                             // Disclaimer text
                             Text("Information is AI-generated and not a substitute for professional medical advice. Always consult your healthcare provider.")
                                 .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 20)
                                 .padding(.top, 12)
@@ -179,15 +179,15 @@ struct AISearchMedicationView: View {
                             VStack(spacing: 20) {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: 40))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                 
                                 Text("Search for your medication")
                                     .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .foregroundColor(Color.pillrBackground)
                                 
                                 Text("Enter a medication name to get information and add it to your list")
                                     .font(.system(size: 14))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal, 40)
                             }
@@ -223,7 +223,7 @@ struct AISearchMedicationView: View {
                 Button("Done") {
                     dismiss()
                 }
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
             }
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
@@ -238,16 +238,16 @@ struct AISearchMedicationView: View {
     private var premiumRequiredView: some View {
         VStack(spacing: 24) {
             Image(systemName: "lock")
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
                 .font(.system(size: 40))
             
             Text("Premium Feature")
                 .font(.system(size: 24, weight: .bold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
             
             Text("AI Medication Search is a premium feature that allows you to quickly find medication information and add it to your list.")
                 .font(.system(size: 16))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
             
@@ -257,7 +257,7 @@ struct AISearchMedicationView: View {
                 HStack {
                     Image(systemName: "lock")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                     Text("Upgrade to Premium")
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
@@ -280,7 +280,7 @@ struct AISearchMedicationView: View {
                 .fill(Color.black.opacity(0.15))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                        .stroke(Color.pillrSecondary.opacity(0.2), lineWidth: 1)
                 )
         )
         .padding(.horizontal)
@@ -294,12 +294,12 @@ struct AISearchMedicationView: View {
             let canAdd = hasValidConfirmation(for: result)
             HStack {
                 Image(systemName: "pill.fill")
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                     .font(.system(size: 18, weight: .semibold))
                 
                 Text(result.name)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                 
                 Spacer()
                 
@@ -319,10 +319,10 @@ struct AISearchMedicationView: View {
                     .padding(.vertical, 6)
                     .background(
                         Capsule()
-                            .fill(Color(hex: "#C7C7BD"))
+                            .fill(Color.pillrSecondary)
                             .shadow(color: Color.black.opacity(0.25), radius: 4, x: 0, y: 2)
                     )
-                    .foregroundColor(Color(hex: "#404C42"))
+                    .foregroundColor(Color.pillrPrimary)
                 }
                 .disabled(!canAdd)
                 .buttonStyle(ScaleButtonStyle(hapticStyle: .medium))
@@ -332,24 +332,24 @@ struct AISearchMedicationView: View {
             
             Text("Option \(index) of \(total)")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(Color.pillrSecondary.opacity(0.7))
             
             // Description
             Text(result.description)
                 .font(.system(size: 14))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                .foregroundColor(Color.pillrSecondary.opacity(0.9))
                 .lineLimit(3)
             
             // Common dosage
             if let dosage = result.commonDosage {
                 HStack(alignment: .top) {
                     Image(systemName: "scalemass.fill")
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.7))
                         .font(.system(size: 14))
                     
                     Text(dosage)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                 }
             }
             
@@ -362,7 +362,7 @@ struct AISearchMedicationView: View {
                     
                     Text("Need to know: \(needToKnow)")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                 }
             }
             
@@ -371,11 +371,11 @@ struct AISearchMedicationView: View {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "#F5F5F5"))
+                        .foregroundColor(Color.pillrBackground)
 
                     Text(note)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.85))
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -384,16 +384,16 @@ struct AISearchMedicationView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Pillr isn't fully certain this matches your medication. Please re-type the name below to confirm before adding.")
                         .font(.system(size: 13))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
 
                     if let confidence = result.confidence, !confidence.isEmpty {
                         Text("Confidence: \(confidence.capitalized)")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.7))
                     }
 
                     TextField("Re-type the medication name to confirm", text: confirmationBinding(for: result))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                         .font(.system(size: 14, weight: .medium))
                         .disableAutocorrection(true)
                         .autocapitalization(.words)
@@ -403,7 +403,7 @@ struct AISearchMedicationView: View {
                                 .fill(Color.black.opacity(0.25))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color(hex: "#C7C7BD").opacity(0.4), lineWidth: 1)
+                                        .stroke(Color.pillrSecondary.opacity(0.4), lineWidth: 1)
                                 )
                         )
                 }
@@ -416,7 +416,7 @@ struct AISearchMedicationView: View {
                 .fill(Color.black.opacity(0.2))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                        .stroke(Color.pillrSecondary.opacity(0.3), lineWidth: 1)
                 )
         )
     }

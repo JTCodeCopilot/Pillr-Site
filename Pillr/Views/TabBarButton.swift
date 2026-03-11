@@ -62,7 +62,7 @@ struct TabBarButton: View {
                 // Icon with subtle animation
                 Image(systemName: imageName)
                     .font(.system(size: isSelected ? 20 : 18, weight: isSelected ? .medium : .regular))
-                    .foregroundStyle(isMenuIcon ? AnyShapeStyle(Color(hex: "#404C42")) : AnyShapeStyle(iconGradient))
+                    .foregroundStyle(isMenuIcon ? AnyShapeStyle(Color.pillrPrimary) : AnyShapeStyle(iconGradient))
                     .shadow(color: colorScheme == .light ? Color.black.opacity(0.22) : Color.white.opacity(0.16), radius: 1.2, x: 0, y: 0)
                     .scaleEffect(isPressed ? 0.92 : 1.0)
                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)

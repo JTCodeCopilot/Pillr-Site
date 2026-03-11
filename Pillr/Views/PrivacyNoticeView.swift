@@ -16,7 +16,7 @@ struct PrivacyNoticeView: View {
         VStack(spacing: 0) {
             // Handle bar
             RoundedRectangle(cornerRadius: 2.5)
-                .fill(Color(hex: "#C7C7BD").opacity(0.3))
+                .fill(Color.pillrSecondary.opacity(0.3))
                 .frame(width: 36, height: 5)
                 .padding(.top, 12)
                 .padding(.bottom, 20)
@@ -28,18 +28,18 @@ struct PrivacyNoticeView: View {
                         HStack {
                             Image(systemName: "lock.shield.fill")
                                 .font(.system(size: 32, weight: .medium))
-                                .foregroundColor(Color(hex: "#81C784"))
+                                .foregroundColor(Color.pillrAccent)
                             
                             Spacer()
                         }
                         
                         Text("Your Privacy Matters")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(hex: "#F5F7F4"))
+                            .foregroundColor(Color.pillrBackground)
                         
                         Text("Welcome to Pillr! Here's how we protect your data.")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.9))
                     }
                     
                     // Privacy features
@@ -69,7 +69,7 @@ struct PrivacyNoticeView: View {
                             icon: "person.badge.shield.checkmark.fill",
                             title: "You're In Control",
                             description: "Only you have access to your medication data. Delete the app, and all data is permanently removed.",
-                            iconColor: Color(hex: "#81C784")
+                            iconColor: Color.pillrAccent
                         )
                     }
                     
@@ -77,7 +77,7 @@ struct PrivacyNoticeView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Technical Details")
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Color(hex: "#F5F7F4"))
+                            .foregroundColor(Color.pillrBackground)
                         
                         VStack(alignment: .leading, spacing: 12) {
                             bulletPoint("Data is stored using iOS UserDefaults and device keychain")
@@ -107,14 +107,14 @@ struct PrivacyNoticeView: View {
                         Text("Got It, Thanks!")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
                     }
-                    .foregroundColor(Color(hex: "#404C42"))
+                    .foregroundColor(Color.pillrPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color(hex: "#E8E8E0"),
-                                Color(hex: "#D0D0C8")
+                                Color.pillrBackground,
+                                Color.pillrBackground
                             ]),
                             startPoint: .top,
                             endPoint: .bottom
@@ -127,7 +127,7 @@ struct PrivacyNoticeView: View {
                 
                 Text("You can review this information anytime in Settings")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 24)
@@ -136,8 +136,8 @@ struct PrivacyNoticeView: View {
         .background(
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#404C42"),
-                    Color(hex: "#3A443D")
+                    Color.pillrPrimary,
+                    Color.pillrPrimary
                 ]),
                 startPoint: .top,
                 endPoint: .bottom
@@ -169,11 +169,11 @@ struct PrivacyNoticeView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .foregroundColor(Color.pillrBackground)
                 
                 Text(description)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color(hex: "#E0E7DC"))
+                    .foregroundColor(Color.pillrSecondary)
                     .lineLimit(nil)
                     .multilineTextAlignment(.leading)
             }
@@ -184,7 +184,7 @@ struct PrivacyNoticeView: View {
         .padding(.horizontal, 16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(hex: "#5B695D"))
+                .fill(Color.pillrAccent)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(iconColor.opacity(0.2), lineWidth: 1)
@@ -196,13 +196,13 @@ struct PrivacyNoticeView: View {
     private func bulletPoint(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Circle()
-                .fill(Color(hex: "#E0E7DC"))
+                .fill(Color.pillrSecondary)
                 .frame(width: 4, height: 4)
                 .padding(.top, 8)
             
             Text(text)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: "#E0E7DC"))
+                .foregroundColor(Color.pillrSecondary)
                 .lineLimit(nil)
             
             Spacer()

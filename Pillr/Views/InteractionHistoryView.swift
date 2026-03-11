@@ -45,7 +45,7 @@ struct InteractionHistoryView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "#404C42").ignoresSafeArea()
+                Color.pillrPrimary.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     headerView
@@ -94,7 +94,7 @@ struct InteractionHistoryView: View {
                         } label: {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                .foregroundColor(Color.pillrBackground)
                                 .frame(width: 24, height: 24)
                         }
                         .buttonStyle(.plain)
@@ -109,7 +109,7 @@ struct InteractionHistoryView: View {
                         } label: {
                             Image(systemName: "trash")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                .foregroundColor(Color.pillrBackground)
                                 .frame(width: 24, height: 24)
                         }
                         .buttonStyle(.plain)
@@ -150,16 +150,16 @@ struct InteractionHistoryView: View {
             VStack(spacing: 14) {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 42))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                 
                 Text("No Interaction History")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                 
                 Text("Your interaction checks will appear here for easy reference and tracking.")
                     .font(.system(size: 14))
                     .multilineTextAlignment(.center)
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                     .padding(.horizontal, 24)
                 
                 Button(action: {
@@ -167,7 +167,7 @@ struct InteractionHistoryView: View {
                 }) {
                     Text("Check Interactions")
                         .font(.headline)
-                        .foregroundColor(Color(hex: "#404C42"))
+                        .foregroundColor(Color.pillrPrimary)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 14)
                         .background(Color.pillrAccent)
@@ -195,11 +195,11 @@ struct InteractionHistoryView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Interactions")
                 .font(.system(size: 36, weight: .bold))
-                .foregroundColor(Color(hex: "#F5F7F4"))
+                .foregroundColor(Color.pillrBackground)
             
             Text("\(filteredInteractions.count) interaction\(filteredInteractions.count == 1 ? "" : "s")")
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                .foregroundColor(Color.pillrSecondary.opacity(0.9))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -292,16 +292,16 @@ struct HistoryInteractionRow: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(interaction.displayTitle)
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
                             .lineLimit(2)
                         
                         HStack(spacing: 8) {
                             Text(timeAgoString(from: interaction.timestamp))
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .foregroundColor(Color.pillrSecondary.opacity(0.7))
                             
                             Circle()
-                                .fill(Color(hex: "#C7C7BD").opacity(0.4))
+                                .fill(Color.pillrSecondary.opacity(0.4))
                                 .frame(width: 3, height: 3)
                             
                             HStack(spacing: 4) {
@@ -326,7 +326,7 @@ struct HistoryInteractionRow: View {
                         } label: {
                             Image(systemName: showingDetails ? "chevron.up" : "chevron.down")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .foregroundColor(Color.pillrSecondary)
                                 .frame(width: 24, height: 24)
                         }
                         
@@ -339,7 +339,7 @@ struct HistoryInteractionRow: View {
                         } label: {
                             Image(systemName: "ellipsis")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD"))
+                                .foregroundColor(Color.pillrSecondary)
                                 .frame(width: 24, height: 24)
                         }
                     }
@@ -351,17 +351,17 @@ struct HistoryInteractionRow: View {
             if showingDetails {
                 VStack(alignment: .leading, spacing: 12) {
                     Divider()
-                        .background(Color(hex: "#C7C7BD").opacity(0.2))
+                        .background(Color.pillrSecondary.opacity(0.2))
                         .padding(.horizontal, 16)
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Description")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
                         
                         Text(interaction.description)
                             .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                             .lineLimit(nil)
                     }
                     .padding(.horizontal, 16)
@@ -369,11 +369,11 @@ struct HistoryInteractionRow: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Recommendation")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
                         
                         Text(interaction.recommendedAction)
                             .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                             .lineLimit(nil)
                     }
                     .padding(.horizontal, 16)

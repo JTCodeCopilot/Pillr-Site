@@ -108,7 +108,7 @@ struct MedicationLogView: View {
             GeometryReader { geometry in
                 ZStack {
                     // Background color
-                    Color(hex: "#404C42")
+                    Color.pillrPrimary
                         .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
                     
                     VStack(spacing: 0) {
@@ -117,7 +117,7 @@ struct MedicationLogView: View {
                             HStack {
                                 Text("Medication History")
                                     .font(.system(size: 32, weight: .bold))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color.pillrSecondary)
                                 
                                 Spacer()
                                 
@@ -131,10 +131,10 @@ struct MedicationLogView: View {
                                         Text("Export")
                                             .font(.system(size: 14, weight: .medium))
                                     }
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color.pillrSecondary)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
-                                    .background(Color(hex: "#525E55"))
+                                    .background(Color.pillrAccent)
                                     .cornerRadius(20)
                                 }
                                 
@@ -148,10 +148,10 @@ struct MedicationLogView: View {
                                         Text("Full PDF")
                                             .font(.system(size: 14, weight: .medium))
                                     }
-                                    .foregroundColor(Color(hex: "#404C42"))
+                                    .foregroundColor(Color.pillrPrimary)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
-                                    .background(Color(hex: "#C7C7BD"))
+                                    .background(Color.pillrSecondary)
                                     .cornerRadius(20)
                                 }
                                 .accessibilityLabel("Export entire history as a PDF")
@@ -171,7 +171,7 @@ struct MedicationLogView: View {
                                             .font(.system(size: 14, weight: .medium))
                                             .lineLimit(1)
                                     }
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color.pillrSecondary)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
                                     .background(Color.black.opacity(0.2))
@@ -207,15 +207,15 @@ struct MedicationLogView: View {
                                     HStack(spacing: 6) {
                                         Image(systemName: "hourglass")
                                             .font(.system(size: 16))
-                                            .foregroundColor(Color(hex: "#C7C7BD"))
+                                            .foregroundColor(Color.pillrSecondary)
                                         Text("Focus & side-effect trends")
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                            .foregroundColor(Color.pillrBackground)
                                     }
                                     
                                     Text(trendsText)
                                         .font(.system(size: 13))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.9))
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                                 .padding(12)
@@ -224,7 +224,7 @@ struct MedicationLogView: View {
                                         .fill(Color.black.opacity(0.18))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 14)
-                                                .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
+                                                .stroke(Color.pillrSecondary.opacity(0.25), lineWidth: 1)
                                         )
                                 )
                                 .padding(.top, 4)
@@ -233,7 +233,7 @@ struct MedicationLogView: View {
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
                         .padding(.bottom, 16)
-                        .background(Color(hex: "#404C42"))
+                        .background(Color.pillrPrimary)
                         .zIndex(1)
                         
                         // Month navigation and calendar view
@@ -247,14 +247,14 @@ struct MedicationLogView: View {
                                 }) {
                                     Image(systemName: "chevron.left")
                                         .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                        .foregroundColor(Color.pillrSecondary)
                                 }
                                 
                                 Spacer()
                                 
                                 Text(monthFormatter.string(from: selectedMonth))
                                     .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color.pillrSecondary)
                                 
                                 Spacer()
                                 
@@ -265,7 +265,7 @@ struct MedicationLogView: View {
                                 }) {
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                        .foregroundColor(Color.pillrSecondary)
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -275,7 +275,7 @@ struct MedicationLogView: View {
                                 ForEach(Calendar.current.shortWeekdaySymbols, id: \.self) { day in
                                     Text(day.prefix(1))
                                         .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                         .frame(maxWidth: .infinity)
                                 }
                             }
@@ -301,11 +301,11 @@ struct MedicationLogView: View {
                                 HStack {
                                     Image(systemName: "calendar")
                                         .font(.system(size: 14))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                     
                                     Text(dateFormatter.string(from: selectedDate))
                                         .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(Color(hex: "#C7C7BD"))
+                                        .foregroundColor(Color.pillrSecondary)
                                     
                                     Spacer()
                                 }
@@ -316,7 +316,7 @@ struct MedicationLogView: View {
                             }
                         }
                         .padding(.bottom, 8)
-                        .background(Color(hex: "#404C42"))
+                        .background(Color.pillrPrimary)
                         
                         // Content area
                         ZStack {
@@ -927,17 +927,17 @@ struct CalendarDayCell: View {
                 Text(dayFormatter.string(from: date))
                     .font(.system(size: 14, weight: isToday || isSelected ? .bold : .regular))
                     .foregroundColor(
-                        isToday ? Color(hex: "#F5F5F5") :
-                            isSelected ? Color(hex: "#F5F5F5") :
-                            isCurrentMonth ? Color(hex: "#C7C7BD") : Color(hex: "#C7C7BD").opacity(0.4)
+                        isToday ? Color.pillrBackground :
+                            isSelected ? Color.pillrBackground :
+                            isCurrentMonth ? Color.pillrSecondary : Color.pillrSecondary.opacity(0.4)
                     )
                 
                 // Indicator dot for days with logs
                 if hasLogs {
                     Circle()
                         .fill(
-                            isSelected ? Color(hex: "#F5F5F5") :
-                                isToday ? Color(hex: "#D7CCC8") : Color(hex: "#D7CCC8").opacity(0.8)
+                            isSelected ? Color.pillrBackground :
+                                isToday ? Color.pillrSecondary : Color.pillrSecondary.opacity(0.8)
                         )
                         .frame(width: 6, height: 6)
                 }
@@ -948,11 +948,11 @@ struct CalendarDayCell: View {
                 ZStack {
                     if isSelected {
                         Circle()
-                            .fill(Color(hex: "#525E55"))
+                            .fill(Color.pillrAccent)
                             .frame(width: 32, height: 32)
                     } else if isToday {
                         Circle()
-                            .stroke(Color(hex: "#D7CCC8"), lineWidth: 1.5)
+                            .stroke(Color.pillrSecondary, lineWidth: 1.5)
                             .frame(width: 32, height: 32)
                     }
                 }
@@ -973,15 +973,15 @@ struct StatCard: View {
         VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(Color(hex: "#525E55"))
+                .foregroundColor(Color.pillrAccent)
             
             Text(value)
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(Color(hex: "#525E55"))
+                .foregroundColor(Color.pillrAccent)
             
             Text(title)
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                .foregroundColor(Color.pillrAccent.opacity(0.7))
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -998,17 +998,17 @@ struct EmptyHistoryView: View {
             VStack(spacing: 20) {
                 Image(systemName: "clock.badge.checkmark")
                     .font(.system(size: 60))
-                    .foregroundColor(Color(hex: "#525E55").opacity(0.6))
+                    .foregroundColor(Color.pillrAccent.opacity(0.6))
                     .padding(.bottom, 10)
                 
                 Text("No medication history yet")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                 
                 Text("Start logging your medications to see your history here. Your medication adherence journey begins with the first dose!")
                     .font(.system(size: 16))
                     .multilineTextAlignment(.center)
-                    .foregroundColor(Color(hex: "#525E55").opacity(0.8))
+                    .foregroundColor(Color.pillrAccent.opacity(0.8))
                     .padding(.horizontal)
             }
             .frame(maxWidth: .infinity)
@@ -1031,17 +1031,17 @@ struct NoLogsForDateView: View {
             VStack(spacing: 20) {
                 Image(systemName: "calendar.badge.exclamationmark")
                     .font(.system(size: 50))
-                    .foregroundColor(Color(hex: "#525E55").opacity(0.6))
+                    .foregroundColor(Color.pillrAccent.opacity(0.6))
                     .padding(.bottom, 10)
                 
                 Text("No medications taken")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(hex: "#525E55"))
+                    .foregroundColor(Color.pillrAccent)
                 
                 Text("No medications were logged on \(dateFormatter.string(from: date))")
                     .font(.system(size: 14))
                     .multilineTextAlignment(.center)
-                    .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                    .foregroundColor(Color.pillrAccent.opacity(0.7))
                     .padding(.horizontal)
             }
             .frame(maxWidth: .infinity)
@@ -1117,18 +1117,18 @@ struct DateSectionHeader: View {
         HStack {
             Text(dateFormatter.string(from: date))
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
             
             Spacer()
             
             // Day of week
             Text(dayOfWeekFormatter.string(from: date))
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(Color.pillrSecondary.opacity(0.7))
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(Color(hex: "#404C42"))
+        .background(Color.pillrPrimary)
     }
     
     private var dayOfWeekFormatter: DateFormatter {
@@ -1159,12 +1159,12 @@ struct EnhancedLogEntryRow: View {
                 // Medication icon
                 ZStack {
                     Circle()
-                        .fill(Color(hex: "#525E55").opacity(0.15))
+                        .fill(Color.pillrAccent.opacity(0.15))
                         .frame(width: 44, height: 44)
 
                     Image(systemName: resolvedIconName)
                         .font(.system(size: 20))
-                        .foregroundColor(Color(hex: "#525E55"))
+                        .foregroundColor(Color.pillrAccent)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -1172,14 +1172,14 @@ struct EnhancedLogEntryRow: View {
                     HStack {
                         Text(logEntry.medicationName)
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "#525E55"))
+                            .foregroundColor(Color.pillrAccent)
 
                         Spacer()
 
                         // Time taken
                         Text(timeFormatter.string(from: logEntry.takenAt))
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(hex: "#525E55").opacity(0.8))
+                            .foregroundColor(Color.pillrAccent.opacity(0.8))
                     }
 
                     // Dosage information
@@ -1187,12 +1187,12 @@ struct EnhancedLogEntryRow: View {
                         HStack(spacing: 8) {
                             Text(logEntry.recordedDosageWithUnit)
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#525E55"))
+                                .foregroundColor(Color.pillrAccent)
 
                             if let pillsConsumed = logEntry.pillsConsumed, pillsConsumed > 1 {
                                 Text("• \(pillsConsumed) pills")
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#525E55").opacity(0.7))
+                                    .foregroundColor(Color.pillrAccent.opacity(0.7))
                             }
 
                             Spacer()
@@ -1209,13 +1209,13 @@ struct EnhancedLogEntryRow: View {
                             HStack {
                                 Text("Additional Information")
                                     .font(.system(size: 13))
-                                    .foregroundColor(Color(hex: "#525E55").opacity(0.8))
+                                    .foregroundColor(Color.pillrAccent.opacity(0.8))
 
                                 Spacer()
 
                                 Image(systemName: showAdditionalInfo ? "chevron.up" : "chevron.down")
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#525E55").opacity(0.5))
+                                    .foregroundColor(Color.pillrAccent.opacity(0.5))
                             }
                             .padding(.top, 6)
                         }
@@ -1230,7 +1230,7 @@ struct EnhancedLogEntryRow: View {
                                     if components.count > 0 && !components[0].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                         Text(components[0].trimmingCharacters(in: .whitespacesAndNewlines))
                                             .font(.system(size: 13))
-                                            .foregroundColor(Color(hex: "#525E55").opacity(0.8))
+                                            .foregroundColor(Color.pillrAccent.opacity(0.8))
                                     }
 
                                     // Side effects
@@ -1249,11 +1249,11 @@ struct EnhancedLogEntryRow: View {
                                     HStack(alignment: .top, spacing: 6) {
                                         Image(systemName: "note.text.fill")
                                             .font(.system(size: 12))
-                                            .foregroundColor(Color(hex: "#525E55").opacity(0.6))
+                                            .foregroundColor(Color.pillrAccent.opacity(0.6))
 
                                         Text(notes)
                                             .font(.system(size: 13))
-                                            .foregroundColor(Color(hex: "#525E55").opacity(0.8))
+                                            .foregroundColor(Color.pillrAccent.opacity(0.8))
                                     }
                                 }
                             }
@@ -1311,7 +1311,7 @@ struct DatePickerOverlay: View {
                 HStack {
                     Text("Select Date")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                     
                     Spacer()
                     
@@ -1320,7 +1320,7 @@ struct DatePickerOverlay: View {
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 20))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.7))
                     }
                 }
                 .padding(.horizontal, 20)
@@ -1340,7 +1340,7 @@ struct DatePickerOverlay: View {
                         selectedDate = Date()
                         showingCalendar = false
                     }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                     .padding(.vertical, 12)
                     .padding(.horizontal, 20)
                     .background(Color.black.opacity(0.2))
@@ -1351,10 +1351,10 @@ struct DatePickerOverlay: View {
                     Button("Select") {
                         showingCalendar = false
                     }
-                    .foregroundColor(Color(hex: "#404C42"))
+                    .foregroundColor(Color.pillrPrimary)
                     .padding(.vertical, 12)
                     .padding(.horizontal, 20)
-                    .background(Color(hex: "#C7C7BD"))
+                    .background(Color.pillrSecondary)
                     .cornerRadius(10)
                 }
                 .padding(.horizontal, 20)

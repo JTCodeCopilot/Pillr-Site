@@ -192,8 +192,8 @@ struct AddMedicationView: View {
         ZStack {
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#404C42"),
-                    Color(hex: "#3A443D")
+                    Color.pillrPrimary,
+                    Color.pillrPrimary
                 ]),
                 startPoint: .top,
                 endPoint: .bottom
@@ -214,7 +214,7 @@ struct AddMedicationView: View {
                                 summarySection
                                 Divider()
                                     .frame(height: 1)
-                                    .background(Color(hex: "#C7C7BD").opacity(0.3))
+                                    .background(Color.pillrSecondary.opacity(0.3))
                             }
                             .transition(
                                 .asymmetric(
@@ -258,8 +258,8 @@ struct AddMedicationView: View {
                         .background(
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    Color(hex: "#3A443D").opacity(0.0),
-                                    Color(hex: "#3A443D").opacity(0.94)
+                                    Color.pillrPrimary.opacity(0.0),
+                                    Color.pillrPrimary.opacity(0.94)
                                 ]),
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -315,7 +315,7 @@ struct AddMedicationView: View {
                         moveToPreviousField()
                     }) {
                         Image(systemName: "chevron.up")
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                     }
                     .disabled(!canMoveToPreviousField)
 
@@ -324,7 +324,7 @@ struct AddMedicationView: View {
                         moveToNextField()
                     }) {
                         Image(systemName: "chevron.down")
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                     }
                     .disabled(!canMoveToNextField)
 
@@ -336,7 +336,7 @@ struct AddMedicationView: View {
                     }) {
                         Text("Done")
                     }
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                 }
             }
 
@@ -358,7 +358,7 @@ struct AddMedicationView: View {
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
-            .presentationBackground(Color(hex: "#58655A"))
+            .presentationBackground(Color.pillrAccent)
         }
 #if DEBUG
         .sheet(isPresented: $showingFocusTimingPreviewSheet) {
@@ -380,7 +380,7 @@ struct AddMedicationView: View {
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
-            .presentationBackground(Color(hex: "#58655A"))
+            .presentationBackground(Color.pillrAccent)
         }
 #endif
         .sheet(isPresented: $showingAISearch) {
@@ -416,14 +416,14 @@ struct AddMedicationView: View {
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
-            .presentationBackground(Color(hex: "#58655A"))
+            .presentationBackground(Color.pillrAccent)
         }
         .sheet(isPresented: $showingPremiumUpgrade) {
             PremiumUpgradeView()
                 .environmentObject(StoreManager.shared)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(Color(hex: "#58655A"))
+                .presentationBackground(Color.pillrAccent)
         }
     }
 
@@ -434,11 +434,11 @@ struct AddMedicationView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(isEditing ? "Edit Medication" : "Add Medication")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
 
             Text("Step \(currentStep.rawValue + 1) of \(AddMedicationStep.allCases.count)")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                .foregroundColor(Color.pillrSecondary.opacity(0.9))
         }
         // Add a touch more leading padding so the title
         // doesn't feel tight against the screen edge
@@ -453,7 +453,7 @@ struct AddMedicationView: View {
                     Capsule()
                         .fill(Color.white.opacity(0.12))
                     Capsule()
-                        .fill(Color(hex: "#C7C7BD"))
+                        .fill(Color.pillrSecondary)
                         .frame(width: max(10, geometry.size.width * stepProgressFraction))
                 }
                 .animation(stepTransitionAnimation, value: currentStep)
@@ -464,7 +464,7 @@ struct AddMedicationView: View {
                 ForEach(AddMedicationStep.allCases, id: \.self) { step in
                     let isReached = step.rawValue <= currentStep.rawValue
                     Circle()
-                        .fill(isReached ? Color(hex: "#E8E8E0") : Color.white.opacity(0.22))
+                        .fill(isReached ? Color.pillrBackground : Color.white.opacity(0.22))
                         .frame(width: 6, height: 6)
                         .scaleEffect(step == currentStep ? 1.15 : 1.0)
                         .animation(stepTransitionAnimation, value: currentStep)
@@ -501,8 +501,8 @@ struct AddMedicationView: View {
         .background(
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#404C42"),
-                    Color(hex: "#3A443D")
+                    Color.pillrPrimary,
+                    Color.pillrPrimary
                 ]),
                 startPoint: .top,
                 endPoint: .bottom
@@ -543,10 +543,10 @@ struct AddMedicationView: View {
                                 if !userSettings.isPremiumUser {
                                     Image(systemName: "lock")
                                         .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                 }
                             }
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
                             .padding(.horizontal, 10)
                             .frame(minWidth: actionButtonMinWidth)
                             .frame(height: standardFieldHeight)
@@ -555,7 +555,7 @@ struct AddMedicationView: View {
                                     .fill(Color.black.opacity(0.3))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                            .stroke(Color.pillrSecondary.opacity(0.3), lineWidth: 1)
                                     )
                             )
                         }
@@ -581,7 +581,7 @@ struct AddMedicationView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Unit")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
 
                         Menu {
                             ForEach(dosageUnits, id: \.self) { unit in
@@ -592,19 +592,19 @@ struct AddMedicationView: View {
                                 } label: {
                                     Text(unit)
                                         .font(.system(size: 15, weight: .medium))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                        .foregroundColor(Color.pillrBackground)
                                 }
                             }
                         } label: {
                             HStack(spacing: 6) {
                                 Text(dosageUnit)
                                     .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .foregroundColor(Color.pillrBackground)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.8)
                                 Image(systemName: "chevron.up.chevron.down")
                                     .font(.system(size: 10, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                             }
                             .padding(.horizontal, 10)
                             .frame(minWidth: 90, minHeight: standardFieldHeight)
@@ -614,7 +614,7 @@ struct AddMedicationView: View {
                                     .fill(Color.black.opacity(0.2))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                            .stroke(Color.pillrSecondary.opacity(0.3), lineWidth: 1)
                                     )
                             )
                         }
@@ -641,7 +641,7 @@ struct AddMedicationView: View {
 
                     Text("How Often You’ll Take It")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
 
                     Menu {
                         ForEach(frequencies, id: \.self) { freq in
@@ -664,13 +664,13 @@ struct AddMedicationView: View {
                         HStack {
                             Text(displayFrequencyName(frequency))
                                 .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .foregroundColor(Color.pillrBackground)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.65)
                             Spacer()
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                .foregroundColor(Color.pillrSecondary.opacity(0.8))
                         }
                         .padding(.horizontal, 12)
                         .frame(height: standardFieldHeight)
@@ -680,7 +680,7 @@ struct AddMedicationView: View {
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
                                         .stroke(
-                                            frequencyHasError ? Color.red : Color(hex: "#C7C7BD").opacity(0.3),
+                                            frequencyHasError ? Color.red : Color.pillrSecondary.opacity(0.3),
                                             lineWidth: frequencyHasError ? 2 : 1
                                         )
                                 )
@@ -702,7 +702,7 @@ struct AddMedicationView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Reminder Times")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
 
                         ForEach(0..<reminderTimes.count, id: \.self) { index in
                             TimePickerRow(
@@ -728,7 +728,7 @@ struct AddMedicationView: View {
                                             HStack {
                                                 Text("Remind me again")
                                                     .font(.system(size: 15, weight: .semibold))
-                                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                                    .foregroundColor(Color.pillrBackground)
                                                 if !userSettings.isPremiumUser {
                                                     Button(action: {
                                                         triggerStrongHaptic()
@@ -743,10 +743,10 @@ struct AddMedicationView: View {
                                                  "Get another reminder after 30 minutes if not taken" :
                                                  "One-time reminders require premium subscription")
                                                 .font(.system(size: 12))
-                                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                                .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                         }
                                     }
-                                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
                                     .disabled(!userSettings.isPremiumUser)
                                     .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                                     .onChange(of: isOneTimeWithFollowUp) { _, _ in
@@ -782,7 +782,7 @@ struct AddMedicationView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Is This an ADHD Medication?")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(Color(hex: "#E8E8E0"))
+                            .foregroundColor(Color.pillrBackground)
 
                         Picker("ADHD medication", selection: $isADHDMedication) {
                             Text("Yes").tag(true)
@@ -796,7 +796,7 @@ struct AddMedicationView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("What kind of ADHD medication?")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .foregroundColor(Color.pillrBackground)
 
                             Picker("Medication type", selection: $medicationType) {
                                 Text("Stimulant").tag(MedicationType.stimulant)
@@ -816,10 +816,10 @@ struct AddMedicationView: View {
                             Toggle(isOn: $enableStimulantPhaseNotifications.animation(toggleTransitionAnimation)) {
                                 Text("Turn on focus window")
                                     .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .foregroundColor(Color.pillrBackground)
                                     .padding(.trailing, 12)
                             }
-                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                            .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
                             .accessibilityIdentifier("focusWindowToggle")
                             .onChange(of: enableStimulantPhaseNotifications) { _, enabled in
                                 if !enabled {
@@ -837,7 +837,7 @@ struct AddMedicationView: View {
 
                             Text("Use these times to map your focus sessions. Pillr uses the start and fade windows to help you plan when you’ll be at your sharpest and when to ease into breaks.")
                                 .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                 .padding(.leading, 6)
 
                             if enableStimulantPhaseNotifications {
@@ -845,10 +845,10 @@ struct AddMedicationView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Help with timing?")
                                             .font(.system(size: 13, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                            .foregroundColor(Color.pillrBackground)
                                         Text("Pillr AI suggests a starting point you can adjust.")
                                             .font(.system(size: 12))
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                            .foregroundColor(Color.pillrSecondary.opacity(0.75))
                                             .lineLimit(nil)
                                             .fixedSize(horizontal: false, vertical: true)
                                             .multilineTextAlignment(.leading)
@@ -863,12 +863,12 @@ struct AddMedicationView: View {
                                             Text("Ask Pillr AI")
                                                 .font(.system(size: 12, weight: .semibold))
                                         }
-                                        .foregroundColor(Color(hex: "#1E201A"))
+                                        .foregroundColor(Color.pillrPrimary)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 8)
                                         .background(
                                             Capsule()
-                                                .fill(Color(hex: "#C7C7BD"))
+                                                .fill(Color.pillrSecondary)
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -881,7 +881,7 @@ struct AddMedicationView: View {
                                         .fill(Color.black.opacity(0.18))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                                                .stroke(Color.pillrSecondary.opacity(0.2), lineWidth: 1)
                                         )
                                 )
                             }
@@ -931,7 +931,7 @@ struct AddMedicationView: View {
                                     HStack {
                                         Text("Reflection")
                                             .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                            .foregroundColor(Color.pillrBackground)
                                         if !userSettings.isPremiumUser {
                                             Button(action: {
                                                 triggerStrongHaptic()
@@ -946,11 +946,11 @@ struct AddMedicationView: View {
                                          "At the start of the fading window, Pillr will remind you to log focus and side effects for this medication." :
                                             "Reflection requires a premium subscription.")
                                         .font(.system(size: 12))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                 }
                                 .padding(.trailing, 12)
                             }
-                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                            .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
                             .disabled(!userSettings.isPremiumUser)
                             .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                             .accessibilityIdentifier("focusReflectionToggle")
@@ -977,14 +977,14 @@ struct AddMedicationView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Default reminder arrives around when the medication starts to wear off. Prefer a different time? Pick one below.")
                                         .font(.system(size: 12))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.75))
 
                                     Toggle(isOn: $useCustomDailyCheckInTime.animation(toggleTransitionAnimation)) {
                                         Text("Choose a custom Reflection time")
                                             .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(Color(hex: "#E8E8E0"))
+                                            .foregroundColor(Color.pillrBackground)
                                     }
-                                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
                                     .accessibilityIdentifier("customReflectionToggle")
                                     .onChange(of: useCustomDailyCheckInTime) { _, _ in
                                         triggerStrongHaptic()
@@ -994,7 +994,7 @@ struct AddMedicationView: View {
                                         TimePickerRow(title: "Reflection time", time: $customDailyCheckInTime)
                                         Text("Tip: the custom reminder only schedules after you log a dose, so pick a time you expect to reach after logging; logging after that time means today’s reminder waits until tomorrow.")
                                             .font(.system(size: 12))
-                                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                            .foregroundColor(Color.pillrSecondary.opacity(0.75))
                                             .fixedSize(horizontal: false, vertical: true)
                                     }
                                 }
@@ -1059,7 +1059,7 @@ struct AddMedicationView: View {
                                 HStack {
                                     Text("Reflection")
                                         .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                        .foregroundColor(Color.pillrBackground)
                                     if !userSettings.isPremiumUser {
                                         Button(action: {
                                             triggerStrongHaptic()
@@ -1074,10 +1074,10 @@ struct AddMedicationView: View {
                                      "Pick a time for a gentle reminder to jot anything you'd like to remember about this medication." :
                                         "Reflection requires a premium subscription.")
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
                             }
                         }
-                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                         .accessibilityIdentifier("focusReflectionToggle")
@@ -1104,11 +1104,11 @@ struct AddMedicationView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Choose when you'd like to reflect each day.")
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.75))
                                 TimePickerRow(title: "Reflection time", time: $customDailyCheckInTime)
                                 Text("If the medication isn't taken before the Reflection time, the reminder will not trigger.")
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.75))
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
@@ -1124,7 +1124,7 @@ struct AddMedicationView: View {
                                 HStack {
                                     Text("Track Pill Count")
                                         .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                        .foregroundColor(Color.pillrBackground)
                                     if !userSettings.isPremiumUser {
                                         Button(action: {
                                             triggerStrongHaptic()
@@ -1139,10 +1139,10 @@ struct AddMedicationView: View {
                                      "Get refill reminders and track usage" :
                                         "Inventory tracking requires premium subscription")
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                             }
                         }
-                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#C7C7BD")))
+                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                         .accessibilityIdentifier("trackPillCountToggle")
@@ -1218,20 +1218,20 @@ struct AddMedicationView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Information")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
 
                 ZStack(alignment: .topLeading) {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color.black.opacity(0.2))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                                .stroke(Color.pillrSecondary.opacity(0.3), lineWidth: 1)
                         )
                         .frame(minHeight: 100)
 
                     TextEditor(text: $notes)
                         .focused($focusedField, equals: .notes)
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
                         .padding(12)
@@ -1239,7 +1239,7 @@ struct AddMedicationView: View {
 
                     if notes.isEmpty {
                         Text("e.g., Take with food, side effects to watch for...")
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.5))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.5))
                             .padding(.horizontal, 16)
                             .padding(.top, 20)
                             .allowsHitTesting(false)
@@ -1344,7 +1344,7 @@ struct AddMedicationView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("OVERVIEW")
                 .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .foregroundColor(Color.pillrSecondary.opacity(0.8))
                 .tracking(0.5)
             summaryCard
         }
@@ -1405,7 +1405,7 @@ struct AddMedicationView: View {
                 .fill(Color.black.opacity(0.18))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
+                        .stroke(Color.pillrSecondary.opacity(0.25), lineWidth: 1)
                 )
         )
     }
@@ -1414,10 +1414,10 @@ struct AddMedicationView: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                .foregroundColor(Color.pillrSecondary.opacity(0.9))
             Text(value)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
             Spacer()
         }
     }
@@ -1440,7 +1440,7 @@ struct AddMedicationView: View {
                     .fill(Color.clear)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#C7C7BD").opacity(0.2), lineWidth: 1)
+                            .stroke(Color.pillrSecondary.opacity(0.2), lineWidth: 1)
                     )
             )
         }
@@ -1462,12 +1462,12 @@ struct AddMedicationView: View {
             HStack {
                 if let iconName = iconName {
                     Image(systemName: iconName)
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                         .font(.system(size: 16, weight: .medium))
                 }
                 Text(title)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                 if isRequired {
                     Text("*")
                         .foregroundColor(.red)
@@ -1480,7 +1480,7 @@ struct AddMedicationView: View {
                 .focused($focusedField, equals: field)
                 .submitLabel(getSubmitLabel(for: field))
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
                 .padding(.horizontal, 16)
                 .frame(height: standardFieldHeight)
                 .accessibilityIdentifier(accessibilityIdentifier)
@@ -1491,10 +1491,10 @@ struct AddMedicationView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(
                                     focusedField == field
-                                    ? Color(hex: "#C7C7BD")
+                                    ? Color.pillrSecondary
                                     : (showValidationErrors && errorMessage != nil
                                        ? Color.red
-                                       : Color(hex: "#C7C7BD").opacity(0.3)),
+                                       : Color.pillrSecondary.opacity(0.3)),
                                     lineWidth: focusedField == field ? 2 : 1
                                 )
                         )
@@ -1584,7 +1584,7 @@ struct AddMedicationView: View {
             HStack {
                 Text(title)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                 if isRequired {
                     Text("*")
                         .foregroundColor(.red)
@@ -1612,7 +1612,7 @@ struct AddMedicationView: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(
-                                showError ? Color.red : Color(hex: "#C7C7BD").opacity(0.3),
+                                showError ? Color.red : Color.pillrSecondary.opacity(0.3),
                                 lineWidth: showError ? 2 : 1
                             )
                     )
@@ -2464,10 +2464,10 @@ struct TimePickerRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                 Text(timeString(from: time))
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
             }
 
             Spacer()
@@ -2476,7 +2476,7 @@ struct TimePickerRow: View {
                 .datePickerStyle(.compact)
                 .labelsHidden()
                 .colorScheme(.dark)
-                .accentColor(Color(hex: "#C7C7BD"))
+                .accentColor(Color.pillrSecondary)
                 .onChange(of: time) { _, _ in
                     HapticManager.shared.pulseRigid()
                 }
@@ -2488,7 +2488,7 @@ struct TimePickerRow: View {
                 .fill(Color.black.opacity(0.2))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "#C7C7BD").opacity(0.3), lineWidth: 1)
+                        .stroke(Color.pillrSecondary.opacity(0.3), lineWidth: 1)
                 )
         )
     }
@@ -2549,13 +2549,13 @@ struct FocusTimingGuidanceSheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Timing guidance")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                 badge(text: "Via Pillr AI")
             }
             .padding(.top, 20)
 
             Rectangle()
-                .fill(Color(hex: "#C7C7BD").opacity(0.15))
+                .fill(Color.pillrSecondary.opacity(0.15))
                 .frame(height: 1)
 
             Group {
@@ -2563,21 +2563,21 @@ struct FocusTimingGuidanceSheet: View {
                     VStack(spacing: 14) {
                         ZStack {
                             Circle()
-                                .fill(Color(hex: "#C7C7BD").opacity(0.18))
+                                .fill(Color.pillrSecondary.opacity(0.18))
                                 .frame(width: 64, height: 64)
                                 .scaleEffect(isLoadingPulseOn ? 1.2 : 0.85)
                                 .opacity(isLoadingPulseOn ? 0.2 : 0.7)
                             Circle()
-                                .fill(Color(hex: "#C7C7BD").opacity(0.8))
+                                .fill(Color.pillrSecondary.opacity(0.8))
                                 .frame(width: 22, height: 22)
-                                .shadow(color: Color(hex: "#C7C7BD").opacity(0.35), radius: 10, x: 0, y: 0)
+                                .shadow(color: Color.pillrSecondary.opacity(0.35), radius: 10, x: 0, y: 0)
                         }
                         .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: isLoadingPulseOn)
                         .accessibilityHidden(true)
 
                         Text("Identifying a baseline attention window...")
                             .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#C7C7BD"))
+                            .foregroundColor(Color.pillrSecondary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(24)
@@ -2600,7 +2600,7 @@ struct FocusTimingGuidanceSheet: View {
 
                             Text("Suggested timing")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                .foregroundColor(Color.pillrSecondary.opacity(0.75))
 
                             LazyVGrid(columns: columns, spacing: 12) {
                                 timingCard(
@@ -2618,12 +2618,12 @@ struct FocusTimingGuidanceSheet: View {
                                 VStack(alignment: .center, spacing: 6) {
                                     Text("Most effect gone around")
                                         .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.85))
                                         .multilineTextAlignment(.center)
 
                                     Text("\(effectsGoneRange)")
                                         .font(.system(size: 18, weight: .medium))
-                                        .foregroundColor(Color(hex: "#E8E8E0"))
+                                        .foregroundColor(Color.pillrBackground)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .multilineTextAlignment(.center)
                                 }
@@ -2651,7 +2651,7 @@ struct FocusTimingGuidanceSheet: View {
 
                                 Text("\(displayName) does not appear to be an ADHD stimulant.")
                                     .font(.system(size: 13))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .foregroundColor(Color.pillrBackground)
                                     .multilineTextAlignment(.center)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -2671,11 +2671,11 @@ struct FocusTimingGuidanceSheet: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Notes")
                                     .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.75))
 
                                 Text(note)
                                     .font(.system(size: 12))
-                                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             .padding(12)
@@ -2704,25 +2704,25 @@ struct FocusTimingGuidanceSheet: View {
                                 .font(.system(size: 16, weight: .bold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Color(hex: "#C7C7BD"))
-                                .foregroundColor(Color(hex: "#1E201A"))
+                                .background(Color.pillrSecondary)
+                                .foregroundColor(Color.pillrPrimary)
                                 .cornerRadius(12)
                         }
                     }
                 } else if let error = errorMessage {
                     Text(error)
                         .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if medicationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text("Type the medication name above so we can look up guidance.")
                         .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     Text("No guidance matches \(displayName). Double-check the spelling or enter the timing manually.")
                         .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -2733,14 +2733,14 @@ struct FocusTimingGuidanceSheet: View {
             if !isLoading {
                 Text("AI guidance only. Not medical advice. Always consult a qualified professional.")
                     .font(.system(size: 11))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
         }
         .padding(20)
         .frame(maxWidth: .infinity)
-        .background(Color(hex: "#2D3329"))
+        .background(Color.pillrPrimary)
         .onChange(of: isLoading) { _, newValue in
             if newValue {
                 startLoadingHapticsIfNeeded()
@@ -2758,11 +2758,11 @@ struct FocusTimingGuidanceSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                .foregroundColor(Color.pillrSecondary.opacity(0.85))
 
             Text(value)
                 .font(.system(size: 34, weight: .light))
-                .foregroundColor(Color(hex: "#F5F7F4"))
+                .foregroundColor(Color.pillrBackground)
         }
         .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
         .padding(16)
@@ -2780,7 +2780,7 @@ struct FocusTimingGuidanceSheet: View {
     private func badge(text: String) -> some View {
         Text(text)
             .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.75))
+            .foregroundColor(Color.pillrSecondary.opacity(0.75))
     }
 
     private func startLoadingHapticsIfNeeded() {

@@ -12,12 +12,12 @@ import UIKit
 // MARK: - Premium journal styling
 private enum ReflectJournalTheme {
     // Base palette
-    static let pageTop = Color(hex: "#3E483F")
-    static let pageBottom = Color(hex: "#303830")
+    static let pageTop = Color.pillrPrimary
+    static let pageBottom = Color.pillrPrimary
 
-    static let textPrimary = Color(hex: "#E8E8E0")
-    static let textSecondary = Color(hex: "#C7C7BD").opacity(0.72)
-    static let textTertiary = Color(hex: "#C7C7BD").opacity(0.52)
+    static let textPrimary = Color.pillrBackground
+    static let textSecondary = Color.pillrSecondary.opacity(0.72)
+    static let textTertiary = Color.pillrSecondary.opacity(0.52)
 
     // Paper
     static let sheetFill = Color.white.opacity(0.075)
@@ -25,7 +25,7 @@ private enum ReflectJournalTheme {
     static let sheetHighlight = Color.white.opacity(0.14)
 
     // Accents
-    static let accent = Color(hex: "#E1D6C5")
+    static let accent = Color.pillrAccent
     static let progressTrack = Color.white.opacity(0.16)
 
     static var pageBackground: some View {
@@ -372,13 +372,13 @@ struct DailyCheckInHistoryView: View {
                 VStack(spacing: 12) {
                     Text("Medication unavailable")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                     Text("This reflection entry can't be edited right now.")
                         .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                 }
                 .padding(24)
-                .background(Color(hex: "#424C43").ignoresSafeArea())
+                .background(Color.pillrPrimary.ignoresSafeArea())
             }
         }
         .onAppear {
@@ -486,7 +486,7 @@ struct DailyCheckInHistoryView: View {
             } label: {
                 Text("Unlock Premium to Start")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "#1E2620"))
+                    .foregroundColor(Color.pillrPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                     .background(Color.pillrAccent)

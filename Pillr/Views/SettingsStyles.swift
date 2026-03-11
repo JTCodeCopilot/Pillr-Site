@@ -10,16 +10,16 @@ enum SettingsMetrics {
 }
 
 enum SettingsPalette {
-    static let backgroundColor = Color(hex: "#404C42")
-    static let headerColor = Color(hex: "#E0E7DC").opacity(0.85)
-    static let secondaryText = Color(hex: "#E0E7DC").opacity(0.78)
-    static let mainText = Color(hex: "#F5F7F4")
+    static let backgroundColor = Color.pillrPrimary
+    static let headerColor = Color.pillrSecondary.opacity(0.85)
+    static let secondaryText = Color.pillrSecondary.opacity(0.78)
+    static let mainText = Color.pillrBackground
     static let cardBackground = Color.white.opacity(0.04)
     static let nestedCardBackground = Color.white.opacity(0.05)
     static let cardStroke = Color.white.opacity(0.06)
-    static let arrowColor = Color(hex: "#E0E7DC")
-    static let closeStroke = Color(hex: "#F5F7F4").opacity(0.45)
-    static let toggleActive = Color(hex: "#2F352F")
+    static let arrowColor = Color.pillrSecondary
+    static let closeStroke = Color.pillrBackground.opacity(0.45)
+    static let toggleActive = Color.pillrPrimary
 }
 
 struct SettingsCloseButton: View {

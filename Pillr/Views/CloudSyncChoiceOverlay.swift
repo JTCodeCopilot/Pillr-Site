@@ -34,12 +34,12 @@ struct CloudSyncChoiceOverlay: View {
 
                             Text("Welcome to Pillr.")
                                 .font(.system(size: 34, weight: .bold))
-                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                .foregroundColor(Color.pillrBackground)
                                 .multilineTextAlignment(.center)
 
                         Text("Let’s start by choosing how your information will be stored.")
                             .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.92))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.92))
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
@@ -79,12 +79,12 @@ struct CloudSyncChoiceOverlay: View {
                         } label: {
                             Text("Continue")
                                 .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color(hex: "#F5F7F4").opacity(selectedChoice == nil ? 0.56 : 1.0))
+                                .foregroundColor(Color.pillrBackground.opacity(selectedChoice == nil ? 0.56 : 1.0))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color(hex: "#5B695D").opacity(selectedChoice == nil ? 0.56 : 1.0))
+                                        .fill(Color.pillrAccent.opacity(selectedChoice == nil ? 0.56 : 1.0))
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -97,7 +97,7 @@ struct CloudSyncChoiceOverlay: View {
 
                         Text("Select one option, then continue")
                             .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.78))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.78))
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
                     .padding(.horizontal, 20)
@@ -107,7 +107,7 @@ struct CloudSyncChoiceOverlay: View {
                 .frame(maxHeight: min(geometry.size.height * 0.9, 760))
                 .background(
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .fill(Color(hex: "#404C42"))
+                        .fill(Color.pillrPrimary)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -167,9 +167,9 @@ private struct MyMedsSyncChoiceCard: View {
 
     private var cardColor: Color {
         if isPrimary {
-            return Color(hex: "#A7B3A2").opacity(0.76)
+            return Color.pillrSecondary.opacity(0.76)
         }
-        return Color(hex: "#5B695D").opacity(0.96)
+        return Color.pillrAccent.opacity(0.96)
     }
 
     var body: some View {
@@ -178,12 +178,12 @@ private struct MyMedsSyncChoiceCard: View {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: leadingIconName)
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F5F7F4").opacity(0.9))
+                        .foregroundColor(Color.pillrBackground.opacity(0.9))
                         .padding(.top, 6)
 
                     Text(title)
                         .font(.system(size: 22, weight: .semibold, design: .rounded))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
                         .lineLimit(1)
                         .minimumScaleFactor(0.92)
 
@@ -195,13 +195,13 @@ private struct MyMedsSyncChoiceCard: View {
                         .overlay {
                             Image(systemName: isSelected ? "checkmark" : "circle")
                                 .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(Color(hex: "#F5F7F4").opacity(isSelected ? 1 : 0.65))
+                                .foregroundColor(Color.pillrBackground.opacity(isSelected ? 1 : 0.65))
                         }
                 }
 
                 Text(detail)
                     .font(.system(size: 17, weight: .medium, design: .rounded))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.94))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.94))
                     .multilineTextAlignment(.leading)
                     .lineSpacing(3)
 
@@ -209,13 +209,13 @@ private struct MyMedsSyncChoiceCard: View {
                     ForEach(benefits, id: \.self) { benefit in
                         HStack(alignment: .top, spacing: 8) {
                             Circle()
-                                .fill(Color(hex: "#F5F7F4").opacity(0.8))
+                                .fill(Color.pillrBackground.opacity(0.8))
                                 .frame(width: 5, height: 5)
                                 .padding(.top, 7)
 
                             Text(benefit)
                                 .font(.system(size: 14, weight: .medium, design: .rounded))
-                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.9))
+                                .foregroundColor(Color.pillrSecondary.opacity(0.9))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }

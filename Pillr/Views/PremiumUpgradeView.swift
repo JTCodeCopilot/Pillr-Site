@@ -33,7 +33,7 @@ struct PremiumUpgradeView: View {
         FeatureComparison(title: "Pill Count Tracking", freeIncludes: false, premiumIncludes: true)
     ]
 
-    private let brandAccent = Color(hex: "#C8F365")
+    private let brandAccent = Color.pillrAccent
     private var priceText: String {
         storeManager.getPremiumProduct()?.displayPrice ?? "$2.99"
     }
@@ -99,7 +99,7 @@ struct PremiumUpgradeView: View {
     }
 
     private var backgroundView: some View {
-        Color(hex: "#3A3E3A")
+        Color.pillrPrimary
             .ignoresSafeArea()
     }
 

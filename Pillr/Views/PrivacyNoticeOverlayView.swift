@@ -27,18 +27,18 @@ struct PrivacyNoticeOverlayView: View {
                             HStack {
                                 Image(systemName: "lock.shield.fill")
                                     .font(.system(size: 40, weight: .medium))
-                                    .foregroundColor(Color(hex: "#81C784"))
+                                    .foregroundColor(Color.pillrAccent)
                                 
                                 Spacer()
                             }
                             
                             Text("Welcome to Pillr!")
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .foregroundColor(Color.pillrBackground)
                             
                             Text("Your privacy and data security are our top priorities. Here's how we protect your information.")
                                 .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                                .foregroundColor(Color.pillrSecondary.opacity(0.9))
                                 .lineLimit(nil)
                         }
                         
@@ -69,7 +69,7 @@ struct PrivacyNoticeOverlayView: View {
                                 icon: "person.badge.shield.checkmark.fill",
                                 title: "You're In Complete Control",
                                 description: "Only you have access to your medication data. Delete the app, and all data is permanently removed.",
-                                iconColor: Color(hex: "#81C784")
+                                iconColor: Color.pillrAccent
                             )
                         }
                         
@@ -77,7 +77,7 @@ struct PrivacyNoticeOverlayView: View {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Technical Guarantee")
                                 .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(Color(hex: "#E8E8E0"))
+                                .foregroundColor(Color.pillrBackground)
                             
                             VStack(alignment: .leading, spacing: 14) {
                                 techDetail("🔒 Data stored using iOS UserDefaults and device keychain")
@@ -107,14 +107,14 @@ struct PrivacyNoticeOverlayView: View {
                             Text("I Understand - Let's Get Started!")
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                         }
-                        .foregroundColor(Color(hex: "#404C42"))
+                        .foregroundColor(Color.pillrPrimary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
                         .background(
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    Color(hex: "#E8E8E0"),
-                                    Color(hex: "#D0D0C8")
+                                    Color.pillrBackground,
+                                    Color.pillrBackground
                                 ]),
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -127,7 +127,7 @@ struct PrivacyNoticeOverlayView: View {
                     
                     Text("You can review this information anytime in Settings > Privacy & Data")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.7))
                         .multilineTextAlignment(.center)
                         .lineLimit(nil)
                 }
@@ -140,8 +140,8 @@ struct PrivacyNoticeOverlayView: View {
                     .fill(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color(hex: "#404C42"),
-                                Color(hex: "#3A443D")
+                                Color.pillrPrimary,
+                                Color.pillrPrimary
                             ]),
                             startPoint: .top,
                             endPoint: .bottom
@@ -154,8 +154,8 @@ struct PrivacyNoticeOverlayView: View {
                     .stroke(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color(hex: "#81C784").opacity(0.3),
-                                Color(hex: "#81C784").opacity(0.1)
+                                Color.pillrAccent.opacity(0.3),
+                                Color.pillrAccent.opacity(0.1)
                             ]),
                             startPoint: .top,
                             endPoint: .bottom
@@ -187,11 +187,11 @@ struct PrivacyNoticeOverlayView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
                 
                 Text(description)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "#C7C7BD"))
+                    .foregroundColor(Color.pillrSecondary)
                     .lineLimit(nil)
                     .multilineTextAlignment(.leading)
             }
@@ -215,11 +215,11 @@ struct PrivacyNoticeOverlayView: View {
         HStack(alignment: .top, spacing: 12) {
             Text(String(text.prefix(2)))
                 .font(.system(size: 16))
-                .foregroundColor(Color(hex: "#81C784"))
+                .foregroundColor(Color.pillrAccent)
             
             Text(String(text.dropFirst(2)))
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(hex: "#C7C7BD"))
+                .foregroundColor(Color.pillrSecondary)
                 .lineLimit(nil)
             
             Spacer()

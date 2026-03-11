@@ -711,11 +711,11 @@ struct MedicationsHomeView: View {
                     .ignoresSafeArea(edges: [.top, .leading, .trailing, .bottom])
                 
                 Rectangle()
-                    .fill(Color(hex: "#404C42"))
+                    .fill(Color.pillrPrimary)
                     .ignoresSafeArea()
                 
                 Rectangle()
-                    .fill(Color(hex: "#404C42"))
+                    .fill(Color.pillrPrimary)
                     .frame(height: geometry.safeAreaInsets.top + 44)
                     .ignoresSafeArea(edges: .top)
                 
@@ -766,7 +766,7 @@ struct NotificationPermissionOnboardingPrompt: View {
                             Button(action: onContinue) {
                                 Text("Continue")
                                     .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                    .foregroundColor(Color(hex: "#404C42"))
+                                    .foregroundColor(Color.pillrPrimary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 14)
                                     .background(
@@ -788,7 +788,7 @@ struct NotificationPermissionOnboardingPrompt: View {
                     .frame(maxWidth: 460)
                     .background(
                         RoundedRectangle(cornerRadius: 28)
-                            .fill(Color(hex: "#2A2D28").opacity(0.98))
+                            .fill(Color.pillrPrimary.opacity(0.98))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 28)
@@ -854,7 +854,7 @@ struct ReviewPromptSheet: View {
                     .frame(maxWidth: 420)
                     .background(
                         RoundedRectangle(cornerRadius: 24)
-                            .fill(Color(hex: "#2A2D28").opacity(0.98))
+                            .fill(Color.pillrPrimary.opacity(0.98))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
@@ -904,12 +904,12 @@ struct WhatsNewSheet: View {
                         Button(action: onDismiss) {
                             Text("Got it")
                                 .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color(hex: "#11140F"))
+                                .foregroundColor(Color.pillrPrimary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
                                 .background(
                                     RoundedRectangle(cornerRadius: 14)
-                                        .fill(Color(hex: "#F5F7F4"))
+                                        .fill(Color.pillrBackground)
                                 )
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -919,7 +919,7 @@ struct WhatsNewSheet: View {
                     .frame(maxWidth: 460)
                     .background(
                         RoundedRectangle(cornerRadius: 24)
-                            .fill(Color(hex: "#2A2D28").opacity(0.98))
+                            .fill(Color.pillrPrimary.opacity(0.98))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
@@ -938,7 +938,7 @@ struct WhatsNewSheet: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#F5F7F4"))
+                .foregroundColor(Color.pillrBackground)
                 .frame(width: 30, height: 30)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
@@ -1119,8 +1119,8 @@ private struct PillrWelcomeOnboardingFlow: View {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(hex: "#404C42"),
-                        Color(hex: "#3A443D")
+                        Color.pillrPrimary,
+                        Color.pillrPrimary
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
@@ -1241,7 +1241,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                         design: .rounded
                                     )
                                 )
-                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                .foregroundColor(Color.pillrBackground)
                                 .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.75)
@@ -1258,7 +1258,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                         .font(.system(size: step == .storage ? 17 : 18, weight: .medium, design: .rounded))
                                 }
                             }
-                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.94))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.94))
                             .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
                             .lineSpacing(4)
                             .lineLimit(step == .storage ? 3 : nil)
@@ -1285,7 +1285,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                                 .frame(width: 66, height: 66)
                                             Image(systemName: "arrow.right")
                                                 .font(.system(size: 22, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#F5F7F4"))
+                                                .foregroundColor(Color.pillrBackground)
                                         }
                                     }
                                     .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
@@ -1304,11 +1304,11 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     Button(action: handlePrimaryAction) {
                                         ZStack {
                                             Circle()
-                                                .fill(Color(hex: "#F5F7F4"))
+                                                .fill(Color.pillrBackground)
                                                 .frame(width: 68, height: 68)
                                             Image(systemName: "arrow.right")
                                                 .font(.system(size: 22, weight: .semibold))
-                                                .foregroundColor(Color(hex: "#11140F"))
+                                                .foregroundColor(Color.pillrPrimary)
                                         }
                                     }
                                     .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
@@ -1316,7 +1316,7 @@ private struct PillrWelcomeOnboardingFlow: View {
 
                                     Text("Start using Pillr")
                                         .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.95))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.95))
 
                                     Spacer()
                                 }
@@ -1329,16 +1329,16 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     Button(action: handlePrimaryAction) {
                                         ZStack {
                                             Circle()
-                                                .fill(Color(hex: "#F5F7F4"))
+                                                .fill(Color.pillrBackground)
                                                 .frame(width: 68, height: 68)
 
                                             if isWorking {
                                                 ProgressView()
-                                                    .tint(Color(hex: "#11140F"))
+                                                    .tint(Color.pillrPrimary)
                                             } else {
                                                 Text("On")
                                                     .font(.system(size: 18, weight: .bold, design: .rounded))
-                                                    .foregroundColor(Color(hex: "#11140F"))
+                                                    .foregroundColor(Color.pillrPrimary)
                                             }
                                         }
                                     }
@@ -1347,7 +1347,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     .overlay(alignment: .bottom) {
                                         Text("(recommended)")
                                             .font(.system(size: 11, weight: .medium, design: .rounded))
-                                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                                            .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                             .fixedSize(horizontal: true, vertical: false)
                                             .offset(y: 24)
                                     }
@@ -1362,7 +1362,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                                 .frame(width: 68, height: 68)
                                             Text("Off")
                                                 .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.95))
+                                                .foregroundColor(Color.pillrSecondary.opacity(0.95))
                                         }
                                     }
                                     .buttonStyle(ScaleButtonStyle())
@@ -1402,16 +1402,16 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     Button(action: handlePrimaryAction) {
                                         ZStack {
                                             Circle()
-                                                .fill(Color(hex: "#F5F7F4"))
+                                                .fill(Color.pillrBackground)
                                                 .frame(width: 68, height: 68)
 
                                             if isWorking {
                                                 ProgressView()
-                                                    .tint(Color(hex: "#11140F"))
+                                                    .tint(Color.pillrPrimary)
                                             } else {
                                                 Text("On")
                                                     .font(.system(size: 18, weight: .bold, design: .rounded))
-                                                    .foregroundColor(Color(hex: "#11140F"))
+                                                    .foregroundColor(Color.pillrPrimary)
                                             }
                                         }
                                     }
@@ -1420,7 +1420,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     .overlay(alignment: .bottom) {
                                         Text("(recommended)")
                                             .font(.system(size: 11, weight: .medium, design: .rounded))
-                                            .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                                            .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                             .fixedSize(horizontal: true, vertical: false)
                                             .offset(y: 24)
                                     }
@@ -1435,7 +1435,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                                 .frame(width: 68, height: 68)
                                             Text("Off")
                                                 .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.95))
+                                                .foregroundColor(Color.pillrSecondary.opacity(0.95))
                                         }
                                     }
                                     .buttonStyle(ScaleButtonStyle())
@@ -1454,16 +1454,16 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     Button(action: handlePrimaryAction) {
                                         ZStack {
                                             Circle()
-                                                .fill(Color(hex: "#F5F7F4"))
+                                                .fill(Color.pillrBackground)
                                                 .frame(width: 68, height: 68)
 
                                             if isWorking {
                                                 ProgressView()
-                                                    .tint(Color(hex: "#11140F"))
+                                                    .tint(Color.pillrPrimary)
                                             } else {
                                                 Text("On")
                                                     .font(.system(size: 18, weight: .bold, design: .rounded))
-                                                    .foregroundColor(Color(hex: "#11140F"))
+                                                    .foregroundColor(Color.pillrPrimary)
                                             }
                                         }
                                     }
@@ -1480,7 +1480,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                                 .frame(width: 68, height: 68)
                                             Text("Off")
                                                 .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                                .foregroundColor(Color(hex: "#E0E7DC").opacity(0.95))
+                                                .foregroundColor(Color.pillrSecondary.opacity(0.95))
                                         }
                                     }
                                     .buttonStyle(ScaleButtonStyle())
@@ -1497,7 +1497,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                             if let helperMessage {
                                 Text(helperMessage)
                                     .font(.system(size: 14, weight: .medium, design: .rounded))
-                                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.8))
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal, 18)
                             }
@@ -1517,16 +1517,16 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     Button(action: handlePrimaryAction) {
                                         ZStack {
                                             Circle()
-                                                .fill(Color(hex: "#F5F7F4"))
+                                                .fill(Color.pillrBackground)
                                                 .frame(width: 68, height: 68)
 
                                             if isWorking {
                                                 ProgressView()
-                                                    .tint(Color(hex: "#11140F"))
+                                                    .tint(Color.pillrPrimary)
                                             } else {
                                                 Image(systemName: "arrow.right")
                                                     .font(.system(size: 22, weight: .semibold))
-                                                    .foregroundColor(Color(hex: "#11140F"))
+                                                    .foregroundColor(Color.pillrPrimary)
                                             }
                                         }
                                     }
@@ -1540,7 +1540,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                     HStack(spacing: 10) {
                                         if isWorking {
                                             ProgressView()
-                                                .tint(Color(hex: "#11140F"))
+                                                .tint(Color.pillrPrimary)
                                         } else if step == .biometric && biometryType != .none {
                                             Image(systemName: biometryType.iconName)
                                                 .font(.system(size: 18, weight: .semibold))
@@ -1549,12 +1549,12 @@ private struct PillrWelcomeOnboardingFlow: View {
                                         Text(primaryButtonTitle)
                                             .font(.system(size: 18, weight: .bold, design: .rounded))
                                     }
-                                    .foregroundColor(Color(hex: "#11140F"))
+                                    .foregroundColor(Color.pillrPrimary)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 17)
                                     .background(
                                         Capsule()
-                                            .fill(Color(hex: "#F5F7F4"))
+                                            .fill(Color.pillrBackground)
                                     )
                                 }
                                 .buttonStyle(ScaleButtonStyle())
@@ -1565,7 +1565,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                                 Button(action: handleSecondaryAction) {
                                     Text(secondaryTitle)
                                         .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.88))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.88))
                                         .underline()
                                 }
                                 .buttonStyle(.plain)
@@ -1874,8 +1874,8 @@ private struct PillrWelcomeOnboardingFlow: View {
                 .fill(
                     LinearGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#5F6F61"),
-                            Color(hex: "#404C42")
+                            Color.pillrAccent,
+                            Color.pillrPrimary
                         ]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -1885,7 +1885,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                 .overlay {
                     Image(systemName: fallbackSystemName)
                         .font(.system(size: size * 0.45, weight: .medium))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
                 }
         }
     }
@@ -2253,25 +2253,25 @@ private struct DoneConfettiBackgroundView: View {
 
     private let pieces: [DoneConfettiPiece] = [
         DoneConfettiPiece(xPercent: 0.04, startYOffset: -90, travelMultiplier: 1.26, rotation: -28, delay: 0.00, duration: 3.8, isCapsule: false, color: Color.white.opacity(0.42), drift: -12),
-        DoneConfettiPiece(xPercent: 0.08, startYOffset: -130, travelMultiplier: 1.22, rotation: 22, delay: 0.22, duration: 4.2, isCapsule: true, color: Color(hex: "#B9D2BC").opacity(0.38), drift: 9),
+        DoneConfettiPiece(xPercent: 0.08, startYOffset: -130, travelMultiplier: 1.22, rotation: 22, delay: 0.22, duration: 4.2, isCapsule: true, color: Color.pillrAccent.opacity(0.38), drift: 9),
         DoneConfettiPiece(xPercent: 0.13, startYOffset: -110, travelMultiplier: 1.28, rotation: 34, delay: 0.10, duration: 4.0, isCapsule: false, color: Color.white.opacity(0.36), drift: 7),
-        DoneConfettiPiece(xPercent: 0.18, startYOffset: -150, travelMultiplier: 1.24, rotation: -15, delay: 0.36, duration: 4.3, isCapsule: true, color: Color(hex: "#A9C4AD").opacity(0.4), drift: -8),
+        DoneConfettiPiece(xPercent: 0.18, startYOffset: -150, travelMultiplier: 1.24, rotation: -15, delay: 0.36, duration: 4.3, isCapsule: true, color: Color.pillrAccent.opacity(0.4), drift: -8),
         DoneConfettiPiece(xPercent: 0.23, startYOffset: -95, travelMultiplier: 1.27, rotation: 18, delay: 0.16, duration: 3.9, isCapsule: false, color: Color.white.opacity(0.39), drift: 10),
-        DoneConfettiPiece(xPercent: 0.28, startYOffset: -140, travelMultiplier: 1.2, rotation: -31, delay: 0.46, duration: 4.1, isCapsule: true, color: Color(hex: "#BCD4BF").opacity(0.36), drift: -11),
+        DoneConfettiPiece(xPercent: 0.28, startYOffset: -140, travelMultiplier: 1.2, rotation: -31, delay: 0.46, duration: 4.1, isCapsule: true, color: Color.pillrAccent.opacity(0.36), drift: -11),
         DoneConfettiPiece(xPercent: 0.33, startYOffset: -125, travelMultiplier: 1.25, rotation: 26, delay: 0.04, duration: 3.7, isCapsule: false, color: Color.white.opacity(0.35), drift: 14),
-        DoneConfettiPiece(xPercent: 0.38, startYOffset: -105, travelMultiplier: 1.3, rotation: -24, delay: 0.28, duration: 4.4, isCapsule: true, color: Color(hex: "#A8C3AC").opacity(0.39), drift: -6),
+        DoneConfettiPiece(xPercent: 0.38, startYOffset: -105, travelMultiplier: 1.3, rotation: -24, delay: 0.28, duration: 4.4, isCapsule: true, color: Color.pillrAccent.opacity(0.39), drift: -6),
         DoneConfettiPiece(xPercent: 0.43, startYOffset: -155, travelMultiplier: 1.23, rotation: 21, delay: 0.14, duration: 4.2, isCapsule: false, color: Color.white.opacity(0.37), drift: 12),
-        DoneConfettiPiece(xPercent: 0.48, startYOffset: -120, travelMultiplier: 1.29, rotation: -18, delay: 0.40, duration: 4.0, isCapsule: true, color: Color(hex: "#BCD4BF").opacity(0.4), drift: -9),
+        DoneConfettiPiece(xPercent: 0.48, startYOffset: -120, travelMultiplier: 1.29, rotation: -18, delay: 0.40, duration: 4.0, isCapsule: true, color: Color.pillrAccent.opacity(0.4), drift: -9),
         DoneConfettiPiece(xPercent: 0.53, startYOffset: -100, travelMultiplier: 1.24, rotation: 29, delay: 0.08, duration: 3.9, isCapsule: false, color: Color.white.opacity(0.34), drift: 8),
-        DoneConfettiPiece(xPercent: 0.58, startYOffset: -145, travelMultiplier: 1.22, rotation: -12, delay: 0.52, duration: 4.3, isCapsule: true, color: Color(hex: "#A9C4AD").opacity(0.37), drift: -10),
+        DoneConfettiPiece(xPercent: 0.58, startYOffset: -145, travelMultiplier: 1.22, rotation: -12, delay: 0.52, duration: 4.3, isCapsule: true, color: Color.pillrAccent.opacity(0.37), drift: -10),
         DoneConfettiPiece(xPercent: 0.63, startYOffset: -115, travelMultiplier: 1.31, rotation: 24, delay: 0.18, duration: 4.1, isCapsule: false, color: Color.white.opacity(0.4), drift: 13),
-        DoneConfettiPiece(xPercent: 0.68, startYOffset: -135, travelMultiplier: 1.23, rotation: -27, delay: 0.32, duration: 4.4, isCapsule: true, color: Color(hex: "#B9D2BC").opacity(0.39), drift: -7),
+        DoneConfettiPiece(xPercent: 0.68, startYOffset: -135, travelMultiplier: 1.23, rotation: -27, delay: 0.32, duration: 4.4, isCapsule: true, color: Color.pillrAccent.opacity(0.39), drift: -7),
         DoneConfettiPiece(xPercent: 0.73, startYOffset: -90, travelMultiplier: 1.27, rotation: 19, delay: 0.06, duration: 3.8, isCapsule: false, color: Color.white.opacity(0.38), drift: 9),
-        DoneConfettiPiece(xPercent: 0.78, startYOffset: -150, travelMultiplier: 1.25, rotation: -21, delay: 0.44, duration: 4.2, isCapsule: true, color: Color(hex: "#BCD4BF").opacity(0.35), drift: -12),
+        DoneConfettiPiece(xPercent: 0.78, startYOffset: -150, travelMultiplier: 1.25, rotation: -21, delay: 0.44, duration: 4.2, isCapsule: true, color: Color.pillrAccent.opacity(0.35), drift: -12),
         DoneConfettiPiece(xPercent: 0.83, startYOffset: -108, travelMultiplier: 1.3, rotation: 31, delay: 0.12, duration: 4.0, isCapsule: false, color: Color.white.opacity(0.36), drift: 11),
-        DoneConfettiPiece(xPercent: 0.88, startYOffset: -142, travelMultiplier: 1.24, rotation: -16, delay: 0.54, duration: 4.3, isCapsule: true, color: Color(hex: "#A8C3AC").opacity(0.4), drift: -8),
+        DoneConfettiPiece(xPercent: 0.88, startYOffset: -142, travelMultiplier: 1.24, rotation: -16, delay: 0.54, duration: 4.3, isCapsule: true, color: Color.pillrAccent.opacity(0.4), drift: -8),
         DoneConfettiPiece(xPercent: 0.93, startYOffset: -118, travelMultiplier: 1.26, rotation: 27, delay: 0.24, duration: 4.1, isCapsule: false, color: Color.white.opacity(0.35), drift: 10),
-        DoneConfettiPiece(xPercent: 0.97, startYOffset: -132, travelMultiplier: 1.21, rotation: -23, delay: 0.60, duration: 4.4, isCapsule: true, color: Color(hex: "#A9C4AD").opacity(0.38), drift: -9)
+        DoneConfettiPiece(xPercent: 0.97, startYOffset: -132, travelMultiplier: 1.21, rotation: -23, delay: 0.60, duration: 4.4, isCapsule: true, color: Color.pillrAccent.opacity(0.38), drift: -9)
     ]
 
     @State private var shouldFall = false
@@ -2348,11 +2348,11 @@ private struct PillrOnboardingOptionCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundColor(Color(hex: "#F5F7F4"))
+                        .foregroundColor(Color.pillrBackground)
 
                     Text(subtitle)
                         .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.86))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.86))
                         .multilineTextAlignment(.leading)
                 }
 
@@ -2360,7 +2360,7 @@ private struct PillrOnboardingOptionCard: View {
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(Color(hex: "#F5F7F4").opacity(isSelected ? 0.95 : 0.45))
+                    .foregroundColor(Color.pillrBackground.opacity(isSelected ? 0.95 : 0.45))
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 13)
@@ -2387,8 +2387,8 @@ private struct BiometricAppLockOverlay: View {
         ZStack {
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#404C42"),
-                    Color(hex: "#3A443D")
+                    Color.pillrPrimary,
+                    Color.pillrPrimary
                 ]),
                 startPoint: .top,
                 endPoint: .bottom
@@ -2398,16 +2398,16 @@ private struct BiometricAppLockOverlay: View {
             VStack(spacing: 18) {
                 Image(systemName: biometryType.iconName)
                     .font(.system(size: 56, weight: .medium))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .foregroundColor(Color.pillrBackground)
                     .padding(.bottom, 2)
 
                 Text("Unlock Pillr")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(hex: "#F5F7F4"))
+                    .foregroundColor(Color.pillrBackground)
 
                 Text("Authenticate with \(biometryType.displayName) to access your medications.")
                     .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundColor(Color(hex: "#E0E7DC").opacity(0.88))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.88))
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
                     .padding(.horizontal, 20)
@@ -2415,7 +2415,7 @@ private struct BiometricAppLockOverlay: View {
                 if let errorMessage {
                     Text(errorMessage)
                         .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(Color(hex: "#E0E7DC").opacity(0.78))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.78))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 16)
                 }
@@ -2424,18 +2424,18 @@ private struct BiometricAppLockOverlay: View {
                     HStack(spacing: 10) {
                         if isUnlocking {
                             ProgressView()
-                                .tint(Color(hex: "#11140F"))
+                                .tint(Color.pillrPrimary)
                         }
 
                         Text(isUnlocking ? "Unlocking..." : "Unlock with \(biometryType.displayName)")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
                     }
-                    .foregroundColor(Color(hex: "#11140F"))
+                    .foregroundColor(Color.pillrPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
                         Capsule()
-                            .fill(Color(hex: "#F5F7F4"))
+                            .fill(Color.pillrBackground)
                     )
                 }
                 .buttonStyle(ScaleButtonStyle())
@@ -2465,7 +2465,7 @@ private extension MainTab {
                      
                     ],
                     icon: .system(name: "pill.fill"),
-                    accentColor: Color(hex: "#C8F365"),
+                    accentColor: Color.pillrAccent,
                     buttonAccessibilityLabel: "Continue to My Meds",
                     subtitle: "We will walk you through the app as you go.",
                     buttonTitle: "Get Started"
@@ -2485,7 +2485,7 @@ private extension MainTab {
                
                     ],
                     icon: .system(name: "calendar"),
-                    accentColor: Color(hex: "#81C784"),
+                    accentColor: Color.pillrAccent,
                     buttonAccessibilityLabel: "Continue to History"
                 )
         case .checkIns:
@@ -2503,7 +2503,7 @@ private extension MainTab {
 
                     ],
                     icon: .system(name: "book.pages"),
-                    accentColor: Color(hex: "#9FBBA5"),
+                    accentColor: Color.pillrAccent,
                     buttonAccessibilityLabel: "Continue to Reflection"
                 )
         case .focus:

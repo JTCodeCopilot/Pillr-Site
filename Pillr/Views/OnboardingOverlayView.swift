@@ -141,7 +141,7 @@ struct OnboardingCardView: View {
             Button(action: onDismiss) {
                 Text(info.buttonTitle)
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundColor(Color(hex: "#404C42"))
+                    .foregroundColor(Color.pillrPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(
@@ -164,7 +164,7 @@ struct OnboardingCardView: View {
         .frame(maxWidth: 460)
         .background(
             RoundedRectangle(cornerRadius: 28)
-                .fill(Color(hex: "#2A2D28").opacity(0.98))
+                .fill(Color.pillrPrimary.opacity(0.98))
                 .shadow(color: Color.black.opacity(0.4), radius: 16, x: 0, y: 8)
         )
         .overlay(

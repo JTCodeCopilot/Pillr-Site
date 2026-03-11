@@ -222,9 +222,9 @@ struct PillrApp: App {
         } else {
             let appearance = UINavigationBarAppearance()
             appearance.configureWithTransparentBackground()
-            appearance.backgroundColor = UIColor(Color(hex: "#404C42"))
-            appearance.titleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
-            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color(hex: "#C7C7BD"))]
+            appearance.backgroundColor = UIColor(Color.pillrPrimary)
+            appearance.titleTextAttributes = [.foregroundColor: UIColor(Color.pillrSecondary)]
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color.pillrSecondary)]
             UINavigationBar.appearance().standardAppearance = appearance
             UINavigationBar.appearance().compactAppearance = appearance
             UINavigationBar.appearance().scrollEdgeAppearance = appearance
@@ -259,7 +259,7 @@ struct PillrApp: App {
         } else {
             let tabBarAppearance = UITabBarAppearance()
             tabBarAppearance.configureWithTransparentBackground()
-            tabBarAppearance.backgroundColor = UIColor(Color(hex: "#404C42"))
+            tabBarAppearance.backgroundColor = UIColor(Color.pillrPrimary)
             applyBadgeColors(to: tabBarAppearance)
             UITabBar.appearance().standardAppearance = tabBarAppearance
             if #available(iOS 15.0, *) {

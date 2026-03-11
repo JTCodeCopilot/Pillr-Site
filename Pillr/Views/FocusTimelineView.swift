@@ -292,8 +292,8 @@ struct FocusTimelineView: View {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(hex: "#404C42"),
-                        Color(hex: "#3A443D")
+                        Color.pillrPrimary,
+                        Color.pillrPrimary
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
@@ -330,7 +330,7 @@ struct FocusTimelineView: View {
                         Button("Close") {
                             dismiss()
                         }
-                        .foregroundColor(Color(hex: "#C7C7BD"))
+                        .foregroundColor(Color.pillrSecondary)
                     }
                 }
             }
@@ -343,18 +343,18 @@ struct FocusTimelineView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Today's Focus Timeline")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(hex: "#E8E8E0"))
+                    .foregroundColor(Color.pillrBackground)
             }
             
             if hasWindows {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "info.circle")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.9))
                     
                     Text("These focus windows assume you take each ADHD medication at the scheduled reminder time. If you take a dose earlier or later, log it so the timeline can update accordingly.")
                         .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.85))
                 }
                 .padding(12)
                 .background(
@@ -374,21 +374,21 @@ struct FocusTimelineView: View {
         VStack(spacing: 16) {
             Image(systemName: "hourglass")
                 .font(.system(size: 48))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(Color.pillrSecondary.opacity(0.7))
             
             Text("Map your focus windows")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(hex: "#E8E8E0"))
+                .foregroundColor(Color.pillrBackground)
             
             VStack(spacing: 10) {
                 Text("When you label a medication as a stimulant, record the approximate time it starts working and how long it lasts. This allows us to define your expected focus periods.")
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.9))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.9))
                     .multilineTextAlignment(.center)
                 
                 Text("Log each dose at the moment you take it so the timeline remains accurate.")
                     .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.85))
                     .multilineTextAlignment(.center)
             }
         }
@@ -399,7 +399,7 @@ struct FocusTimelineView: View {
                 .fill(Color.black.opacity(0.18))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color(hex: "#C7C7BD").opacity(0.25), lineWidth: 1)
+                        .stroke(Color.pillrSecondary.opacity(0.25), lineWidth: 1)
                 )
         )
         .padding(.top, 16)
@@ -576,11 +576,11 @@ private struct FocusWindowRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(group.medication.name)
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
                     
                     Text(group.medication.dosage)
                         .font(.system(size: 13))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(1.0))
+                        .foregroundColor(Color.pillrSecondary.opacity(1.0))
                 }
                 
                 Spacer()
@@ -612,13 +612,13 @@ private struct FocusWindowRow: View {
                             if hasMultipleDoses {
                                 Text("Dose \(window.doseIndex + 1)")
                                     .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#E8E8E0"))
+                                    .foregroundColor(Color.pillrBackground)
                             }
 
                             if let loggedTime {
                                 Text("Logged \(formatTime(loggedTime))")
                                     .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#C7C7BD"))
+                                    .foregroundColor(Color.pillrSecondary)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
                                     .background(Color.white.opacity(0.14))
@@ -637,10 +637,10 @@ private struct FocusWindowRow: View {
                             let badgeText = isNowInsideWindow ? "Now" : formatTime(window.onsetTime)
                             Text(badgeText)
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(isNowInsideWindow ? Color(hex: "#404C42") : Color(hex: "#C7C7BD"))
+                                .foregroundColor(isNowInsideWindow ? Color.pillrPrimary : Color.pillrSecondary)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                .background(isNowInsideWindow ? Color(hex: "#D7CCC8") : Color.white.opacity(0.14))
+                                .background(isNowInsideWindow ? Color.pillrSecondary : Color.white.opacity(0.14))
                                 .cornerRadius(12)
                                 .frame(minWidth: 72, alignment: .trailing)
                         }
@@ -671,7 +671,7 @@ private struct FocusWindowRow: View {
                     if let scheduledReminder = window.scheduledDoseTime {
                         Text("Based on the \(formatTime(scheduledReminder)) reminder")
                             .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.65))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.65))
                             .padding(.top, 2)
                     }
                 }
@@ -711,23 +711,23 @@ private struct FocusWindowRow: View {
         return VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                .foregroundColor(Color.pillrSecondary.opacity(0.85))
                 .tracking(0.6)
             
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 if isMeridiem {
                     Text(timeComponent)
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(Color(hex: "#F8F8F1"))
+                        .foregroundColor(Color.pillrBackground)
                     
                     Text(meridiemComponent)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0").opacity(0.8))
+                        .foregroundColor(Color.pillrBackground.opacity(0.8))
                         .padding(.leading, 2)
                 } else {
                     Text(value)
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(Color(hex: "#F8F8F1"))
+                        .foregroundColor(Color.pillrBackground)
                 }
             }
         }
@@ -750,12 +750,12 @@ private struct FocusWindowRow: View {
     ) -> (text: String, color: Color) {
         switch window.status {
         case .logged(let date):
-            return ("Logged at \(formatTime(date))", Color(hex: "#9FD7C1"))
+            return ("Logged at \(formatTime(date))", Color.pillrAccent)
         case .skipped(let date):
             return ("Skipped at \(formatTime(date))", Color(hex: "#F2B8A0"))
         case .pending:
             let prefix = isAsNeededWithoutReminder ? "Logged at" : "Reminder at"
-            return ("\(prefix) \(formatTime(window.doseTime))", Color(hex: "#C7C7BD").opacity(0.9))
+            return ("\(prefix) \(formatTime(window.doseTime))", Color.pillrSecondary.opacity(0.9))
         }
     }
 }
@@ -849,7 +849,7 @@ private struct FocusBar: View {
                         if isPM(tick) || isRightMidnight {
                             Text(label(for: tick))
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(hourLabelOpacity))
+                                .foregroundColor(Color.pillrSecondary.opacity(hourLabelOpacity))
                                 .position(x: tickX, y: labelRowHeight / 2)
                         }
                     }
@@ -870,8 +870,8 @@ private struct FocusBar: View {
                             .fill(
                                 LinearGradient(
                                     gradient: Gradient(colors: [
-                                        Color(hex: "#C7C7BD"),
-                                        Color(hex: "#D7CCC8")
+                                        Color.pillrSecondary,
+                                        Color.pillrSecondary
                                     ]),
                                     startPoint: .leading,
                                     endPoint: .trailing
@@ -916,7 +916,7 @@ private struct FocusBar: View {
                         if !isPM(tick) || isLeftMidnight {
                             Text(label(for: tick))
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color(hex: "#C7C7BD").opacity(hourLabelOpacity))
+                                .foregroundColor(Color.pillrSecondary.opacity(hourLabelOpacity))
                                 .position(x: tickX, y: labelRowHeight / 2)
                         }
                     }
@@ -926,11 +926,11 @@ private struct FocusBar: View {
                 HStack {
                     Text("am")
                         .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.52))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.52))
                     Spacer()
                     Text("pm")
                         .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.52))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.52))
                 }
             }
         }
@@ -1028,11 +1028,11 @@ struct ADHDDoseTimelineSheet: View {
 
     private var timingBadge: (text: String, color: Color, background: Color) {
         guard let scheduled = entry.scheduledTime else {
-            return ("Logged", Color(hex: "#2F352F"), Color(hex: "#D7CCC8"))
+            return ("Logged", Color.pillrPrimary, Color.pillrSecondary)
         }
         let minutesShift = Int(entry.actualTime.timeIntervalSince(scheduled) / 60)
         if minutesShift == 0 {
-            return ("On time", Color(hex: "#1F3C32"), Color(hex: "#9FD7C1"))
+            return ("On time", Color.pillrPrimary, Color.pillrAccent)
         }
         if minutesShift > 0 {
             return ("Logged late", Color(hex: "#4A2D22"), Color(hex: "#F2B8A0"))
@@ -1045,11 +1045,11 @@ struct ADHDDoseTimelineSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.7))
+                .foregroundColor(Color.pillrSecondary.opacity(0.7))
                 .tracking(0.6)
             Text(value)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "#F5F7F4"))
+                .foregroundColor(Color.pillrBackground)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -1068,7 +1068,7 @@ struct ADHDDoseTimelineSheet: View {
 
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                .foregroundColor(Color.pillrSecondary.opacity(0.8))
                 .multilineTextAlignment(.center)
 
             Text(time)
@@ -1083,8 +1083,8 @@ struct ADHDDoseTimelineSheet: View {
         ZStack {
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "#404C42"),
-                    Color(hex: "#3A443D")
+                    Color.pillrPrimary,
+                    Color.pillrPrimary
                 ]),
                 startPoint: .top,
                 endPoint: .bottom
@@ -1118,7 +1118,7 @@ struct ADHDDoseTimelineSheet: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(entry.medication.name)
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(Color(hex: "#F5F7F4"))
+                            .foregroundColor(Color.pillrBackground)
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(medicationCategoryLabel)
@@ -1134,12 +1134,12 @@ struct ADHDDoseTimelineSheet: View {
 
                         Text("\(entry.medication.dosage) \(entry.medication.dosageUnit)")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.85))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.85))
                             .padding(.top, 2)
 
                         Text(logSummary)
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.8))
                     }
                     .padding(.top, 6)
 
@@ -1158,7 +1158,7 @@ struct ADHDDoseTimelineSheet: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Estimated focus window")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "#E8E8E0"))
+                        .foregroundColor(Color.pillrBackground)
 
                     HStack(spacing: 12) {
                         timelineStep(
@@ -1182,12 +1182,12 @@ struct ADHDDoseTimelineSheet: View {
 
                     Text("Based on the time you logged this dose.")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "#C7C7BD").opacity(0.72))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.72))
 
                     if let shift = shiftDescription {
                         Text(shift)
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Color(hex: "#C7C7BD").opacity(0.8))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.8))
                     }
                 }
                 .padding(16)
