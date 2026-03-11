@@ -56,10 +56,9 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
             MedicationStore.shared.refreshCloudSyncIfNeeded { _ in
                 MedicationStore.shared.loadMedications()
                 MedicationStore.shared.loadLogs()
-                MedicationStore.shared.kickstartActiveReminderSchedules(referenceDate: Date())
-                MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
+                MedicationStore.shared.kickstartActiveReminderSchedules(referenceDate: Date(), force: true)
             }
-            MedicationStore.shared.kickstartActiveReminderSchedules(referenceDate: Date())
+            MedicationStore.shared.kickstartActiveReminderSchedules(referenceDate: Date(), force: true)
             NotificationManager.shared.surfaceDeliveredStimulantCheckInsIfNeeded()
             incrementAppLaunchCountIfNeeded()
         }
@@ -81,7 +80,7 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
                     return
                 }
                 MedicationStore.shared.refreshCloudSyncIfNeeded { fetchResult in
-                    MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
+                    MedicationStore.shared.kickstartActiveReminderSchedules(referenceDate: Date(), force: true)
                     completionHandler(fetchResult == .failed ? .failed : .newData)
                 }
             }
@@ -146,7 +145,7 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
             let semaphore = DispatchSemaphore(value: 0)
             Task { @MainActor in
                 MedicationStore.shared.refreshCloudSyncIfNeeded { _ in
-                    MedicationStore.shared.reconcileNotificationSchedules(referenceDate: Date())
+                    MedicationStore.shared.kickstartActiveReminderSchedules(referenceDate: Date(), force: true)
                     semaphore.signal()
                 }
             }
