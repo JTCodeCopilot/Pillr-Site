@@ -10,7 +10,7 @@ import WebKit
 
 // MARK: - Global Background Definition
 extension Color {
-    static let pillrPrimary = Color(hex: "#1F3B2D")
+    static let pillrPrimary = Color(hex: "#424C43")
     static let pillrSecondary = Color(hex: "#B7C8AE")
     static let pillrBackground = Color(hex: "#F4F6F2")
     static let pillrAccent = Color(hex: "#6F8F7B")

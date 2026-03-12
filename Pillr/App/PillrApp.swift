@@ -212,7 +212,7 @@ struct PillrApp: App {
             let appearance = UINavigationBarAppearance()
             appearance.configureWithTransparentBackground()
             appearance.backgroundEffect = nil
-            appearance.backgroundColor = .clear
+            appearance.backgroundColor = UIColor(Color.pillrPrimary)
             appearance.shadowColor = .clear
             appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
             appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
@@ -232,6 +232,8 @@ struct PillrApp: App {
         
         // Configure tab bar appearance
         let overdueBadgeColor = UIColor(Color(hex: "#FFB74D"))
+        let tabSelectedColor = UIColor(Color(hex: "#8BA091"))
+        let tabNormalColor = UIColor(Color(hex: "#5E7266"))
         func applyBadgeColors(to appearance: UITabBarAppearance) {
             let itemAppearances = [
                 appearance.stackedLayoutAppearance,
@@ -243,13 +245,17 @@ struct PillrApp: App {
                 itemAppearance.selected.badgeBackgroundColor = overdueBadgeColor
                 itemAppearance.normal.badgeTextAttributes = [.foregroundColor: UIColor.white]
                 itemAppearance.selected.badgeTextAttributes = [.foregroundColor: UIColor.white]
+                itemAppearance.normal.iconColor = tabNormalColor.withAlphaComponent(0.75)
+                itemAppearance.selected.iconColor = tabSelectedColor.withAlphaComponent(0.9)
+                itemAppearance.normal.titleTextAttributes = [.foregroundColor: tabNormalColor.withAlphaComponent(0.75)]
+                itemAppearance.selected.titleTextAttributes = [.foregroundColor: tabSelectedColor.withAlphaComponent(0.9)]
             }
         }
         if #available(iOS 26.0, *) {
             let tabBarAppearance = UITabBarAppearance()
             tabBarAppearance.configureWithTransparentBackground()
             tabBarAppearance.backgroundEffect = nil
-            tabBarAppearance.backgroundColor = .clear
+            tabBarAppearance.backgroundColor = UIColor(Color.pillrPrimary)
             tabBarAppearance.shadowColor = .clear
             applyBadgeColors(to: tabBarAppearance)
             UITabBar.appearance().standardAppearance = tabBarAppearance
