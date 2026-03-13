@@ -3022,6 +3022,33 @@ fileprivate struct DoseButtonState: Identifiable {
     }()
 }
 
+fileprivate struct MedicationStatusLabel: View {
+    let text: String
+    let foregroundColor: Color
+    let iconName: String?
+    let iconCircleColor: Color?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let iconName, let iconCircleColor {
+                ZStack {
+                    Circle()
+                        .fill(iconCircleColor)
+                        .frame(width: 18, height: 18)
+
+                    Image(systemName: iconName)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(foregroundColor)
+                }
+            }
+
+            Text(text)
+                .font(.system(.body, weight: .semibold))
+                .foregroundColor(foregroundColor)
+        }
+    }
+}
+
 fileprivate enum MedicationCardPalette {
     static let background = Color(hex: "#59655B")
     static let secondaryTint = Color(hex: "#424C43")
@@ -3212,6 +3239,8 @@ fileprivate struct MedicationRowHeaderView: View {
         let id: Int
         let text: String
         let color: Color
+        let iconName: String?
+        let iconCircleColor: Color?
     }
 
     private var takenDoseBadges: [DoseBadgeItem] {
@@ -3228,7 +3257,15 @@ fileprivate struct MedicationRowHeaderView: View {
                         ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
                         : nil
                     let label = prefix != nil ? "\(prefix!) • Taken – \(timeText)" : "Taken – \(timeText)"
-                    badges.append(DoseBadgeItem(id: state.index, text: label, color: MedicationCardPalette.takenStatusText))
+                    badges.append(
+                        DoseBadgeItem(
+                            id: state.index,
+                            text: label,
+                            color: Color(hex: "#4E8F6B"),
+                            iconName: "checkmark",
+                            iconCircleColor: Color(hex: "#DFF2E6")
+                        )
+                    )
                 }
 
             case .skipped:
@@ -3236,7 +3273,15 @@ fileprivate struct MedicationRowHeaderView: View {
                     ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
                         : nil
                 let label = prefix != nil ? "\(prefix!) • Dose skipped" : "Dose skipped"
-                badges.append(DoseBadgeItem(id: state.index, text: label, color: MedicationCardPalette.skippedStatusText))
+                badges.append(
+                    DoseBadgeItem(
+                        id: state.index,
+                        text: label,
+                        color: Color(hex: "#7A7A7A"),
+                        iconName: "xmark",
+                        iconCircleColor: Color(hex: "#EFE8DF")
+                    )
+                )
 
             case .pending:
                 continue
@@ -3252,10 +3297,13 @@ fileprivate struct MedicationRowHeaderView: View {
         if !badges.isEmpty {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(badges) { badge in
-                    Text(badge.text)
-                        .font(.system(.body, weight: .semibold))
-                        .foregroundColor(badge.color)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    MedicationStatusLabel(
+                        text: badge.text,
+                        foregroundColor: badge.color,
+                        iconName: badge.iconName,
+                        iconCircleColor: badge.iconCircleColor
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -3526,11 +3574,12 @@ fileprivate struct MedicationRowHeaderView: View {
 
         return HStack(spacing: 12) {
             if state.status == .taken, let loggedText = state.loggedTimeLabel {
-                HStack(spacing: 0) {
-                    Text(loggedText)
-                        .font(.system(.body, weight: .semibold))
-                        .foregroundColor(MedicationCardPalette.takenStatusText)
-                }
+                MedicationStatusLabel(
+                    text: loggedText,
+                    foregroundColor: Color(hex: "#4E8F6B"),
+                    iconName: "checkmark",
+                    iconCircleColor: Color(hex: "#DFF2E6")
+                )
                 .padding(.vertical, 10)
                 .padding(.horizontal, 16)
                 .frame(minWidth: logButtonMinWidth, alignment: .leading)
@@ -3543,14 +3592,12 @@ fileprivate struct MedicationRowHeaderView: View {
                         .stroke(MedicationCardPalette.divider.opacity(0.7), lineWidth: 0.6)
                 )
             } else if state.status == .skipped {
-                HStack(spacing: 8) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(MedicationCardPalette.skippedStatusText)
-                    Text(state.loggedTimeLabel ?? "Dose skipped")
-                        .font(.system(.body, weight: .semibold))
-                        .foregroundColor(MedicationCardPalette.skippedStatusText)
-                }
+                MedicationStatusLabel(
+                    text: state.loggedTimeLabel ?? "Dose skipped",
+                    foregroundColor: Color(hex: "#7A7A7A"),
+                    iconName: "xmark",
+                    iconCircleColor: Color(hex: "#EFE8DF")
+                )
                 .padding(.vertical, 10)
                 .padding(.horizontal, 16)
                 .frame(minWidth: logButtonMinWidth, alignment: .leading)

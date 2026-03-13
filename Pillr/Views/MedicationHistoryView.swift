@@ -594,7 +594,7 @@ private struct MedicationTimelineRow: View {
     private var resolvedIconName: String {
         iconName.isEmpty ? "pill" : iconName
     }
-    
+
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(spacing: 6) {
