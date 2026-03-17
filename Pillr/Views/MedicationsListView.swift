@@ -1554,8 +1554,8 @@ fileprivate struct HealthSummaryWidget: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(
                 manager.hasDeniedPermission
-                    ? "Health permissions are currently denied. Open Settings to re-allow fitness data."
-                    : "Allow access to Apple Health to show your daily steps, distance, and heart rate."
+                    ? "Health access is off. Open Settings to turn it back on."
+                    : "Connect Apple Health to show steps, distance and heart rate."
             )
             .font(.system(size: 13))
             .foregroundColor(secondaryTextColor.opacity(0.9))
@@ -2703,59 +2703,69 @@ fileprivate struct TodaySummaryCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(dashboardDateLabel)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.82))
-                    .textCase(.uppercase)
-                    .tracking(0.7)
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(dashboardDateLabel)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.82))
+                        .textCase(.uppercase)
+                        .tracking(0.7)
 
-                Text(primaryTitle)
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(MedicationCardPalette.titleText)
-                    .lineLimit(2)
+                    Text(primaryTitle)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(MedicationCardPalette.titleText)
+                        .lineLimit(2)
 
-                Text(primarySubtitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.9))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    overdueSummaryChip
-
-                    summaryChip(
-                        title: "Taken",
-                        value: "\(summary.takenCount)",
-                        accent: Color.pillrSecondary
-                    )
-
-                    lowSupplySummaryChip
+                    Text(primarySubtitle)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+
+                GeometryReader { geometry in
+                    let chipSpacing: CGFloat = 10
+                    let visibleChipCount = summary.lowSupplyCount > 0 ? 3 : 2
+                    let chipWidth = (geometry.size.width - (chipSpacing * CGFloat(visibleChipCount - 1))) / CGFloat(visibleChipCount)
+
+                    HStack(spacing: chipSpacing) {
+                        overdueSummaryChip
+                            .frame(width: chipWidth)
+
+                        summaryChip(
+                            title: "Taken",
+                            value: "\(summary.takenCount)",
+                            accent: Color.pillrSecondary
+                        )
+                        .frame(width: chipWidth)
+
+                        if summary.lowSupplyCount > 0 {
+                            lowSupplySummaryChip
+                                .frame(width: chipWidth)
+                        }
+                    }
+                }
+                .frame(height: 44)
             }
+            .padding(16)
+            .background(cardBackground)
 
             if showsHealthSummary {
-                Rectangle()
-                    .fill(MedicationCardPalette.divider.opacity(0.38))
-                    .frame(height: 1)
-                    .padding(.top, 2)
-
                 HealthSummaryWidget(manager: healthKitManager, style: .embedded)
-                    .padding(.top, 2)
+                    .padding(16)
+                    .background(cardBackground)
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(MedicationCardPalette.background)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(MedicationCardPalette.divider.opacity(0.75), lineWidth: 1)
-                )
-        )
-        .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .fill(MedicationCardPalette.background)
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(MedicationCardPalette.divider.opacity(0.75), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
     }
 
     private var overdueSummaryChip: some View {
@@ -2766,6 +2776,7 @@ fileprivate struct TodaySummaryCard: View {
                     .foregroundColor(summary.overdueCount > 0 ? MedicationCardPalette.urgency : MedicationCardPalette.titleText.opacity(0.82))
                     .lineLimit(1)
             }
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(
@@ -2794,6 +2805,7 @@ fileprivate struct TodaySummaryCard: View {
                     .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.82))
                     .lineLimit(1)
             }
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(
@@ -2832,19 +2844,18 @@ fileprivate struct TodaySummaryCard: View {
     }
 
     private var primarySubtitle: String {
-        if summary.overdueCount > 0 {
-            if summary.overdueCount > 1 {
-                return "\(summary.overdueCount) overdue doses are waiting at the top of your list."
-            }
-            return "This dose is waiting at the top of your list."
+        if let overdueDose = summary.overdueDose, summary.overdueCount > 0 {
+            return summary.overdueCount > 1
+                ? "Start with \(overdueDose.medicationName)."
+                : "Overdue: \(overdueDose.medicationName)"
         }
         if let nextDose = summary.nextDose {
-            return nextDose.medicationName
+            return "Next: \(nextDose.medicationName)"
         }
         if summary.takenCount > 0 {
-            return "No more reminders for today."
+            return "Nothing else due today."
         }
-        return "Your reminders will show here when they are due."
+        return "Reminders will appear here when due."
     }
 
     private var overdueChipText: String {
@@ -2878,6 +2889,7 @@ fileprivate struct TodaySummaryCard: View {
                 .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.82))
                 .lineLimit(1)
         }
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
@@ -3003,7 +3015,7 @@ fileprivate struct DoseButtonState: Identifiable {
             return "Dose skipped"
         case .taken:
             guard let actualTime else { return "Taken" }
-            return "Taken – \(DoseButtonState.loggedTimeFormatter.string(from: actualTime))"
+            return "Taken \(DoseButtonState.loggedTimeFormatter.string(from: actualTime))"
         case .pending:
             return nil
         }
@@ -3027,6 +3039,30 @@ fileprivate struct MedicationStatusLabel: View {
     let foregroundColor: Color
     let iconName: String?
     let iconCircleColor: Color?
+    let textFont: Font
+    let iconSize: CGFloat
+    let iconWeight: Font.Weight
+    let circleSize: CGFloat
+
+    init(
+        text: String,
+        foregroundColor: Color,
+        iconName: String?,
+        iconCircleColor: Color?,
+        textFont: Font = .system(size: 17, weight: .semibold),
+        iconSize: CGFloat = 10,
+        iconWeight: Font.Weight = .medium,
+        circleSize: CGFloat = 18
+    ) {
+        self.text = text
+        self.foregroundColor = foregroundColor
+        self.iconName = iconName
+        self.iconCircleColor = iconCircleColor
+        self.textFont = textFont
+        self.iconSize = iconSize
+        self.iconWeight = iconWeight
+        self.circleSize = circleSize
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -3034,16 +3070,16 @@ fileprivate struct MedicationStatusLabel: View {
                 ZStack {
                     Circle()
                         .fill(iconCircleColor)
-                        .frame(width: 18, height: 18)
+                        .frame(width: circleSize, height: circleSize)
 
                     Image(systemName: iconName)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: iconSize, weight: iconWeight))
                         .foregroundColor(foregroundColor)
                 }
             }
 
             Text(text)
-                .font(.system(.body, weight: .semibold))
+                .font(textFont)
                 .foregroundColor(foregroundColor)
         }
     }
@@ -3063,8 +3099,8 @@ fileprivate enum MedicationCardPalette {
     static let takenSecondaryText = Color(hex: "#5F6E64")
     static let takenDivider = Color(hex: "#A9B7AD")
     static let takenStatusText = Color(hex: "#6F9D7A")
-    static let skippedBackground = Color(hex: "#DDE5DF")
-    static let skippedStatusText = Color(hex: "#6E746E")
+    static let skippedBackground = Color(hex: "#F1E6DE")
+    static let skippedStatusText = Color(hex: "#9A5E45")
 }
 
 // New fileprivate struct for the header content of a MedicationRow
@@ -3256,14 +3292,14 @@ fileprivate struct MedicationRowHeaderView: View {
                     let prefix: String? = showDoseLabel
                         ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
                         : nil
-                    let label = prefix != nil ? "\(prefix!) • Taken – \(timeText)" : "Taken – \(timeText)"
+                    let label = prefix != nil ? "\(prefix!) • Taken \(timeText)" : "Taken \(timeText)"
                     badges.append(
                         DoseBadgeItem(
                             id: state.index,
                             text: label,
-                            color: Color(hex: "#4E8F6B"),
+                            color: Color(hex: "#5E886B"),
                             iconName: "checkmark",
-                            iconCircleColor: Color(hex: "#DFF2E6")
+                            iconCircleColor: Color(hex: "#ECF5EE")
                         )
                     )
                 }
@@ -3295,13 +3331,27 @@ fileprivate struct MedicationRowHeaderView: View {
     private var doseBadgesView: some View {
         let badges = takenDoseBadges
         if !badges.isEmpty {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 6) {
                 ForEach(badges) { badge in
                     MedicationStatusLabel(
                         text: badge.text,
                         foregroundColor: badge.color,
                         iconName: badge.iconName,
-                        iconCircleColor: badge.iconCircleColor
+                        iconCircleColor: badge.iconCircleColor,
+                        textFont: .system(size: 15, weight: .semibold),
+                        iconSize: 8,
+                        iconWeight: .semibold,
+                        circleSize: 16
+                    )
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color(hex: "#F6FAF7"))
+                    )
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color(hex: "#D8E7DC"), lineWidth: 0.8)
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -3576,38 +3626,46 @@ fileprivate struct MedicationRowHeaderView: View {
             if state.status == .taken, let loggedText = state.loggedTimeLabel {
                 MedicationStatusLabel(
                     text: loggedText,
-                    foregroundColor: Color(hex: "#4E8F6B"),
+                    foregroundColor: Color(hex: "#5E886B"),
                     iconName: "checkmark",
-                    iconCircleColor: Color(hex: "#DFF2E6")
+                    iconCircleColor: Color(hex: "#ECF5EE"),
+                    textFont: .system(size: 15, weight: .semibold),
+                    iconSize: 8,
+                    iconWeight: .semibold,
+                    circleSize: 16
                 )
-                .padding(.vertical, 10)
-                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
                 .frame(minWidth: logButtonMinWidth, alignment: .leading)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(MedicationCardPalette.background)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(hex: "#F6FAF7"))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(MedicationCardPalette.divider.opacity(0.7), lineWidth: 0.6)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color(hex: "#D8E7DC"), lineWidth: 0.8)
                 )
             } else if state.status == .skipped {
                 MedicationStatusLabel(
                     text: state.loggedTimeLabel ?? "Dose skipped",
-                    foregroundColor: Color(hex: "#7A7A7A"),
+                    foregroundColor: Color(hex: "#9A5E45"),
                     iconName: "xmark",
-                    iconCircleColor: Color(hex: "#EFE8DF")
+                    iconCircleColor: Color(hex: "#F6DED2"),
+                    textFont: .system(.body, weight: .semibold),
+                    iconSize: 10,
+                    iconWeight: .medium,
+                    circleSize: 18
                 )
                 .padding(.vertical, 10)
                 .padding(.horizontal, 16)
                 .frame(minWidth: logButtonMinWidth, alignment: .leading)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(MedicationCardPalette.background)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(hex: "#FBF1EB"))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(MedicationCardPalette.takenDivider.opacity(0.7), lineWidth: 0.8)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color(hex: "#E7C6B8"), lineWidth: 0.8)
                 )
             } else {
                 HStack(spacing: interButtonSpacing) {
