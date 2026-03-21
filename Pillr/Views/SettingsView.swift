@@ -10,6 +10,7 @@ struct SettingsView: View {
     @EnvironmentObject var store: MedicationStore
     @ObservedObject private var storeManager = StoreManager.shared
     @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = HealthDistanceUnit.miles.rawValue
+    @AppStorage("healthSnapshotDailyStepGoal") private var dailyStepGoal = 10000
     @State private var showingPremiumUpgrade = false
     @State private var showingInteractionHistory = false
     @State private var showingInteractionSelectionSheet = false
@@ -287,6 +288,24 @@ struct SettingsView: View {
                         }
                         .pickerStyle(.segmented)
                         .accessibilityLabel("Health distance unit")
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Daily step goal")
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundColor(SettingsPalette.mainText)
+                                Spacer()
+                                Text(formattedStepGoal)
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundColor(SettingsPalette.secondaryText)
+                            }
+
+                            Stepper(value: $dailyStepGoal, in: 1000...50000, step: 500) {
+                                Text("Adjust your goal")
+                                    .font(.system(size: 13, design: .rounded))
+                                    .foregroundColor(SettingsPalette.secondaryText)
+                            }
+                        }
                         
                         Toggle("Show Apple Health data on My Meds screen", isOn: appleHealthVisibilityBinding)
                             .toggleStyle(SwitchToggleStyle(tint: SettingsPalette.toggleActive))
@@ -1015,6 +1034,12 @@ struct SettingsView: View {
             return "Waiting for Pillr to finish its first sync"
         }
         return nil
+    }
+
+    private var formattedStepGoal: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: dailyStepGoal)) ?? "\(dailyStepGoal)"
     }
 }
 

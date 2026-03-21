@@ -1414,6 +1414,7 @@ fileprivate struct HealthSummaryWidget: View {
         Locale.current.measurementSystem == .metric ? .kilometers : .miles
     }
     @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = defaultDistanceUnit.rawValue
+    @AppStorage("healthSnapshotDailyStepGoal") private var dailyStepGoal = 10000
 
     private static let integerFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
@@ -1443,7 +1444,7 @@ fileprivate struct HealthSummaryWidget: View {
     private var metrics: [Metric] {
         [
             Metric(title: "Heart Rate", unit: "bpm / 1 hr avg", value: formattedHeartRate(manager.hourlyAverageHeartRate)),
-            Metric(title: "Steps", unit: "steps", value: formattedSteps(manager.dailySteps)),
+            Metric(title: "Steps", unit: "Goal: \(formattedStepGoal(dailyStepGoal))", value: formattedSteps(manager.dailySteps)),
             Metric(title: "Distance", unit: distanceUnit.rawValue, value: formattedDistance(manager.dailyDistanceMiles))
         ]
     }
@@ -1475,10 +1476,6 @@ fileprivate struct HealthSummaryWidget: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if shouldShowHeader || style == .embedded {
-                header
-            }
-
             if !manager.isHealthDataAvailable {
                 Text("Apple Health is not available on this device.")
                     .font(.system(size: 13))
@@ -1518,24 +1515,8 @@ fileprivate struct HealthSummaryWidget: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var shouldShowHeader: Bool {
-        !(manager.hasConnected || manager.hasAnyPermission || manager.hasMetricValues)
-    }
-
     private var shouldShowHeartRatePrompt: Bool {
         manager.isHealthDataAvailable && manager.hasAnyPermission && !manager.hasHeartRatePermission
-    }
-
-    private var header: some View {
-        HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Apple Health Snapshot")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(secondaryTextColor.opacity(style == .embedded ? 0.92 : 0.8))
-            }
-            
-            Spacer()
-        }
     }
 
     private var metricGrid: some View {
@@ -1656,6 +1637,10 @@ fileprivate struct HealthSummaryWidget: View {
             return "--"
         }
         return Self.integerFormatter.string(from: NSNumber(value: value)) ?? "\(value)"
+    }
+
+    private func formattedStepGoal(_ value: Int) -> String {
+        Self.integerFormatter.string(from: NSNumber(value: value)) ?? "\(value)"
     }
     
     private func formattedDistance(_ milesValue: Double?) -> String {
@@ -2703,7 +2688,7 @@ fileprivate struct TodaySummaryCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(dashboardDateLabel)
@@ -2749,11 +2734,15 @@ fileprivate struct TodaySummaryCard: View {
             }
             .padding(16)
             .background(cardBackground)
+            .zIndex(1)
 
             if showsHealthSummary {
                 HealthSummaryWidget(manager: healthKitManager, style: .embedded)
-                    .padding(16)
-                    .background(cardBackground)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 18)
+                    .padding(.bottom, 0)
+                    .background(connectedHealthBackground)
+                    .padding(.top, -2)
             }
         }
     }
@@ -2766,6 +2755,16 @@ fileprivate struct TodaySummaryCard: View {
                     .stroke(MedicationCardPalette.divider.opacity(0.75), lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
+    }
+
+    private var connectedHealthBackground: some View {
+        RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .fill(MedicationCardPalette.background)
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(MedicationCardPalette.divider.opacity(0.75), lineWidth: 1)
+            )
+        .shadow(color: Color.black.opacity(0.16), radius: 10, x: 0, y: 6)
     }
 
     private var overdueSummaryChip: some View {
@@ -3037,6 +3036,7 @@ fileprivate struct DoseButtonState: Identifiable {
 fileprivate struct MedicationStatusLabel: View {
     let text: String
     let foregroundColor: Color
+    let iconForegroundColor: Color?
     let iconName: String?
     let iconCircleColor: Color?
     let textFont: Font
@@ -3047,6 +3047,7 @@ fileprivate struct MedicationStatusLabel: View {
     init(
         text: String,
         foregroundColor: Color,
+        iconForegroundColor: Color? = nil,
         iconName: String?,
         iconCircleColor: Color?,
         textFont: Font = .system(size: 17, weight: .semibold),
@@ -3056,6 +3057,7 @@ fileprivate struct MedicationStatusLabel: View {
     ) {
         self.text = text
         self.foregroundColor = foregroundColor
+        self.iconForegroundColor = iconForegroundColor
         self.iconName = iconName
         self.iconCircleColor = iconCircleColor
         self.textFont = textFont
@@ -3066,16 +3068,11 @@ fileprivate struct MedicationStatusLabel: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            if let iconName, let iconCircleColor {
-                ZStack {
-                    Circle()
-                        .fill(iconCircleColor)
-                        .frame(width: circleSize, height: circleSize)
-
-                    Image(systemName: iconName)
-                        .font(.system(size: iconSize, weight: iconWeight))
-                        .foregroundColor(foregroundColor)
-                }
+            if let iconName {
+                Image(systemName: iconName)
+                    .font(.system(size: iconSize, weight: iconWeight))
+                    .foregroundColor(iconForegroundColor ?? foregroundColor)
+                    .frame(width: circleSize, alignment: .center)
             }
 
             Text(text)
@@ -3093,14 +3090,14 @@ fileprivate enum MedicationCardPalette {
     static let secondaryText = Color(hex: "#D6DBD3")
     static let timeText = Color(hex: "#E8ECE6")
     static let primaryAction = Color(hex: "#424C43")
-    static let urgency = Color(hex: "#FFA38B")
+    static let urgency = Color(hex: "#E07A6F")
     static let takenBackground = Color(hex: "#DDE5DF")
     static let takenTitleText = Color(hex: "#2F3A33")
     static let takenSecondaryText = Color(hex: "#5F6E64")
     static let takenDivider = Color(hex: "#A9B7AD")
     static let takenStatusText = Color(hex: "#6F9D7A")
-    static let skippedBackground = Color(hex: "#F1E6DE")
-    static let skippedStatusText = Color(hex: "#9A5E45")
+    static let skippedBackground = Color(hex: "#E8E0D8")
+    static let skippedStatusText = Color(hex: "#8B7366")
 }
 
 // New fileprivate struct for the header content of a MedicationRow
@@ -3135,7 +3132,7 @@ fileprivate struct MedicationRowHeaderView: View {
 
     private var verticalPadding: CGFloat {
         if compactLayout {
-            return 10
+            return 12
         }
         if allDosesLogged {
             return usesTimelineLayout ? 12 : 11
@@ -3147,7 +3144,7 @@ fileprivate struct MedicationRowHeaderView: View {
         if usesTimelineLayout {
             return 12
         }
-        return compactLayout ? 6 : 0
+        return compactLayout ? 4 : 0
     }
 
     private var headerIsLoggedStatus: Bool {
@@ -3277,6 +3274,7 @@ fileprivate struct MedicationRowHeaderView: View {
         let color: Color
         let iconName: String?
         let iconCircleColor: Color?
+        let isMinimal: Bool
     }
 
     private var takenDoseBadges: [DoseBadgeItem] {
@@ -3292,14 +3290,15 @@ fileprivate struct MedicationRowHeaderView: View {
                     let prefix: String? = showDoseLabel
                         ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
                         : nil
-                    let label = prefix != nil ? "\(prefix!) • Taken \(timeText)" : "Taken \(timeText)"
+                    let label = prefix != nil ? "\(prefix!) taken at \(timeText)" : "Taken at \(timeText)"
                     badges.append(
                         DoseBadgeItem(
                             id: state.index,
                             text: label,
                             color: Color(hex: "#5E886B"),
                             iconName: "checkmark",
-                            iconCircleColor: Color(hex: "#ECF5EE")
+                            iconCircleColor: Color(hex: "#ECF5EE"),
+                            isMinimal: badges.isEmpty && doseStates.count == 1
                         )
                     )
                 }
@@ -3308,14 +3307,16 @@ fileprivate struct MedicationRowHeaderView: View {
                 let prefix: String? = showDoseLabel
                     ? ((state.customTitle?.isEmpty == false) ? state.customTitle : "Dose \(state.index + 1)")
                         : nil
-                let label = prefix != nil ? "\(prefix!) • Dose skipped" : "Dose skipped"
+                let timeText = state.actualTime.map { Self.badgeTimeFormatter.string(from: $0) } ?? "today"
+                let label = prefix != nil ? "\(prefix!) skipped at \(timeText)" : "Skipped at \(timeText)"
                 badges.append(
                     DoseBadgeItem(
                         id: state.index,
                         text: label,
-                        color: Color(hex: "#7A7A7A"),
+                        color: Color(hex: "#8C6B5D"),
                         iconName: "xmark",
-                        iconCircleColor: Color(hex: "#EFE8DF")
+                        iconCircleColor: Color(hex: "#F2E4DA"),
+                        isMinimal: badges.isEmpty && doseStates.count == 1
                     )
                 )
 
@@ -3333,32 +3334,42 @@ fileprivate struct MedicationRowHeaderView: View {
         if !badges.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(badges) { badge in
-                    MedicationStatusLabel(
-                        text: badge.text,
-                        foregroundColor: badge.color,
-                        iconName: badge.iconName,
-                        iconCircleColor: badge.iconCircleColor,
-                        textFont: .system(size: 15, weight: .semibold),
-                        iconSize: 8,
-                        iconWeight: .semibold,
-                        circleSize: 16
-                    )
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(Color(hex: "#F6FAF7"))
-                    )
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(Color(hex: "#D8E7DC"), lineWidth: 0.8)
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    if badge.isMinimal {
+                        MedicationStatusLabel(
+                            text: badge.text,
+                            foregroundColor: badge.color.opacity(0.92),
+                            iconName: badge.iconName,
+                            iconCircleColor: badge.iconCircleColor?.opacity(0.55),
+                            textFont: .system(size: 14, weight: .medium),
+                            iconSize: 7,
+                            iconWeight: .semibold,
+                            circleSize: 14
+                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        MedicationStatusLabel(
+                            text: badge.text,
+                            foregroundColor: MedicationCardPalette.takenSecondaryText.opacity(0.92),
+                            iconForegroundColor: badge.color,
+                            iconName: badge.iconName,
+                            iconCircleColor: nil,
+                            textFont: .system(size: 14, weight: .medium),
+                            iconSize: 8,
+                            iconWeight: .semibold,
+                            circleSize: 16
+                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 2)
+            .padding(.bottom, badgeBottomPadding)
         }
+    }
+
+    private var badgeBottomPadding: CGFloat {
+        takenDoseBadges.count == 1 && takenDoseBadges.first?.isMinimal == true ? 2 : 4
     }
 
 
@@ -3453,7 +3464,7 @@ fileprivate struct MedicationRowHeaderView: View {
     private var medicationInfoSection: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(medication.name)
-                .font(.system(size: 21, weight: .semibold))
+                .font(.system(size: compactLayout ? 19 : 21, weight: .semibold))
                 .foregroundColor(headerTitleColor.opacity(headerTitleOpacity))
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
@@ -3623,27 +3634,25 @@ fileprivate struct MedicationRowHeaderView: View {
         let skipStyle = baseSkipButtonColors
 
         return HStack(spacing: 12) {
-            if state.status == .taken, let loggedText = state.loggedTimeLabel {
+            if state.status == .taken, let actualTime = state.actualTime {
+                let loggedText = "Taken at \(Self.badgeTimeFormatter.string(from: actualTime))"
                 MedicationStatusLabel(
                     text: loggedText,
-                    foregroundColor: Color(hex: "#5E886B"),
+                    foregroundColor: MedicationCardPalette.timeText.opacity(0.96),
+                    iconForegroundColor: Color(hex: "#5E886B"),
                     iconName: "checkmark",
                     iconCircleColor: Color(hex: "#ECF5EE"),
-                    textFont: .system(size: 15, weight: .semibold),
-                    iconSize: 8,
+                    textFont: .system(size: 14, weight: .medium),
+                    iconSize: 7,
                     iconWeight: .semibold,
-                    circleSize: 16
+                    circleSize: 14
                 )
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
                 .frame(minWidth: logButtonMinWidth, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(hex: "#F6FAF7"))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color(hex: "#D8E7DC"), lineWidth: 0.8)
+                        .fill(Color.white.opacity(0.12))
                 )
             } else if state.status == .skipped {
                 MedicationStatusLabel(
@@ -4034,7 +4043,7 @@ struct MedicationRow: View {
             return MedicationCardPalette.takenDivider.opacity(0.7)
         }
         if isOverdueStatus {
-            return MedicationCardPalette.urgency.opacity(0.8)
+            return MedicationCardPalette.divider.opacity(0.42)
         }
         return MedicationCardPalette.divider.opacity(0.7)
     }
@@ -4046,7 +4055,7 @@ struct MedicationRow: View {
         case .skipped:
             return 1
         case .overdue:
-            return 1.2
+            return 0.9
         case .due:
             return 0.8
         case .asNeeded:

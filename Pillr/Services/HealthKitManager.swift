@@ -71,11 +71,11 @@ final class HealthKitManager: ObservableObject {
         Self.requiredIdentifiers.compactMap { HKQuantityType.quantityType(forIdentifier: $0) }
     }
 
-    private var readSampleTypes: Set<HKSampleType> {
+    private var readObjectTypes: Set<HKObjectType> {
         Set(readQuantityTypes)
     }
 
-    private var heartRateSampleTypes: Set<HKSampleType> {
+    private var heartRateReadTypes: Set<HKObjectType> {
         guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
             return []
         }
@@ -97,11 +97,11 @@ final class HealthKitManager: ObservableObject {
 
         updatePermissionState()
         guard !hasAllPermissions else { return }
-        guard !readSampleTypes.isEmpty else { return }
+        guard !readObjectTypes.isEmpty else { return }
 
         authorizationError = nil
         do {
-            let success = try await performAuthorization(readTypes: readSampleTypes)
+            let success = try await performAuthorization(readTypes: readObjectTypes)
             if success {
                 persistConnectionStatus(true)
                 hasAnyPermission = true
@@ -121,7 +121,7 @@ final class HealthKitManager: ObservableObject {
         updatePermissionState()
         guard !hasHeartRatePermission else { return }
 
-        let heartRateTypes = heartRateSampleTypes
+        let heartRateTypes = heartRateReadTypes
         guard !heartRateTypes.isEmpty else { return }
 
         authorizationError = nil
@@ -164,7 +164,6 @@ final class HealthKitManager: ObservableObject {
             unit: HKUnit(from: "count/min"),
             predicate: lastHourPredicate
         )
-
         dailySteps = steps.map { Int($0.rounded(.down)) }
         dailyDistanceMiles = distance
         hourlyAverageHeartRate = heartRate
@@ -240,7 +239,7 @@ final class HealthKitManager: ObservableObject {
         )
     }
 
-    private func performAuthorization(readTypes: Set<HKSampleType>) async throws -> Bool {
+    private func performAuthorization(readTypes: Set<HKObjectType>) async throws -> Bool {
         guard !readTypes.isEmpty else {
             return false
         }
@@ -324,4 +323,5 @@ final class HealthKitManager: ObservableObject {
             healthStore.execute(query)
         }
     }
+
 }
