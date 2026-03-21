@@ -1,0 +1,30 @@
+{
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/MedicationDetailView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationDetailView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationDetailView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationDetailView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationDetailView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationDetailView.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/MedicationHistoryView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationHistoryView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationHistoryView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationHistoryView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationHistoryView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationHistoryView.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/MedicationInteractionSelectionSheet.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationInteractionSelectionSheet.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationInteractionSelectionSheet.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationInteractionSelectionSheet.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationInteractionSelectionSheet.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationInteractionSelectionSheet.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/MedicationLogView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationLogView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationLogView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationLogView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationLogView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationLogView.swiftdeps"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/resource_bundle_accessor.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/resource_bundle_accessor.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/resource_bundle_accessor.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/resource_bundle_accessor.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/SwiftSDK/Sources/TelemetryDeck/Helpers/CryptoHashing.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/CryptoHashing.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/CryptoHashing.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/CryptoHashing.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/CryptoHashing.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/CryptoHashing.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/SwiftSDK/Sources/TelemetryDeck/Helpers/DictionaryExt.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/DictionaryExt.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/DictionaryExt.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/DictionaryExt.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/DictionaryExt.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/DictionaryExt.swiftdeps"
+  }
+}

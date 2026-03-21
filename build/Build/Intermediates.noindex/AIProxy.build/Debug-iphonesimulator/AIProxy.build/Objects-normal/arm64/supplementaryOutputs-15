@@ -1,0 +1,121 @@
+{
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/Replicate/ReplicateTrainingResponseBody.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ReplicateTrainingResponseBody.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ReplicateTrainingResponseBody.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ReplicateTrainingResponseBody.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ReplicateTrainingResponseBody.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ReplicateTrainingResponseBody.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/RuntimeInfo.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/RuntimeInfo.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/RuntimeInfo.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/RuntimeInfo.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/RuntimeInfo.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/RuntimeInfo.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/Serializable.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/Serializable.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/Serializable.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/Serializable.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/Serializable.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/Serializable.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/ServiceMixin.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ServiceMixin.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ServiceMixin.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ServiceMixin.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ServiceMixin.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/ServiceMixin.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/SingleOrPartsEncodable.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/SingleOrPartsEncodable.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/SingleOrPartsEncodable.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/SingleOrPartsEncodable.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/SingleOrPartsEncodable.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/SingleOrPartsEncodable.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/StabilityAI/StabilityAIDirectService.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIDirectService.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIDirectService.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIDirectService.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIDirectService.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIDirectService.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/StabilityAI/StabilityAIImageResponse.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIImageResponse.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIImageResponse.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIImageResponse.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIImageResponse.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIImageResponse.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/StabilityAI/StabilityAIProxiedService.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIProxiedService.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIProxiedService.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIProxiedService.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIProxiedService.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIProxiedService.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/StabilityAI/StabilityAIService.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIService.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIService.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIService.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIService.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIService.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/StabilityAI/StabilityAIStableDiffusionRequestBody.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIStableDiffusionRequestBody.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIStableDiffusionRequestBody.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIStableDiffusionRequestBody.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIStableDiffusionRequestBody.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIStableDiffusionRequestBody.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/StabilityAI/StabilityAIUltraRequestBody.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIUltraRequestBody.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIUltraRequestBody.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIUltraRequestBody.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIUltraRequestBody.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/StabilityAIUltraRequestBody.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/TogetherAI/TogetherAIChatCompletionRequestBody.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionRequestBody.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionRequestBody.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionRequestBody.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionRequestBody.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionRequestBody.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/TogetherAI/TogetherAIChatCompletionResponseBody.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionResponseBody.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionResponseBody.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionResponseBody.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionResponseBody.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionResponseBody.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/TogetherAI/TogetherAIChatCompletionStreamingChunk.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionStreamingChunk.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionStreamingChunk.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionStreamingChunk.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionStreamingChunk.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIChatCompletionStreamingChunk.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/TogetherAI/TogetherAIDirectService.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIDirectService.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIDirectService.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIDirectService.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIDirectService.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIDirectService.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/TogetherAI/TogetherAIProxiedService.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIProxiedService.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIProxiedService.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIProxiedService.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIProxiedService.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIProxiedService.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/AIProxySwift/Sources/AIProxy/TogetherAI/TogetherAIService.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIService.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIService.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIService.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIService.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/AIProxy.build/Debug-iphonesimulator/AIProxy.build/Objects-normal/arm64/TogetherAIService.swiftdeps"
+  }
+}

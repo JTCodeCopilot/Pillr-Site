@@ -1,0 +1,336 @@
+{
+  "source": "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/MainTabView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Discard medication?",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 239
+        }
+      },
+      {
+        "comment": "",
+        "key": "My Meds",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "Check-Ins",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 127
+        }
+      },
+      {
+        "comment": "",
+        "key": "Focus",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 136
+        }
+      },
+      {
+        "comment": "",
+        "key": "History",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 145
+        }
+      },
+      {
+        "comment": "",
+        "key": "More",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 153
+        }
+      },
+      {
+        "comment": "",
+        "key": "Discard",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 240
+        }
+      },
+      {
+        "comment": "",
+        "key": "Keep editing",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 246
+        }
+      },
+      {
+        "comment": "",
+        "key": "Any progress you've made on this medication will be discarded.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 250
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manage your preferences, privacy, and premium features all in one place.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 2529
+        }
+      },
+      {
+        "comment": "",
+        "key": "Next you will be asked to allow notifications so we can remind you to take medications that have reminders set.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 757
+        }
+      },
+      {
+        "comment": "",
+        "key": "Medication Reminders",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 750
+        }
+      },
+      {
+        "comment": "",
+        "key": "Continue",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 767
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not now",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 781
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enjoying Pillr?",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 823
+        }
+      },
+      {
+        "comment": "",
+        "key": "If Pillr has helped you, tap a star to leave a review and help others find us.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 827
+        }
+      },
+      {
+        "comment": "",
+        "key": "Leave a 5-star review",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 841
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not now",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 846
+        }
+      },
+      {
+        "comment": "",
+        "key": "What's New",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 886
+        }
+      },
+      {
+        "comment": "",
+        "key": "Got it",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 905
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start using Pillr",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1317
+        }
+      },
+      {
+        "comment": "",
+        "key": "On",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 1339
+        }
+      },
+      {
+        "comment": "",
+        "key": "(recommended)",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 1348
+        }
+      },
+      {
+        "comment": "",
+        "key": "Off",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 1363
+        }
+      },
+      {
+        "comment": "",
+        "key": "On",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 1412
+        }
+      },
+      {
+        "comment": "",
+        "key": "(recommended)",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 1421
+        }
+      },
+      {
+        "comment": "",
+        "key": "Off",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 1436
+        }
+      },
+      {
+        "comment": "",
+        "key": "On",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 1464
+        }
+      },
+      {
+        "comment": "",
+        "key": "Off",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 1481
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlock Pillr",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 2404
+        }
+      },
+      {
+        "comment": "",
+        "key": "Authenticate with %@ to access your medications.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 2408
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlocking...",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 2430
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlock with %@",
+        "location": {
+          "startingColumn": 61,
+          "startingLine": 2430
+        }
+      },
+      {
+        "comment": "",
+        "key": "This is your medication home base.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2458
+        }
+      },
+      {
+        "comment": "",
+        "key": "See your medications, track doses, and stay on schedule.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2460
+        }
+      },
+      {
+        "comment": "",
+        "key": "Here you can view all your logged medications.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2478
+        }
+      },
+      {
+        "comment": "",
+        "key": "Use filters to narrow the list, and export everything as a PDF or CSV using the top right export button.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2480
+        }
+      },
+      {
+        "comment": "",
+        "key": "Capture a short daily note about how you are feeling.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2496
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your Reflection entries stay tied to the medications you logged that day.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2498
+        }
+      },
+      {
+        "comment": "",
+        "key": "Focus Timeline gives you a daily view of your ADHD stimulant medications.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2514
+        }
+      },
+      {
+        "comment": "",
+        "key": "Each scheduled or logged dose becomes a visual window that shows when focus starts, peaks, and fades based on the set times.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2515
+        }
+      }
+    ]
+  },
+  "version": 1
+}

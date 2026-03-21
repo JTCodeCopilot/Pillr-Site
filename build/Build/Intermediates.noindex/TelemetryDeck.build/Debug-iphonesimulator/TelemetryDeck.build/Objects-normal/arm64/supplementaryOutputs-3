@@ -1,0 +1,23 @@
+{
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/SwiftSDK/Sources/TelemetryDeck/Helpers/SessionManager.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/SessionManager.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/SessionManager.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/SessionManager.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/SessionManager.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/SessionManager.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/SwiftSDK/Sources/TelemetryDeck/Modifiers/TrackNavigationModifier.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TrackNavigationModifier.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TrackNavigationModifier.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TrackNavigationModifier.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TrackNavigationModifier.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TrackNavigationModifier.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/SwiftSDK/Sources/TelemetryDeck/PirateMetrics/TelemetryDeck+Acquisition.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TelemetryDeck+Acquisition.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TelemetryDeck+Acquisition.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TelemetryDeck+Acquisition.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TelemetryDeck+Acquisition.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/TelemetryDeck.build/Debug-iphonesimulator/TelemetryDeck.build/Objects-normal/arm64/TelemetryDeck+Acquisition.swiftdeps"
+  }
+}

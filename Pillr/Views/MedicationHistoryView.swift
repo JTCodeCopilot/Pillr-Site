@@ -318,9 +318,16 @@ struct MedicationHistoryView: View {
                     showingDateRangePopover = false
                 } label: {
                     Text("Done")
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.pillrPrimary)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color.pillrBackground)
+                        )
                 }
-                .buttonStyle(PrimaryButtonStyle())
+                .buttonStyle(ScaleButtonStyle())
             }
             .padding(20)
             .frame(maxWidth: .infinity)
@@ -455,20 +462,16 @@ struct MedicationHistoryView: View {
     
     private var statsSection: some View {
         GlassContainer(spacing: 18) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Refine history")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(Color.pillrSecondary.opacity(0.6))
-
+            VStack(alignment: .leading, spacing: 0) {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 14) {
-                        filterControl
+                    HStack(spacing: 12) {
                         dateRangeControl
+                        filterControl
                     }
 
-                    VStack(spacing: 14) {
-                        filterControl
+                    VStack(spacing: 12) {
                         dateRangeControl
+                        filterControl
                     }
                 }
             }
@@ -490,7 +493,7 @@ struct MedicationHistoryView: View {
                 icon: "slider.horizontal.3",
                 title: "Filter",
                 value: selectedMedication,
-                detail: selectedMedication == "All" ? "All medications" : "Only \(selectedMedication)"
+                detail: nil
             )
         }
         .buttonStyle(.plain)
@@ -514,19 +517,18 @@ struct MedicationHistoryView: View {
     }
     
     private var timelineSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 12) {
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 1)
+                .padding(.bottom, 2)
+
             ForEach(groupedLogs, id: \.date) { date, logs in
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 8) {
-                        let isToday = Calendar.current.isDateInToday(date)
-
                         Text(dayLabel(for: date))
-                            .font(.system(size: isToday ? 13 : 18, weight: isToday ? .semibold : .bold))
-                            .foregroundColor(
-                                isToday
-                                    ? Color.pillrSecondary.opacity(0.55)
-                                    : Color.pillrBackground
-                            )
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(Color.pillrBackground)
                     }
                     
                     VStack(spacing: 18) {
@@ -590,9 +592,22 @@ private struct MedicationTimelineRow: View {
     let onEditDate: () -> Void
     let onDelete: () -> Void
     @State private var showingDeleteConfirm = false
+    @State private var showingActionMenu = false
 
-    private var resolvedIconName: String {
-        iconName.isEmpty ? "pill" : iconName
+    private var hasSupportingDetails: Bool {
+        log.pillsConsumed != nil ||
+        (log.reminderIndex != nil && showDoseChip) ||
+        log.feelingRating != nil ||
+        log.focusRating != nil ||
+        log.sideEffectSeverity != nil
+    }
+
+    private var trimmedNotes: String? {
+        guard let notes = log.notes?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !notes.isEmpty else {
+            return nil
+        }
+        return notes
     }
 
     var body: some View {
@@ -612,104 +627,97 @@ private struct MedicationTimelineRow: View {
             .alignmentGuide(VerticalAlignment.center) { $0[VerticalAlignment.center] }
             
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    HStack(spacing: 8) {
-                        Image(systemName: resolvedIconName)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color.pillrSecondary)
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(log.medicationName)
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(Color.pillrBackground)
                         
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(log.medicationName)
-                                .font(.body.weight(.semibold))
-                                .foregroundColor(Color.pillrBackground)
-                            
-                            if let dosageText {
-                                Text(dosageText)
-                                    .font(.body.weight(.regular))
-                                    .foregroundColor(Color.pillrSecondary.opacity(0.65))
-                            }
+                        if let dosageText {
+                            Text(dosageText)
+                                .font(.body.weight(.regular))
+                                .foregroundColor(Color.pillrSecondary.opacity(0.65))
                         }
+
+                        Text(timeText)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.78))
                     }
                     
                     Spacer()
                     
-                    Text(timeText)
-                        .font(.body.weight(.semibold))
-                        .foregroundColor(Color.pillrBackground)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.015))
-                        .cornerRadius(10)
-                        .frame(minWidth: 66, alignment: .trailing)
+                    Button {
+                        showingActionMenu = true
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.85))
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
                 
-                HStack(spacing: 3) {
+                HStack(spacing: 8) {
                     HistoryChip(
-                        icon: log.skipped ? "xmark.circle.fill" : "checkmark.circle.fill",
                         text: log.skipped ? "Skipped" : "Taken",
-                        tint: log.skipped ? Color(hex: "#D78B7E") : Color.pillrSecondary
+                        tint: log.skipped ? Color(hex: "#D78B7E") : Color.pillrSecondary,
+                        style: .prominent
                     )
-                    
-                    if let pills = log.pillsConsumed {
-                        HistoryChip(
-                            icon: "capsule.fill",
-                            text: pills == 1 ? "1 pill" : "\(pills) pills",
-                            tint: Color.pillrSecondary.opacity(0.9)
-                        )
-                    }
-                    
+
                     if let reminder = log.reminderIndex,
                        showDoseChip {
                         HistoryChip(
-                            icon: "bell.badge.fill",
                             text: "Dose \(reminder + 1)",
-                            tint: Color.pillrSecondary.opacity(0.9)
+                            tint: Color.pillrSecondary,
+                            style: .subtle
                         )
                     }
                 }
                 
-                if let feeling = log.feelingRating {
-                    HistoryChip(
-                        icon: "heart.fill",
-                        text: "Feeling \(feeling)/5",
-                        tint: Color.pillrSecondary.opacity(0.95)
-                    )
-                }
+                if hasSupportingDetails {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if let feeling = log.feelingRating {
+                            HistoryChip(
+                                text: "Feeling \(feeling)/5",
+                                tint: Color.pillrSecondary,
+                                style: .subtle
+                            )
+                        }
 
-                if let focus = log.focusRating {
-                    HistoryChip(
-                        icon: "hourglass",
-                        text: "Focus \(focus)/5",
-                        tint: Color.pillrSecondary
-                    )
+                        if let focus = log.focusRating {
+                            HistoryChip(
+                                text: "Focus \(focus)/5",
+                                tint: Color.pillrSecondary,
+                                style: .subtle
+                            )
+                        }
+                        
+                        if let sideEffects = log.sideEffectSeverity {
+                            HistoryChip(
+                                text: "Side effects \(sideEffects)/5",
+                                tint: Color.pillrSecondary,
+                                style: .subtle
+                            )
+                        }
+                    }
                 }
                 
-                if let sideEffects = log.sideEffectSeverity {
-                    HistoryChip(
-                        icon: "waveform.path.ecg",
-                        text: "Side effects \(sideEffects)/5",
-                        tint: Color.pillrSecondary.opacity(0.9)
-                    )
-                }
-                
-                if let notes = log.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
+                if let trimmedNotes {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.07))
+                            .frame(height: 1)
+
                         Text("Notes")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color.pillrSecondary.opacity(0.9))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.78))
                         
-                        Text(notes)
-                            .font(.system(size: 14))
-                            .foregroundColor(Color.pillrBackground)
+                        Text(trimmedNotes)
+                            .font(.system(size: 15))
+                            .foregroundColor(Color.pillrBackground.opacity(0.96))
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(12)
-                    .background(Color.white.opacity(0.04))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                    )
-                    .cornerRadius(12)
                 }
             }
             .padding(.horizontal, 16)
@@ -723,18 +731,16 @@ private struct MedicationTimelineRow: View {
                     )
             )
             .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 5)
-            .contextMenu {
-                Button {
+            .confirmationDialog("History options", isPresented: $showingActionMenu, titleVisibility: .hidden) {
+                Button("Edit Date") {
                     onEditDate()
-                } label: {
-                    Label("Edit Date", systemImage: "calendar")
                 }
 
-                Button(role: .destructive) {
+                Button("Delete", role: .destructive) {
                     showingDeleteConfirm = true
-                } label: {
-                    Label("Delete", systemImage: "trash")
                 }
+
+                Button("Cancel", role: .cancel) {}
             }
             .alert("Delete log entry?", isPresented: $showingDeleteConfirm) {
                 Button("Delete", role: .destructive) {
@@ -819,24 +825,30 @@ private struct LogDateEditSheet: View {
 }
 
 private struct HistoryChip: View {
-    let icon: String
+    enum Style {
+        case prominent
+        case subtle
+    }
+
     let text: String
     let tint: Color
+    let style: Style
     
     var body: some View {
-        HStack(spacing: 3) {
-            Image(systemName: icon)
-                .font(.caption.weight(.medium))
-            Text(text)
-                .font(.caption.weight(.medium))
-        }
-        .foregroundColor(Color.pillrPrimary)
+        Text(text)
+            .font(.caption.weight(.medium))
+        .foregroundColor(style == .prominent ? Color.pillrPrimary : Color.pillrSecondary.opacity(0.92))
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(minHeight: 28)
-        .background(tint.opacity(0.9))
-        .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(style == .prominent ? tint.opacity(0.9) : Color.white.opacity(0.035))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(style == .prominent ? Color.clear : Color.white.opacity(0.06), lineWidth: 1)
+        )
     }
 }
 
@@ -1146,36 +1158,35 @@ private struct HistoryControlButton: View {
     let detail: String?
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 14) {
+        HStack(alignment: .center, spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .frame(width: 36, height: 36)
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 24, height: 24)
                 .foregroundColor(Color.pillrBackground)
                 .background(
                     Circle()
-                        .fill(Color.white.opacity(0.08))
+                        .fill(Color.white.opacity(0.06))
                         .overlay(
                             Circle()
-                                .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
                         )
                 )
-                .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title.uppercased())
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(Color.pillrSecondary.opacity(0.7))
-                    .kerning(0.6)
+                    .kerning(0.45)
 
                 Text(value)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(Color.pillrBackground)
                     .lineLimit(1)
 
                 if let detail {
                     Text(detail)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color.pillrSecondary)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
                         .lineLimit(1)
                 }
             }
@@ -1183,22 +1194,23 @@ private struct HistoryControlButton: View {
             Spacer()
 
             Image(systemName: "chevron.down")
-                .font(.system(size: 9, weight: .semibold))
+                .font(.system(size: 7, weight: .semibold))
                 .foregroundColor(Color.pillrSecondary)
-                .opacity(0.35)
+                .opacity(0.28)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(minHeight: 72)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.05))
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.04))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.07), lineWidth: 1)
                 )
         )
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 

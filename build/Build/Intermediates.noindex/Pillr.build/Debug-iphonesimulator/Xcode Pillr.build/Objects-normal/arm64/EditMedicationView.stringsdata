@@ -1,0 +1,360 @@
+{
+  "source": "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/EditMedicationView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Update your medication details",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 213
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit Medication",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 196
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unit",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 253
+        }
+      },
+      {
+        "comment": "",
+        "key": "How Often You’ll Take It",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 316
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reminder Times",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 379
+        }
+      },
+      {
+        "comment": "",
+        "key": "Get refill reminders and track usage",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 462
+        }
+      },
+      {
+        "comment": "",
+        "key": "Inventory tracking requires premium subscription",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 463
+        }
+      },
+      {
+        "comment": "",
+        "key": "Track Pill Count",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 449
+        }
+      },
+      {
+        "comment": "",
+        "key": "Upgrade to Premium",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 485
+        }
+      },
+      {
+        "comment": "",
+        "key": "Get another reminder after 30 minutes if not taken",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 558
+        }
+      },
+      {
+        "comment": "",
+        "key": "One-time reminders require premium subscription",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 559
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remind me again",
+        "location": {
+          "startingColumn": 62,
+          "startingLine": 545
+        }
+      },
+      {
+        "comment": "",
+        "key": "Information",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 576
+        }
+      },
+      {
+        "comment": "",
+        "key": "e.g., Take with food, side effects to watch for...",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 598
+        }
+      },
+      {
+        "comment": "",
+        "key": "Please fill in all required fields",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 615
+        }
+      },
+      {
+        "comment": "",
+        "key": "Update medication",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 629
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 654
+        }
+      },
+      {
+        "comment": "",
+        "key": "Is This an ADHD Medication?",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 858
+        }
+      },
+      {
+        "comment": "",
+        "key": "ADHD medication",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 862
+        }
+      },
+      {
+        "comment": "",
+        "key": "Yes",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 863
+        }
+      },
+      {
+        "comment": "",
+        "key": "No",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 864
+        }
+      },
+      {
+        "comment": "",
+        "key": "What kind of ADHD medication?",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 871
+        }
+      },
+      {
+        "comment": "",
+        "key": "Medication type",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 875
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stimulant",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 876
+        }
+      },
+      {
+        "comment": "",
+        "key": "Non-stimulant",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 877
+        }
+      },
+      {
+        "comment": "",
+        "key": "Use these times to map your focus sessions. Pillr uses the start and fade windows to help you plan when you’ll be at your sharpest and when to ease into breaks.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 905
+        }
+      },
+      {
+        "comment": "",
+        "key": "Turn on focus window",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 887
+        }
+      },
+      {
+        "comment": "",
+        "key": "Need help matching typical timing?",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 913
+        }
+      },
+      {
+        "comment": "",
+        "key": "Lookup typical focus timing for this medication",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 928
+        }
+      },
+      {
+        "comment": "",
+        "key": "At the start of the fading window, Pillr will remind you to log focus and side effects for this medication.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 989
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reflection requires a premium subscription.",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 990
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reflection",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 976
+        }
+      },
+      {
+        "comment": "",
+        "key": "Default reminder arrives around when the medication starts to wear off. Prefer a different time? Pick one below.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 1011
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tip: the custom reminder only schedules after you log a dose, so pick a time you expect to reach after logging; logging after that time means today’s reminder waits until tomorrow.",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1024
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose a custom Reflection time",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1016
+        }
+      },
+      {
+        "comment": "",
+        "key": "Get a daily reminder to reflect on how this medication felt.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 1053
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reflection requires a premium subscription.",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 1054
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reflection",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1040
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose a time for Reflection.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 1075
+        }
+      },
+      {
+        "comment": "",
+        "key": "If the medication isn't taken before the Reflection time, the reminder will not trigger.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 1079
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1102
+        }
+      },
+      {
+        "comment": "",
+        "key": "*",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1139
+        }
+      },
+      {
+        "comment": "",
+        "key": "*",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1251
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1258
+        }
+      }
+    ]
+  },
+  "version": 1
+}

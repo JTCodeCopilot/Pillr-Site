@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>colors</key>
+	<array>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACColorNameAccentColor</string>
+			<key>relativePath</key>
+			<string>./AccentColor.colorset</string>
+			<key>swiftSymbol</key>
+			<string>accent</string>
+		</dict>
+	</array>
+	<key>images</key>
+	<array>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNamePillrLogo</string>
+			<key>relativePath</key>
+			<string>./PillrLogo.imageset</string>
+			<key>swiftSymbol</key>
+			<string>pillrLogo</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameReflectionExample</string>
+			<key>relativePath</key>
+			<string>./Reflection Example.imageset</string>
+			<key>swiftSymbol</key>
+			<string>reflectionExample</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameCloud</string>
+			<key>relativePath</key>
+			<string>./cloud.imageset</string>
+			<key>swiftSymbol</key>
+			<string>cloud</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameFaceid</string>
+			<key>relativePath</key>
+			<string>./faceid.imageset</string>
+			<key>swiftSymbol</key>
+			<string>faceid</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameHeart</string>
+			<key>relativePath</key>
+			<string>./heart.imageset</string>
+			<key>swiftSymbol</key>
+			<string>heart</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameLock</string>
+			<key>relativePath</key>
+			<string>./lock.imageset</string>
+			<key>swiftSymbol</key>
+			<string>lock</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameNotification</string>
+			<key>relativePath</key>
+			<string>./notification.imageset</string>
+			<key>swiftSymbol</key>
+			<string>notification</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNamePill</string>
+			<key>relativePath</key>
+			<string>./pill.imageset</string>
+			<key>swiftSymbol</key>
+			<string>pill</string>
+		</dict>
+		<dict>
+			<key>catalogPath</key>
+			<string>/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Assets.xcassets</string>
+			<key>objcSymbol</key>
+			<string>ACImageNameTick</string>
+			<key>relativePath</key>
+			<string>./tick.imageset</string>
+			<key>swiftSymbol</key>
+			<string>tick</string>
+		</dict>
+	</array>
+	<key>symbols</key>
+	<array/>
+</dict>
+</plist>

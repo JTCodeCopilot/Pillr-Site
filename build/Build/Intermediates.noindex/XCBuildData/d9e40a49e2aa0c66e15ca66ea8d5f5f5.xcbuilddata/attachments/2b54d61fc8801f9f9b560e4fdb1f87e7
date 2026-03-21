@@ -1,0 +1,4 @@
+module TikTokBusinessSDK {
+umbrella header "/Users/justin.tilley/Documents/Apple development/Pillr/build/SourcePackages/checkouts/tiktok-business-ios-sdk/TikTokBusinessSDK/Public/TikTokBusinessSDK/TikTokBusinessSDK.h"
+export *
+}

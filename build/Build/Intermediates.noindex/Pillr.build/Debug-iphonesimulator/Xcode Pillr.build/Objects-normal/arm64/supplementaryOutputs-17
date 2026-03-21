@@ -1,0 +1,30 @@
+{
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Models/HealthDistanceUnit.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/HealthDistanceUnit.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/HealthDistanceUnit.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/HealthDistanceUnit.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/HealthDistanceUnit.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/HealthDistanceUnit.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Models/Medication.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/Medication.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/Medication.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/Medication.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/Medication.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/Medication.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Services/CloudKitInteractionSyncProtocol.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitInteractionSyncProtocol.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitInteractionSyncProtocol.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitInteractionSyncProtocol.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitInteractionSyncProtocol.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitInteractionSyncProtocol.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Services/CloudKitMedicationSync.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitMedicationSync.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitMedicationSync.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitMedicationSync.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitMedicationSync.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/CloudKitMedicationSync.swiftdeps"
+  }
+}

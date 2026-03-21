@@ -1,0 +1,30 @@
+{
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/InteractionHistoryView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionHistoryView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionHistoryView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionHistoryView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionHistoryView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionHistoryView.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/InteractionResultsSheetView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionResultsSheetView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionResultsSheetView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionResultsSheetView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionResultsSheetView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/InteractionResultsSheetView.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/LogMedicationView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/LogMedicationView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/LogMedicationView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/LogMedicationView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/LogMedicationView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/LogMedicationView.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/MainTabView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MainTabView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MainTabView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MainTabView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MainTabView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MainTabView.swiftdeps"
+  }
+}

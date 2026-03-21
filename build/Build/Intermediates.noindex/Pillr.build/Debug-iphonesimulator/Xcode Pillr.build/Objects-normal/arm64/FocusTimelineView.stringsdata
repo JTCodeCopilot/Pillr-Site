@@ -1,0 +1,136 @@
+{
+  "source": "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/FocusTimelineView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Close",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 330
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today's Focus Timeline",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 344
+        }
+      },
+      {
+        "comment": "",
+        "key": "These focus windows assume you take each ADHD medication at the scheduled reminder time. If you take a dose earlier or later, log it so the timeline can update accordingly.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 355
+        }
+      },
+      {
+        "comment": "",
+        "key": "Map your focus windows",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 379
+        }
+      },
+      {
+        "comment": "",
+        "key": "When you label a medication as a stimulant, record the approximate time it starts working and how long it lasts. This allows us to define your expected focus periods.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 384
+        }
+      },
+      {
+        "comment": "",
+        "key": "Log each dose at the moment you take it so the timeline remains accurate.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 389
+        }
+      },
+      {
+        "comment": "",
+        "key": "Based on the %@ reminder",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 672
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dose %lld",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 613
+        }
+      },
+      {
+        "comment": "",
+        "key": "Logged %@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 619
+        }
+      },
+      {
+        "comment": "",
+        "key": "am",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 927
+        }
+      },
+      {
+        "comment": "",
+        "key": "pm",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 931
+        }
+      },
+      {
+        "comment": "",
+        "key": "Focus Window",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1097
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1135
+        }
+      },
+      {
+        "comment": "",
+        "key": "Estimated focus window",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1159
+        }
+      },
+      {
+        "comment": "",
+        "key": "Based on the time you logged this dose.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1183
+        }
+      },
+      {
+        "comment": "",
+        "key": "Close",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1209
+        }
+      }
+    ]
+  },
+  "version": 1
+}

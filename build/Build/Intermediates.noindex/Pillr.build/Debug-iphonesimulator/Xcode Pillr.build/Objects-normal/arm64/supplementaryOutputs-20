@@ -1,0 +1,30 @@
+{
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/ViewModels/MedicationStore.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationStore.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationStore.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationStore.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationStore.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/MedicationStore.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/ViewModels/UserSettings.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/UserSettings.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/UserSettings.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/UserSettings.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/UserSettings.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/UserSettings.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/AISearchMedicationView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AISearchMedicationView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AISearchMedicationView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AISearchMedicationView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AISearchMedicationView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AISearchMedicationView.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/AddMedicationView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AddMedicationView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AddMedicationView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AddMedicationView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AddMedicationView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/AddMedicationView.swiftdeps"
+  }
+}

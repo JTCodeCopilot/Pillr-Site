@@ -1,0 +1,168 @@
+{
+  "source": "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Pillr - Your Personal Medication Tracker",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 197
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manage your medications, track doses, and get reminders",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 198
+        }
+      },
+      {
+        "comment": "",
+        "key": "History",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 607
+        }
+      },
+      {
+        "comment": "",
+        "key": "Export",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 620
+        }
+      },
+      {
+        "comment": "",
+        "key": "Filter by Medication",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 632
+        }
+      },
+      {
+        "comment": "",
+        "key": "Settings",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 942
+        }
+      },
+      {
+        "comment": "",
+        "key": "App Settings",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 991
+        }
+      },
+      {
+        "comment": "",
+        "key": "Interaction History",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1009
+        }
+      },
+      {
+        "comment": "",
+        "key": "View and manage your interaction checks",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1013
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI Features",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1042
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium Active",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1060
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI-powered interaction checking enabled",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1069
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ subscription",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1065
+        }
+      },
+      {
+        "comment": "",
+        "key": "Upgrade to Premium",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1093
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlock AI-powered medication analysis",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1097
+        }
+      },
+      {
+        "comment": "",
+        "key": "Support & Resources",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1127
+        }
+      },
+      {
+        "comment": "",
+        "key": "Privacy Policy",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1145
+        }
+      },
+      {
+        "comment": "",
+        "key": "Feedback",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1168
+        }
+      },
+      {
+        "comment": "",
+        "key": "Contact Us",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1191
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 1339
+        }
+      }
+    ]
+  },
+  "version": 1
+}

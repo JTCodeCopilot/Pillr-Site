@@ -1,0 +1,160 @@
+{
+  "source": "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/PremiumUpgradeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Purchase Status",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 77
+        }
+      },
+      {
+        "comment": "",
+        "key": "Lifetime Premium Access",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 120
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pay once. Use forever.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 124
+        }
+      },
+      {
+        "comment": "",
+        "key": "One time payment",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 134
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlock lifetime Pillr Premium for %@",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 317
+        }
+      },
+      {
+        "comment": "",
+        "key": "Purchase Pillr Premium (unavailable)",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 338
+        }
+      },
+      {
+        "comment": "",
+        "key": "Feature",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 179
+        }
+      },
+      {
+        "comment": "",
+        "key": "Free",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 184
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 189
+        }
+      },
+      {
+        "comment": "",
+        "key": "Included",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 231
+        }
+      },
+      {
+        "comment": "",
+        "key": "Not included",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 231
+        }
+      },
+      {
+        "comment": "",
+        "key": "Updated %lld minutes ago",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 257
+        }
+      },
+      {
+        "comment": "",
+        "key": "Processing...",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 281
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlock for %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 286
+        }
+      },
+      {
+        "comment": "",
+        "key": "Purchase Unavailable",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 323
+        }
+      },
+      {
+        "comment": "",
+        "key": "Restore Purchases",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 363
+        }
+      },
+      {
+        "comment": "",
+        "key": "This app is for tracking purposes only and should not replace professional medical advice. Always consult your healthcare provider regarding your medications.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 435
+        }
+      },
+      {
+        "comment": "",
+        "key": "Medical Disclaimer",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 418
+        }
+      }
+    ]
+  },
+  "version": 1
+}

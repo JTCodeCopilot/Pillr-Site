@@ -1,0 +1,30 @@
+{
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/FeatureSheetView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FeatureSheetView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FeatureSheetView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FeatureSheetView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FeatureSheetView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FeatureSheetView.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/FocusTimelineView.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FocusTimelineView.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FocusTimelineView.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FocusTimelineView.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FocusTimelineView.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/FocusTimelineView.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/GlassStyle.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassStyle.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassStyle.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassStyle.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassStyle.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassStyle.swiftdeps"
+  },
+  "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/GlassViewModifier.swift" : {
+    "const-values" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassViewModifier.swiftconstvalues",
+    "dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassViewModifier.d",
+    "diagnostics" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassViewModifier.dia",
+    "object" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassViewModifier.o",
+    "swift-dependencies" : "/Users/justin.tilley/Documents/Apple development/Pillr/build/Build/Intermediates.noindex/Pillr.build/Debug-iphonesimulator/Xcode Pillr.build/Objects-normal/arm64/GlassViewModifier.swiftdeps"
+  }
+}

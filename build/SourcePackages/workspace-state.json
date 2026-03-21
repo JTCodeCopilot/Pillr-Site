@@ -1,0 +1,64 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "aiproxyswift",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/lzell/AIProxySwift",
+          "name" : "AIProxySwift"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "6721a4b233ead28b13b9545111d21baf08afa108",
+            "version" : "0.101.3"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "AIProxySwift"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "swiftsdk",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/TelemetryDeck/SwiftSDK",
+          "name" : "SwiftSDK"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "a7fd1eb469589a3c8fd8cc3abe19b092b5d674dc",
+            "version" : "2.9.4"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "SwiftSDK"
+      },
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "tiktok-business-ios-sdk",
+          "kind" : "remoteSourceControl",
+          "location" : "https://github.com/tiktok/tiktok-business-ios-sdk",
+          "name" : "tiktok-business-ios-sdk"
+        },
+        "state" : {
+          "checkoutState" : {
+            "revision" : "79faf4f1a8a15b039cb0d41a5186ea32fff86cb2",
+            "version" : "1.6.0"
+          },
+          "name" : "sourceControlCheckout"
+        },
+        "subpath" : "tiktok-business-ios-sdk"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}

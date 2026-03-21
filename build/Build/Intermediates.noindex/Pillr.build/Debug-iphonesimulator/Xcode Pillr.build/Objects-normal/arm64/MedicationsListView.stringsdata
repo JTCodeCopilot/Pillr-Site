@@ -1,0 +1,656 @@
+{
+  "source": "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/MedicationsListView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Hide Log Entry",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 305
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete Medication",
+        "location": {
+          "startingColumn": 73,
+          "startingLine": 305
+        }
+      },
+      {
+        "comment": "",
+        "key": "Hiding this entry removes it from the My Meds view only; the cabinet copy and history entry stay intact, and you can fully remove the medication from the Cabinet if needed.",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 308
+        }
+      },
+      {
+        "comment": "",
+        "key": "Deleting %@ will permanently remove it and it cannot be restored unless you enter it again.",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 309
+        }
+      },
+      {
+        "comment": "",
+        "key": "Hide from My Meds",
+        "location": {
+          "startingColumn": 75,
+          "startingLine": 311
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 97,
+          "startingLine": 311
+        }
+      },
+      {
+        "comment": "",
+        "key": "Turn on notifications to get medication reminders.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 606
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enable",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 619
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@: %@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 936
+        }
+      },
+      {
+        "comment": "",
+        "key": "Undo to revert this action.",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 937
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dismiss",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 923
+        }
+      },
+      {
+        "comment": "",
+        "key": "Undo",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 893
+        }
+      },
+      {
+        "comment": "",
+        "key": "Set your new bottle amount and choose when refill reminders should start.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1009
+        }
+      },
+      {
+        "comment": "",
+        "key": "Previous bottle amount: %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1015
+        }
+      },
+      {
+        "comment": "",
+        "key": "Refill amount",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1022
+        }
+      },
+      {
+        "comment": "",
+        "key": "Example: 30",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1025
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remind me to refill at",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1046
+        }
+      },
+      {
+        "comment": "",
+        "key": "Example: 7",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1049
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1075
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1092
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your medication list is empty. Add your first medication to get started.",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 1125
+        }
+      },
+      {
+        "comment": "",
+        "key": "Double tap to add your first medication",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1126
+        }
+      },
+      {
+        "comment": "",
+        "key": "No medications with active reminders. Open the cabinet to view stored medications.",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 1172
+        }
+      },
+      {
+        "comment": "",
+        "key": "No active reminders",
+        "location": {
+          "startingColumn": 14,
+          "startingLine": 1139
+        }
+      },
+      {
+        "comment": "",
+        "key": "You have %lld medication%@ stored in your cabinet.",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 1142
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add reminder times to see medications here.",
+        "location": {
+          "startingColumn": 125,
+          "startingLine": 1142
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open Cabinet",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1148
+        }
+      },
+      {
+        "comment": "",
+        "key": "My Meds",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1436
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld medication%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1440
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Medication",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 1476
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 1455
+        }
+      },
+      {
+        "comment": "",
+        "key": "Apple Health is not available on this device.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1567
+        }
+      },
+      {
+        "comment": "",
+        "key": "Health access is off. Open Settings to turn it back on.",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 1625
+        }
+      },
+      {
+        "comment": "",
+        "key": "Connect Apple Health to show steps, distance and heart rate.",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 1626
+        }
+      },
+      {
+        "comment": "",
+        "key": "Connect Apple Health",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1645
+        }
+      },
+      {
+        "comment": "",
+        "key": "Hide",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1664
+        }
+      },
+      {
+        "comment": "",
+        "key": "Heart rate access is denied. Open Settings to re-allow heart rate data.",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 1689
+        }
+      },
+      {
+        "comment": "",
+        "key": "Allow access to Apple Health heart rate to show your average over the last hour.",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 1690
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open Settings",
+        "location": {
+          "startingColumn": 61,
+          "startingLine": 1706
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enable Heart Rate",
+        "location": {
+          "startingColumn": 79,
+          "startingLine": 1706
+        }
+      },
+      {
+        "comment": "",
+        "key": "Check interactions",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1819
+        }
+      },
+      {
+        "comment": "",
+        "key": "Interaction Checker",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 1940
+        }
+      },
+      {
+        "comment": "",
+        "key": "Interaction Checker",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1904
+        }
+      },
+      {
+        "comment": "",
+        "key": "Close actions menu",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 2092
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show actions menu",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 2092
+        }
+      },
+      {
+        "comment": "",
+        "key": "Medication Cabinet",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2206
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld medication%@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 2210
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your Cabinet Is Empty",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 2218
+        }
+      },
+      {
+        "comment": "",
+        "key": "Anything you set as \"as needed\" stays here tucked away and ready when you need it.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 2221
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 2255
+        }
+      },
+      {
+        "comment": "",
+        "key": "Medication Cabinet",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 2302
+        }
+      },
+      {
+        "comment": "",
+        "key": "Medications set as “as needed” are located here, making it easy to log a dose whenever needed.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 2306
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 2312
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 2349
+        }
+      },
+      {
+        "comment": "",
+        "key": "...",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 2366
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete medication",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 2390
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 2915
+        }
+      },
+      {
+        "comment": "",
+        "key": "Low supply",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 2920
+        }
+      },
+      {
+        "comment": "",
+        "key": " • ",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 3640
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 3644
+        }
+      },
+      {
+        "comment": "",
+        "key": "Take",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 3702
+        }
+      },
+      {
+        "comment": "",
+        "key": "Skip",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 3728
+        }
+      },
+      {
+        "comment": "",
+        "key": "Take",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 3822
+        }
+      },
+      {
+        "comment": "",
+        "key": "Skip",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 3842
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@, %@, %@, %@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 4449
+        }
+      },
+      {
+        "comment": "",
+        "key": "Log Reflection",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 4391
+        }
+      },
+      {
+        "comment": "",
+        "key": "Refill needed, %@",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 4422
+        }
+      },
+      {
+        "comment": "",
+        "key": "Double tap to update refill amount and reminder level",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 4423
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@:",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 4865
+        }
+      },
+      {
+        "comment": "",
+        "key": "Focus Window:",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 4886
+        }
+      },
+      {
+        "comment": "",
+        "key": "Based on logged time",
+        "location": {
+          "startingColumn": 64,
+          "startingLine": 4896
+        }
+      },
+      {
+        "comment": "",
+        "key": "Based on reminder time",
+        "location": {
+          "startingColumn": 89,
+          "startingLine": 4896
+        }
+      },
+      {
+        "comment": "",
+        "key": "NOTES",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 4911
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 4942
+        }
+      },
+      {
+        "comment": "",
+        "key": "...",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 4963
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete medication",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 5007
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 17,
+          "startingLine": 5148
+        }
+      },
+      {
+        "comment": "",
+        "key": "When did you take %@?",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 5136
+        }
+      },
+      {
+        "comment": "",
+        "key": "Drag to adjust the time you logged",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 5141
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 5166
+        }
+      },
+      {
+        "comment": "",
+        "key": "Log time",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 5181
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,176 @@
+{
+  "source": "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/AISearchMedicationView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 233
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI Medication Search",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 37
+        }
+      },
+      {
+        "comment": "",
+        "key": "PREMIUM",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 44
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search for a medication...",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 62
+        }
+      },
+      {
+        "comment": "",
+        "key": "Information is AI-generated and not a substitute for professional medical advice. Always consult your healthcare provider.",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "No medications found",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 141
+        }
+      },
+      {
+        "comment": "",
+        "key": "Try a different search term or add your medication manually",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 145
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search for your medication",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 184
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter a medication name to get information and add it to your list",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 188
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 223
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium Feature",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 244
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI Medication Search is a premium feature that allows you to quickly find medication information and add it to your list.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 248
+        }
+      },
+      {
+        "comment": "",
+        "key": "Upgrade to Premium",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 261
+        }
+      },
+      {
+        "comment": "",
+        "key": "Option %lld of %lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 333
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add %@",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 329
+        }
+      },
+      {
+        "comment": "",
+        "key": "Adds this medication to your list",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 330
+        }
+      },
+      {
+        "comment": "",
+        "key": "ADD",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 315
+        }
+      },
+      {
+        "comment": "",
+        "key": "Need to know: %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 363
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pillr isn't fully certain this matches your medication. Please re-type the name below to confirm before adding.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 385
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confidence: %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 390
+        }
+      },
+      {
+        "comment": "",
+        "key": "Re-type the medication name to confirm",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 395
+        }
+      }
+    ]
+  },
+  "version": 1
+}

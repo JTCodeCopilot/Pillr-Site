@@ -1,0 +1,192 @@
+{
+  "source": "/Users/justin.tilley/Documents/Apple development/Pillr/Pillr/Views/SettingsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "App Lock",
+        "location": {
+          "startingColumn": 13,
+          "startingLine": 97
+        }
+      },
+      {
+        "comment": "",
+        "key": "Test Reminder",
+        "location": {
+          "startingColumn": 13,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 105
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 120
+        }
+      },
+      {
+        "comment": "",
+        "key": "Settings",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 131
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tailor your Pillr experience",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 135
+        }
+      },
+      {
+        "comment": "",
+        "key": "Feedback",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 155
+        }
+      },
+      {
+        "comment": "",
+        "key": "Contact us",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 169
+        }
+      },
+      {
+        "comment": "",
+        "key": "You chose to keep everything on this device. Connect to iCloud later whenever you’re ready.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 247
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose how Pillr displays your Health distance values. This controls whether steps convert to miles or kilometers in the Health Snapshot.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 278
+        }
+      },
+      {
+        "comment": "",
+        "key": "Distance Unit",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 284
+        }
+      },
+      {
+        "comment": "",
+        "key": "Health distance unit",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 290
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show Apple Health data on My Meds screen",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 310
+        }
+      },
+      {
+        "comment": "",
+        "key": "Show Apple Health data on My Meds screen",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 312
+        }
+      },
+      {
+        "comment": "",
+        "key": "Daily step goal",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 294
+        }
+      },
+      {
+        "comment": "",
+        "key": "Adjust your goal",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 304
+        }
+      },
+      {
+        "comment": "",
+        "key": "Thank you for supporting Pillr Premium. Enjoy full access to AI-powered analysis.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 323
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unlock AI-powered medication analysis and other premium perks.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 335
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose which bottom menu tabs show up. My Meds and More always stay on.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 364
+        }
+      },
+      {
+        "comment": "",
+        "key": "Medication reminders depend on system notifications. Use the link below to update permissions.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 415
+        }
+      },
+      {
+        "comment": "",
+        "key": "For the most reliable reminders, leave Pillr running in the background and avoid force-closing it after setting up medications.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 430
+        }
+      },
+      {
+        "comment": "",
+        "key": "Status: %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 422
+        }
+      },
+      {
+        "comment": "",
+        "key": "On",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 831
+        }
+      }
+    ]
+  },
+  "version": 1
+}
