@@ -272,6 +272,9 @@ struct PillrApp: App {
                 UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
             }
         }
+
+        // Keep enabled switches consistent across the whole app.
+        UISwitch.appearance().onTintColor = UIColor(Color.pillrToggleActive)
     }
     
     var body: some Scene {

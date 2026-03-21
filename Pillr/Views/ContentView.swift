@@ -11,9 +11,10 @@ import WebKit
 // MARK: - Global Background Definition
 extension Color {
     static let pillrPrimary = Color(hex: "#424C43")
-    static let pillrSecondary = Color(hex: "#B7C8AE")
+    static let pillrSecondary = Color(hex: "#D0DDCA")
     static let pillrBackground = Color(hex: "#F4F6F2")
     static let pillrAccent = Color(hex: "#6F8F7B")
+    static let pillrToggleActive = Color(hex: "#C9B99A")
     static let pillrNavy = pillrPrimary
     static let pillrSoftBlue = pillrAccent
     static let pillrDeepBlue = pillrPrimary

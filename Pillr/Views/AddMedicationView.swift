@@ -152,6 +152,10 @@ struct AddMedicationView: View {
         Double(currentStep.rawValue + 1) / Double(AddMedicationStep.allCases.count)
     }
 
+    private var addMedicationHighlightColor: Color {
+        Color(hex: "#F4F6F2")
+    }
+
     private var isFocusTimingSheetVisible: Bool {
 #if DEBUG
         return showingFocusTimingGuidanceSheet || showingFocusTimingPreviewSheet
@@ -447,30 +451,17 @@ struct AddMedicationView: View {
 
     @ViewBuilder
     private var stepProgressView: some View {
-        VStack(spacing: 10) {
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.12))
-                    Capsule()
-                        .fill(Color.pillrSecondary)
-                        .frame(width: max(10, geometry.size.width * stepProgressFraction))
-                }
-                .animation(stepTransitionAnimation, value: currentStep)
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.12))
+                Capsule()
+                    .fill(addMedicationHighlightColor)
+                    .frame(width: max(10, geometry.size.width * stepProgressFraction))
             }
-            .frame(height: 8)
-
-            HStack(spacing: 8) {
-                ForEach(AddMedicationStep.allCases, id: \.self) { step in
-                    let isReached = step.rawValue <= currentStep.rawValue
-                    Circle()
-                        .fill(isReached ? Color.pillrBackground : Color.white.opacity(0.22))
-                        .frame(width: 6, height: 6)
-                        .scaleEffect(step == currentStep ? 1.15 : 1.0)
-                        .animation(stepTransitionAnimation, value: currentStep)
-                }
-            }
+            .animation(stepTransitionAnimation, value: currentStep)
         }
+        .frame(height: 8)
         .frame(maxWidth: .infinity)
         .padding(.top, 4)
         .padding(.bottom, 2)
@@ -746,7 +737,7 @@ struct AddMedicationView: View {
                                                 .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                         }
                                     }
-                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                                     .disabled(!userSettings.isPremiumUser)
                                     .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                                     .onChange(of: isOneTimeWithFollowUp) { _, _ in
@@ -819,7 +810,7 @@ struct AddMedicationView: View {
                                     .foregroundColor(Color.pillrBackground)
                                     .padding(.trailing, 12)
                             }
-                            .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                            .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                             .accessibilityIdentifier("focusWindowToggle")
                             .onChange(of: enableStimulantPhaseNotifications) { _, enabled in
                                 if !enabled {
@@ -868,7 +859,7 @@ struct AddMedicationView: View {
                                         .padding(.vertical, 8)
                                         .background(
                                             Capsule()
-                                                .fill(Color.pillrSecondary)
+                                                .fill(Color.white)
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -950,7 +941,7 @@ struct AddMedicationView: View {
                                 }
                                 .padding(.trailing, 12)
                             }
-                            .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                            .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                             .disabled(!userSettings.isPremiumUser)
                             .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                             .accessibilityIdentifier("focusReflectionToggle")
@@ -984,7 +975,7 @@ struct AddMedicationView: View {
                                             .font(.system(size: 14, weight: .medium))
                                             .foregroundColor(Color.pillrBackground)
                                     }
-                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                                     .accessibilityIdentifier("customReflectionToggle")
                                     .onChange(of: useCustomDailyCheckInTime) { _, _ in
                                         triggerStrongHaptic()
@@ -1077,7 +1068,7 @@ struct AddMedicationView: View {
                                     .foregroundColor(Color.pillrSecondary.opacity(0.8))
                             }
                         }
-                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                         .accessibilityIdentifier("focusReflectionToggle")
@@ -1142,7 +1133,7 @@ struct AddMedicationView: View {
                                     .foregroundColor(Color.pillrSecondary.opacity(0.7))
                             }
                         }
-                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                         .accessibilityIdentifier("trackPillCountToggle")
@@ -1231,6 +1222,7 @@ struct AddMedicationView: View {
 
                     TextEditor(text: $notes)
                         .focused($focusedField, equals: .notes)
+                        .tint(addMedicationHighlightColor)
                         .foregroundColor(Color.pillrBackground)
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
@@ -1479,6 +1471,7 @@ struct AddMedicationView: View {
                 .keyboardType(keyboardType)
                 .focused($focusedField, equals: field)
                 .submitLabel(getSubmitLabel(for: field))
+                .tint(addMedicationHighlightColor)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(Color.pillrBackground)
                 .padding(.horizontal, 16)
@@ -1491,7 +1484,7 @@ struct AddMedicationView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(
                                     focusedField == field
-                                    ? Color.pillrSecondary
+                                    ? addMedicationHighlightColor
                                     : (showValidationErrors && errorMessage != nil
                                        ? Color.red
                                        : Color.pillrSecondary.opacity(0.3)),

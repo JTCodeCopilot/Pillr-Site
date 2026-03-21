@@ -19,7 +19,7 @@ enum SettingsPalette {
     static let cardStroke = Color.white.opacity(0.06)
     static let arrowColor = Color.pillrSecondary
     static let closeStroke = Color.pillrBackground.opacity(0.45)
-    static let toggleActive = Color.pillrPrimary
+    static let toggleActive = Color.pillrToggleActive
 }
 
 struct SettingsCloseButton: View {

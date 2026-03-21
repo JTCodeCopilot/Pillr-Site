@@ -63,6 +63,7 @@ struct MedicationsListView: View {
     private let undoToastDuration: TimeInterval = 5.0
     @State private var isViewActive = false
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
+    @State private var visibleInteractionPromptMedicationID: UUID?
 
     private struct CustomLogRequest: Identifiable {
         let id = UUID()
@@ -130,6 +131,19 @@ struct MedicationsListView: View {
     private var displayedMedications: [Medication] {
         reminderMedications + cabinetLogMedications
     }
+
+    private var recentInteractionPromptMedication: Medication? {
+        guard let lastAddedID = visibleInteractionPromptMedicationID else { return nil }
+        return store.findMedication(with: lastAddedID)
+    }
+
+    private var canShowInteractionPrompt: Bool {
+        recentInteractionPromptMedication != nil
+    }
+
+    private var hasInteractionAccess: Bool {
+        userSettings.hasAIAccess()
+    }
     
     var body: some View {
         NavigationStack {
@@ -179,13 +193,41 @@ struct MedicationsListView: View {
                     }
                 }
                 .safeAreaInset(edge: .top) {
-                    if shouldShowNotificationEnableBanner {
-                        notificationEnableBanner
-                            .padding(.horizontal, 16)
-                            .padding(.top, 12)
-                            .padding(.bottom, 4)
+                    VStack(spacing: 8) {
+                        if shouldShowNotificationEnableBanner {
+                            notificationEnableBanner
+                        }
+
+                        if canShowInteractionPrompt, let recentMedication = recentInteractionPromptMedication {
+                            InteractionPromptCard(
+                                medicationName: recentMedication.name,
+                                hasAccess: hasInteractionAccess,
+                                onCheck: {
+                                    Task { await showMedicationSelectionSheet() }
+                                    dismissInteractionPrompt()
+                                },
+                                onUpgrade: {
+                                    showingPremiumUpgrade = true
+                                    dismissInteractionPrompt()
+                                },
+                                onDismiss: dismissInteractionPrompt
+                            )
+                            .transition(
+                                .asymmetric(
+                                    insertion: .offset(y: -14).combined(with: .opacity),
+                                    removal: .offset(y: -56).combined(with: .scale(scale: 0.97, anchor: .top)).combined(with: .opacity)
+                                )
+                            )
+                        }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 4)
+                    .animation(.spring(response: 0.32, dampingFraction: 0.82), value: shouldShowNotificationEnableBanner)
+                    .animation(.spring(response: 0.32, dampingFraction: 0.82), value: canShowInteractionPrompt)
                 }
+                .animation(.spring(response: 0.32, dampingFraction: 0.82), value: store.lastAddedMedicationID)
+                .animation(.spring(response: 0.32, dampingFraction: 0.82), value: notificationAuthorizationStatus)
             }
             .navigationDestination(isPresented: $showingAddSheet) {
                 addMedicationDestination
@@ -359,6 +401,7 @@ struct MedicationsListView: View {
             .onAppear {
                 isViewActive = true
                 refreshNotificationPermissionStatus()
+                presentInteractionPromptIfNeeded(after: 0.2)
                 Task {
                     await healthKitManager.refreshAuthorizationState()
                     await healthKitManager.refreshMetrics()
@@ -390,6 +433,13 @@ struct MedicationsListView: View {
             .onChange(of: showingAddSheet) { _, isActive in
                 addFlowCoordinator.isShowing = isActive
                 addFlowCoordinator.hasUnsavedChanges = isActive ? true : false
+                if !isActive {
+                    presentInteractionPromptIfNeeded(after: 0.22)
+                }
+            }
+            .onChange(of: store.lastAddedMedicationID) { _, newValue in
+                guard newValue != nil, !showingAddSheet else { return }
+                presentInteractionPromptIfNeeded(after: 0.12)
             }
             .toolbar(.hidden, for: .navigationBar)
         }
@@ -426,7 +476,38 @@ struct MedicationsListView: View {
 
     private func openInteractionCheckerSheet() {
         showingMedicationSelectionSheet = true
-        store.lastAddedMedicationID = nil
+        dismissInteractionPrompt()
+    }
+
+    private func presentInteractionPromptIfNeeded(after delay: TimeInterval = 0) {
+        guard let lastAddedID = store.lastAddedMedicationID,
+              store.activeMedications.count >= 2,
+              store.findMedication(with: lastAddedID) != nil else {
+            visibleInteractionPromptMedicationID = nil
+            return
+        }
+
+        let showPrompt = {
+            withAnimation(.interactiveSpring(response: 0.42, dampingFraction: 0.82, blendDuration: 0.18)) {
+                visibleInteractionPromptMedicationID = lastAddedID
+            }
+        }
+
+        if delay > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: showPrompt)
+        } else {
+            showPrompt()
+        }
+    }
+
+    private func dismissInteractionPrompt() {
+        withAnimation(.interactiveSpring(response: 0.38, dampingFraction: 0.72, blendDuration: 0.2)) {
+            visibleInteractionPromptMedicationID = nil
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+            store.lastAddedMedicationID = nil
+        }
     }
 
     private func refreshReferenceDate(resetBadge: Bool) {
@@ -811,12 +892,16 @@ fileprivate struct LogUndoToastView: View {
             }) {
                 Text("Undo")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color.pillrPrimary)
+                    .foregroundColor(Color.pillrPrimary.opacity(0.95))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 9)
                     .background(
                         Capsule()
-                            .fill(Color.pillrSecondary)
+                            .fill(Color.white.opacity(0.9))
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.white.opacity(0.28), lineWidth: 1)
+                            )
                     )
             }
             .buttonStyle(ScaleButtonStyle())
@@ -1403,6 +1488,8 @@ fileprivate func MedicationsListHeader(
 }
 
 fileprivate struct HealthSummaryWidget: View {
+    @EnvironmentObject private var userSettings: UserSettings
+
     enum Style {
         case standalone
         case embedded
@@ -1542,27 +1629,56 @@ fileprivate struct HealthSummaryWidget: View {
             .foregroundColor(secondaryTextColor.opacity(0.9))
             .lineLimit(3)
 
-            Button {
-                Task {
-                    await manager.requestAuthorizationIfNeeded()
-                    await manager.refreshMetrics()
-                }
-            } label: {
-                Text("Connect to Health")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(actionTextColor)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(actionBackgroundColor)
-                            .overlay(
+            GeometryReader { geometry in
+                let totalWidth = geometry.size.width
+                let spacing: CGFloat = 10
+                let hideWidth = max(76, (totalWidth - spacing) * 0.24)
+                let connectWidth = max(0, totalWidth - spacing - hideWidth)
+
+                HStack(spacing: spacing) {
+                    Button {
+                        Task {
+                            await manager.requestAuthorizationIfNeeded()
+                            await manager.refreshMetrics()
+                        }
+                    } label: {
+                        Text("Connect Apple Health")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(actionTextColor)
+                            .padding(.vertical, 8)
+                            .frame(width: connectWidth)
+                            .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(MedicationCardPalette.divider.opacity(0.7), lineWidth: 1)
+                                    .fill(actionBackgroundColor)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(MedicationCardPalette.divider.opacity(0.7), lineWidth: 1)
+                                    )
                             )
-                    )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+
+                    Button {
+                        userSettings.shouldShowAppleHealthData = false
+                    } label: {
+                        Text("Hide")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(secondaryTextColor.opacity(0.95))
+                            .padding(.vertical, 8)
+                            .frame(width: hideWidth)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.clear)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(MedicationCardPalette.divider.opacity(0.7), lineWidth: 1)
+                                    )
+                            )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
             }
-            .buttonStyle(ScaleButtonStyle())
+            .frame(height: 42)
         }
     }
 
@@ -1667,11 +1783,14 @@ fileprivate struct HealthSummaryWidget: View {
 
 fileprivate struct InteractionPromptCard: View {
     let medicationName: String
-    let canCheck: Bool
     let hasAccess: Bool
     let onCheck: () -> Void
     let onUpgrade: () -> Void
     let onDismiss: () -> Void
+
+    @State private var progress: CGFloat = 0
+
+    private let autoDismissDuration: TimeInterval = 5.0
 
     private var displayName: String {
         let trimmed = medicationName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1679,43 +1798,15 @@ fileprivate struct InteractionPromptCard: View {
     }
 
     private var titleText: String {
-        "See how \(displayName) works alongside your other meds."
-    }
-
-    private var subtitle: String? {
-        canCheck ? nil : "Add at least one more medication to run a check."
+        "\(displayName) added. Review interactions?"
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(titleText)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color.pillrBackground)
-                        .lineLimit(2)
-
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Color.pillrSecondary)
-                    }
-                }
-
-                Spacer()
-
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color.pillrSecondary)
-                        .frame(width: 28, height: 28)
-                        .background(
-                            Circle()
-                                .fill(Color.pillrPrimary.opacity(0.35))
-                        )
-                }
-                .buttonStyle(.plain)
-            }
+            Text(titleText)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color.pillrBackground)
+                .lineLimit(2)
 
             Button(action: {
                 if hasAccess {
@@ -1724,35 +1815,62 @@ fileprivate struct InteractionPromptCard: View {
                     onUpgrade()
                 }
             }) {
-                HStack(spacing: 8) {
-                    Text("Check Interactions")
-                        .font(.system(size: 14, weight: .semibold))
+                HStack(spacing: 6) {
+                    Text("Check interactions")
+                        .font(.system(size: 13, weight: .semibold))
                     if !hasAccess {
                         Image(systemName: "lock.fill")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 11, weight: .semibold))
                     }
                 }
-                .foregroundColor(canCheck && hasAccess ? Color.pillrPrimary : Color.pillrSecondary)
-                .padding(.vertical, 10)
+                .foregroundColor(Color.pillrPrimary)
                 .frame(maxWidth: .infinity)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(canCheck && hasAccess ? Color.pillrBackground : Color.pillrAccent)
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.92))
                 )
             }
             .buttonStyle(ScaleButtonStyle())
-            .disabled(!canCheck)
         }
-        .padding(16)
+        .padding(.horizontal, 14)
+        .padding(.top, 12)
+        .padding(.bottom, 12)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.pillrAccent)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color(hex: "#70826F").opacity(0.98))
+
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color(hex: "#859684").opacity(0.92))
+                        .frame(width: geometry.size.width * progress)
+
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                }
+            }
         )
-        .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 6)
+        .task(id: medicationName) {
+            progress = 0
+
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.linear(duration: autoDismissDuration)) {
+                progress = 1
+            }
+
+            do {
+                try await Task.sleep(nanoseconds: UInt64(autoDismissDuration * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                onDismiss()
+            } catch {
+            }
+        }
     }
 }
 
@@ -2222,121 +2340,141 @@ fileprivate struct CabinetMedicationRow: View {
     let onEditTap: () -> Void
     let onDeleteTap: (() -> Void)?
     @State private var showDetails = false
+    @State private var showingDeleteAction = false
 
-    private var detailSubtitle: String {
-        if medication.frequency == "As needed" {
-            return "Take when you need it"
-        }
-        return "No reminder scheduled"
-    }
+    private var expandedActions: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                Button(action: onEditTap) {
+                    Text("Edit")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color.pillrBackground)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color(hex: "#4A4A45"))
+                        )
+                }
+                .buttonStyle(.plain)
 
-    private var longPressHint: some View {
-        VStack(spacing: 6) {
-            Image(systemName: "hand.tap.fill")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color.pillrSecondary.opacity(0.8))
-            Text("Long press to edit or delete")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Color.pillrSecondary.opacity(0.85))
-                .multilineTextAlignment(.center)
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
+                        showingDeleteAction.toggle()
+                    }
+                } label: {
+                    Text("...")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color.pillrBackground)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(hex: "#4A4A45"))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(onDeleteTap == nil)
+                .opacity(onDeleteTap == nil ? 0.5 : 1)
+            }
+
+            if showingDeleteAction, let deleteTap = onDeleteTap {
+                Button {
+                    HapticManager.shared.warningNotification()
+                    deleteTap()
+                } label: {
+                    Text("Delete medication")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color.red.opacity(0.95))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color(hex: "#4A4A45"))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.red.opacity(0.22), lineWidth: 0.8)
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.pillrPrimary.opacity(0.35))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-                )
-        )
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(medication.name)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Color.pillrBackground)
-                    .lineLimit(1)
-                Text("\(medication.dosage) \(medication.dosageUnit) • \(medication.frequency)")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color.pillrSecondary.opacity(0.9))
-                    .lineLimit(1)
-                Text(detailSubtitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color.pillrSecondary)
-            }
-
-            HStack(spacing: 12) {
-                Button(action: onLogTap) {
-                    Text("Take Now")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color.pillrPrimary)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.pillrBackground)
-                    )
-                }
-                .buttonStyle(ScaleButtonStyle())
-            }
+        VStack(spacing: 0) {
+            MedicationRowHeaderView(
+                medication: medication,
+                cycleStatus: .asNeeded,
+                overdueMinutes: nil,
+                overdueBadgeActive: false,
+                showDetails: $showDetails,
+                doseStates: [],
+                onRequestCustomLogTime: { _ in
+                    onLogTap()
+                },
+                onSkipDose: { _ in },
+                highlightedDoseIndex: nil,
+                compactLayout: false,
+                referenceDate: Date(),
+                showsSkipButton: false,
+                hideScheduleLine: true
+            )
 
             if showDetails {
-                longPressHint
+                expandedActions
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 16)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.pillrAccent)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
+        .background(MedicationCardPalette.background)
+        .cornerRadius(12)
+        .clipped()
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(MedicationCardPalette.divider.opacity(0.7), lineWidth: 0.8)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.white.opacity(0.03), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            MedicationCardPalette.divider.opacity(0.65),
+                            MedicationCardPalette.divider.opacity(0.3)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.1
+                )
         )
         .shadow(color: Color.black.opacity(0.25), radius: 12, x: 0, y: 6)
         .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                showDetails.toggle()
-            }
-        }
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: showDetails)
         .overlay(alignment: .topTrailing) {
             Button(action: {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     showDetails.toggle()
+                    if !showDetails {
+                        showingDeleteAction = false
+                    }
                 }
             }) {
                 Image(systemName: showDetails ? "chevron.up" : "chevron.down")
                     .font(.system(size: 13))
-                    .foregroundColor(Color.pillrSecondary.opacity(0.55))
+                    .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.75))
                     .frame(width: 34, height: 34)
             }
             .buttonStyle(.plain)
             .padding(.top, 10)
             .padding(.trailing, 10)
-        }
-        .contextMenu {
-            Button {
-                onEditTap()
-            } label: {
-                Text("Edit Medication")
-            }
-            if let deleteTap = onDeleteTap {
-                Button(role: .destructive) {
-                    deleteTap()
-                } label: {
-                    Text("Delete Medication")
-                }
-            }
         }
     }
 }
@@ -2413,19 +2551,6 @@ fileprivate struct MedicationsListMainContent: View {
             }
             return "Your medications will show up here as they become due."
         }
-    }
-
-    private var recentlyAddedMedication: Medication? {
-        guard let lastAddedID = store.lastAddedMedicationID else { return nil }
-        return store.findMedication(with: lastAddedID)
-    }
-
-    private var canCheckInteractions: Bool {
-        store.activeMedications.count >= 2
-    }
-
-    private var hasInteractionAccess: Bool {
-        userSettings.hasAIAccess()
     }
 
     private var todaySummary: TodaySummaryData? {
@@ -2561,21 +2686,6 @@ fileprivate struct MedicationsListMainContent: View {
                                 onLowSupplyTap: onHighlightLowSupplyMedications,
                                 healthKitManager: healthKitManager,
                                 showsHealthSummary: userSettings.shouldShowAppleHealthData
-                            )
-                            .padding(.horizontal, horizontalInset)
-                        }
-
-                        if canCheckInteractions, let recentMedication = recentlyAddedMedication {
-                            InteractionPromptCard(
-                                medicationName: recentMedication.name,
-                                canCheck: canCheckInteractions,
-                                hasAccess: hasInteractionAccess,
-                                onCheck: {
-                                    Task { await onCheckAllInteractions() }
-                                    store.lastAddedMedicationID = nil
-                                },
-                                onUpgrade: onShowPremiumUpgrade,
-                                onDismiss: { store.lastAddedMedicationID = nil }
                             )
                             .padding(.horizontal, horizontalInset)
                         }
@@ -2720,7 +2830,8 @@ fileprivate struct TodaySummaryCard: View {
                         summaryChip(
                             title: "Taken",
                             value: "\(summary.takenCount)",
-                            accent: Color.pillrSecondary
+                            accent: MedicationCardPalette.titleText,
+                            background: Color.white.opacity(0.08)
                         )
                         .frame(width: chipWidth)
 
@@ -2739,10 +2850,10 @@ fileprivate struct TodaySummaryCard: View {
             if showsHealthSummary {
                 HealthSummaryWidget(manager: healthKitManager, style: .embedded)
                     .padding(.horizontal, 16)
-                    .padding(.top, 18)
-                    .padding(.bottom, 0)
+                    .padding(.top, 30)
+                    .padding(.bottom, 8)
                     .background(connectedHealthBackground)
-                    .padding(.top, -2)
+                    .padding(.top, -18)
             }
         }
     }
@@ -2758,33 +2869,40 @@ fileprivate struct TodaySummaryCard: View {
     }
 
     private var connectedHealthBackground: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .fill(MedicationCardPalette.background)
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(MedicationCardPalette.divider.opacity(0.75), lineWidth: 1)
+        ZStack(alignment: .top) {
+            UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 22,
+                bottomTrailingRadius: 22,
+                topTrailingRadius: 0,
+                style: .continuous
             )
+            .fill(MedicationCardPalette.secondaryTint)
+            .overlay(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: 22,
+                    bottomTrailingRadius: 22,
+                    topTrailingRadius: 0,
+                    style: .continuous
+                )
+                .stroke(MedicationCardPalette.divider.opacity(0.75), lineWidth: 1)
+            )
+
+            Rectangle()
+                .fill(MedicationCardPalette.background)
+                .frame(height: 6)
+        }
         .shadow(color: Color.black.opacity(0.16), radius: 10, x: 0, y: 6)
     }
 
     private var overdueSummaryChip: some View {
         Button(action: onOverdueTap) {
-            HStack(spacing: 8) {
-                Text(overdueChipText)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(summary.overdueCount > 0 ? MedicationCardPalette.urgency : MedicationCardPalette.titleText.opacity(0.82))
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(MedicationCardPalette.background)
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke((summary.overdueCount > 0 ? MedicationCardPalette.urgency : MedicationCardPalette.divider).opacity(0.7), lineWidth: 1)
-                    )
+            summaryChip(
+                title: "Overdue",
+                value: "\(summary.overdueCount)",
+                accent: summary.overdueCount > 0 ? MedicationCardPalette.urgency : MedicationCardPalette.titleText.opacity(0.82),
+                isEmphasized: summary.overdueCount > 0
             )
         }
         .buttonStyle(.plain)
@@ -2857,10 +2975,6 @@ fileprivate struct TodaySummaryCard: View {
         return "Reminders will appear here when due."
     }
 
-    private var overdueChipText: String {
-        summary.overdueCount == 1 ? "1 overdue" : "\(summary.overdueCount) overdue"
-    }
-
     private func nextDoseDayText(for dueTime: Date) -> String {
         let calendar = Calendar.current
 
@@ -2876,7 +2990,13 @@ fileprivate struct TodaySummaryCard: View {
         return " on \(Self.weekdayFormatter.string(from: dueTime))"
     }
 
-    private func summaryChip(title: String, value: String, accent: Color) -> some View {
+    private func summaryChip(
+        title: String,
+        value: String,
+        accent: Color,
+        background: Color = MedicationCardPalette.background,
+        isEmphasized: Bool = false
+    ) -> some View {
         HStack(spacing: 8) {
             Text(value)
                 .font(.system(size: 16, weight: .bold))
@@ -2893,10 +3013,10 @@ fileprivate struct TodaySummaryCard: View {
         .padding(.vertical, 10)
         .background(
             Capsule(style: .continuous)
-                .fill(MedicationCardPalette.background)
+                .fill(background)
                 .overlay(
                     Capsule(style: .continuous)
-                        .stroke(accent.opacity(0.65), lineWidth: 1)
+                        .stroke((isEmphasized ? accent : MedicationCardPalette.divider).opacity(isEmphasized ? 0.75 : 0.6), lineWidth: 1)
                 )
         )
     }
@@ -3113,6 +3233,8 @@ fileprivate struct MedicationRowHeaderView: View {
     let highlightedDoseIndex: Int?
     let compactLayout: Bool
     let referenceDate: Date
+    let showsSkipButton: Bool
+    let hideScheduleLine: Bool
     
     private let timelineTimeWidth: CGFloat = 58
     private let logButtonMinWidth: CGFloat = 96
@@ -3439,7 +3561,7 @@ fileprivate struct MedicationRowHeaderView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
                     if !usesTimelineLayout && !compactLayout {
-                        takeSkipButtonRow
+                        actionButtonRow
                     }
                 }
             }
@@ -3495,7 +3617,8 @@ fileprivate struct MedicationRowHeaderView: View {
     }
 
     private var scheduleLine: String {
-        medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !hideScheduleLine else { return "" }
+        return medication.frequency.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var hasSubtitle: Bool {
@@ -3547,12 +3670,27 @@ fileprivate struct MedicationRowHeaderView: View {
         return text
     }
     
+    private var actionButtonRow: some View {
+        Group {
+            if showsSkipButton {
+                takeSkipButtonRow
+            } else {
+                takeOnlyButtonRow
+            }
+        }
+    }
+
     private var takeSkipButtonRow: some View {
         HStack(spacing: 12) {
             takeButton
             skipButton
         }
         .frame(maxWidth: 224)
+    }
+
+    private var takeOnlyButtonRow: some View {
+        takeButton
+            .frame(width: 148)
     }
     
     private var takeButton: some View {
@@ -4178,7 +4316,9 @@ struct MedicationRow: View {
                 },
                 highlightedDoseIndex: highlightedDoseIndex,
                 compactLayout: usesLoggedCardStyle,
-                referenceDate: referenceDate
+                referenceDate: referenceDate,
+                showsSkipButton: true,
+                hideScheduleLine: false
             )
             
             if showsDetails {
@@ -4186,7 +4326,17 @@ struct MedicationRow: View {
                     medication: medication,
                     referenceDate: referenceDate,
                     useTakenStyle: usesLightLoggedCardStyle,
-                    onEditTap: onEditTap
+                    useSkippedStyle: cycleStatus == .skipped,
+                    onEditTap: onEditTap,
+                    moreActionTitle: cycleStatus == .taken ? "Untake medication" : (cycleStatus == .skipped ? "Unskip medication" : nil),
+                    onMoreActionTap: cycleStatus == .taken ? {
+                        HapticManager.shared.lightImpact()
+                        undoMostRecentLog(skipped: false)
+                    } : (cycleStatus == .skipped ? {
+                        HapticManager.shared.lightImpact()
+                        undoMostRecentLog(skipped: true)
+                    } : nil),
+                    onDeleteTap: onDeleteTap
                 )
                 .padding(.top, 8)
                 .transition(
@@ -4314,41 +4464,6 @@ struct MedicationRow: View {
         }
         .onTapGesture {
             toggleExpansion()
-        }
-        .contextMenu {
-            if cycleStatus == .taken {
-                Button {
-                    HapticManager.shared.lightImpact()
-                    undoMostRecentLog(skipped: false)
-                } label: {
-                    Text("Untake Medication")
-                }
-            }
-
-            if cycleStatus == .skipped {
-                Button {
-                    HapticManager.shared.lightImpact()
-                    undoMostRecentLog(skipped: true)
-                } label: {
-                    Text("Unskip Medication")
-                }
-            }
-
-            Button {
-                HapticManager.shared.lightImpact()
-                onEditTap()
-            } label: {
-                Text("Edit Medication")
-            }
-
-            if let deleteTap = onDeleteTap {
-                Button(role: .destructive) {
-                    HapticManager.shared.warningNotification()
-                    deleteTap()
-                } label: {
-                    Text("Delete Medication")
-                }
-            }
         }
         .onAppear {
             handleNotificationHighlightChange(store.notificationHighlightMedicationID)
@@ -4582,11 +4697,19 @@ fileprivate struct MedicationRowDetailsView: View {
     let medication: Medication
     let referenceDate: Date
     let useTakenStyle: Bool
+    let useSkippedStyle: Bool
     let onEditTap: () -> Void
+    let moreActionTitle: String?
+    let onMoreActionTap: (() -> Void)?
+    let onDeleteTap: (() -> Void)?
     @EnvironmentObject var store: MedicationStore
+    @State private var showingDeleteAction = false
 
     private var detailBackgroundColor: Color {
-        useTakenStyle ? MedicationCardPalette.takenBackground : MedicationCardPalette.background
+        if useSkippedStyle {
+            return MedicationCardPalette.skippedBackground
+        }
+        return useTakenStyle ? MedicationCardPalette.takenBackground : MedicationCardPalette.background
     }
 
     private var detailPrimaryTextColor: Color {
@@ -4598,7 +4721,14 @@ fileprivate struct MedicationRowDetailsView: View {
     }
 
     private var detailDividerColor: Color {
-        useTakenStyle ? MedicationCardPalette.takenDivider : MedicationCardPalette.divider
+        if useSkippedStyle {
+            return MedicationCardPalette.skippedStatusText
+        }
+        return useTakenStyle ? MedicationCardPalette.takenDivider : MedicationCardPalette.divider
+    }
+
+    private var actionButtonTextColor: Color {
+        useTakenStyle ? Color.white.opacity(0.92) : detailPrimaryTextColor
     }
 
     private var notificationsEnabled: Bool {
@@ -4725,14 +4855,13 @@ fileprivate struct MedicationRowDetailsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Enhanced detail cards with better visual hierarchy
-            VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 let detailEntries = detailRowEntries
                 if !detailEntries.isEmpty {
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 10) {
                         ForEach(detailEntries, id: \.label) { entry in
-                            VStack(alignment: .leading, spacing: entry.placeValueOnNewLine ? 6 : 4) {
+                            VStack(alignment: .leading, spacing: entry.placeValueOnNewLine ? 4 : 2) {
                                 Text("\(entry.label):")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(detailSecondaryTextColor.opacity(0.85))
@@ -4747,19 +4876,19 @@ fileprivate struct MedicationRowDetailsView: View {
                             }
                         }
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 6)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 if !focusWindowDescriptions.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text("Focus Window:")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(detailSecondaryTextColor.opacity(0.85))
                             .frame(maxWidth: .infinity, alignment: .leading)
                         ForEach(focusWindowDescriptions) { entry in
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 1) {
                                 Text(entry.summary)
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(detailPrimaryTextColor)
@@ -4771,8 +4900,8 @@ fileprivate struct MedicationRowDetailsView: View {
                             }
                         }
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 6)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
@@ -4794,8 +4923,8 @@ fileprivate struct MedicationRowDetailsView: View {
 
                         Spacer()
                     }
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
                             .fill(detailBackgroundColor)
@@ -4807,22 +4936,96 @@ fileprivate struct MedicationRowDetailsView: View {
                 }
             }
 
-            // Hint for editing or archiving via context menu with tap icon
-            VStack(spacing: 6) {
-                Image(systemName: "hand.tap.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(detailSecondaryTextColor.opacity(0.9))
-                    .frame(maxWidth: .infinity, alignment: .center)
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    Button(action: onEditTap) {
+                        Text("Edit")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(actionButtonTextColor)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color(hex: "#4A4A45"))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(detailDividerColor.opacity(0.65), lineWidth: 0.8)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
 
-                Text("Long press to edit or delete")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(detailSecondaryTextColor.opacity(0.9))
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    Button {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
+                            showingDeleteAction.toggle()
+                        }
+                    } label: {
+                        Text("...")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(actionButtonTextColor)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color(hex: "#4A4A45"))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(detailDividerColor.opacity(0.65), lineWidth: 0.8)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(onDeleteTap == nil && onMoreActionTap == nil)
+                    .opacity((onDeleteTap == nil && onMoreActionTap == nil) ? 0.5 : 1)
+                }
+
+                if showingDeleteAction, let moreActionTitle, let moreActionTap = onMoreActionTap {
+                    Button(action: moreActionTap) {
+                        Text(moreActionTitle)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(actionButtonTextColor)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color(hex: "#4A4A45"))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(detailDividerColor.opacity(0.65), lineWidth: 0.8)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
+                if showingDeleteAction, let deleteTap = onDeleteTap {
+                    Button {
+                        HapticManager.shared.warningNotification()
+                        deleteTap()
+                    } label: {
+                        Text("Delete medication")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color.red.opacity(0.95))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color(hex: "#4A4A45"))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(Color.red.opacity(0.2), lineWidth: 0.8)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
-            .padding(.top, 8)
+            .padding(.top, 4)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(
             detailBackgroundColor
         )

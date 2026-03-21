@@ -26,6 +26,7 @@ private enum ReflectJournalTheme {
 
     // Accents
     static let accent = Color.pillrAccent
+    static let reflectionScoreAccent = Color.pillrToggleActive
     static let progressTrack = Color.white.opacity(0.16)
 
     static var pageBackground: some View {
@@ -818,6 +819,7 @@ private struct DailyCheckInTimelineRow: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     @State private var isExpanded = true
+    @State private var showingActionMenu = false
     @State private var showingDeleteConfirm = false
 
     private var noteParts: (notes: String?, checkInNotes: String?, sideEffects: String?, mood: String?) {
@@ -863,21 +865,6 @@ private struct DailyCheckInTimelineRow: View {
         48
     }
 
-    private var longPressHint: some View {
-        VStack(spacing: 6) {
-            Text("Long press to edit or delete")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(ReflectJournalTheme.textTertiary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 3)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.025))
-        )
-    }
-
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(spacing: 6) {
@@ -897,16 +884,29 @@ private struct DailyCheckInTimelineRow: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 if isExpanded {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(medicationName)
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(ReflectJournalTheme.textPrimary)
+                    HStack(alignment: .top, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(medicationName)
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
+
+                            Text(timeText)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(ReflectJournalTheme.textSecondary)
+                        }
 
                         Spacer()
 
-                        Text(timeText)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(ReflectJournalTheme.textSecondary)
+                        Button {
+                            showingActionMenu = true
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(ReflectJournalTheme.textSecondary)
+                                .frame(width: 28, height: 28)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(height: headerTapHeight)
@@ -999,12 +999,6 @@ private struct DailyCheckInTimelineRow: View {
                             }
                         }
                     }
-
-                    Divider()
-                        .overlay(Color.white.opacity(0.08))
-                        .padding(.vertical, 2)
-
-                    longPressHint
                 } else {
                     HStack(alignment: .top, spacing: 12) {
                         VStack(alignment: .leading, spacing: 8) {
@@ -1050,20 +1044,16 @@ private struct DailyCheckInTimelineRow: View {
             .journalSheet(isExpanded: isExpanded)
             .frame(minHeight: isExpanded ? nil : 110)
             .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .contextMenu {
-                if isExpanded {
-                    Button {
-                        onEdit()
-                    } label: {
-                        Label("Edit Reflection", systemImage: "square.and.pencil")
-                    }
-
-                    Button(role: .destructive) {
-                        showingDeleteConfirm = true
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
+            .confirmationDialog("Reflection options", isPresented: $showingActionMenu, titleVisibility: .hidden) {
+                Button("Edit Reflection") {
+                    onEdit()
                 }
+
+                Button("Delete", role: .destructive) {
+                    showingDeleteConfirm = true
+                }
+
+                Button("Cancel", role: .cancel) {}
             }
             .alert("Delete?", isPresented: $showingDeleteConfirm) {
                 Button("Delete", role: .destructive) {
@@ -1105,7 +1095,7 @@ private struct DailyCheckInMiniMetric: View {
 
                 Text(value == nil ? "—" : "\(clampedValue)/\(maxValue)")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(ReflectJournalTheme.textTertiary)
+                    .foregroundColor(ReflectJournalTheme.reflectionScoreAccent)
             }
 
             GeometryReader { geo in
@@ -1114,7 +1104,7 @@ private struct DailyCheckInMiniMetric: View {
                         .fill(ReflectJournalTheme.progressTrack)
 
                     Capsule(style: .continuous)
-                        .fill(ReflectJournalTheme.accent)
+                        .fill(ReflectJournalTheme.reflectionScoreAccent)
                         .frame(width: geo.size.width * fraction)
                 }
             }
@@ -1155,7 +1145,7 @@ private struct DailyCheckInScaleView: View {
                                 .fill(ReflectJournalTheme.progressTrack)
 
                             Capsule(style: .continuous)
-                                .fill(ReflectJournalTheme.accent)
+                                .fill(ReflectJournalTheme.reflectionScoreAccent)
                                 .frame(width: max(0, geo.size.width * fraction))
                         }
                     }
@@ -1166,7 +1156,7 @@ private struct DailyCheckInScaleView: View {
                         if value != nil {
                             Text("\(clampedValue)/\(maxValue)")
                                 .font(.system(size: isHero ? 17 : 12, weight: isHero ? .bold : .semibold))
-                                .foregroundColor(ReflectJournalTheme.accent)
+                                .foregroundColor(ReflectJournalTheme.reflectionScoreAccent)
                                 .frame(minWidth: 44, alignment: .trailing)
                         } else {
                             Text("Complete")
@@ -1188,7 +1178,7 @@ private struct DailyCheckInScaleView: View {
                             if value != nil {
                                 Text("\(clampedValue)/\(maxValue)")
                                     .font(.system(size: isHero ? 18 : 12, weight: isHero ? .bold : .semibold))
-                                    .foregroundColor(ReflectJournalTheme.accent)
+                                    .foregroundColor(ReflectJournalTheme.reflectionScoreAccent)
                             } else {
                                 Text("Complete")
                                     .font(.system(size: 11, weight: .semibold))
@@ -1203,7 +1193,7 @@ private struct DailyCheckInScaleView: View {
                                 .fill(ReflectJournalTheme.progressTrack)
 
                             Capsule(style: .continuous)
-                                .fill(ReflectJournalTheme.accent)
+                                .fill(ReflectJournalTheme.reflectionScoreAccent)
                                 .frame(width: max(0, geo.size.width * fraction))
                         }
                     }
@@ -1226,6 +1216,8 @@ private struct DailyCheckInTag: View {
         Text(text)
             .font(.system(size: 10, weight: .semibold))
             .foregroundColor(ReflectJournalTheme.textSecondary)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(
@@ -1263,7 +1255,14 @@ private struct DailyCheckInFlowLayout<Content: View>: View {
     }
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 70), spacing: spacing)], alignment: .leading, spacing: spacing) {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: spacing, alignment: .leading),
+                GridItem(.flexible(), spacing: spacing, alignment: .leading)
+            ],
+            alignment: .leading,
+            spacing: spacing
+        ) {
             content
         }
     }

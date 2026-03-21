@@ -474,7 +474,7 @@ struct EditMedicationView: View {
                                             _ = validateInventoryFields()
                                         }
                                     }
-                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                                    .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                                     .disabled(!userSettings.isPremiumUser)
                                     .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                                     
@@ -561,7 +561,7 @@ struct EditMedicationView: View {
                                                         .foregroundColor(Color.pillrSecondary.opacity(0.7))
                                                 }
                                             }
-                                            .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                                            .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                                             .disabled(!userSettings.isPremiumUser)
                                             .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                                         }
@@ -888,7 +888,7 @@ struct EditMedicationView: View {
                                         .font(.system(size: 15, weight: .semibold))
                                         .foregroundColor(Color.pillrBackground)
                                 }
-                                .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                                .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                               .onChange(of: enableStimulantPhaseNotifications) { _, enabled in
                                   if !enabled {
                                       onsetMinutesString = ""
@@ -992,7 +992,7 @@ struct EditMedicationView: View {
                                     .foregroundColor(Color.pillrSecondary.opacity(0.8))
                             }
                         }
-                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                         .onChange(of: enableDailyCheckIn) { _, newValue in
@@ -1017,7 +1017,7 @@ struct EditMedicationView: View {
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(Color.pillrBackground)
                                 }
-                                .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                                .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
 
                                 if useCustomDailyCheckInTime {
                                     TimePickerRow(title: "Reflection time", time: $customDailyCheckInTime)
@@ -1056,7 +1056,7 @@ struct EditMedicationView: View {
                                     .foregroundColor(Color.pillrSecondary.opacity(0.8))
                             }
                         }
-                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrSecondary))
+                        .toggleStyle(SwitchToggleStyle(tint: Color.pillrToggleActive))
                         .disabled(!userSettings.isPremiumUser)
                         .opacity(userSettings.isPremiumUser ? 1.0 : 0.6)
                         .onChange(of: enableDailyCheckIn) { _, isEnabled in
