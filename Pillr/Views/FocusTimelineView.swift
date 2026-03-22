@@ -1,5 +1,14 @@
 import SwiftUI
 
+fileprivate enum FocusTimelineCardPalette {
+    static let background = Color(hex: "#59655B")
+    static let secondaryTint = Color(hex: "#424C43")
+    static let divider = Color(hex: "#8C988E")
+    static let titleText = Color(hex: "#F1F3F0")
+    static let secondaryText = Color(hex: "#D6DBD3")
+    static let timeText = Color(hex: "#E8ECE6")
+}
+
 struct FocusTimelineView: View {
     @EnvironmentObject var store: MedicationStore
     let isModal: Bool
@@ -26,6 +35,21 @@ struct FocusTimelineView: View {
         let id: UUID
         let medication: Medication
         let windows: [FocusWindow]
+    }
+
+    fileprivate struct FocusSegment: Identifiable {
+        let id = UUID()
+        let start: Date
+        let end: Date
+        let activeMedicationCount: Int
+    }
+
+    fileprivate struct FocusPlannerCard: Identifiable {
+        let id = UUID()
+        let title: String
+        let value: String
+        let detail: String
+        let accent: Color
     }
     
     private var focusWindows: [FocusWindow] {
@@ -162,6 +186,228 @@ struct FocusTimelineView: View {
     private var hasWindows: Bool {
         !focusWindows.isEmpty
     }
+
+    private var planningWindows: [FocusWindow] {
+        focusWindows.filter {
+            if case .skipped = $0.status {
+                return false
+            }
+            return true
+        }
+    }
+
+    private var focusSegments: [FocusSegment] {
+        let sortedBoundaries = Array(
+            Set(planningWindows.flatMap { [$0.onsetTime, $0.fadeTime] })
+        ).sorted()
+
+        guard sortedBoundaries.count > 1 else { return [] }
+
+        var segments: [FocusSegment] = []
+
+        for index in 0..<(sortedBoundaries.count - 1) {
+            let start = sortedBoundaries[index]
+            let end = sortedBoundaries[index + 1]
+            guard end > start else { continue }
+
+            let midpoint = start.addingTimeInterval(end.timeIntervalSince(start) / 2)
+            let activeCount = planningWindows.filter { window in
+                window.onsetTime <= midpoint && midpoint < window.fadeTime
+            }.count
+
+            guard activeCount > 0 else { continue }
+
+            segments.append(
+                FocusSegment(
+                    start: start,
+                    end: end,
+                    activeMedicationCount: activeCount
+                )
+            )
+        }
+
+        return segments
+    }
+
+    private var bestFocusSegment: FocusSegment? {
+        focusSegments.max { first, second in
+            if first.activeMedicationCount != second.activeMedicationCount {
+                return first.activeMedicationCount < second.activeMedicationCount
+            }
+
+            let firstDuration = first.end.timeIntervalSince(first.start)
+            let secondDuration = second.end.timeIntervalSince(second.start)
+            if firstDuration != secondDuration {
+                return firstDuration < secondDuration
+            }
+
+            return first.start > second.start
+        }
+    }
+
+    private var currentActiveWindowCount: Int {
+        let now = Date()
+        return planningWindows.filter { window in
+            window.onsetTime <= now && now <= window.fadeTime
+        }.count
+    }
+
+    private var currentOpenWindowEnd: Date? {
+        let now = Date()
+        return planningWindows
+            .filter { $0.onsetTime <= now && now <= $0.fadeTime }
+            .map(\.fadeTime)
+            .min()
+    }
+
+    private var nextUpcomingWindowStart: Date? {
+        let now = Date()
+        return planningWindows
+            .map(\.onsetTime)
+            .filter { $0 > now }
+            .min()
+    }
+
+    private var overallFocusEnd: Date? {
+        planningWindows.map(\.fadeTime).max()
+    }
+
+    private var plannerHeadline: String {
+        let now = Date()
+
+        if currentActiveWindowCount >= 2 {
+            return "This looks like a strong focus stretch."
+        }
+
+        if currentActiveWindowCount == 1 {
+            if let currentOpenWindowEnd, currentOpenWindowEnd.timeIntervalSince(now) <= 60 * 60 {
+                return "You are in a focus window, but support may soften soon."
+            }
+            return "You are in a workable focus window now."
+        }
+
+        if let nextStart = nextUpcomingWindowStart {
+            let minutesUntil = Int(nextStart.timeIntervalSince(now) / 60)
+            if minutesUntil <= 60 {
+                return "Your next focus window starts soon."
+            }
+            return "You have a lighter stretch before the next focus window."
+        }
+
+        return "No more focus windows are mapped for the rest of today."
+    }
+
+    private var plannerSubheadline: String {
+        let now = Date()
+
+        if let bestFocusSegment {
+            if bestFocusSegment.start <= now && now <= bestFocusSegment.end {
+                return "Good time for deep work, hard tasks, or anything that needs follow-through."
+            }
+
+            if bestFocusSegment.start > now {
+                return "Use the lighter time before then for setup, messages, errands, or simple admin."
+            }
+        }
+
+        if currentActiveWindowCount > 0 {
+            return "Try to finish one meaningful task before the window fades."
+        }
+
+        if let nextUpcomingWindowStart {
+            return "Aim to protect \(formatTime(nextUpcomingWindowStart)) onward for the work that matters most."
+        }
+
+        return "If you still need to log a dose, update it here so tomorrow's plan is more useful."
+    }
+
+    private var plannerCards: [FocusPlannerCard] {
+        var cards: [FocusPlannerCard] = []
+
+        if let bestFocusSegment {
+            cards.append(
+                FocusPlannerCard(
+                    title: "Best Work Block",
+                    value: timeRangeText(start: bestFocusSegment.start, end: bestFocusSegment.end),
+                    detail: bestFocusSegment.activeMedicationCount > 1
+                        ? "Likely your strongest stretch for deep work."
+                        : "Likely your clearest stretch for focused work.",
+                    accent: Color.pillrAccent
+                )
+            )
+        }
+
+        cards.append(
+            FocusPlannerCard(
+                title: "Right Now",
+                value: currentStateValue,
+                detail: currentStateDetail,
+                accent: currentActiveWindowCount > 0 ? Color.pillrSecondary : Color(hex: "#F2B8A0")
+            )
+        )
+
+        cards.append(
+            FocusPlannerCard(
+                title: "Next Shift",
+                value: nextShiftValue,
+                detail: nextShiftDetail,
+                accent: Color.pillrToggleActive
+            )
+        )
+
+        return cards
+    }
+
+    private var currentStateValue: String {
+        if currentActiveWindowCount >= 2 {
+            return "Strong focus"
+        }
+        if currentActiveWindowCount == 1 {
+            return "Steady focus"
+        }
+        if nextUpcomingWindowStart != nil {
+            return "Lighter stretch"
+        }
+        return "Day winding down"
+    }
+
+    private var currentStateDetail: String {
+        if currentActiveWindowCount >= 2 {
+            return "Best time to tackle your hardest task."
+        }
+        if currentActiveWindowCount == 1 {
+            return "Good for normal work and staying on one thing."
+        }
+        if let nextUpcomingWindowStart {
+            return "Keep this part of the day simple until \(formatTime(nextUpcomingWindowStart))."
+        }
+        return "Plan lower-pressure tasks or wrap up for the day."
+    }
+
+    private var nextShiftValue: String {
+        let now = Date()
+
+        if currentActiveWindowCount > 0, let currentOpenWindowEnd {
+            return formatTime(currentOpenWindowEnd)
+        }
+        if let nextUpcomingWindowStart {
+            return formatTime(nextUpcomingWindowStart)
+        }
+        if let overallFocusEnd, overallFocusEnd > now {
+            return formatTime(overallFocusEnd)
+        }
+        return "No more today"
+    }
+
+    private var nextShiftDetail: String {
+        if currentActiveWindowCount > 0, let currentOpenWindowEnd {
+            return "Expect this current stretch to soften around then."
+        }
+        if let nextUpcomingWindowStart {
+            return "A stronger focus window is expected to begin then."
+        }
+        return "Nothing else is mapped for the rest of today."
+    }
     
     private var todaysLogsByMedication: [UUID: [MedicationLog]] {
         let calendar = Calendar.current
@@ -226,6 +472,10 @@ struct FocusTimelineView: View {
         formatter.timeStyle = .short
         formatter.dateStyle = .none
         return formatter.string(from: date)
+    }
+
+    private func timeRangeText(start: Date, end: Date) -> String {
+        "\(formatTime(start)) to \(formatTime(end))"
     }
     
     private func handleMedicationSelection(_ medication: Medication) {
@@ -303,6 +553,10 @@ struct FocusTimelineView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         headerSection
+
+                        if hasWindows {
+                            focusPlannerSection
+                        }
                         
                         if hasWindows {
                             ForEach(Array(focusWindowGroups.enumerated()), id: \.element.id) { index, group in
@@ -341,9 +595,16 @@ struct FocusTimelineView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Today's Focus Timeline")
+                Text("Today’s Focus Plan")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(Color.pillrBackground)
+
+                if hasWindows {
+                    Text(plannerHeadline)
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.95))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             
             if hasWindows {
@@ -365,6 +626,21 @@ struct FocusTimelineView: View {
                                 .stroke(Color.white.opacity(0.08), lineWidth: 1)
                         )
                 )
+            }
+        }
+    }
+
+    private var focusPlannerSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(plannerSubheadline)
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(Color.pillrBackground.opacity(0.92))
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 12) {
+                ForEach(plannerCards) { card in
+                    FocusPlannerSummaryCard(card: card)
+                }
             }
         }
     }
@@ -403,6 +679,39 @@ struct FocusTimelineView: View {
                 )
         )
         .padding(.top, 16)
+    }
+}
+
+private struct FocusPlannerSummaryCard: View {
+    let card: FocusTimelineView.FocusPlannerCard
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(card.title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.82))
+                .tracking(0.7)
+
+            Text(card.value)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundColor(FocusTimelineCardPalette.titleText)
+
+            Text(card.detail)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.92))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(FocusTimelineCardPalette.background)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(FocusTimelineCardPalette.divider.opacity(0.7), lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
     }
 }
 
@@ -563,6 +872,124 @@ private struct FocusWindowRow: View {
         }
         return "\(hours)h \(remainder)m"
     }
+
+    private func focusStateTitle(for window: FocusTimelineView.FocusWindow, now: Date) -> String {
+        switch window.status {
+        case .skipped:
+            return "Skipped"
+        case .pending, .logged:
+            if now < window.onsetTime {
+                return "Building up"
+            }
+            if now <= window.fadeTime {
+                return "In focus"
+            }
+            return "Winding down"
+        }
+    }
+
+    private func focusStateSummary(for window: FocusTimelineView.FocusWindow, now: Date) -> String {
+        switch window.status {
+        case .skipped:
+            return "This dose was skipped, so this timing is only a guide."
+        case .pending:
+            if now < window.onsetTime {
+                return "Focus support starts at \(formatTime(window.onsetTime))"
+            }
+            if now <= window.fadeTime {
+                return "Focus support starts easing at \(formatTime(window.fadeTime))"
+            }
+            return "This window was estimated from the planned dose time."
+        case .logged:
+            if now < window.onsetTime {
+                return "Focus support starts at \(formatTime(window.onsetTime))"
+            }
+            if now <= window.fadeTime {
+                return "Focus support starts easing at \(formatTime(window.fadeTime))"
+            }
+            return "This focus window has likely passed."
+        }
+    }
+
+    private func nextMomentTitle(for window: FocusTimelineView.FocusWindow, now: Date) -> String {
+        switch window.status {
+        case .skipped:
+            return "Skipped"
+        case .pending, .logged:
+            if now < window.onsetTime {
+                return "Starts in"
+            }
+            if now <= window.fadeTime {
+                return "Softens in"
+            }
+            return "Ended"
+        }
+    }
+
+    private func nextMomentValue(for window: FocusTimelineView.FocusWindow, now: Date) -> String {
+        switch window.status {
+        case .skipped:
+            return "No active window"
+        case .pending, .logged:
+            if now < window.onsetTime {
+                return formatRemainingMinutes(max(0, Int(window.onsetTime.timeIntervalSince(now) / 60)))
+            }
+            if now <= window.fadeTime {
+                return formatRemainingMinutes(max(0, Int(window.fadeTime.timeIntervalSince(now) / 60)))
+            }
+            return "Finished"
+        }
+    }
+
+    private func showsStatusDot(for window: FocusTimelineView.FocusWindow) -> Bool {
+        if case .skipped = window.status {
+            return false
+        }
+        return true
+    }
+
+    private func explanationLine(for window: FocusTimelineView.FocusWindow, now: Date) -> String {
+        switch window.status {
+        case .skipped:
+            return "Because this dose was skipped, the timing below is only a guide."
+        case .pending:
+            if now < window.onsetTime {
+                return "This estimate is based on the planned dose time."
+            }
+            return "If you take this earlier or later, log it to update the timing."
+        case .logged:
+            if now <= window.fadeTime {
+                return "This estimate is based on when you actually logged the dose."
+            }
+            return "You can still use this to understand how the day likely unfolded."
+        }
+    }
+
+    private func effectsGoneDisplayValue(
+        for window: FocusTimelineView.FocusWindow,
+        fallbackLabel: String
+    ) -> String {
+        let timing = aiEffectsGoneTiming(for: window.medication)
+        guard let maxMinutes = timing?.maxMinutes else {
+            return fallbackLabel
+        }
+
+        let baseDoseTime: Date
+        switch window.status {
+        case .logged(let loggedAt):
+            baseDoseTime = loggedAt
+        case .skipped(let skippedAt):
+            baseDoseTime = skippedAt
+        case .pending:
+            baseDoseTime = window.doseTime
+        }
+
+        guard let target = Calendar.current.date(byAdding: .minute, value: maxMinutes, to: baseDoseTime) else {
+            return fallbackLabel
+        }
+
+        return formatTime(target)
+    }
     
     var body: some View {
         TimelineView(.periodic(from: Date(), by: 60)) { context in
@@ -576,74 +1003,77 @@ private struct FocusWindowRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(group.medication.name)
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color.pillrBackground)
+                        .foregroundColor(FocusTimelineCardPalette.titleText)
                     
                     Text(group.medication.dosage)
                         .font(.system(size: 13))
-                        .foregroundColor(Color.pillrSecondary.opacity(1.0))
+                        .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.96))
                 }
                 
                 Spacer()
             }
 
             Divider()
-                .background(Color.white.opacity(0.10))
+                .background(FocusTimelineCardPalette.divider.opacity(0.5))
             
             let hasMultipleDoses = group.windows.count > 1
             ForEach(Array(group.windows.enumerated()), id: \.element.id) { index, window in
-                let isNowInsideWindow = now >= window.onsetTime && now <= window.fadeTime
-                let isAsNeededWithoutReminder = window.medication.frequency == "As needed" && window.medication.reminderTimes.isEmpty
                 let effectsGoneTiming = aiEffectsGoneTiming(for: window.medication)
                 
                 if index > 0 {
                     Divider()
-                        .background(Color.white.opacity(0.08))
+                        .background(FocusTimelineCardPalette.divider.opacity(0.45))
                         .padding(.vertical, 20)
                 }
                 
                 VStack(alignment: .leading, spacing: 12) {
-                    let loggedTime: Date? = {
-                        if case .logged(let date) = window.status { return date }
-                        return nil
-                    }()
-                    let isLogged = loggedTime != nil
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if hasMultipleDoses {
-                                Text("Dose \(window.doseIndex + 1)")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(Color.pillrBackground)
+                    VStack(alignment: .leading, spacing: 14) {
+                        if hasMultipleDoses {
+                            Text("Dose \(window.doseIndex + 1)")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.72))
+                        }
+
+                        HStack(alignment: .center, spacing: 14) {
+                            if showsStatusDot(for: window) {
+                                Circle()
+                                    .fill(Color(hex: "#E6A032"))
+                                    .frame(width: 14, height: 14)
                             }
 
-                            if let loggedTime {
-                                Text("Logged \(formatTime(loggedTime))")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(Color.pillrSecondary)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.white.opacity(0.14))
-                                    .cornerRadius(12)
-                            } else {
-                                let statusInfo = statusSubtitle(for: window, isAsNeededWithoutReminder: isAsNeededWithoutReminder)
-                                Text(statusInfo.text)
-                                    .font(.system(size: 12))
-                                    .foregroundColor(statusInfo.color)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(focusStateTitle(for: window, now: now))
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundColor(FocusTimelineCardPalette.titleText)
+
+                                Text(focusStateSummary(for: window, now: now))
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.92))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            Spacer(minLength: 12)
+
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text(nextMomentTitle(for: window, now: now))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.72))
+
+                                Text(nextMomentValue(for: window, now: now))
+                                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                                    .foregroundColor(FocusTimelineCardPalette.titleText)
                             }
                         }
-                        
-                        Spacer()
-                        
-                        if !isLogged || isNowInsideWindow {
-                            let badgeText = isNowInsideWindow ? "Now" : formatTime(window.onsetTime)
-                            Text(badgeText)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(isNowInsideWindow ? Color.pillrPrimary : Color.pillrSecondary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(isNowInsideWindow ? Color.pillrSecondary : Color.white.opacity(0.14))
-                                .cornerRadius(12)
-                                .frame(minWidth: 72, alignment: .trailing)
-                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(FocusTimelineCardPalette.secondaryTint)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(FocusTimelineCardPalette.divider.opacity(0.3), lineWidth: 1)
+                                )
+                        )
                     }
                     
                     FocusBar(
@@ -651,112 +1081,108 @@ private struct FocusWindowRow: View {
                         fadeTime: window.fadeTime,
                         now: now
                     )
-                    .padding(.bottom, 4)
+                    .padding(.top, 2)
+                    .padding(.bottom, 6)
                     
                     HStack(spacing: 14) {
-                        infoRow(title: "Starts", value: formatTime(window.onsetTime))
-                        infoRow(title: "Fades", value: formatTime(window.fadeTime))
+                        metricTile(title: "Taken", value: statusTimingValue(for: window))
+                        metricTile(title: "Focus", value: formatTime(window.onsetTime))
+                        metricTile(title: "Easing", value: formatTime(window.fadeTime))
                     }
-                    .padding(.top, 6)
 
                     if let effectsGoneTiming {
-                        let countdownLabel = effectsGoneCountdownLabel(for: window, now: now)
-                        let displayValue = countdownLabel ?? effectsGoneTiming.label
-                        HStack {
-                            infoRow(title: "Most effects gone", value: displayValue)
-                        }
-                        .padding(.top, 6)
+                        let displayValue = effectsGoneDisplayValue(
+                            for: window,
+                            fallbackLabel: effectsGoneTiming.label
+                        )
+                        metricTile(title: "Mostly worn off", value: displayValue, showsClock: true)
                     }
 
-                    if let scheduledReminder = window.scheduledDoseTime {
-                        Text("Based on the \(formatTime(scheduledReminder)) reminder")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color.pillrSecondary.opacity(0.65))
-                            .padding(.top, 2)
-                    }
+                    Text(explanationLine(for: window, now: now))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.8))
+                        .fixedSize(horizontal: false, vertical: true)
+
                 }
             }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 26)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.white.opacity(0.05),
-                            Color.white.opacity(0.02)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(FocusTimelineCardPalette.background)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 26)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(FocusTimelineCardPalette.divider.opacity(0.7), lineWidth: 1)
                 )
         )
-        .contentShape(RoundedRectangle(cornerRadius: 26))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(FocusTimelineCardPalette.divider.opacity(0.3), lineWidth: 0.6)
+                .padding(0.5)
+        )
+        .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
+        .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .onTapGesture {
             onSelectMedication()
         }
     }
-    
-    private func infoRow(title: String, value: String) -> some View {
-        let parts = value.split(separator: " ")
-        let timeComponent = parts.first.map(String.init) ?? value
-        let meridiemComponent = parts.count > 1 ? String(parts.last!).lowercased() : ""
-        let isMeridiem = meridiemComponent == "am" || meridiemComponent == "pm"
-        
-        return VStack(alignment: .leading, spacing: 6) {
-            Text(title.uppercased())
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color.pillrSecondary.opacity(0.85))
-                .tracking(0.6)
-            
-            HStack(alignment: .lastTextBaseline, spacing: 4) {
-                if isMeridiem {
-                    Text(timeComponent)
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(Color.pillrBackground)
-                    
-                    Text(meridiemComponent)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color.pillrBackground.opacity(0.8))
-                        .padding(.leading, 2)
-                } else {
-                    Text(value)
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(Color.pillrBackground)
+
+    private func statusTimingValue(for window: FocusTimelineView.FocusWindow) -> String {
+        switch window.status {
+        case .logged(let date), .skipped(let date):
+            return formatTime(date)
+        case .pending:
+            return formatTime(window.doseTime)
+        }
+    }
+
+    @ViewBuilder
+    private func metricTile(title: String, value: String, showsClock: Bool = false) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.76))
+
+                Text(value)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(FocusTimelineCardPalette.timeText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+                    .allowsTightening(true)
+            }
+
+            Spacer(minLength: 0)
+
+            if showsClock {
+                ZStack {
+                    Circle()
+                        .fill(FocusTimelineCardPalette.background)
+                        .frame(width: 42, height: 42)
+                        .overlay(
+                            Circle()
+                                .stroke(FocusTimelineCardPalette.divider.opacity(0.55), lineWidth: 1)
+                        )
+
+                    Image(systemName: "clock")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.82))
                 }
             }
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.18))
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(FocusTimelineCardPalette.secondaryTint)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(FocusTimelineCardPalette.divider.opacity(0.42), lineWidth: 1)
                 )
         )
-    }
-    
-    private func statusSubtitle(
-        for window: FocusTimelineView.FocusWindow,
-        isAsNeededWithoutReminder: Bool
-    ) -> (text: String, color: Color) {
-        switch window.status {
-        case .logged(let date):
-            return ("Logged at \(formatTime(date))", Color.pillrAccent)
-        case .skipped(let date):
-            return ("Skipped at \(formatTime(date))", Color(hex: "#F2B8A0"))
-        case .pending:
-            let prefix = isAsNeededWithoutReminder ? "Logged at" : "Reminder at"
-            return ("\(prefix) \(formatTime(window.doseTime))", Color.pillrSecondary.opacity(0.9))
-        }
     }
 }
 
@@ -766,15 +1192,14 @@ private struct FocusBar: View {
     let now: Date
     
     private let totalMinutes: CGFloat = 24 * 60
-    private let hourTicks: [CGFloat] = stride(from: 0, through: 24, by: 2).map { CGFloat($0 * 60) }
-    private let labelRowHeight: CGFloat = 18
-    private let barRowHeight: CGFloat = 18
-    private let hourLabelOpacity: Double = 0.65
-    private let trackCornerRadius: CGFloat = 12
-    private let trackFillOpacity: Double = 0.14
-    private let handleWidth: CGFloat = 6
-    private let handleHeight: CGFloat = 30
-    private let handleShadowRadius: CGFloat = 4
+    private let chartHeight: CGFloat = 82
+
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date)
+    }
     
     private func minutesSinceMidnight(_ date: Date) -> CGFloat {
         let calendar = Calendar.current
@@ -783,24 +1208,39 @@ private struct FocusBar: View {
         let minutes = CGFloat(components.minute ?? 0)
         return hours * 60 + minutes
     }
-    
-    private func label(for minutes: CGFloat) -> String {
-        let clamped = max(0, min(Int(minutes), Int(totalMinutes)))
-        let hours = (clamped / 60) % 24
-        let hour12 = hours % 12
-        let displayHour = hour12 == 0 ? 12 : hour12
-        return "\(displayHour)"
-    }
-    
-    private func isPM(_ minutes: CGFloat) -> Bool {
-        let clamped = max(0, min(Int(minutes), Int(totalMinutes)))
-        // Treat the end-of-day (24:00) as PM so the
-        // right-edge "12" only appears on the PM row.
-        if clamped == Int(totalMinutes) {
-            return true
+
+    private func curvePath(
+        width: CGFloat,
+        peakX: CGFloat,
+        baselineY: CGFloat,
+        peakY: CGFloat
+    ) -> Path {
+        Path { path in
+            path.move(to: CGPoint(x: 0, y: baselineY))
+            path.addCurve(
+                to: CGPoint(x: peakX, y: peakY),
+                control1: CGPoint(x: width * 0.18, y: baselineY),
+                control2: CGPoint(x: peakX - (width * 0.12), y: peakY)
+            )
+            path.addCurve(
+                to: CGPoint(x: width, y: baselineY),
+                control1: CGPoint(x: peakX + (width * 0.12), y: peakY),
+                control2: CGPoint(x: width * 0.82, y: baselineY)
+            )
         }
-        let hours = (clamped / 60) % 24
-        return hours >= 12
+    }
+
+    private func fillPath(
+        width: CGFloat,
+        peakX: CGFloat,
+        baselineY: CGFloat,
+        peakY: CGFloat
+    ) -> Path {
+        var path = curvePath(width: width, peakX: peakX, baselineY: baselineY, peakY: peakY)
+        path.addLine(to: CGPoint(x: width, y: baselineY))
+        path.addLine(to: CGPoint(x: 0, y: baselineY))
+        path.closeSubpath()
+        return path
     }
     
     var body: some View {
@@ -817,124 +1257,103 @@ private struct FocusBar: View {
             let clampedOnset = max(0, min(totalMinutes, onsetMinutes))
             let clampedFadeRaw = max(0, min(totalMinutes, fadeMinutes))
             
-            // Compute one or two bar segments depending on whether the window
-            // crosses midnight. When it does, we render:
-            //   - from onset -> midnight on the right side
-            //   - from midnight -> fade on the left side
-            let segments: [(start: CGFloat, end: CGFloat)] = {
-                if crossesMidnight {
-                    return [
-                        (start: clampedOnset, end: totalMinutes),
-                        (start: 0, end: clampedFadeRaw)
-                    ]
-                } else {
-                    let clampedFade = max(clampedOnset, clampedFadeRaw)
-                    return [(start: clampedOnset, end: clampedFade)]
-                }
-            }()
-            
             let nowX = width * (max(0, min(totalMinutes, nowMinutes)) / totalMinutes)
-            let showNowMarker = nowMinutes >= 0 && nowMinutes <= totalMinutes
-            
-            
-            VStack(alignment: .leading, spacing: 8) {
-                // PM hours above the bar
-                ZStack(alignment: .topLeading) {
-                    ForEach(hourTicks, id: \.self) { tick in
-                        let tickX = width * (tick / totalMinutes)
-                        let isMidday = Int(tick) == 12 * 60
-                        let isLeftMidnight = Int(tick) == 0
-                        let isRightMidnight = Int(tick) == Int(totalMinutes)
-                        
-                        if isPM(tick) || isRightMidnight {
-                            Text(label(for: tick))
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color.pillrSecondary.opacity(hourLabelOpacity))
-                                .position(x: tickX, y: labelRowHeight / 2)
-                        }
-                    }
-                }
-                .frame(height: labelRowHeight)
-                
-                // Bar with ticks and "now" marker
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: trackCornerRadius, style: .continuous)
-                        .fill(Color.black.opacity(trackFillOpacity))
-                        .frame(height: 7)
-                   
-                    ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
-                        let barStart = width * (segment.start / totalMinutes)
-                        let barWidth = max(4, width * ((segment.end - segment.start) / totalMinutes))
-                        
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color.pillrSecondary,
-                                        Color.pillrSecondary
-                                    ]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: barWidth, height: 7)
-                            .offset(x: barStart)
-                    }
-                    
-                    ForEach(hourTicks, id: \.self) { tick in
-                        let tickX = width * (tick / totalMinutes)
-                        let isMidday = Int(tick) == 12 * 60
-                        let tickHeight: CGFloat = isMidday ? 12 : 8
+            let baselineY: CGFloat = chartHeight - 22
+            let peakY: CGFloat = 26
+            let windowStartX: CGFloat = crossesMidnight ? 0 : width * (clampedOnset / totalMinutes)
+            let windowEndX: CGFloat = crossesMidnight ? width : width * (max(clampedOnset, clampedFadeRaw) / totalMinutes)
 
-                        Rectangle()
-                            .fill(Color.white.opacity(isMidday ? 0.35 : 0.18))
-                            .frame(width: 1, height: tickHeight)
-                            .offset(x: tickX - 0.5, y: (barRowHeight / 2) - (tickHeight / 2))
-                    }
-                    
-                    if showNowMarker {
-                        Capsule()
-                            .fill(Color.white.opacity(0.95))
-                            .frame(width: handleWidth, height: handleHeight)
-                            .offset(
-                                x: nowX - handleWidth / 2,
-                                y: -((handleHeight - barRowHeight) / 2)
-                            )
-                    }
-                }
-                .frame(height: barRowHeight)
-                .padding(.vertical, 6)
-                
-                // AM hours below the bar
-                ZStack(alignment: .topLeading) {
-                    ForEach(hourTicks, id: \.self) { tick in
-                        let tickX = width * (tick / totalMinutes)
-                        let isMidday = Int(tick) == 12 * 60
-                        let isLeftMidnight = Int(tick) == 0
-                        let isRightMidnight = Int(tick) == Int(totalMinutes)
-                        
-                        if !isPM(tick) || isLeftMidnight {
-                            Text(label(for: tick))
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color.pillrSecondary.opacity(hourLabelOpacity))
-                                .position(x: tickX, y: labelRowHeight / 2)
-                        }
-                    }
-                }
-                .frame(height: labelRowHeight)
-                
+            let peakX = max(width * 0.12, min(width * 0.88, (windowStartX + windowEndX) / 2))
+            let peakTime = onsetTime.addingTimeInterval(fadeTime.timeIntervalSince(onsetTime) / 2)
+            let progressGradient = LinearGradient(
+                colors: [Color.pillrAccent, Color.pillrSecondary],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+
+            VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Text("am")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(Color.pillrSecondary.opacity(0.52))
+                    Text("12 am")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.8))
                     Spacer()
-                    Text("pm")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(Color.pillrSecondary.opacity(0.52))
+                    Text("12 pm")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(FocusTimelineCardPalette.secondaryText.opacity(0.8))
                 }
+
+                ZStack(alignment: .topLeading) {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: chartHeight)
+
+                    Text(formatTime(peakTime))
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(Color.pillrAccent)
+                        .position(x: peakX, y: 8)
+
+                    fillPath(
+                        width: width,
+                        peakX: peakX,
+                        baselineY: baselineY,
+                        peakY: peakY
+                    )
+                    .fill(Color.pillrAccent.opacity(0.12))
+
+                    curvePath(
+                        width: width,
+                        peakX: peakX,
+                        baselineY: baselineY,
+                        peakY: peakY
+                    )
+                    .trim(from: 0, to: min(max(nowX / max(width, 1), 0), 1))
+                    .stroke(
+                        progressGradient,
+                        style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round)
+                    )
+
+                    curvePath(
+                        width: width,
+                        peakX: peakX,
+                        baselineY: baselineY,
+                        peakY: peakY
+                    )
+                    .trim(from: min(max(nowX / max(width, 1), 0), 1), to: 1)
+                    .stroke(
+                        Color.pillrAccent.opacity(0.35),
+                        style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round, dash: [9, 7])
+                    )
+
+                    Circle()
+                        .fill(Color.pillrAccent)
+                        .frame(width: 14, height: 14)
+                        .position(x: peakX, y: peakY)
+
+                    Capsule()
+                        .fill(FocusTimelineCardPalette.titleText.opacity(0.98))
+                        .frame(width: 5, height: 34)
+                        .offset(x: nowX - 2.5, y: baselineY - 22)
+
+                    Text(formatTime(now))
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(FocusTimelineCardPalette.titleText)
+                        .position(x: min(max(nowX, 34), width - 34), y: chartHeight - 4)
+                }
+                .padding(.vertical, 6)
+
             }
         }
-        .frame(height: 90)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 22)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(FocusTimelineCardPalette.background)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(FocusTimelineCardPalette.divider.opacity(0.35), lineWidth: 1)
+                )
+        )
+        .frame(height: 154)
     }
 }
 
