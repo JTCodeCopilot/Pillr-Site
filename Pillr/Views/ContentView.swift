@@ -14,7 +14,7 @@ extension Color {
     static let pillrSecondary = Color(hex: "#D0DDCA")
     static let pillrBackground = Color(hex: "#F4F6F2")
     static let pillrAccent = Color(hex: "#6F8F7B")
-    static let pillrToggleActive = Color(hex: "#C9B99A")
+    static let pillrToggleActive = Color(hex: "#F4D4A0")
     static let pillrNavy = pillrPrimary
     static let pillrSoftBlue = pillrAccent
     static let pillrDeepBlue = pillrPrimary

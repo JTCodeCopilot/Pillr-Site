@@ -167,12 +167,8 @@ struct InteractionHistoryView: View {
                 }) {
                     Text("Check Interactions")
                         .font(.headline)
-                        .foregroundColor(Color.pillrPrimary)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 14)
-                        .background(Color.pillrAccent)
-                        .cornerRadius(12)
                 }
+                .buttonStyle(PillrSurfaceButtonStyle())
                 .padding(.top, 10)
             }
             .padding(20)

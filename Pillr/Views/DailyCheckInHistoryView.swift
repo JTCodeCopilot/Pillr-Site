@@ -26,7 +26,8 @@ private enum ReflectJournalTheme {
 
     // Accents
     static let accent = Color.pillrAccent
-    static let reflectionScoreAccent = Color.pillrToggleActive
+    static let reflectionScoreAccent = Color(hex: "#B8E6B8")
+    static let sideEffectAccent = Color(hex: "#F4C4B3")
     static let progressTrack = Color.white.opacity(0.16)
 
     static var pageBackground: some View {
@@ -197,41 +198,6 @@ struct DailyCheckInHistoryView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return "\(formatter.string(from: start)) – \(formatter.string(from: end))"
-    }
-
-    private var last7DayStats: (avgOverall: String, bestDay: String, worstDay: String)? {
-        let calendar = Calendar.current
-        let end = Date()
-        let start = calendar.date(byAdding: .day, value: -6, to: end) ?? end
-        let rangeStart = calendar.startOfDay(for: start)
-        let rangeEnd = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: end) ?? end
-
-        let recentLogs = checkInLogs.filter { log in
-            guard log.takenAt >= rangeStart && log.takenAt <= rangeEnd else { return false }
-            let rating = log.feelingRating ?? 0
-            return rating > 0
-        }
-
-        guard !recentLogs.isEmpty else { return nil }
-
-        let total = recentLogs.reduce(0) { $0 + ($1.feelingRating ?? 0) }
-        let avg = Double(total) / Double(recentLogs.count)
-        let avgText = String(format: "%.1f/5", avg)
-
-        let grouped = Dictionary(grouping: recentLogs) { calendar.startOfDay(for: $0.takenAt) }
-        let dayAverages: [(date: Date, avg: Double)] = grouped.compactMap { date, logs in
-            let ratings = logs.compactMap { $0.feelingRating }.filter { $0 > 0 }
-            guard !ratings.isEmpty else { return nil }
-            let dayAvg = Double(ratings.reduce(0, +)) / Double(ratings.count)
-            return (date, dayAvg)
-        }
-
-        guard let best = dayAverages.max(by: { $0.avg < $1.avg }),
-              let worst = dayAverages.min(by: { $0.avg < $1.avg }) else {
-            return (avgText, "—", "—")
-        }
-
-        return (avgText, dayLabel(for: best.date), dayLabel(for: worst.date))
     }
 
     var body: some View {
@@ -425,13 +391,7 @@ struct DailyCheckInHistoryView: View {
     }
 
     private var headerSummaryText: String {
-        let entryText = "\(filteredCheckInLogs.count) \(filteredCheckInLogs.count == 1 ? "entry" : "entries") logged"
-
-        guard let stats = last7DayStats else {
-            return entryText
-        }
-
-        return "\(entryText)  •  Avg overall \(stats.avgOverall)"
+        "\(filteredCheckInLogs.count) \(filteredCheckInLogs.count == 1 ? "entry" : "entries") logged"
     }
 
     private var reflectionInfoCard: some View {
@@ -1065,6 +1025,10 @@ private struct DailyCheckInMiniMetric: View {
         self.maxValue = maxValue
     }
 
+    private var accentColor: Color {
+        label.localizedCaseInsensitiveContains("side") ? ReflectJournalTheme.sideEffectAccent : ReflectJournalTheme.reflectionScoreAccent
+    }
+
     var body: some View {
         let clampedValue = max(0, min(value ?? 0, maxValue))
         let fraction = CGFloat(clampedValue) / CGFloat(maxValue)
@@ -1081,7 +1045,7 @@ private struct DailyCheckInMiniMetric: View {
 
                 Text(value == nil ? "—" : "\(clampedValue)/\(maxValue)")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(ReflectJournalTheme.reflectionScoreAccent)
+                    .foregroundColor(accentColor)
             }
 
             GeometryReader { geo in
@@ -1090,7 +1054,7 @@ private struct DailyCheckInMiniMetric: View {
                         .fill(ReflectJournalTheme.progressTrack)
 
                     Capsule(style: .continuous)
-                        .fill(ReflectJournalTheme.reflectionScoreAccent)
+                        .fill(accentColor)
                         .frame(width: geo.size.width * fraction)
                 }
             }
@@ -1107,6 +1071,10 @@ private struct DailyCheckInScaleView: View {
     let layout: DailyCheckInScaleLayout
 
     private let maxValue = 5
+
+    private var accentColor: Color {
+        label.localizedCaseInsensitiveContains("side") ? ReflectJournalTheme.sideEffectAccent : ReflectJournalTheme.reflectionScoreAccent
+    }
 
     var body: some View {
         let clampedValue = max(0, min(value ?? 0, maxValue))
@@ -1131,7 +1099,7 @@ private struct DailyCheckInScaleView: View {
                                 .fill(ReflectJournalTheme.progressTrack)
 
                             Capsule(style: .continuous)
-                                .fill(ReflectJournalTheme.reflectionScoreAccent)
+                                .fill(accentColor)
                                 .frame(width: max(0, geo.size.width * fraction))
                         }
                     }
@@ -1142,7 +1110,7 @@ private struct DailyCheckInScaleView: View {
                         if value != nil {
                             Text("\(clampedValue)/\(maxValue)")
                                 .font(.system(size: isHero ? 17 : 12, weight: isHero ? .bold : .semibold))
-                                .foregroundColor(ReflectJournalTheme.reflectionScoreAccent)
+                                .foregroundColor(accentColor)
                                 .frame(minWidth: 44, alignment: .trailing)
                         } else {
                             Text("Complete")
@@ -1164,7 +1132,7 @@ private struct DailyCheckInScaleView: View {
                             if value != nil {
                                 Text("\(clampedValue)/\(maxValue)")
                                     .font(.system(size: isHero ? 18 : 12, weight: isHero ? .bold : .semibold))
-                                    .foregroundColor(ReflectJournalTheme.reflectionScoreAccent)
+                                    .foregroundColor(accentColor)
                             } else {
                                 Text("Complete")
                                     .font(.system(size: 11, weight: .semibold))
@@ -1179,7 +1147,7 @@ private struct DailyCheckInScaleView: View {
                                 .fill(ReflectJournalTheme.progressTrack)
 
                             Capsule(style: .continuous)
-                                .fill(ReflectJournalTheme.reflectionScoreAccent)
+                                .fill(accentColor)
                                 .frame(width: max(0, geo.size.width * fraction))
                         }
                     }

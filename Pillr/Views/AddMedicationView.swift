@@ -103,8 +103,24 @@ struct AddMedicationView: View {
     private let actionButtonMinWidth: CGFloat = 58
     private let focusPickerHeight: CGFloat = 140
     private let focusOnsetRange: ClosedRange<Int> = 30...1440
-    private let focusDurationRange: ClosedRange<Int> = 30...1440
-    private let focusEffectsGoneRange: ClosedRange<Int> = 30...1440
+    private var focusDurationRange: ClosedRange<Int> {
+        minimumDurationMinutes...focusOnsetRange.upperBound
+    }
+    private var focusEffectsGoneRange: ClosedRange<Int> {
+        minimumEffectsGoneMinutes...focusOnsetRange.upperBound
+    }
+
+    private var minimumDurationMinutes: Int {
+        max(focusOnsetRange.lowerBound, Int(onsetMinutesString) ?? focusOnsetRange.lowerBound)
+    }
+
+    private var minimumEffectsGoneMinutes: Int {
+        max(
+            focusOnsetRange.lowerBound,
+            Int(onsetMinutesString) ?? focusOnsetRange.lowerBound,
+            Int(durationMinutesString) ?? focusOnsetRange.lowerBound
+        )
+    }
 
     private enum ScrollAnchor {
         static let top = "AddMedicationViewTopAnchor"
@@ -283,6 +299,7 @@ struct AddMedicationView: View {
                         focusedField = .name
                     }
                 }
+                synchronizeFocusTimingSelections()
                 hasInitializedForm = true
             }
             .onChange(of: currentStep) { _, newStep in
@@ -306,6 +323,12 @@ struct AddMedicationView: View {
                 }
                 reminderTimes = []
             }
+        }
+        .onChange(of: onsetMinutesString) { _, _ in
+            synchronizeFocusTimingSelections()
+        }
+        .onChange(of: durationMinutesString) { _, _ in
+            synchronizeFocusTimingSelections()
         }
         }
         .preferredColorScheme(.dark)
@@ -1534,7 +1557,7 @@ struct AddMedicationView: View {
             }
         }
 
-        if let current = Int(currentValue), current > 0, !options.contains(current) {
+        if let current = Int(currentValue), current > 0, range.contains(current), !options.contains(current) {
             options.append(current)
         }
 
@@ -1661,6 +1684,24 @@ struct AddMedicationView: View {
         case .notesAndReview:
             break
         }
+    }
+
+    private func synchronizeFocusTimingSelections() {
+        guard isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications else {
+            return
+        }
+
+        if let durationMinutes = Int(durationMinutesString), durationMinutes < minimumDurationMinutes {
+            durationMinutesString = "\(minimumDurationMinutes)"
+        }
+
+        if let effectsGoneMinutes = Int(effectsGoneMinutesString), effectsGoneMinutes < minimumEffectsGoneMinutes {
+            effectsGoneMinutesString = "\(minimumEffectsGoneMinutes)"
+        }
+
+        validateField(.onsetMinutes, value: onsetMinutesString)
+        validateField(.durationMinutes, value: durationMinutesString)
+        validateField(.effectsGoneMinutes, value: effectsGoneMinutesString)
     }
 
     private func goToPreviousStep() {

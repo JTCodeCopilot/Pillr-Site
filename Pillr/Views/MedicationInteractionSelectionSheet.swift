@@ -225,13 +225,8 @@ struct MedicationInteractionSelectionSheet: View {
                             Text("Past Interactions")
                                 .font(.system(size: 14, weight: .semibold))
                         }
-                        .foregroundColor(Color.pillrPrimary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Color.pillrAccent)
-                        .cornerRadius(12)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(PillrSurfaceButtonStyle())
                 }
                 
                 if !canCheckInteractions {
@@ -351,16 +346,10 @@ struct MedicationInteractionSelectionSheet: View {
                                     .opacity(0.8)
                             }
                         }
-                        .foregroundColor(canCheckInteractions ? Color.pillrPrimary : Color.pillrBackground)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(canCheckInteractions ? Color.pillrAccent : Color.pillrAccent)
-                        )
                     }
                     .disabled(!canCheckInteractions)
-                    .buttonStyle(ScaleButtonStyle())
+                    .buttonStyle(PillrSurfaceButtonStyle(isEnabled: canCheckInteractions))
 
                 }
                 .padding(.top, 24)
@@ -455,7 +444,7 @@ struct MedicationInteractionSelectionSheet: View {
                                         showingDetailedResults = true
                                     }
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(Color.pillrAccent)
+                                    .buttonStyle(PillrSurfaceButtonStyle())
                                 }
                                 .padding(.horizontal)
                                 
@@ -468,18 +457,8 @@ struct MedicationInteractionSelectionSheet: View {
                                     Button("View \(interactions.count - 3) More Interactions") {
                                         showingDetailedResults = true
                                     }
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(Color.pillrAccent)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(Color.white.opacity(0.04))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                                    .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                                            )
-                                    )
+                                    .buttonStyle(PillrSurfaceButtonStyle())
                                     .padding(.horizontal)
                                 }
                             }

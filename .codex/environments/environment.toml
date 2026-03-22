@@ -52,3 +52,18 @@ xcodebuild -scheme "Pillr copy" -destination 'platform=iOS Simulator,name=iPhone
 xcrun simctl install booted "build/Build/Products/Debug-iphonesimulator/Pillr copy.app"
 xcrun simctl launch --console booted app.PillrXcode
 '''
+
+[[actions]]
+name = "XCODE TEST"
+icon = "run"
+command = '''
+tell application "Xcode"
+    activate
+end tell
+
+delay 0.2
+
+tell application "System Events"
+    keystroke "r" using command down
+end tell
+'''

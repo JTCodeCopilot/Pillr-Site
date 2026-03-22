@@ -244,12 +244,12 @@ struct FilterChip: View {
         Button(action: action) {
             Text(title)
                 .font(.caption.bold())
-                .foregroundColor(isSelected ? .black : color)
+                .foregroundColor(isSelected ? Color.pillrPrimary : color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(isSelected ? color : Color.clear)
+                        .fill(isSelected ? Color.pillrBackground : Color.clear)
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
                                 .stroke(color, lineWidth: 1)
@@ -260,15 +260,24 @@ struct FilterChip: View {
     }
 }
 
-struct PrimaryButtonStyle: ButtonStyle {
+struct PillrSurfaceButtonStyle: ButtonStyle {
+    var isEnabled: Bool = true
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(Color.pillrPrimary)
+            .foregroundColor(isEnabled ? Color.pillrPrimary : Color.pillrSecondary.opacity(0.6))
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
-            .background(Color.pillrAccent)
-            .cornerRadius(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(isEnabled ? Color.pillrBackground : Color.white.opacity(0.08))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(isEnabled ? 0.0 : 0.08), lineWidth: 1)
+                    )
+            )
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }

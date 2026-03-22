@@ -60,6 +60,7 @@ struct MedicationsListView: View {
     @State private var undoToastDismissWorkItem: DispatchWorkItem?
     @State private var dashboardHighlightedMedicationIDs = Set<UUID>()
     @State private var dashboardHighlightResetWorkItem: DispatchWorkItem?
+    @State private var suppressAutoExpandForHighlightedMedicationID: UUID?
     private let undoToastDuration: TimeInterval = 5.0
     @State private var isViewActive = false
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
@@ -168,9 +169,10 @@ struct MedicationsListView: View {
                         onRequestCustomLogTimeAction: requestCustomLogTime,
                         onRequestRefillResetAction: presentRefillPrompt,
                         onPresentDailyCheckIn: presentDailyCheckIn,
-                    displayedMedications: displayedMedications,
-                    cabinetMedications: cabinetMedications,
+                        displayedMedications: displayedMedications,
+                        cabinetMedications: cabinetMedications,
                         onShowCabinet: handleCabinetTap,
+                        suppressAutoExpandForHighlightedMedicationID: $suppressAutoExpandForHighlightedMedicationID,
                         healthKitManager: healthKitManager,
                         referenceDate: referenceDate,
                         onHighlightOverdueMedications: highlightOverdueMedications,
@@ -561,8 +563,8 @@ struct MedicationsListView: View {
 
         if let firstOverdue = sortedMedications(displayedMedications, logs: store.logs, referenceDate: referenceDate)
             .first(where: { overdueIDs.contains($0.logReferenceID ?? $0.id) }) {
+            suppressAutoExpandForHighlightedMedicationID = firstOverdue.id
             store.highlightedMedicationID = firstOverdue.id
-            store.expandedMedicationID = firstOverdue.id
         }
 
         let workItem = DispatchWorkItem {
@@ -2503,6 +2505,7 @@ fileprivate struct MedicationsListMainContent: View {
     let displayedMedications: [Medication]
     let cabinetMedications: [Medication]
     let onShowCabinet: () -> Void
+    @Binding var suppressAutoExpandForHighlightedMedicationID: UUID?
     let healthKitManager: HealthKitManager
     let referenceDate: Date
     let onHighlightOverdueMedications: () -> Void
@@ -2745,7 +2748,9 @@ fileprivate struct MedicationsListMainContent: View {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
                         proxy.scrollTo(target, anchor: .top)
                     }
-                    if store.notificationHighlightMedicationID != target {
+                    if suppressAutoExpandForHighlightedMedicationID == target {
+                        suppressAutoExpandForHighlightedMedicationID = nil
+                    } else if store.notificationHighlightMedicationID != target {
                         store.expandedMedicationID = target
                     }
                     DispatchQueue.main.async {
@@ -3210,7 +3215,7 @@ fileprivate enum MedicationCardPalette {
     static let secondaryText = Color(hex: "#D6DBD3")
     static let timeText = Color(hex: "#E8ECE6")
     static let primaryAction = Color(hex: "#424C43")
-    static let urgency = Color(hex: "#E07A6F")
+    static let urgency = Color(hex: "#F4D4A0")
     static let takenBackground = Color(hex: "#DDE5DF")
     static let takenTitleText = Color(hex: "#2F3A33")
     static let takenSecondaryText = Color(hex: "#5F6E64")

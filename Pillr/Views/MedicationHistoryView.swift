@@ -514,11 +514,6 @@ struct MedicationHistoryView: View {
     
     private var timelineSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Rectangle()
-                .fill(Color.white.opacity(0.08))
-                .frame(height: 1)
-                .padding(.bottom, 2)
-
             ForEach(groupedLogs, id: \.date) { date, logs in
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 8) {
@@ -657,7 +652,7 @@ private struct MedicationTimelineRow: View {
                 HStack(spacing: 8) {
                     HistoryChip(
                         text: log.skipped ? "Skipped" : "Taken",
-                        tint: log.skipped ? Color(hex: "#D78B7E") : Color.pillrSecondary,
+                        tint: log.skipped ? Color(hex: "#E7E0D9") : Color.pillrSecondary,
                         style: .prominent
                     )
 
