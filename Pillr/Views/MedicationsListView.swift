@@ -3640,6 +3640,9 @@ fileprivate struct MedicationRowHeaderView: View {
         let separator = Text(" • ")
             .font(.system(size: 15, weight: .regular))
             .foregroundColor(headerSecondaryColor.opacity(subtitleOpacity))
+        let statusSeparator = Text("  • ")
+            .font(.system(size: 15, weight: .regular))
+            .foregroundColor(headerSecondaryColor.opacity(subtitleOpacity))
 
         var text = Text("")
 
@@ -3660,7 +3663,7 @@ fileprivate struct MedicationRowHeaderView: View {
 
         if display.show {
             if !dosageAmountLine.isEmpty || !scheduleLine.isEmpty {
-                text = text + separator
+                text = text + statusSeparator
             }
             text = text + Text(display.text)
                 .font(.system(size: 15, weight: .semibold))
@@ -4490,8 +4493,17 @@ struct MedicationRow: View {
 
     // Enhanced border overlay with better visual feedback
     private var enhancedBorderOverlay: some View {
-        let borderColor = MedicationCardPalette.divider
-        let borderWidth: CGFloat = 1.1
+        let isOverdueCard = isOverdueBadgeActive || {
+            switch cycleStatus {
+            case .overdue:
+                return true
+            default:
+                return false
+            }
+        }()
+
+        let borderColor = isOverdueCard ? MedicationCardPalette.urgency : MedicationCardPalette.divider
+        let borderWidth: CGFloat = isOverdueCard ? 1.0 : 1.1
         let showSkippedGlow = false
         
         return ZStack {
@@ -4505,17 +4517,7 @@ struct MedicationRow: View {
             }
 
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            borderColor.opacity(0.65),
-                            borderColor.opacity(0.3)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: borderWidth
-                )
+                .stroke(borderColor.opacity(isOverdueCard ? 0.95 : 0.65), lineWidth: borderWidth)
         }
     }
 

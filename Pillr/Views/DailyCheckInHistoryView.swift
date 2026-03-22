@@ -262,17 +262,12 @@ struct DailyCheckInHistoryView: View {
                         }
                     }
                     .padding(.horizontal, 18)
-                    .padding(.vertical, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 20)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Reflection")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(ReflectJournalTheme.textPrimary)
-                        .tracking(0.2)
-                }
                 if isModal {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button("Close") {
@@ -410,42 +405,33 @@ struct DailyCheckInHistoryView: View {
     }
 
     private var headerSection: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Reflection")
-                    .journalTitle()
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Reflection")
+                .font(.system(size: 30, weight: .semibold))
+                .foregroundColor(ReflectJournalTheme.textPrimary)
 
-                Text("\(filteredCheckInLogs.count) \(filteredCheckInLogs.count == 1 ? "entry" : "entries") logged")
-                    .journalSubtitle()
+            Text(headerSummaryText)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundColor(ReflectJournalTheme.textSecondary)
 
-                if hasCustomDateFilter {
-                    Text(dateRangeLabel)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(ReflectJournalTheme.textSecondary)
-                }
-            }
-
-            Spacer()
-
-            if let stats = last7DayStats {
-                VStack(alignment: .trailing, spacing: 6) {
-                    Text("Avg Overall \(stats.avgOverall)")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(ReflectJournalTheme.textPrimary)
-
-                    Text("Best day \(stats.bestDay)")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(ReflectJournalTheme.textSecondary)
-
-                    Text("Worst day \(stats.worstDay)")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(ReflectJournalTheme.textSecondary)
-                }
-                .multilineTextAlignment(.trailing)
-                .padding(.top, -2)
+            if hasCustomDateFilter {
+                Text(dateRangeLabel)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(ReflectJournalTheme.textSecondary)
+                    .padding(.top, 6)
             }
         }
-        .padding(.top, 16)
+        .padding(.top, 4)
+    }
+
+    private var headerSummaryText: String {
+        let entryText = "\(filteredCheckInLogs.count) \(filteredCheckInLogs.count == 1 ? "entry" : "entries") logged"
+
+        guard let stats = last7DayStats else {
+            return entryText
+        }
+
+        return "\(entryText)  •  Avg overall \(stats.avgOverall)"
     }
 
     private var reflectionInfoCard: some View {

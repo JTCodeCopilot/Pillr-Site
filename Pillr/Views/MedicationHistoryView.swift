@@ -146,16 +146,12 @@ struct MedicationHistoryView: View {
                         }
                     }
                     .padding(.horizontal, 18)
-                    .padding(.vertical, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 20)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("History")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(Color.pillrBackground)
-                }
                 if isModal {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button("Close") {
@@ -226,7 +222,7 @@ struct MedicationHistoryView: View {
                 .font(.system(size: 15, weight: .regular))
                 .foregroundColor(Color.pillrSecondary.opacity(0.65))
         }
-        .padding(.top, 16)
+        .padding(.top, 4)
     }
     
     private var dateRangeFullScreen: some View {
