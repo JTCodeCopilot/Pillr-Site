@@ -835,6 +835,15 @@ a {
   margin: 10px 0 0;
 }
 
+.article-page .reveal,
+.article-points .reveal,
+.article-faq-list .reveal {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition: none;
+}
+
 .site-footer {
   padding: 70px 0 90px;
   border-top: 1px solid var(--line);
