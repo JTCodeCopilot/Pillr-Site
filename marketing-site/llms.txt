@@ -39,5 +39,10 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 
 ## More Context
 - Detailed profile: https://pillr.management/llms-full.txt
+- Guide: https://pillr.management/do-i-have-adhd.html
+- Guide: https://pillr.management/what-does-adhd-look-like-in-adults.html
+- Guide: https://pillr.management/how-is-adhd-diagnosed.html
+- Guide: https://pillr.management/what-treatment-helps-adhd.html
+- Guide: https://pillr.management/how-to-manage-adhd-medication-every-day.html
 
-Last updated: 2026-02-06
+Last updated: 2026-03-24

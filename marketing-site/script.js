@@ -13,6 +13,10 @@ const TRACKING_QUERY_PARAMS = [
 
 const normalizeCanonicalUrl = () => {
   const current = new URL(window.location.href);
+  const isWebProtocol = current.protocol === "http:" || current.protocol === "https:";
+
+  if (!isWebProtocol) return;
+
   let changed = false;
 
   if (current.protocol !== "https:") {

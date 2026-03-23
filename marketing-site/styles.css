@@ -253,7 +253,9 @@ a {
 .how,
 .benefits,
 .faq,
-.cta {
+.cta,
+.guides,
+.article-page {
   padding: var(--section-space) 0;
 }
 
@@ -641,6 +643,198 @@ a {
   color: var(--muted);
 }
 
+.article-grid,
+.article-points,
+.article-faq-list {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.guides-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+.guide-card,
+.article-aside,
+.article-body,
+.article-callout,
+.article-tip {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.guide-card {
+  padding: clamp(22px, 2.4vw, 32px);
+  background: linear-gradient(170deg, #fff 0%, #f9faf9 100%);
+  min-width: 0;
+}
+
+.guide-card h3,
+.article-body h2,
+.article-callout h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+}
+
+.guide-card h3 {
+  margin: 14px 0 10px;
+  font-size: 1.45rem;
+  line-height: 1.02;
+}
+
+.guide-card p,
+.article-intro,
+.article-body p,
+.article-aside p,
+.article-callout p,
+.article-tip p,
+.article-faq-item p,
+.article-body li,
+.article-aside li {
+  color: var(--muted);
+}
+
+.guide-card p {
+  margin: 0 0 18px;
+}
+
+.guide-card .button {
+  width: fit-content;
+}
+
+.article-hero {
+  padding: clamp(28px, 4vw, 54px) 0 clamp(24px, 3.5vw, 42px);
+}
+
+.article-hero-shell {
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 247, 0.98) 100%);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius-lg) + 8px);
+  box-shadow: var(--shadow-soft);
+  padding: clamp(28px, 4vw, 54px);
+}
+
+.article-hero-shell .hero-title {
+  max-width: 12ch;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.article-hero-shell .cta-group {
+  justify-content: flex-start;
+}
+
+.article-intro {
+  max-width: 62ch;
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+
+.article-page {
+  padding-top: 18px;
+}
+
+.article-body {
+  grid-column: span 8;
+  padding: clamp(26px, 3vw, 40px);
+}
+
+.article-body h2 {
+  margin: 0 0 12px;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1;
+}
+
+.article-body h3 {
+  margin: 24px 0 8px;
+  font-size: 1.2rem;
+}
+
+.article-body p {
+  margin: 0 0 16px;
+}
+
+.article-body ul {
+  margin: 0 0 18px;
+  padding-left: 20px;
+}
+
+.article-aside {
+  grid-column: span 4;
+  padding: clamp(22px, 2.4vw, 30px);
+  align-self: start;
+  position: sticky;
+  top: 96px;
+}
+
+.article-aside h3,
+.article-tip h3,
+.article-faq-item summary {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.article-aside ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.article-points {
+  margin-top: var(--space-3);
+}
+
+.article-callout {
+  grid-column: span 6;
+  padding: clamp(22px, 2.4vw, 32px);
+}
+
+.article-callout h2 {
+  margin: 0 0 10px;
+  font-size: 1.55rem;
+  line-height: 1.02;
+}
+
+.article-tip {
+  margin-top: 22px;
+  padding: 18px 20px;
+  background: linear-gradient(170deg, #fff 0%, #f7f9f7 100%);
+}
+
+.article-faq-list {
+  margin-top: var(--space-3);
+}
+
+.article-faq-item {
+  grid-column: span 6;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 18px 20px;
+}
+
+.article-faq-item summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+
+.article-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.article-faq-item p {
+  margin: 10px 0 0;
+}
+
 .site-footer {
   padding: 70px 0 90px;
   border-top: 1px solid var(--line);
@@ -794,7 +988,10 @@ a {
   .steps,
   .feature-band,
   .benefit-grid,
-  .faq-list {
+  .faq-list,
+  .article-grid,
+  .article-points,
+  .article-faq-list {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
@@ -803,7 +1000,11 @@ a {
   .feature-copy,
   .feature-visual,
   .benefit-card,
-  .faq-item {
+  .faq-item,
+  .article-body,
+  .article-aside,
+  .article-callout,
+  .article-faq-item {
     grid-column: span 3;
   }
 
@@ -832,7 +1033,10 @@ a {
   .feature-band,
   .benefit-grid,
   .faq-list,
-  .footer-grid {
+  .footer-grid,
+  .article-grid,
+  .article-points,
+  .article-faq-list {
     grid-template-columns: 1fr;
   }
 
@@ -841,12 +1045,20 @@ a {
   .feature-copy,
   .feature-visual,
   .benefit-card,
-  .faq-item {
+  .faq-item,
+  .article-body,
+  .article-aside,
+  .article-callout,
+  .article-faq-item {
     grid-column: auto;
   }
 
   .footer-grid {
     gap: var(--space-2);
+  }
+
+  .article-aside {
+    position: static;
   }
 }
 
