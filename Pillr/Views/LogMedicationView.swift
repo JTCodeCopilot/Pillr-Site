@@ -1492,7 +1492,7 @@ struct RatingControl: View {
         value: Binding<Int>,
         lowLabel: String,
         highLabel: String,
-        activeColor: Color = Color.pillrSecondary
+        activeColor: Color = Color(hex: "#F4D4A0")
     ) {
         self.title = title
         self._value = value

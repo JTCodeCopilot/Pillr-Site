@@ -28,7 +28,7 @@ struct AddMedicationView: View {
 
     // Schedule / reminders
     @State private var frequency: String = "As needed"
-    @State private var timeToTake: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+    @State private var timeToTake: Date = AddMedicationView.currentReminderDefaultTime()
     @State private var reminderTimes: [Date] = []
     @State private var enableNotification: Bool = true
     @State private var isOneTimeWithFollowUp: Bool = false
@@ -2168,6 +2168,13 @@ struct AddMedicationView: View {
         }
     }
 
+    private static func currentReminderDefaultTime() -> Date {
+        let now = Date()
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: now)
+        return calendar.date(from: components) ?? now
+    }
+
     private func setupReminderTimesForFrequency(_ frequency: String) {
         if isPremiumFrequency(frequency) && !userSettings.isPremiumUser {
             showingPremiumUpgrade = true
@@ -2238,7 +2245,7 @@ struct AddMedicationView: View {
         iconName = "pill"
         currentStep = .basics
         frequency = "As needed"
-        timeToTake = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+        timeToTake = Self.currentReminderDefaultTime()
         reminderTimes = []
         notes = ""
         enableNotification = true

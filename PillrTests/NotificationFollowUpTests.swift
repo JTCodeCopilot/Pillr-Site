@@ -561,4 +561,149 @@ struct NotificationFollowUpTests {
         #expect(store.dailyCheckInContext?.logID == logID)
         #expect(store.dailyCheckInContext?.entrySource == .notification)
     }
+
+    @Test
+    func unknownActionWithMedicationReminderHighlightsMedication() async throws {
+        clearPillrUserDefaults()
+
+        let notificationManager = FakeNotificationManager()
+        let cloudSync = FakeCloudKitSync()
+        let store = MedicationStore(
+            isPreview: true,
+            notificationManager: notificationManager,
+            cloudSync: cloudSync
+        )
+
+        let baseTime = makeDate(year: 2025, month: 2, day: 5, hour: 8, minute: 0)
+        let medication = Medication(
+            id: UUID(),
+            name: "Highlight Med",
+            dosage: "10",
+            dosageUnit: "mg",
+            iconName: "pill",
+            createdAt: baseTime,
+            updatedAt: baseTime,
+            frequency: "Once daily",
+            medicationType: .other,
+            isExtendedRelease: false,
+            onsetMinutes: nil,
+            durationMinutes: nil,
+            effectsGoneMinutes: nil,
+            enableDailyCheckIn: false,
+            enableStimulantPhaseNotifications: false,
+            dailyCheckInTime: nil,
+            timeToTake: baseTime,
+            reminderTimes: [baseTime],
+            notes: nil,
+            notificationID: UUID(),
+            notificationIDs: [UUID()],
+            pillCount: nil,
+            pillsPerDose: 1,
+            refillThreshold: nil,
+            isSkipped: false,
+            isOneTimeWithFollowUp: false,
+            isDeleted: false,
+            logReferenceID: nil,
+            logEntryID: nil,
+            cloudLastModified: nil
+        )
+        store.medications = [medication]
+
+        let delegate = NotificationDelegate(
+            notificationManager: notificationManager,
+            medicationStore: store
+        )
+
+        delegate._test_handleNotification(
+            actionIdentifier: "DEFAULT_ACTION",
+            userInfo: ["medicationID": medication.id.uuidString],
+            notificationIdentifier: UUID().uuidString,
+            categoryIdentifier: "MEDICATION_REMINDER",
+            notificationDate: baseTime
+        )
+
+        #expect(store.highlightedMedicationID == medication.id)
+        #expect(store.notificationHighlightMedicationID == medication.id)
+    }
+
+    @Test
+    func duplicateActionsWithDifferentScheduleKeysAreProcessedSeparately() async throws {
+        clearPillrUserDefaults()
+
+        let notificationManager = FakeNotificationManager()
+        let cloudSync = FakeCloudKitSync()
+        let store = MedicationStore(
+            isPreview: true,
+            notificationManager: notificationManager,
+            cloudSync: cloudSync
+        )
+
+        let baseTime = makeDate(year: 2025, month: 2, day: 6, hour: 8, minute: 0)
+        let baseNotificationID = UUID()
+        let medication = Medication(
+            id: UUID(),
+            name: "Repeat Med",
+            dosage: "10",
+            dosageUnit: "mg",
+            iconName: "pill",
+            createdAt: baseTime,
+            updatedAt: baseTime,
+            frequency: "Once daily",
+            medicationType: .other,
+            isExtendedRelease: false,
+            onsetMinutes: nil,
+            durationMinutes: nil,
+            effectsGoneMinutes: nil,
+            enableDailyCheckIn: false,
+            enableStimulantPhaseNotifications: false,
+            dailyCheckInTime: nil,
+            timeToTake: baseTime,
+            reminderTimes: [baseTime],
+            notes: nil,
+            notificationID: baseNotificationID,
+            notificationIDs: [baseNotificationID],
+            pillCount: nil,
+            pillsPerDose: 1,
+            refillThreshold: nil,
+            isSkipped: false,
+            isOneTimeWithFollowUp: true,
+            isDeleted: false,
+            logReferenceID: nil,
+            logEntryID: nil,
+            cloudLastModified: nil
+        )
+        store.medications = [medication]
+
+        let delegate = NotificationDelegate(
+            notificationManager: notificationManager,
+            medicationStore: store
+        )
+        let identifier = "\(baseNotificationID.uuidString)_day_20250206"
+
+        delegate._test_handleNotification(
+            actionIdentifier: "REMIND_LATER",
+            userInfo: [
+                "medicationID": medication.id.uuidString,
+                "reminderIndex": 0,
+                "scheduleDayKey": "20250206"
+            ],
+            notificationIdentifier: identifier,
+            categoryIdentifier: "MEDICATION_REMINDER",
+            notificationDate: baseTime
+        )
+
+        delegate._test_handleNotification(
+            actionIdentifier: "REMIND_LATER",
+            userInfo: [
+                "medicationID": medication.id.uuidString,
+                "reminderIndex": 0,
+                "scheduleDayKey": "20250207"
+            ],
+            notificationIdentifier: identifier,
+            categoryIdentifier: "MEDICATION_REMINDER",
+            notificationDate: baseTime.addingTimeInterval(24 * 60 * 60)
+        )
+
+        #expect(notificationManager.scheduledOneTime.count == 2)
+    }
 }

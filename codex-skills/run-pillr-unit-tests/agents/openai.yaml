@@ -1,0 +1,4 @@
+version: 1
+display_name: Run Pillr Unit Tests
+short_description: Run the Pillr unit tests, fix project failures, and report the result.
+default_prompt: Run Pillr unit tests and fix failures.

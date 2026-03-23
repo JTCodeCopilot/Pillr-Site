@@ -2355,7 +2355,7 @@ fileprivate struct CabinetMedicationRow: View {
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color(hex: "#4A4A45"))
+                                .fill(Color(hex: "#444C44"))
                         )
                 }
                 .buttonStyle(.plain)
@@ -2372,7 +2372,7 @@ fileprivate struct CabinetMedicationRow: View {
                         .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color(hex: "#4A4A45"))
+                            .fill(Color(hex: "#444C44"))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                                     .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
@@ -2517,6 +2517,7 @@ fileprivate struct MedicationsListMainContent: View {
     fileprivate struct NextScheduledDose {
         let medicationName: String
         let dueTime: Date
+        let medicationsAtSameTimeCount: Int
     }
 
     fileprivate struct TodaySummaryData {
@@ -2524,6 +2525,7 @@ fileprivate struct MedicationsListMainContent: View {
         let takenCount: Int
         let lowSupplyCount: Int
         let overdueDose: NextScheduledDose?
+        let overdueDoses: [NextScheduledDose]
         let nextDose: NextScheduledDose?
 
         var title: String {
@@ -2574,6 +2576,7 @@ fileprivate struct MedicationsListMainContent: View {
             takenCount: takenCount,
             lowSupplyCount: lowSupplyCount,
             overdueDose: nextOverdueDose,
+            overdueDoses: overdueScheduledDoses,
             nextDose: nextScheduledDose
         )
     }
@@ -2586,7 +2589,7 @@ fileprivate struct MedicationsListMainContent: View {
     }
 
     private var nextScheduledDose: NextScheduledDose? {
-        store.activeMedications
+        let doses = store.activeMedications
             .compactMap { medication -> NextScheduledDose? in
                 guard let dueTime = nextPendingDueTime(for: medication),
                       dueTime >= referenceDate else {
@@ -2595,14 +2598,30 @@ fileprivate struct MedicationsListMainContent: View {
 
                 return NextScheduledDose(
                     medicationName: medication.name,
-                    dueTime: dueTime
+                    dueTime: dueTime,
+                    medicationsAtSameTimeCount: 1
                 )
             }
             .sorted { $0.dueTime < $1.dueTime }
-            .first
+
+        guard let nextDose = doses.first else { return nil }
+
+        let sameTimeCount = doses.filter {
+            Calendar.current.compare($0.dueTime, to: nextDose.dueTime, toGranularity: .minute) == .orderedSame
+        }.count
+
+        return NextScheduledDose(
+            medicationName: nextDose.medicationName,
+            dueTime: nextDose.dueTime,
+            medicationsAtSameTimeCount: sameTimeCount
+        )
     }
 
     private var nextOverdueDose: NextScheduledDose? {
+        overdueScheduledDoses.first
+    }
+
+    private var overdueScheduledDoses: [NextScheduledDose] {
         store.activeMedications
             .compactMap { medication -> NextScheduledDose? in
                 guard let dueTime = nextPendingDueTime(for: medication),
@@ -2612,11 +2631,11 @@ fileprivate struct MedicationsListMainContent: View {
 
                 return NextScheduledDose(
                     medicationName: medication.name,
-                    dueTime: dueTime
+                    dueTime: dueTime,
+                    medicationsAtSameTimeCount: 1
                 )
             }
             .sorted { $0.dueTime < $1.dueTime }
-            .first
     }
 
     private func horizontalInsets(for width: CGFloat) -> CGFloat {
@@ -2788,7 +2807,7 @@ fileprivate struct TodaySummaryCard: View {
 
     private static let headerDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.setLocalizedDateFormatFromTemplate("EEE MMM d")
+        formatter.setLocalizedDateFormatFromTemplate("EEEE, d MMMM")
         return formatter
     }()
 
@@ -2817,10 +2836,12 @@ fileprivate struct TodaySummaryCard: View {
                         .foregroundColor(MedicationCardPalette.titleText)
                         .lineLimit(2)
 
-                    Text(primarySubtitle)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.9))
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let primarySubtitle {
+                        Text(primarySubtitle)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.9))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
 
                 GeometryReader { geometry in
@@ -2907,7 +2928,8 @@ fileprivate struct TodaySummaryCard: View {
                 title: "Overdue",
                 value: "\(summary.overdueCount)",
                 accent: summary.overdueCount > 0 ? MedicationCardPalette.urgency : MedicationCardPalette.titleText.opacity(0.82),
-                isEmphasized: summary.overdueCount > 0
+                isEmphasized: summary.overdueCount > 0,
+                showsChevron: summary.overdueCount > 0
             )
         }
         .buttonStyle(.plain)
@@ -2949,35 +2971,82 @@ fileprivate struct TodaySummaryCard: View {
                 if summary.overdueCount > 1 {
                     let additionalCount = summary.overdueCount - 1
                     return additionalCount == 1
-                        ? "\(overdueDose.medicationName) and 1 more are overdue"
-                        : "\(overdueDose.medicationName) and \(additionalCount) more are overdue"
+                        ? "\(overdueDose.medicationName) and one other haven't been taken yet"
+                        : "\(overdueDose.medicationName) and \(additionalCount) others haven't been taken yet"
                 }
-                return "\(overdueDose.medicationName) is overdue"
+                return "\(overdueDose.medicationName) is past due"
             }
-            return summary.overdueCount == 1 ? "1 dose is overdue" : "\(summary.overdueCount) doses are overdue"
+            return summary.overdueCount == 1 ? "You've missed a dose" : "You've missed \(summary.overdueCount) doses"
         }
         if let nextDose = summary.nextDose {
-            return "Your next dose is at \(Self.timeFormatter.string(from: nextDose.dueTime))\(nextDoseDayText(for: nextDose.dueTime))"
+            return nextDoseTitle(for: nextDose.dueTime)
         }
         if summary.takenCount > 0 {
-            return "All meds taken today"
+            return "All done for today"
         }
-        return "No meds to take today"
+        return "Nothing scheduled today"
     }
 
-    private var primarySubtitle: String {
+    private var primarySubtitle: String? {
         if let overdueDose = summary.overdueDose, summary.overdueCount > 0 {
             return summary.overdueCount > 1
-                ? "Start with \(overdueDose.medicationName)."
-                : "Overdue: \(overdueDose.medicationName)"
+                ? overdueNamesSubtitle(excluding: overdueDose.medicationName)
+                : "Missed at \(Self.timeFormatter.string(from: overdueDose.dueTime))"
         }
         if let nextDose = summary.nextDose {
-            return "Next: \(nextDose.medicationName)"
+            return nextDoseSubtitle(for: nextDose)
         }
         if summary.takenCount > 0 {
-            return "Nothing else due today."
+            return nil
         }
-        return "Reminders will appear here when due."
+        return nil
+    }
+
+    private func nextDoseTitle(for dueTime: Date) -> String {
+        let time = Self.timeFormatter.string(from: dueTime)
+        let calendar = Calendar.current
+
+        if calendar.isDate(dueTime, inSameDayAs: referenceDate) {
+            return "Next dose at \(time)"
+        }
+
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: referenceDate),
+           calendar.isDate(dueTime, inSameDayAs: tomorrow) {
+            return "Next dose tomorrow at \(time)"
+        }
+
+        return "Next dose \(Self.weekdayFormatter.string(from: dueTime)) at \(time)"
+    }
+
+    private func nextDoseSubtitle(for nextDose: MedicationsListMainContent.NextScheduledDose) -> String {
+        let time = Self.timeFormatter.string(from: nextDose.dueTime)
+
+        if nextDose.medicationsAtSameTimeCount > 1 {
+            let otherCount = nextDose.medicationsAtSameTimeCount - 1
+            return otherCount == 1
+                ? "\(nextDose.medicationName) and 1 other at \(time)"
+                : "\(nextDose.medicationName) and \(otherCount) others at \(time)"
+        }
+
+        return "\(nextDose.medicationName) · \(time)\(nextDoseDayText(for: nextDose.dueTime))"
+    }
+
+    private func overdueNamesSubtitle(excluding primaryName: String) -> String? {
+        let additionalNames = summary.overdueDoses
+            .map(\.medicationName)
+            .filter { $0 != primaryName }
+
+        guard !additionalNames.isEmpty else { return nil }
+
+        if additionalNames.count == 1 {
+            return "Also overdue: \(additionalNames[0])"
+        }
+
+        if additionalNames.count == 2 {
+            return "Also overdue: \(additionalNames[0]) and \(additionalNames[1])"
+        }
+
+        return "Also overdue: \(additionalNames[0]), \(additionalNames[1]), and \(additionalNames.count - 2) more"
     }
 
     private func nextDoseDayText(for dueTime: Date) -> String {
@@ -3000,7 +3069,8 @@ fileprivate struct TodaySummaryCard: View {
         value: String,
         accent: Color,
         background: Color = MedicationCardPalette.background,
-        isEmphasized: Bool = false
+        isEmphasized: Bool = false,
+        showsChevron: Bool = false
     ) -> some View {
         HStack(spacing: 8) {
             Text(value)
@@ -3012,6 +3082,12 @@ fileprivate struct TodaySummaryCard: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.82))
                 .lineLimit(1)
+
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.72))
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 12)
@@ -4622,6 +4698,9 @@ struct MedicationRow: View {
             reminderIndex: reminderIndex
         ) {
             onPresentUndoToast(action)
+            if store.expandedMedicationID == medication.id {
+                store.expandedMedicationID = nil
+            }
         }
     }
 
@@ -4635,6 +4714,9 @@ struct MedicationRow: View {
                 reminderIndex: nil
             ) {
                 onPresentUndoToast(action)
+                if store.expandedMedicationID == medication.id {
+                    store.expandedMedicationID = nil
+                }
             }
             return
         }
@@ -4649,6 +4731,9 @@ struct MedicationRow: View {
             reminderIndex: index
         ) {
             onPresentUndoToast(action)
+            if store.expandedMedicationID == medication.id {
+                store.expandedMedicationID = nil
+            }
         }
     }
 
@@ -4838,6 +4923,12 @@ fileprivate struct MedicationRowDetailsView: View {
         let source: FocusTimingSource
     }
 
+    private func collapseCard() {
+        if store.expandedMedicationID == medication.id {
+            store.expandedMedicationID = nil
+        }
+    }
+
     private var focusWindowDescriptions: [FocusWindowDescription] {
         guard let onset = medication.onsetMinutes,
               let duration = medication.durationMinutes else {
@@ -4945,7 +5036,10 @@ fileprivate struct MedicationRowDetailsView: View {
 
             VStack(spacing: 8) {
                 HStack(spacing: 12) {
-                    Button(action: onEditTap) {
+                    Button {
+                        onEditTap()
+                        collapseCard()
+                    } label: {
                         Text("Edit")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(actionButtonTextColor)
@@ -4953,7 +5047,7 @@ fileprivate struct MedicationRowDetailsView: View {
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color(hex: "#4A4A45"))
+                                    .fill(Color(hex: "#444C44"))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                                             .stroke(detailDividerColor.opacity(0.65), lineWidth: 0.8)
@@ -4974,7 +5068,7 @@ fileprivate struct MedicationRowDetailsView: View {
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color(hex: "#4A4A45"))
+                                    .fill(Color(hex: "#444C44"))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                                             .stroke(detailDividerColor.opacity(0.65), lineWidth: 0.8)
@@ -4987,7 +5081,10 @@ fileprivate struct MedicationRowDetailsView: View {
                 }
 
                 if showingDeleteAction, let moreActionTitle, let moreActionTap = onMoreActionTap {
-                    Button(action: moreActionTap) {
+                    Button {
+                        moreActionTap()
+                        collapseCard()
+                    } label: {
                         Text(moreActionTitle)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(actionButtonTextColor)
@@ -5010,6 +5107,7 @@ fileprivate struct MedicationRowDetailsView: View {
                     Button {
                         HapticManager.shared.warningNotification()
                         deleteTap()
+                        collapseCard()
                     } label: {
                         Text("Delete medication")
                             .font(.system(size: 14, weight: .semibold))

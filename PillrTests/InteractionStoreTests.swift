@@ -103,4 +103,71 @@ struct InteractionStoreTests {
         store.searchInteractions(query: "Major")
         #expect(store.searchResults.count == 1)
     }
+
+    @Test
+    func recentSearchesIgnoreBlanksDeduplicateAndCapAtLimit() async throws {
+        clearPillrUserDefaults()
+        let store = InteractionStore.shared
+        resetInteractionStoreState(store)
+
+        store.addRecentSearch("  Aspirin and Warfarin  ")
+        store.addRecentSearch("aspirin and warfarin")
+        store.addRecentSearch("   ")
+
+        for index in 0..<12 {
+            store.addRecentSearch("Search \(index)")
+        }
+
+        #expect(store.recentSearches.count == 10)
+        #expect(store.recentSearches.first == "Search 11")
+        #expect(store.recentSearches.contains("Aspirin and Warfarin") == false)
+    }
+
+    @Test
+    func filteringSortingAndClearingSearchResultsWorkTogether() async throws {
+        clearPillrUserDefaults()
+        let store = InteractionStore.shared
+        resetInteractionStoreState(store)
+
+        store.interactionHistory = [
+            DrugInteraction(drugA: "Zoloft", drugB: "Coffee", severity: .minor, description: "", recommendedAction: "", timestamp: Date()),
+            DrugInteraction(drugA: "Aspirin", drugB: "Warfarin", severity: .major, description: "", recommendedAction: "", timestamp: Date()),
+            DrugInteraction(drugA: "Benadryl", drugB: "Alcohol", severity: .major, description: "", recommendedAction: "", timestamp: Date())
+        ]
+
+        store.filterBySeverity(.major)
+        #expect(store.filteredHistory.count == 2)
+
+        store.setSortOrder(.alphabetical)
+        #expect(store.filteredHistory.first?.drugA == "Aspirin")
+
+        store.searchInteractions(query: "warfarin")
+        #expect(store.searchResults.count == 1)
+        store.clearSearchResults()
+        #expect(store.searchResults.isEmpty)
+    }
+
+    @Test
+    func exportTextIncludesSavedInteractionDetails() async throws {
+        clearPillrUserDefaults()
+        let store = InteractionStore.shared
+        resetInteractionStoreState(store)
+
+        store.interactionHistory = [
+            DrugInteraction(
+                drugA: "Aspirin",
+                drugB: "Warfarin",
+                severity: .major,
+                description: "Bleeding risk",
+                recommendedAction: "Monitor closely",
+                timestamp: makeDate(year: 2025, month: 1, day: 20, hour: 9, minute: 0)
+            )
+        ]
+
+        let text = store.exportInteractionsAsText()
+        #expect(text.contains("Drug Interaction History"))
+        #expect(text.contains("Aspirin + Warfarin"))
+        #expect(text.contains("Bleeding risk"))
+        #expect(text.contains("Monitor closely"))
+    }
 }

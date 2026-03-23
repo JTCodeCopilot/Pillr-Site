@@ -1100,10 +1100,16 @@ private struct FocusWindowRow: View {
                         .padding(.vertical, 14)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(FocusTimelineCardPalette.secondaryTint)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(FocusTimelineCardPalette.divider.opacity(0.3), lineWidth: 1)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            FocusTimelineCardPalette.secondaryTint.opacity(0.22),
+                                            FocusTimelineCardPalette.secondaryTint.opacity(0.12),
+                                            FocusTimelineCardPalette.secondaryTint.opacity(0.0)
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
                                 )
                         )
                     }

@@ -683,4 +683,81 @@ struct MedicationStoreTests {
         store.removeDoseLog(log)
         #expect(store.medications.first?.pillCount == 10)
     }
+
+    @Test
+    func toggleSkipNeedsRefillAndRemainingCountReflectMedicationState() async throws {
+        clearPillrUserDefaults()
+        let store = MedicationStore(isPreview: true)
+        let baseTime = makeDate(year: 2025, month: 1, day: 14, hour: 8, minute: 0)
+        let med = makeMedication(time: baseTime, pillCount: 4, pillsPerDose: 1, refillThreshold: 5)
+        store.medications = [med]
+
+        #expect(store.getRemainingPillCount(for: med.id) == 4)
+        #expect(store.needsRefill(medicationID: med.id) == true)
+        #expect(store.medications.first?.isSkipped == false)
+
+        store.toggleSkipStatus(for: med.id)
+        #expect(store.medications.first?.isSkipped == true)
+    }
+
+    @Test
+    func hideLogFromMyMedsAndDeleteMedicationClearState() async throws {
+        clearPillrUserDefaults()
+        let notificationManager = FakeNotificationManager()
+        let cloudSync = FakeCloudKitSync()
+        let store = MedicationStore(
+            isPreview: true,
+            notificationManager: notificationManager,
+            cloudSync: cloudSync
+        )
+
+        let baseTime = makeDate(year: 2025, month: 1, day: 15, hour: 8, minute: 0)
+        let med = makeMedication(time: baseTime)
+        let log = MedicationLog(
+            medicationID: med.id,
+            medicationName: med.name,
+            takenAt: baseTime,
+            pillsConsumed: 1
+        )
+
+        store.medications = [med]
+        store.logs = [log]
+        store.dailyCheckInContext = DailyCheckInContext(medication: med, entrySource: .notification)
+        store.highlightedMedicationID = med.id
+        store.notificationHighlightMedicationID = med.id
+
+        store.hideLogFromMyMeds(log)
+        #expect(store.logs.first?.hiddenFromMyMeds == true)
+
+        store.deleteMedication(med)
+        #expect(store.medications.first?.isDeleted == true)
+        #expect(store.dailyCheckInContext == nil)
+        #expect(store.highlightedMedicationID == nil)
+        #expect(store.notificationHighlightMedicationID == nil)
+        #expect(notificationManager.canceledMedicationIDs.contains(med.id) == true)
+    }
+
+    @Test
+    func pendingCheckInsIgnoreDuplicatesAndMissingMedications() async throws {
+        clearPillrUserDefaults()
+        let store = MedicationStore(isPreview: true)
+        let baseTime = makeDate(year: 2025, month: 1, day: 16, hour: 8, minute: 0)
+        let med = makeMedication(time: baseTime, enableDailyCheckIn: true, dailyCheckInTime: baseTime)
+        store.medications = [med]
+
+        let existing = DailyCheckInContext(medication: med, entrySource: .notification)
+        let missingMedication = makeMedication(name: "Missing", time: baseTime)
+        let missing = DailyCheckInContext(medication: missingMedication, entrySource: .notification)
+
+        store.enqueuePendingCheckIns([
+            .daily(existing),
+            .daily(existing),
+            .daily(missing)
+        ])
+
+        #expect(store.dailyCheckInContext?.medication.id == med.id)
+        store.dailyCheckInContext = nil
+        store.presentNextPendingCheckInIfNeeded()
+        #expect(store.dailyCheckInContext == nil)
+    }
 }

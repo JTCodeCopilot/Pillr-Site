@@ -4,8 +4,13 @@ import UIKit
 import UserNotifications
 import CloudKit
 import LocalAuthentication
+import WebKit
 
 struct SettingsView: View {
+    private enum ScrollTarget: Hashable {
+        case feedbackForm
+    }
+
     @EnvironmentObject var userSettings: UserSettings
     @EnvironmentObject var store: MedicationStore
     @ObservedObject private var storeManager = StoreManager.shared
@@ -40,21 +45,29 @@ struct SettingsView: View {
                 SettingsPalette.backgroundColor
                     .ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        headerView
-                        generalSettingsSection
-                        homeShortcutsSection
-                        securitySection
-                        interactionsSection
-                        notificationPermissionsSection
-                        iCloudSyncSection
-                        supportLinksSection
-                        Color.clear.frame(height: 20)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            headerView(scrollToFeedback: {
+                                withAnimation(.easeInOut(duration: 0.35)) {
+                                    proxy.scrollTo(ScrollTarget.feedbackForm, anchor: .top)
+                                }
+                            })
+                            generalSettingsSection
+                            homeShortcutsSection
+                            securitySection
+                            interactionsSection
+                            notificationPermissionsSection
+                            iCloudSyncSection
+                            supportLinksSection
+                            feedbackFormSection
+                                .id(ScrollTarget.feedbackForm)
+                            Color.clear.frame(height: 20)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 70)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    .padding(.bottom, 70)
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                     refreshNotificationSettings()
@@ -125,7 +138,7 @@ struct SettingsView: View {
         }
     }
 
-    private var headerView: some View {
+    private func headerView(scrollToFeedback: @escaping () -> Void) -> some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Settings")
@@ -141,7 +154,7 @@ struct SettingsView: View {
 
             HStack(spacing: 10) {
                 Button {
-                    openLink("https://tally.so/r/w2yeXV")
+                    scrollToFeedback()
                 } label: {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
                         .font(.system(size: 18, weight: .semibold))
@@ -153,20 +166,6 @@ struct SettingsView: View {
                 .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
                 .contentShape(Circle())
                 .accessibilityLabel("Feedback")
-
-                Button {
-                    openLink("https://tally.so/r/3qMdL7")
-                } label: {
-                    Image(systemName: "envelope.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color.pillrBackground)
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(.plain)
-                .frame(width: 46, height: 46)
-                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
-                .contentShape(Circle())
-                .accessibilityLabel("Contact us")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -623,17 +622,31 @@ struct SettingsView: View {
                 openLink("https://tally.so/r/3yR6M4")
             }
 
-            settingsActionRow(title: "Feedback") {
-                openLink("https://tally.so/r/w2yeXV")
-            }
-
-            settingsActionRow(title: "Contact Us") {
-                openLink("https://tally.so/r/3qMdL7")
-            }
-
             settingsActionRow(title: "Review Pillr") {
                 openLink("https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?action=write-review")
             }
+        }
+    }
+
+    private var feedbackFormSection: some View {
+        settingsSection {
+            EmbeddedFormView(urlString: "https://tally.so/embed/Ek0jVB?alignLeft=1&transparentBackground=1&dynamicHeight=1")
+                .frame(height: 490)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                )
+
+            settingsActionRow(
+                title: "Open Full Form",
+                subtitle: "Use this if the form does not load properly inside the app",
+                showChevron: false,
+                leadingIcon: "arrow.up.right.square",
+                action: {
+                    openLink("https://tally.so/embed/Ek0jVB?alignLeft=1&transparentBackground=1&dynamicHeight=1")
+                }
+            )
         }
     }
 
@@ -713,9 +726,9 @@ struct SettingsView: View {
     private func settingsSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .foregroundColor(SettingsPalette.headerColor)
+                Text(title)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(SettingsPalette.headerColor)
 
                 Divider()
                     .background(Color.white.opacity(0.08))
@@ -724,6 +737,16 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 content()
             }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 22)
+        .settingsCardStyle()
+    }
+
+    @ViewBuilder
+    private func settingsSection<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            content()
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 22)
@@ -1084,3 +1107,32 @@ struct SettingsView_Previews: PreviewProvider {
             .preferredColorScheme(.dark)
     }
 } 
+
+private struct EmbeddedFormView: UIViewRepresentable {
+    let urlString: String
+
+    func makeUIView(context: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.scrollView.isScrollEnabled = false
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.backgroundColor = .clear
+        webView.scrollView.bounces = false
+
+        if let url = URL(string: urlString) {
+            webView.load(URLRequest(url: url))
+        }
+
+        return webView
+    }
+
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        guard let currentURL = webView.url?.absoluteString, currentURL != urlString,
+              let url = URL(string: urlString) else {
+            return
+        }
+
+        webView.load(URLRequest(url: url))
+    }
+}

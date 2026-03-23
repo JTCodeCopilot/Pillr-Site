@@ -22,6 +22,15 @@ struct ModelTests {
             timeToTake: Date()
         )
         #expect(med.dosageWithUnit == "1 tablet")
+
+        med = Medication(
+            name: "Test",
+            dosage: "",
+            dosageUnit: " ml ",
+            frequency: "Once daily",
+            timeToTake: Date()
+        )
+        #expect(med.dosageWithUnit == "ml")
     }
 
     @Test
@@ -60,6 +69,8 @@ struct ModelTests {
         )
         #expect(log.isDoseLog == true)
         #expect(log.recordedIconName == "pill")
+        #expect(log.recordedDosageWithUnit == "10 mg")
+        #expect(log.recordedHasMultipleReminders == false)
     }
 
     @Test
@@ -73,5 +84,52 @@ struct ModelTests {
         )
         #expect(interaction.displayTitle == "Medication Interaction")
         #expect(DrugInteraction.InteractionSeverity.unknown.displayName == "No interaction")
+        #expect(DrugInteraction.InteractionSeverity.major.color == "#FF9800")
+    }
+
+    @Test
+    func medicationDecodeEnablesReminderFlagWhenStoredIDsExist() async throws {
+        let json = """
+        {
+          "id": "\(UUID().uuidString)",
+          "name": "Saved Med",
+          "dosage": "10",
+          "dosageUnit": "mg",
+          "frequency": "Once daily",
+          "timeToTake": 0,
+          "notificationIDs": ["\(UUID().uuidString)"]
+        }
+        """
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .deferredToDate
+        let medication = try decoder.decode(Medication.self, from: Data(json.utf8))
+        #expect(medication.reminderNotificationsEnabled == true)
+        #expect(medication.hasActiveReminder == true)
+    }
+
+    @Test
+    func medicationLogRoundTripKeepsReminderDisplayFields() async throws {
+        let original = MedicationLog(
+            medicationID: UUID(),
+            medicationName: "Round Trip",
+            takenAt: Date(),
+            pillsConsumed: 2,
+            reminderIndex: 1,
+            hiddenFromMyMeds: true,
+            medicationDosageText: "20 mg",
+            medicationIconName: "capsule",
+            medicationReminderCount: 3
+        )
+
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(MedicationLog.self, from: data)
+
+        #expect(decoded.pillsConsumed == 2)
+        #expect(decoded.reminderIndex == 1)
+        #expect(decoded.hiddenFromMyMeds == true)
+        #expect(decoded.recordedDosageWithUnit == "20 mg")
+        #expect(decoded.recordedIconName == "capsule")
+        #expect(decoded.recordedHasMultipleReminders == true)
     }
 }
