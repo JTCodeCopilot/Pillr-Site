@@ -95,10 +95,10 @@ a {
 }
 
 .brand img {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
-  flex: 0 0 18px;
+  flex: 0 0 22px;
 }
 
 .nav {
@@ -1095,8 +1095,8 @@ a {
   }
 
   .brand img {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
   .hero-title {
