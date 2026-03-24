@@ -93,6 +93,38 @@ private extension View {
     func journalSheet(isExpanded: Bool) -> some View { modifier(JournalSheet(isExpanded: isExpanded)) }
 }
 
+private struct ReflectionActionButton: View {
+    let icon: String
+    let title: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(ReflectJournalTheme.textPrimary)
+
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(ReflectJournalTheme.textPrimary)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(ReflectJournalTheme.sheetFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(ReflectJournalTheme.sheetHighlight.opacity(0.6), lineWidth: 1)
+                )
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
 struct DailyCheckInHistoryView: View {
     @EnvironmentObject var store: MedicationStore
     @EnvironmentObject var storeManager: StoreManager
@@ -210,6 +242,9 @@ struct DailyCheckInHistoryView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         if isPremiumActive {
                             headerSection
+                            if !isModal {
+                                headerActionsSection
+                            }
                         }
                         if !isPremiumActive {
                             reflectionInfoCard
@@ -233,6 +268,7 @@ struct DailyCheckInHistoryView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(isModal ? .visible : .hidden, for: .navigationBar)
             .toolbar {
                 if isModal {
                     ToolbarItem(placement: .navigationBarLeading) {
@@ -390,6 +426,24 @@ struct DailyCheckInHistoryView: View {
         .padding(.top, 4)
     }
 
+    private var headerActionsSection: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                newReflectionControl
+                reflectionFilterControl
+                reflectionExportControl
+            }
+
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    newReflectionControl
+                    reflectionFilterControl
+                }
+                reflectionExportControl
+            }
+        }
+    }
+
     private var headerSummaryText: String {
         "\(filteredCheckInLogs.count) \(filteredCheckInLogs.count == 1 ? "entry" : "entries") logged"
     }
@@ -476,6 +530,68 @@ struct DailyCheckInHistoryView: View {
             }
         }
         .padding(.top, 28)
+    }
+
+    private var newReflectionControl: some View {
+        Button(action: {
+            if isPremiumActive {
+                showingQuickCheckIn = true
+            } else {
+                showingPremiumUpgrade = true
+            }
+        }) {
+            ReflectionActionButton(
+                icon: "plus",
+                title: "New"
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(defaultMedicationForCheckIn == nil && isPremiumActive)
+    }
+
+    private var reflectionFilterControl: some View {
+        Button {
+            if isPremiumActive {
+                showingDateRangeSheet = true
+            } else {
+                showingPremiumUpgrade = true
+            }
+        } label: {
+            ReflectionActionButton(
+                icon: "line.3.horizontal.decrease.circle",
+                title: hasCustomDateFilter ? "Filtered" : "Filter"
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(checkInLogs.isEmpty && isPremiumActive)
+    }
+
+    private var reflectionExportControl: some View {
+        Menu {
+            Button {
+                exportReflectionsAsCSV()
+            } label: {
+                Label("Export CSV", systemImage: "doc.text")
+            }
+
+            Button {
+                exportReflectionsAsPDF()
+            } label: {
+                Label("Export PDF", systemImage: "doc.richtext")
+            }
+        } label: {
+            ReflectionActionButton(
+                icon: "square.and.arrow.up",
+                title: "Export"
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(checkInLogs.isEmpty && isPremiumActive)
+        .simultaneousGesture(TapGesture().onEnded {
+            if !isPremiumActive {
+                showingPremiumUpgrade = true
+            }
+        })
     }
 
     private func dayLabel(for date: Date) -> String {

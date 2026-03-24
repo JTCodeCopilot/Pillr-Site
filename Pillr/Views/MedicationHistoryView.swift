@@ -137,6 +137,9 @@ struct MedicationHistoryView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
                         headerSection
+                        if !isModal {
+                            headerActionsSection
+                        }
                         statsSection
                         
                         if groupedLogs.isEmpty {
@@ -151,6 +154,7 @@ struct MedicationHistoryView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(isModal ? .visible : .hidden, for: .navigationBar)
             .toolbar {
                 if isModal {
                     ToolbarItem(placement: .navigationBarLeading) {
@@ -223,6 +227,13 @@ struct MedicationHistoryView: View {
                 .foregroundColor(Color.pillrSecondary.opacity(0.65))
         }
         .padding(.top, 4)
+    }
+
+    private var headerActionsSection: some View {
+        HStack(spacing: 12) {
+            includeSkippedControl
+            exportControl
+        }
     }
     
     private var dateRangeFullScreen: some View {
@@ -454,6 +465,45 @@ struct MedicationHistoryView: View {
                 .foregroundColor(includeSkipped ? Color.pillrSecondary : Color.white.opacity(0.7))
                 .accessibilityLabel(includeSkipped ? "Exclude skipped doses" : "Include skipped doses")
         }
+    }
+
+    private var includeSkippedControl: some View {
+        Menu {
+            Button(includeSkipped ? "Hide skipped medication" : "Show skipped medication") {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    includeSkipped.toggle()
+                }
+            }
+        } label: {
+            HistoryActionButton(
+                icon: includeSkipped ? "checkmark.circle.fill" : "circle",
+                title: includeSkipped ? "Skipped shown" : "Skipped hidden"
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var exportControl: some View {
+        Menu {
+            Button {
+                exportHistoryAsCSV()
+            } label: {
+                Label("Export CSV", systemImage: "doc.text")
+            }
+
+            Button {
+                exportHistoryAsPDF()
+            } label: {
+                Label("Export PDF", systemImage: "doc.richtext")
+            }
+        } label: {
+            HistoryActionButton(
+                icon: "square.and.arrow.up",
+                title: "Export"
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(filteredLogs.isEmpty)
     }
     
     private var statsSection: some View {
@@ -1192,6 +1242,38 @@ private struct HistoryControlButton: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .frame(minHeight: 72)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                )
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+private struct HistoryActionButton: View {
+    let icon: String
+    let title: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(Color.pillrBackground)
+
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color.pillrBackground)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)

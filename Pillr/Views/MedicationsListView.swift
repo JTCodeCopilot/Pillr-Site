@@ -1136,7 +1136,7 @@ fileprivate func NoActiveRemindersView(
     VStack(spacing: 16) {
         Image(systemName: "cabinet.fill")
             .font(.system(size: 42))
-            .foregroundColor(Color.pillrSecondary.opacity(0.7))
+            .foregroundColor(Color.pillrBackground.opacity(0.82))
             .padding(.top, 10)
         Text("No active reminders")
             .font(.system(size: 20, weight: .semibold))
@@ -1144,7 +1144,7 @@ fileprivate func NoActiveRemindersView(
         Text(hiddenCount > 0 ? "You have \(hiddenCount) medication\(hiddenCount == 1 ? "" : "s") stored in your cabinet." : "Add reminder times to see medications here.")
             .font(.system(size: 15))
             .multilineTextAlignment(.center)
-            .foregroundColor(Color.pillrSecondary.opacity(0.85))
+            .foregroundColor(Color.pillrSecondary.opacity(0.9))
             .padding(.horizontal)
         Button(action: onOpenCabinet) {
             Text("Open Cabinet")
@@ -1153,9 +1153,9 @@ fileprivate func NoActiveRemindersView(
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.pillrSecondary)
+                        .fill(Color.pillrBackground)
                 )
-                .foregroundColor(Color.pillrPrimary)
+                .foregroundColor(Color.pillrPrimary.opacity(0.95))
         }
         .buttonStyle(ScaleButtonStyle())
         .padding(.bottom, 10)
@@ -1164,12 +1164,13 @@ fileprivate func NoActiveRemindersView(
     .padding(24)
     .background(
         RoundedRectangle(cornerRadius: 20)
-            .fill(Color.pillrAccent)
+            .fill(Color.pillrPrimary.opacity(0.38))
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    .stroke(Color.pillrBackground.opacity(0.14), lineWidth: 1)
             )
     )
+    .shadow(color: Color.black.opacity(0.14), radius: 18, x: 0, y: 10)
     .accessibilityElement(children: .combine)
     .accessibilityLabel("No medications with active reminders. Open the cabinet to view stored medications.")
 }
