@@ -9,7 +9,6 @@ import SwiftUI
 import UserNotifications
 import BackgroundTasks
 import TelemetryDeck
-import TikTokBusinessSDK
 
 // App Delegate to handle application lifecycle events
 final class PillrAppDelegate: NSObject, UIApplicationDelegate {
@@ -25,17 +24,6 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
         Task { @MainActor in
             if UserSettings.shared.shouldUseCloudSync {
                 CloudKitMedicationSync.shared.ensureSubscriptions()
-            }
-        }
-        
-        let config = TikTokConfig(
-            appId: "6746717689",
-            tiktokAppId: "7593781364499988488"
-        
-        )
-        TikTokBusiness.initializeSdk(config) { _, error in
-            if let error = error {
-                print("TikTok SDK init error: \(error)")
             }
         }
 

@@ -10,9 +10,7 @@
 		4901EA942DE700CB000B3979 /* AIProxy in Frameworks */ = {isa = PBXBuildFile; productRef = 4901EA932DE700CB000B3979 /* AIProxy */; };
 		4911A1532E88B7070009E975 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = 4911A1522E88B7070009E975 /* TelemetryDeck */; };
 		4920B01E2F5C2AAC002735AB /* AIProxy in Frameworks */ = {isa = PBXBuildFile; productRef = 4920B0162F5C2AAC002735AB /* AIProxy */; };
-		4920B01F2F5C2AAC002735AB /* TikTokBusinessSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 4920B01A2F5C2AAC002735AB /* TikTokBusinessSDK */; };
 		4920B0202F5C2AAC002735AB /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = 4920B0182F5C2AAC002735AB /* TelemetryDeck */; };
-		499088612F13272C00E7147A /* TikTokBusinessSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 499088602F13272C00E7147A /* TikTokBusinessSDK */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,7 +75,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				4920B01E2F5C2AAC002735AB /* AIProxy in Frameworks */,
-				4920B01F2F5C2AAC002735AB /* TikTokBusinessSDK in Frameworks */,
 				4920B0202F5C2AAC002735AB /* TelemetryDeck in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -94,7 +91,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				4901EA942DE700CB000B3979 /* AIProxy in Frameworks */,
-				499088612F13272C00E7147A /* TikTokBusinessSDK in Frameworks */,
 				4911A1532E88B7070009E975 /* TelemetryDeck in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -153,7 +149,6 @@
 			packageProductDependencies = (
 				4920B0162F5C2AAC002735AB /* AIProxy */,
 				4920B0182F5C2AAC002735AB /* TelemetryDeck */,
-				4920B01A2F5C2AAC002735AB /* TikTokBusinessSDK */,
 			);
 			productName = Pillr;
 			productReference = 4920B0252F5C2AAC002735AB /* Xcode Pillr.app */;
@@ -201,7 +196,6 @@
 			packageProductDependencies = (
 				4901EA932DE700CB000B3979 /* AIProxy */,
 				4911A1522E88B7070009E975 /* TelemetryDeck */,
-				499088602F13272C00E7147A /* TikTokBusinessSDK */,
 			);
 			productName = Pillr;
 			productReference = 4964701E2DD3F0E9003964BD /* Pillr.app */;
@@ -265,7 +259,6 @@
 			packageReferences = (
 				4901EA922DE700CB000B3979 /* XCRemoteSwiftPackageReference "AIProxySwift" */,
 				4911A1512E88B7070009E975 /* XCRemoteSwiftPackageReference "SwiftSDK" */,
-				4990885F2F13272C00E7147A /* XCRemoteSwiftPackageReference "tiktok-business-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4964701F2DD3F0E9003964BD /* Products */;
@@ -374,7 +367,6 @@
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pillr uses Face ID to protect access to your medication information on this device.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
-				INFOPLIST_KEY_NSUserTrackingUsageDescription = "No personal or health information is used. We only use this to measure advertising performance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
@@ -416,7 +408,6 @@
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pillr uses Face ID to protect access to your medication information on this device.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
-				INFOPLIST_KEY_NSUserTrackingUsageDescription = "No personal or health information is used. We only use this to measure advertising performance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
@@ -632,7 +623,6 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
-				INFOPLIST_KEY_NSUserTrackingUsageDescription = "No personal or health information is used. We only use this to measure advertising performance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
@@ -673,7 +663,6 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
-				INFOPLIST_KEY_NSUserTrackingUsageDescription = "No personal or health information is used. We only use this to measure advertising performance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
@@ -824,22 +813,6 @@
 				minimumVersion = 2.9.4;
 			};
 		};
-		4920B01B2F5C2AAC002735AB /* XCRemoteSwiftPackageReference "tiktok-business-ios-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/tiktok/tiktok-business-ios-sdk";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.6.0;
-			};
-		};
-		4990885F2F13272C00E7147A /* XCRemoteSwiftPackageReference "tiktok-business-ios-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/tiktok/tiktok-business-ios-sdk";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.6.0;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -862,16 +835,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4920B0192F5C2AAC002735AB /* XCRemoteSwiftPackageReference "SwiftSDK" */;
 			productName = TelemetryDeck;
-		};
-		4920B01A2F5C2AAC002735AB /* TikTokBusinessSDK */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4920B01B2F5C2AAC002735AB /* XCRemoteSwiftPackageReference "tiktok-business-ios-sdk" */;
-			productName = TikTokBusinessSDK;
-		};
-		499088602F13272C00E7147A /* TikTokBusinessSDK */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4990885F2F13272C00E7147A /* XCRemoteSwiftPackageReference "tiktok-business-ios-sdk" */;
-			productName = TikTokBusinessSDK;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
