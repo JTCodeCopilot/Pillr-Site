@@ -97,25 +97,3 @@ const updateHeaderVisibility = () => {
 window.addEventListener("scroll", updateHeaderVisibility, { passive: true });
 window.addEventListener("resize", updateHeaderVisibility);
 updateHeaderVisibility();
-
-const screenshotCarousel = document.querySelector("[data-screenshot-carousel]");
-const screenshotPrev = document.querySelector("[data-carousel-prev]");
-const screenshotNext = document.querySelector("[data-carousel-next]");
-
-if (screenshotCarousel && screenshotPrev && screenshotNext) {
-  const scrollByCard = (direction) => {
-    const firstCard = screenshotCarousel.querySelector(".screenshot-card");
-    if (!firstCard) return;
-
-    const cardWidth = firstCard.getBoundingClientRect().width;
-    const styles = window.getComputedStyle(screenshotCarousel);
-    const gap = Number.parseFloat(styles.columnGap || styles.gap || "0");
-    screenshotCarousel.scrollBy({
-      left: direction * (cardWidth + gap),
-      behavior: "smooth",
-    });
-  };
-
-  screenshotPrev.addEventListener("click", () => scrollByCard(-1));
-  screenshotNext.addEventListener("click", () => scrollByCard(1));
-}
