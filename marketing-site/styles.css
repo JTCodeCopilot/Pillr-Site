@@ -1130,6 +1130,11 @@ a {
     justify-content: stretch;
   }
 
+  .screenshots-track {
+    grid-auto-columns: 100%;
+    overflow-x: hidden;
+  }
+
   .screenshot-button {
     flex: 1 1 0;
   }
