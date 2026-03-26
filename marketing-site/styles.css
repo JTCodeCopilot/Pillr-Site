@@ -267,7 +267,7 @@ a {
 
 .scroll-indicator__arrow {
   display: inline-block;
-  font-size: 2rem;
+  font-size: 4rem;
   line-height: 1;
   animation: bounce 1.8s ease-in-out infinite;
 }
