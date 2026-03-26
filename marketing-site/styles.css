@@ -262,6 +262,14 @@ a {
   left: 50%;
   transform: translateX(-50%);
   color: var(--muted);
+  cursor: pointer;
+}
+
+.scroll-indicator__arrow {
+  display: inline-block;
+  font-size: 2rem;
+  line-height: 1;
+  animation: bounce 1.8s ease-in-out infinite;
 }
 
 .hero-summary-panel,
@@ -338,13 +346,6 @@ a {
   aspect-ratio: 9 / 19.5;
   object-fit: cover;
   background: #d8d6cb;
-}
-
-.screenshot-card figcaption {
-  padding: 16px 18px 18px;
-  color: var(--muted);
-  font-size: 0.98rem;
-  line-height: 1.55;
 }
 
 .hero-summary-shell,
@@ -1137,10 +1138,6 @@ a {
 
   .screenshot-button {
     flex: 1 1 0;
-  }
-
-  .screenshot-card figcaption {
-    font-size: 0.94rem;
   }
 
 }
