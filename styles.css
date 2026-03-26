@@ -236,6 +236,11 @@ a {
   text-wrap: balance;
 }
 
+#hero-title.hero-title {
+  max-width: 11ch;
+  font-size: clamp(7rem, 16vw, 14rem);
+}
+
 .cta-group {
   display: flex;
   justify-content: center;
@@ -1022,6 +1027,11 @@ a {
 
   .hero-title {
     font-size: clamp(3.8rem, 18vw, 5.8rem);
+  }
+
+  #hero-title.hero-title {
+    max-width: 10ch;
+    font-size: clamp(5rem, 20vw, 7.2rem);
   }
 
   .hero {
