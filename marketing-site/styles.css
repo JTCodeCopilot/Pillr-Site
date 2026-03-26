@@ -238,7 +238,7 @@ a {
 
 #hero-title.hero-title {
   max-width: 11ch;
-  font-size: clamp(7rem, 16vw, 14rem);
+  font-size: clamp(5.6rem, 12.8vw, 11.2rem);
 }
 
 .cta-group {
@@ -265,6 +265,7 @@ a {
 }
 
 .hero-summary-panel,
+.screenshots,
 .how,
 .benefits,
 .faq,
@@ -279,6 +280,71 @@ a {
 .feature-section.alt {
   padding: clamp(24px, 3.2vw, 42px) 0;
   background: var(--bg);
+}
+
+.screenshots-shell {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.screenshots-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.screenshot-button {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.24s ease, background-color 0.24s ease;
+}
+
+.screenshot-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-soft);
+}
+
+.screenshots-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(260px, 360px);
+  gap: var(--space-2);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.screenshot-card {
+  margin: 0;
+  scroll-snap-align: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.screenshot-card img {
+  width: 100%;
+  aspect-ratio: 9 / 19.5;
+  object-fit: cover;
+  background: #d8d6cb;
+}
+
+.screenshot-card figcaption {
+  padding: 16px 18px 18px;
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.55;
 }
 
 .hero-summary-shell,
@@ -1005,6 +1071,10 @@ a {
   .article-aside {
     position: static;
   }
+
+  .screenshots-track {
+    grid-auto-columns: minmax(240px, 78vw);
+  }
 }
 
 @media (max-width: 640px) {
@@ -1031,7 +1101,7 @@ a {
 
   #hero-title.hero-title {
     max-width: 10ch;
-    font-size: clamp(5rem, 20vw, 7.2rem);
+    font-size: clamp(4rem, 16vw, 5.76rem);
   }
 
   .hero {
@@ -1045,6 +1115,7 @@ a {
   }
 
   .hero-summary-shell,
+  .screenshot-card,
   .step-card,
   .feature-copy,
   .visual-card,
@@ -1052,6 +1123,18 @@ a {
   .faq-item,
   .cta-box {
     border-radius: 22px;
+  }
+
+  .screenshots-actions {
+    justify-content: stretch;
+  }
+
+  .screenshot-button {
+    flex: 1 1 0;
+  }
+
+  .screenshot-card figcaption {
+    font-size: 0.94rem;
   }
 }
 
