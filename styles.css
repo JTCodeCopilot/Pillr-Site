@@ -267,11 +267,13 @@ a {
 .guides,
 .article-page {
   padding: var(--section-space) 0;
+  background: var(--bg);
 }
 
 .feature-section,
 .feature-section.alt {
   padding: clamp(24px, 3.2vw, 42px) 0;
+  background: var(--bg);
 }
 
 .hero-summary-shell,
@@ -416,11 +418,6 @@ a {
 .step-card p {
   margin: 0;
   color: var(--muted);
-}
-
-.feature-section,
-.feature-section.alt {
-  background: transparent;
 }
 
 .feature-band {
