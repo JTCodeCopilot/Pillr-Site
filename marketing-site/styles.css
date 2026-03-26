@@ -232,7 +232,7 @@ a {
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.96;
-  font-size: clamp(2.6rem, 8.2vw, 6.2rem);
+  font-size: clamp(4.8rem, 12vw, 10.5rem);
   text-wrap: balance;
 }
 
@@ -1021,7 +1021,7 @@ a {
   }
 
   .hero-title {
-    font-size: clamp(2.3rem, 12vw, 3.4rem);
+    font-size: clamp(3.8rem, 18vw, 5.8rem);
   }
 
   .hero {
