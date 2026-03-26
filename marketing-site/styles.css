@@ -163,6 +163,7 @@ a {
   padding: clamp(16px, 2vw, 28px) 0 clamp(56px, 8vh, 96px);
   position: relative;
   overflow: hidden;
+  background: var(--bg);
 }
 
 .floating-pill {
