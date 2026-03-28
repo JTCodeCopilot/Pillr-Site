@@ -32,8 +32,6 @@ struct SettingsView: View {
     @State private var isHomeShortcutsExpanded = false
     @State private var isUpdatingBiometricLock = false
     @State private var biometricAlertMessage: String?
-    @State private var notificationTestMessage: String?
-    @State private var isSchedulingTestReminder = false
 
     private var isPremiumActive: Bool {
         storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
@@ -114,21 +112,6 @@ struct SettingsView: View {
         } message: {
             Text(biometricAlertMessage ?? "")
         }
-        .alert(
-            "Test Reminder",
-            isPresented: Binding(
-                get: { notificationTestMessage != nil },
-                set: { newValue in
-                    if !newValue { notificationTestMessage = nil }
-                }
-            )
-        ) {
-            Button("OK", role: .cancel) {
-                notificationTestMessage = nil
-            }
-        } message: {
-            Text(notificationTestMessage ?? "")
-        }
     }
 
     private func headerView(scrollToFeedback: @escaping () -> Void) -> some View {
@@ -188,7 +171,7 @@ struct SettingsView: View {
     }
     
     private var backupSection: some View {
-        settingsSection(title: "Backup") {
+        settingsSection(title: "Data Backup") {
             settingsStatusRow(
                 iconName: "icloud",
                 title: "Connection",
@@ -209,36 +192,11 @@ struct SettingsView: View {
                 subtitle: "Save your latest app data to iCloud Drive.",
                 showChevron: false,
                 accessoryIcon: nil,
-                leadingIcon: "icloud",
+                leadingIcon: "arrow.triangle.2.circlepath",
                 trailingIcon: nil
             ) {
                 backupManager.performBackupNow()
             }
-
-            settingsActionRow(
-                title: "Restore from backup",
-                subtitle: "Restore the latest saved backup from iCloud Drive.",
-                showChevron: false,
-                accessoryIcon: nil,
-                leadingIcon: "arrow.down.doc",
-                trailingIcon: nil
-            ) {
-                backupManager.restoreLatestBackup { success in
-                    guard success else { return }
-                    userSettings.reloadFromStorage()
-                    store.loadMedications()
-                    store.loadLogs()
-                    InteractionStore.shared.reloadFromStorage()
-                    store.checkAndResetBadge()
-                    store.kickstartActiveReminderSchedules(referenceDate: Date(), force: true)
-                }
-            }
-
-            Text("Pillr now keeps your data on this device and saves a backup copy to iCloud Drive.")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(SettingsPalette.secondaryText.opacity(0.9))
-                .multilineTextAlignment(.leading)
-                .padding(.top, 8)
         }
     }
     
@@ -391,12 +349,6 @@ struct SettingsView: View {
 
     private var notificationPermissionsSection: some View {
         settingsSection(title: "Notifications") {
-            Text("Medication reminders depend on system notifications. Use the link below to update permissions.")
-                .font(.system(size: 14, design: .rounded))
-                .foregroundColor(SettingsPalette.secondaryText)
-                .lineSpacing(4)
-                .padding(.horizontal, 4)
-
             VStack(alignment: .leading, spacing: 4) {
                 Text("Status: \(notificationStatusValue)")
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
@@ -406,28 +358,12 @@ struct SettingsView: View {
                     .foregroundColor(SettingsPalette.secondaryText)
             }
 
-            Text("For the most reliable reminders, leave Pillr running in the background and avoid force-closing it after setting up medications.")
-                .font(.system(size: 13, design: .rounded))
-                .foregroundColor(SettingsPalette.secondaryText.opacity(0.95))
-                .lineSpacing(4)
-                .padding(.horizontal, 4)
-
             settingsActionRow(
                 title: "Manage Notifications",
                 subtitle: "Open the iOS notification settings for Pillr",
                 leadingIcon: "bell.badge.fill",
                 action: openNotificationSettings
             )
-
-            settingsActionRow(
-                title: isSchedulingTestReminder ? "Scheduling test reminder..." : "Send test reminder",
-                subtitle: "Schedules a test Pillr reminder in about 10 seconds",
-                showChevron: false,
-                leadingIcon: "bell.and.waves.left.and.right.fill",
-                action: sendTestReminder
-            )
-            .disabled(isSchedulingTestReminder)
-            .opacity(isSchedulingTestReminder ? 0.75 : 1)
         }
     }
 
@@ -462,19 +398,6 @@ struct SettingsView: View {
             openLink(UIApplication.openNotificationSettingsURLString)
         } else {
             openLink(UIApplication.openSettingsURLString)
-        }
-    }
-
-    private func sendTestReminder() {
-        guard !isSchedulingTestReminder else { return }
-        isSchedulingTestReminder = true
-        NotificationManager.shared.scheduleTestReminder { success in
-            isSchedulingTestReminder = false
-            if success {
-                notificationTestMessage = "Test reminder scheduled. You should get a Pillr notification in about 10 seconds."
-            } else {
-                notificationTestMessage = "Pillr could not schedule a test reminder. Please allow notifications for Pillr in iPhone Settings and try again."
-            }
         }
     }
     
@@ -612,21 +535,6 @@ struct SettingsView: View {
         settingsSection {
             EmbeddedFormView(urlString: "https://tally.so/embed/Ek0jVB?alignLeft=1&transparentBackground=1&dynamicHeight=1")
                 .frame(height: 490)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                )
-
-            settingsActionRow(
-                title: "Open Full Form",
-                subtitle: "Use this if the form does not load properly inside the app",
-                showChevron: false,
-                leadingIcon: "arrow.up.right.square",
-                action: {
-                    openLink("https://tally.so/embed/Ek0jVB?alignLeft=1&transparentBackground=1&dynamicHeight=1")
-                }
-            )
         }
     }
 
@@ -705,7 +613,7 @@ struct SettingsView: View {
                     .foregroundColor(SettingsPalette.headerColor)
 
                 Divider()
-                    .background(Color.white.opacity(0.08))
+                    .background(Color.white.opacity(0.20))
             }
 
             VStack(alignment: .leading, spacing: 12) {

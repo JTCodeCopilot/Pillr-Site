@@ -449,57 +449,111 @@ struct DailyCheckInHistoryView: View {
     }
 
     private var reflectionInfoCard: some View {
-            VStack(alignment: .center, spacing: 12) {
-            Text("Reflection helps you understand how your medications affect your day by tracking mood, focus, and side effects over time.")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(ReflectJournalTheme.textPrimary)
-                Rectangle()
-                    .fill(Color.white.opacity(0.08))
-                    .frame(height: 1)
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Premium feature")
+                    .journalSectionHeader()
+
                 VStack(alignment: .leading, spacing: 4) {
-                Text("- AI powered reflection summaries")
-                Text("- CSV and PDF export")
-                Text("- Date filtering and history view")
-                Text("- Custom reminders")
+                    Text("Reflection")
+                        .font(.system(size: 30, weight: .semibold))
+                        .foregroundColor(ReflectJournalTheme.textPrimary)
+
+                    Text("See how your medication affects mood, focus, and side effects over time.")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundColor(ReflectJournalTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-                .font(.system(size: 13))
-                .foregroundColor(ReflectJournalTheme.textSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .multilineTextAlignment(.leading)
-                Rectangle()
-                    .fill(Color.white.opacity(0.08))
-                    .frame(height: 1)
-                Text("Example Reflection entry")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(ReflectJournalTheme.textSecondary)
-                    .italic()
-                Image("Reflection Example")
-                    .resizable()
-                    .scaledToFit()
-                .frame(maxWidth: 260)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-            Button {
-                showingPremiumUpgrade = true
-            } label: {
-                Text("Unlock Premium to Start")
-                    .font(.system(size: 14, weight: .semibold))
+
+            HStack(spacing: 8) {
+                reflectionFeaturePill(text: "AI summaries", icon: "sparkles")
+                reflectionFeaturePill(text: "History view", icon: "clock.arrow.circlepath")
+                reflectionFeaturePill(text: "PDF export", icon: "doc.richtext")
+            }
+
+            reflectionPreviewCard
+
+            VStack(alignment: .leading, spacing: 10) {
+                Button {
+                    showingPremiumUpgrade = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Text("Unlock Reflection")
+                            .font(.system(size: 16, weight: .semibold))
+
+                        Spacer(minLength: 0)
+
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
                     .foregroundColor(Color.pillrPrimary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(Color.pillrAccent)
-                    .cornerRadius(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.pillrBackground)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Unlock Reflection")
+
+                Text("One purchase unlocks Reflection, export, and smart summaries.")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(ReflectJournalTheme.textTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .accessibilityLabel("Unlock Premium to Start")
         }
-        .multilineTextAlignment(.center)
-        .padding(.vertical, 16)
-        .padding(.horizontal, 16)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.clear)
+    }
+
+    private func reflectionFeaturePill(text: String, icon: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+
+            Text(text)
+                .lineLimit(1)
+        }
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundColor(ReflectJournalTheme.textPrimary.opacity(0.92))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(0.07))
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(Color.white.opacity(0.09), lineWidth: 1)
+                )
+        )
+    }
+
+    private var reflectionPreviewCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Example reflection")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(ReflectJournalTheme.textTertiary)
+                    .textCase(.uppercase)
+                    .tracking(0.8)
+
+                Spacer(minLength: 0)
+            }
+
+            Image("Reflection Example")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.16), radius: 14, x: 0, y: 8)
+        }
     }
 
     private var timelineSection: some View {

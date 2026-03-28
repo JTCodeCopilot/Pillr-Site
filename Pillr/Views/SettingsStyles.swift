@@ -11,7 +11,7 @@ enum SettingsMetrics {
 
 enum SettingsPalette {
     static let backgroundColor = Color.pillrPrimary
-    static let headerColor = Color.pillrSecondary.opacity(0.85)
+    static let headerColor = Color.pillrBackground
     static let secondaryText = Color.pillrSecondary.opacity(0.78)
     static let mainText = Color.pillrBackground
     static let cardBackground = Color.white.opacity(0.04)

@@ -2497,6 +2497,7 @@ fileprivate struct MedicationsListMainContent: View {
     }
 
     fileprivate struct TodaySummaryData {
+        let hasMedications: Bool
         let overdueCount: Int
         let takenCount: Int
         let lowSupplyCount: Int
@@ -2505,6 +2506,9 @@ fileprivate struct MedicationsListMainContent: View {
         let nextDose: NextScheduledDose?
 
         var title: String {
+            if !hasMedications {
+                return "No medications added"
+            }
             if overdueCount > 0 {
                 return overdueCount == 1 ? "1 reminder needs attention" : "\(overdueCount) reminders need attention"
             }
@@ -2518,6 +2522,9 @@ fileprivate struct MedicationsListMainContent: View {
         }
 
         var subtitle: String {
+            if !hasMedications {
+                return "Add a medication to see what’s due next."
+            }
             if overdueCount > 0 {
                 return "Start with the overdue medication at the top of your list."
             }
@@ -2535,8 +2542,6 @@ fileprivate struct MedicationsListMainContent: View {
     }
 
     private var todaySummary: TodaySummaryData? {
-        guard !store.activeMedications.isEmpty else { return nil }
-
         let overdueCount = store.overdueReminderCount(referenceDate: referenceDate)
         let takenCount = doseLogsToday.filter { !$0.skipped }.count
         let lowSupplyCount = store.activeMedications.filter { medication in
@@ -2548,6 +2553,7 @@ fileprivate struct MedicationsListMainContent: View {
         }.count
 
         return TodaySummaryData(
+            hasMedications: !store.activeMedications.isEmpty,
             overdueCount: overdueCount,
             takenCount: takenCount,
             lowSupplyCount: lowSupplyCount,
@@ -2676,17 +2682,23 @@ fileprivate struct MedicationsListMainContent: View {
                             cabinetCount: cabinetMedications.count
                         )
 
-                        if let todaySummary {
-                            TodaySummaryCard(
-                                summary: todaySummary,
-                                referenceDate: referenceDate,
-                                onOverdueTap: onHighlightOverdueMedications,
-                                onLowSupplyTap: onHighlightLowSupplyMedications,
-                                healthKitManager: healthKitManager,
-                                showsHealthSummary: userSettings.shouldShowAppleHealthData
-                            )
-                            .padding(.horizontal, horizontalInset)
-                        }
+                        TodaySummaryCard(
+                            summary: todaySummary ?? TodaySummaryData(
+                                hasMedications: false,
+                                overdueCount: 0,
+                                takenCount: 0,
+                                lowSupplyCount: 0,
+                                overdueDose: nil,
+                                overdueDoses: [],
+                                nextDose: nil
+                            ),
+                            referenceDate: referenceDate,
+                            onOverdueTap: onHighlightOverdueMedications,
+                            onLowSupplyTap: onHighlightLowSupplyMedications,
+                            healthKitManager: healthKitManager,
+                            showsHealthSummary: userSettings.shouldShowAppleHealthData
+                        )
+                        .padding(.horizontal, horizontalInset)
 
                         if store.activeMedications.isEmpty {
                             EmptyMedicationsView(onAddMedication: onAddMedication)
