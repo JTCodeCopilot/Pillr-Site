@@ -825,16 +825,19 @@ struct MedicationLogView: View {
     
     private func presentShareSheet(with fileURL: URL) {
         let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
-        
-        if let popoverController = activityVC.popoverPresentationController,
-           let rootView = UIApplication.shared.windows.first?.rootViewController?.view {
-            popoverController.sourceView = rootView
-            popoverController.sourceRect = CGRect(x: rootView.bounds.midX, y: rootView.bounds.midY, width: 0, height: 0)
-            popoverController.permittedArrowDirections = []
-        }
-        
+
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootViewController = windowScene.windows.first?.rootViewController {
+            if let popoverController = activityVC.popoverPresentationController {
+                popoverController.sourceView = rootViewController.view
+                popoverController.sourceRect = CGRect(
+                    x: rootViewController.view.bounds.midX,
+                    y: rootViewController.view.bounds.midY,
+                    width: 0,
+                    height: 0
+                )
+                popoverController.permittedArrowDirections = []
+            }
             var presentingController = rootViewController
             while let presented = presentingController.presentedViewController {
                 presentingController = presented

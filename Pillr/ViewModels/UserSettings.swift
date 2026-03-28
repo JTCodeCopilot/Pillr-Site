@@ -83,14 +83,6 @@ class UserSettings: ObservableObject {
         }
     }
     
-    @Published var shouldUseCloudSync: Bool {
-        didSet {
-            if !isPreviewMode {
-                UserDefaults.standard.set(shouldUseCloudSync, forKey: cloudSyncPreferenceKey)
-            }
-        }
-    }
-    
     @Published var shouldShowAppleHealthData: Bool {
         didSet {
             if !isPreviewMode {
@@ -161,7 +153,6 @@ class UserSettings: ObservableObject {
     private let notificationOnboardingPromptKey = "hasSeenNotificationOnboardingPrompt"
     private let appOnboardingCompleteKey = "has_completed_app_onboarding"
     private let biometricLockEnabledKey = "is_biometric_lock_enabled"
-    private let cloudSyncPreferenceKey = "should_use_cloud_sync"
     private let appleHealthVisibilityKey = "should_show_apple_health_data"
     private let historyTabEnabledKey = "is_history_tab_enabled"
     private let reflectionTabEnabledKey = "is_reflection_tab_enabled"
@@ -208,7 +199,6 @@ class UserSettings: ObservableObject {
             self.hasSeenNotificationOnboardingPrompt = false
             self.hasCompletedAppOnboarding = true
             self.isBiometricLockEnabled = false
-            self.shouldUseCloudSync = true
             self.shouldShowAppleHealthData = true
             self.isHistoryTabEnabled = true
             self.isReflectionTabEnabled = true
@@ -233,7 +223,6 @@ class UserSettings: ObservableObject {
             self.hasSeenNotificationOnboardingPrompt = true
             self.hasCompletedAppOnboarding = true
             self.isBiometricLockEnabled = false
-            self.shouldUseCloudSync = false
             self.shouldShowAppleHealthData = false
             self.isHistoryTabEnabled = true
             self.isReflectionTabEnabled = true
@@ -253,11 +242,6 @@ class UserSettings: ObservableObject {
             self.hasSeenNotificationOnboardingPrompt = UserDefaults.standard.bool(forKey: notificationOnboardingPromptKey)
             self.hasCompletedAppOnboarding = UserDefaults.standard.bool(forKey: appOnboardingCompleteKey)
             self.isBiometricLockEnabled = UserDefaults.standard.bool(forKey: biometricLockEnabledKey)
-            if let stored = UserDefaults.standard.object(forKey: cloudSyncPreferenceKey) as? Bool {
-                self.shouldUseCloudSync = stored
-            } else {
-                self.shouldUseCloudSync = true
-            }
             if let storedAppleHealthVisibility = UserDefaults.standard.object(forKey: appleHealthVisibilityKey) as? Bool {
                 self.shouldShowAppleHealthData = storedAppleHealthVisibility
             } else {
@@ -320,10 +304,6 @@ class UserSettings: ObservableObject {
         userName = name
     }
 
-    func setCloudSyncPreference(_ enabled: Bool) {
-        shouldUseCloudSync = enabled
-    }
-
     func reloadFromStorage() {
         guard !isPreviewMode, !forceUITestMode else { return }
 
@@ -336,7 +316,6 @@ class UserSettings: ObservableObject {
         hasSeenNotificationOnboardingPrompt = UserDefaults.standard.bool(forKey: notificationOnboardingPromptKey)
         hasCompletedAppOnboarding = UserDefaults.standard.bool(forKey: appOnboardingCompleteKey)
         isBiometricLockEnabled = UserDefaults.standard.bool(forKey: biometricLockEnabledKey)
-        shouldUseCloudSync = (UserDefaults.standard.object(forKey: cloudSyncPreferenceKey) as? Bool) ?? true
         shouldShowAppleHealthData = (UserDefaults.standard.object(forKey: appleHealthVisibilityKey) as? Bool) ?? true
         isHistoryTabEnabled = (UserDefaults.standard.object(forKey: historyTabEnabledKey) as? Bool) ?? true
         isReflectionTabEnabled = (UserDefaults.standard.object(forKey: reflectionTabEnabledKey) as? Bool) ?? true

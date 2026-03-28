@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Pillr
 
+@Suite(.serialized)
 @MainActor
 struct MedicationStoreTests {
     private func makeMedication(
@@ -9,6 +10,11 @@ struct MedicationStoreTests {
         time: Date,
         reminderTimes: [Date] = [],
         frequency: String = "Once daily",
+        medicationType: MedicationType = .other,
+        isExtendedRelease: Bool = false,
+        onsetMinutes: Int? = nil,
+        durationMinutes: Int? = nil,
+        enableStimulantPhaseNotifications: Bool = false,
         pillCount: Int? = nil,
         pillsPerDose: Int = 1,
         refillThreshold: Int? = nil,
@@ -24,13 +30,13 @@ struct MedicationStoreTests {
             createdAt: createdAt ?? time,
             updatedAt: time,
             frequency: frequency,
-            medicationType: .other,
-            isExtendedRelease: false,
-            onsetMinutes: nil,
-            durationMinutes: nil,
+            medicationType: medicationType,
+            isExtendedRelease: isExtendedRelease,
+            onsetMinutes: onsetMinutes,
+            durationMinutes: durationMinutes,
             effectsGoneMinutes: nil,
             enableDailyCheckIn: enableDailyCheckIn,
-            enableStimulantPhaseNotifications: false,
+            enableStimulantPhaseNotifications: enableStimulantPhaseNotifications,
             dailyCheckInTime: dailyCheckInTime,
             timeToTake: time,
             reminderTimes: reminderTimes,
@@ -52,15 +58,46 @@ struct MedicationStoreTests {
     @Test
     func addMedicationFreeTierLimitsAndStripsPremiumFields() async throws {
         clearPillrUserDefaults()
-        UserSettings.shared.setPremiumStatus(false)
-        UserSettings.shared.setSubscriptionType(nil)
+        await userSettingsTestGate.withExclusiveAccess {
+            UserSettings.shared.setPremiumStatus(false)
+            UserSettings.shared.setSubscriptionType(nil)
+            defer {
+                UserSettings.shared.setPremiumStatus(false)
+                UserSettings.shared.setSubscriptionType(nil)
+            }
 
-        let store = MedicationStore(isPreview: true)
-        let baseTime = makeDate(year: 2025, month: 1, day: 1, hour: 8, minute: 0)
+            let store = MedicationStore(isPreview: true)
+            let baseTime = makeDate(year: 2025, month: 1, day: 1, hour: 8, minute: 0)
 
-        for i in 0..<UserSettings.maxFreeMedications {
-            let added = store.addMedication(
-                name: "Med \(i)",
+            for i in 0..<UserSettings.maxFreeMedications {
+                let added = store.addMedication(
+                    name: "Med \(i)",
+                    dosage: "10",
+                    dosageUnit: "mg",
+                    iconName: "pill",
+                    frequency: "Twice daily",
+                    timeToTake: baseTime,
+                    reminderTimes: [baseTime],
+                    notes: nil,
+                    enableNotification: false,
+                    pillCount: 20,
+                    pillsPerDose: 2,
+                    refillThreshold: 5,
+                    isOneTimeWithFollowUp: false,
+                    medicationType: .other,
+                    isExtendedRelease: false,
+                    onsetMinutes: nil,
+                    durationMinutes: nil,
+                    effectsGoneMinutes: nil,
+                    enableDailyCheckIn: true,
+                    enableStimulantPhaseNotifications: false,
+                    dailyCheckInTime: baseTime
+                )
+                #expect(added == true)
+            }
+
+            let blocked = store.addMedication(
+                name: "Over Limit",
                 dosage: "10",
                 dosageUnit: "mg",
                 iconName: "pill",
@@ -82,106 +119,228 @@ struct MedicationStoreTests {
                 enableStimulantPhaseNotifications: false,
                 dailyCheckInTime: baseTime
             )
-            #expect(added == true)
+
+            #expect(blocked == false)
+
+            guard let stored = store.medications.first else {
+                #expect(Bool(false))
+                return
+            }
+
+            #expect(stored.pillCount == nil)
+            #expect(stored.pillsPerDose == 1)
+            #expect(stored.refillThreshold == nil)
+            #expect(stored.reminderTimes.isEmpty)
+            #expect(stored.enableDailyCheckIn == false)
+            #expect(stored.dailyCheckInTime == nil)
+            #expect(stored.frequency == "Once daily")
         }
-
-        let blocked = store.addMedication(
-            name: "Over Limit",
-            dosage: "10",
-            dosageUnit: "mg",
-            iconName: "pill",
-            frequency: "Twice daily",
-            timeToTake: baseTime,
-            reminderTimes: [baseTime],
-            notes: nil,
-            enableNotification: false,
-            pillCount: 20,
-            pillsPerDose: 2,
-            refillThreshold: 5,
-            isOneTimeWithFollowUp: false,
-            medicationType: .other,
-            isExtendedRelease: false,
-            onsetMinutes: nil,
-            durationMinutes: nil,
-            effectsGoneMinutes: nil,
-            enableDailyCheckIn: true,
-            enableStimulantPhaseNotifications: false,
-            dailyCheckInTime: baseTime
-        )
-
-        #expect(blocked == false)
-
-        guard let stored = store.medications.first else {
-            #expect(Bool(false))
-            return
-        }
-
-        #expect(stored.pillCount == nil)
-        #expect(stored.pillsPerDose == 1)
-        #expect(stored.refillThreshold == nil)
-        #expect(stored.reminderTimes.isEmpty)
-        #expect(stored.enableDailyCheckIn == false)
-        #expect(stored.dailyCheckInTime == nil)
-        #expect(stored.frequency == "Once daily")
     }
 
     @Test
     func addMedicationPremiumKeepsFields() async throws {
         clearPillrUserDefaults()
-        UserSettings.shared.setPremiumStatus(true)
-        UserSettings.shared.setSubscriptionType("one-time-purchase")
+        await userSettingsTestGate.withExclusiveAccess {
+            UserSettings.shared.setPremiumStatus(true)
+            UserSettings.shared.setSubscriptionType("one-time-purchase")
+            defer {
+                UserSettings.shared.setPremiumStatus(false)
+                UserSettings.shared.setSubscriptionType(nil)
+            }
 
-        let store = MedicationStore(isPreview: true)
-        let baseTime = makeDate(year: 2025, month: 1, day: 2, hour: 9, minute: 0)
+            let store = MedicationStore(isPreview: true)
+            let baseTime = makeDate(year: 2025, month: 1, day: 2, hour: 9, minute: 0)
 
-        let added = store.addMedication(
-            name: "Premium Med",
-            dosage: "10",
-            dosageUnit: "mg",
-            iconName: "pill",
-            frequency: "Twice daily",
-            timeToTake: baseTime,
-            reminderTimes: [baseTime],
-            notes: nil,
-            enableNotification: false,
-            pillCount: 20,
-            pillsPerDose: 2,
-            refillThreshold: 5,
-            isOneTimeWithFollowUp: false,
-            medicationType: .other,
-            isExtendedRelease: false,
-            onsetMinutes: nil,
-            durationMinutes: nil,
-            effectsGoneMinutes: nil,
-            enableDailyCheckIn: true,
-            enableStimulantPhaseNotifications: false,
-            dailyCheckInTime: baseTime
+            let added = store.addMedication(
+                name: "Premium Med",
+                dosage: "10",
+                dosageUnit: "mg",
+                iconName: "pill",
+                frequency: "Twice daily",
+                timeToTake: baseTime,
+                reminderTimes: [baseTime],
+                notes: nil,
+                enableNotification: false,
+                pillCount: 20,
+                pillsPerDose: 2,
+                refillThreshold: 5,
+                isOneTimeWithFollowUp: false,
+                medicationType: .other,
+                isExtendedRelease: false,
+                onsetMinutes: nil,
+                durationMinutes: nil,
+                effectsGoneMinutes: nil,
+                enableDailyCheckIn: true,
+                enableStimulantPhaseNotifications: false,
+                dailyCheckInTime: baseTime
+            )
+
+            #expect(added == true)
+            guard let stored = store.medications.first else {
+                #expect(Bool(false))
+                return
+            }
+
+            #expect(stored.pillCount == 20)
+            #expect(stored.pillsPerDose == 2)
+            #expect(stored.refillThreshold == 5)
+            #expect(stored.reminderTimes.count == 1)
+            #expect(stored.enableDailyCheckIn == true)
+            #expect(stored.dailyCheckInTime != nil)
+            #expect(stored.frequency == "Twice daily")
+        }
+    }
+
+    @Test
+    func loadMedicationsFallsBackToBackupWhenPrimaryIsBroken() async throws {
+        clearPillrUserDefaults()
+
+        let backupTime = makeDate(year: 2025, month: 1, day: 2, hour: 9, minute: 0)
+        let backupMedication = makeMedication(
+            name: "Backup Med",
+            time: backupTime,
+            frequency: "As needed"
         )
 
-        #expect(added == true)
-        guard let stored = store.medications.first else {
-            #expect(Bool(false))
-            return
-        }
+        UserDefaults.standard.set(Data("not valid json".utf8), forKey: "medicationsData")
+        UserDefaults.standard.set(
+            try JSONEncoder().encode([backupMedication]),
+            forKey: "medicationsData_backup"
+        )
 
-        #expect(stored.pillCount == 20)
-        #expect(stored.pillsPerDose == 2)
-        #expect(stored.refillThreshold == 5)
-        #expect(stored.reminderTimes.count == 1)
-        #expect(stored.enableDailyCheckIn == true)
-        #expect(stored.dailyCheckInTime != nil)
-        #expect(stored.frequency == "Twice daily")
+        let notificationManager = FakeNotificationManager()
+        let store = MedicationStore(
+            isPreview: false,
+            notificationManager: notificationManager
+        )
+
+        #expect(store.medications.count == 1)
+        #expect(store.medications.first?.id == backupMedication.id)
+        #expect(store.medications.first?.name == "Backup Med")
+        #expect(notificationManager.updatedTracked.last == [backupMedication.id])
+    }
+
+    @Test
+    func updateMedicationRenamesExistingLogs() async throws {
+        clearPillrUserDefaults()
+
+        let store = MedicationStore(isPreview: true)
+        let baseTime = makeDate(year: 2025, month: 1, day: 3, hour: 8, minute: 0)
+        let medication = makeMedication(
+            name: "Old Name",
+            time: baseTime,
+            frequency: "As needed"
+        )
+        store.medications = [medication]
+        store.logs = [
+            MedicationLog(
+                medicationID: medication.id,
+                medicationName: medication.name,
+                takenAt: baseTime,
+                pillsConsumed: 1
+            )
+        ]
+
+        var updated = medication
+        updated.name = "New Name"
+
+        store.updateMedication(updated, enableNotification: false)
+
+        #expect(store.medications.first?.name == "New Name")
+        #expect(store.logs.first?.medicationName == "New Name")
+    }
+
+    @Test
+    func loggingDoseSchedulesDailyCheckInWhenItShould() async throws {
+        clearPillrUserDefaults()
+
+        let notificationManager = FakeNotificationManager()
+        let store = MedicationStore(
+            isPreview: false,
+            notificationManager: notificationManager
+        )
+
+        let doseTime = makeDate(year: 2025, month: 1, day: 4, hour: 9, minute: 0)
+        let checkInTime = makeDate(year: 2025, month: 1, day: 4, hour: 18, minute: 0)
+        let medication = makeMedication(
+            name: "Check In Med",
+            time: doseTime,
+            frequency: "Once daily",
+            enableDailyCheckIn: true,
+            dailyCheckInTime: checkInTime
+        )
+        store.medications = [medication]
+
+        _ = store.logMedicationTaken(
+            medication: medication,
+            actualTime: doseTime,
+            notes: nil,
+            skipped: false
+        )
+
+        #expect(notificationManager.dailyCheckInSchedules.count == 1)
+        #expect(notificationManager.dailyCheckInSchedules.first?.0 == medication.id)
+        #expect(notificationManager.dailyCheckInSchedules.first?.1 == doseTime)
+    }
+
+    @Test
+    func dailyCheckInOverdueCoversDefaultEveningAndStimulantTiming() async throws {
+        clearPillrUserDefaults()
+        let store = MedicationStore(isPreview: true)
+
+        let morningDose = makeDate(year: 2025, month: 1, day: 5, hour: 9, minute: 0)
+        let eveningReference = makeDate(year: 2025, month: 1, day: 5, hour: 20, minute: 0)
+        let defaultCheckInMedication = makeMedication(
+            name: "Default Check In",
+            time: morningDose,
+            enableDailyCheckIn: true
+        )
+
+        store.medications = [defaultCheckInMedication]
+        store.logs = [
+            MedicationLog(
+                medicationID: defaultCheckInMedication.id,
+                medicationName: defaultCheckInMedication.name,
+                takenAt: morningDose,
+                pillsConsumed: 1
+            )
+        ]
+
+        #expect(store.isDailyCheckInOverdue(for: defaultCheckInMedication, referenceDate: eveningReference) == true)
+
+        let stimulantDose = makeDate(year: 2025, month: 1, day: 6, hour: 8, minute: 0)
+        let stimulantReference = makeDate(year: 2025, month: 1, day: 6, hour: 15, minute: 0)
+        let stimulantMedication = makeMedication(
+            name: "Stimulant Check In",
+            time: stimulantDose,
+            frequency: "Once daily",
+            medicationType: .stimulant,
+            onsetMinutes: 45,
+            durationMinutes: 360,
+            enableStimulantPhaseNotifications: true,
+            enableDailyCheckIn: true
+        )
+
+        store.medications = [stimulantMedication]
+        store.logs = [
+            MedicationLog(
+                medicationID: stimulantMedication.id,
+                medicationName: stimulantMedication.name,
+                takenAt: stimulantDose,
+                pillsConsumed: 1
+            )
+        ]
+
+        #expect(store.isDailyCheckInOverdue(for: stimulantMedication, referenceDate: stimulantReference) == true)
     }
 
     @Test
     func badgeCountShowsOverdueAndClearsWhenLogged() async throws {
         clearPillrUserDefaults()
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let calendar = Calendar.current
@@ -240,11 +399,9 @@ struct MedicationStoreTests {
     func badgeCountClearsWhenSkipped() async throws {
         clearPillrUserDefaults()
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let calendar = Calendar.current
@@ -303,11 +460,9 @@ struct MedicationStoreTests {
     func reconcileNotificationSchedulesRepairsMissingPendingReminder() async throws {
         clearPillrUserDefaults()
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let referenceDate = makeDate(year: 2025, month: 2, day: 10, hour: 7, minute: 0)
@@ -704,11 +859,9 @@ struct MedicationStoreTests {
     func hideLogFromMyMedsAndDeleteMedicationClearState() async throws {
         clearPillrUserDefaults()
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let baseTime = makeDate(year: 2025, month: 1, day: 15, hour: 8, minute: 0)

@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 class InteractionStore: ObservableObject {
     @Published var interactionHistory: [DrugInteraction] = []
@@ -15,9 +14,6 @@ class InteractionStore: ObservableObject {
     private let deletedInteractionIDsKey = "deletedInteractionIDs"
     private let maxRecentSearches = 10
     private let maxHistoryItems = 100
-    private let cloudSync: CloudKitInteractionSyncProtocol
-    private var cloudSyncPreferenceCancellable: AnyCancellable?
-    private var lastCloudSyncPreferenceState: Bool = false
     private var deletedInteractionIDs: Set<UUID> = []
     private let isPreviewMode: Bool
     
@@ -40,20 +36,12 @@ class InteractionStore: ObservableObject {
         }
     }
     
-    private var shouldUseCloudSync: Bool {
-        false
-    }
-
     private var isRunningTests: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }
 
-    private init(
-        isPreview: Bool = false,
-        cloudSync: CloudKitInteractionSyncProtocol = CloudKitMedicationSync.shared
-    ) {
+    private init(isPreview: Bool = false) {
         self.isPreviewMode = isPreview
-        self.cloudSync = cloudSync
         if !isPreview {
             if let stored = UserDefaults.standard.stringArray(forKey: deletedInteractionIDsKey) {
                 deletedInteractionIDs = Set(stored.compactMap { UUID(uuidString: $0) })
@@ -61,11 +49,6 @@ class InteractionStore: ObservableObject {
         }
         loadInteractionHistory()
         loadRecentSearches()
-        lastCloudSyncPreferenceState = shouldUseCloudSync
-        if shouldUseCloudSync {
-            fetchCloudInteractions()
-        }
-        observeCloudSyncPreference()
     }
     
     // MARK: - Computed Properties
@@ -130,7 +113,6 @@ class InteractionStore: ObservableObject {
     // MARK: - Persistence
     
     func saveInteraction(_ interaction: DrugInteraction) {
-        var interactionToSync = interaction
         // Check if this interaction already exists (same drug pair)
         let existingIndex = interactionHistory.firstIndex { existing in
             let existingPair = Set([existing.drugA.lowercased(), existing.drugB.lowercased()])
@@ -144,7 +126,6 @@ class InteractionStore: ObservableObject {
             updated.id = interactionHistory[index].id
             interactionHistory[index] = updated
             deletedInteractionIDs.remove(updated.id)
-            interactionToSync = updated
         } else {
             // Add new interaction to the top
             interactionHistory.insert(interaction, at: 0)
@@ -158,8 +139,6 @@ class InteractionStore: ObservableObject {
         
         saveInteractionHistory()
         persistDeletedInteractionIDs()
-        syncInteractionWithCloud(interactionToSync)
-        
         // Save the search term
         let searchTerm = "\(interaction.drugA) and \(interaction.drugB)"
         addRecentSearch(searchTerm)
@@ -176,7 +155,6 @@ class InteractionStore: ObservableObject {
         saveInteractionHistory()
         deletedInteractionIDs.insert(interaction.id)
         persistDeletedInteractionIDs()
-        syncDeleteInteraction(interaction)
     }
     
     func clearHistory() {
@@ -185,20 +163,6 @@ class InteractionStore: ObservableObject {
         saveInteractionHistory()
         deletedInteractionIDs.formUnion(ids)
         persistDeletedInteractionIDs()
-        if shouldUseCloudSync {
-            for id in ids {
-                let tombstone = DrugInteraction(
-                    id: id,
-                    drugA: "Deleted Interaction",
-                    drugB: "",
-                    severity: .unknown,
-                    description: "Deleted Interaction",
-                    recommendedAction: "",
-                    timestamp: Date()
-                )
-                syncDeleteInteraction(tombstone)
-            }
-        }
     }
     
     private func saveInteractionHistory() {
@@ -230,143 +194,6 @@ class InteractionStore: ObservableObject {
         UserDefaults.standard.set(ids, forKey: deletedInteractionIDsKey)
     }
 
-    private func observeCloudSyncPreference() {
-        cloudSyncPreferenceCancellable = UserSettings.shared.$shouldUseCloudSync
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.handleCloudSyncPreferenceChange()
-            }
-    }
-
-    private func handleCloudSyncPreferenceChange() {
-        let enabled = shouldUseCloudSync
-        if enabled && !lastCloudSyncPreferenceState {
-            cloudSync.ensureSubscriptions()
-            performInitialCloudSync()
-        }
-        lastCloudSyncPreferenceState = enabled
-    }
-
-    private func fetchCloudInteractions() {
-        guard shouldUseCloudSync else { return }
-        cloudSync.fetchInteractions { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case let .success(records):
-                self.mergeCloudInteractions(records)
-            case let .failure(error):
-                print("CloudKit interaction fetch failed: \(error)")
-            }
-        }
-    }
-
-    private func performInitialCloudSync() {
-        guard shouldUseCloudSync else { return }
-        cloudSync.fetchInteractions { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case let .success(records):
-                self.mergeCloudInteractions(records)
-                self.pushLocalInteractionsToCloud(remoteRecords: records)
-                self.syncDeletedInteractionsIfNeeded(remoteRecords: records)
-            case let .failure(error):
-                print("CloudKit interaction fetch failed: \(error)")
-            }
-        }
-    }
-
-    private func syncInteractionWithCloud(_ interaction: DrugInteraction) {
-        guard shouldUseCloudSync else { return }
-        cloudSync.save(interaction: interaction) { result in
-            if case let .failure(error) = result {
-                print("CloudKit interaction save failed: \(error)")
-            }
-        }
-    }
-
-    private func syncDeleteInteraction(_ interaction: DrugInteraction) {
-        guard shouldUseCloudSync else { return }
-        cloudSync.markInteractionDeleted(interaction) { result in
-            if case let .failure(error) = result {
-                print("CloudKit interaction delete failed: \(error)")
-            }
-        }
-    }
-
-    private func pushLocalInteractionsToCloud(remoteRecords: [CloudInteractionRecord]) {
-        guard shouldUseCloudSync else { return }
-        let remoteByID = Dictionary(uniqueKeysWithValues: remoteRecords.map { ($0.interaction.id, $0) })
-        for interaction in interactionHistory {
-            if let remote = remoteByID[interaction.id] {
-                let remoteUpdatedAt = remote.updatedAt ?? remote.interaction.timestamp
-                if interaction.timestamp <= remoteUpdatedAt {
-                    continue
-                }
-            }
-            syncInteractionWithCloud(interaction)
-        }
-    }
-
-    private func syncDeletedInteractionsIfNeeded(remoteRecords: [CloudInteractionRecord]) {
-        guard shouldUseCloudSync else { return }
-        let remoteIDs = Set(remoteRecords.map { $0.interaction.id })
-        let missingDeletedIDs = deletedInteractionIDs.subtracting(remoteIDs)
-        for id in missingDeletedIDs {
-            let tombstone = DrugInteraction(
-                id: id,
-                drugA: "Deleted Interaction",
-                drugB: "",
-                severity: .unknown,
-                description: "Deleted Interaction",
-                recommendedAction: "",
-                timestamp: Date()
-            )
-            syncDeleteInteraction(tombstone)
-        }
-    }
-
-    private func mergeCloudInteractions(_ remote: [CloudInteractionRecord]) {
-        guard !remote.isEmpty else { return }
-        DispatchQueue.main.async {
-            var updated = self.interactionHistory
-            var changed = false
-
-            for record in remote {
-                let interaction = record.interaction
-                if record.isDeleted {
-                    if let index = updated.firstIndex(where: { $0.id == interaction.id }) {
-                        updated.remove(at: index)
-                        changed = true
-                    }
-                    self.deletedInteractionIDs.insert(interaction.id)
-                    continue
-                }
-
-                if let index = updated.firstIndex(where: { $0.id == interaction.id }) {
-                    let remoteUpdatedAt = record.updatedAt ?? interaction.timestamp
-                    if remoteUpdatedAt > updated[index].timestamp {
-                        updated[index] = interaction
-                        changed = true
-                    }
-                } else {
-                    updated.insert(interaction, at: 0)
-                    changed = true
-                }
-            }
-
-            if updated.count > self.maxHistoryItems {
-                updated = Array(updated.prefix(self.maxHistoryItems))
-                changed = true
-            }
-
-            if changed {
-                self.interactionHistory = updated
-                self.saveInteractionHistory()
-                self.persistDeletedInteractionIDs()
-            }
-        }
-    }
-    
     // MARK: - Recent Searches
     
     func addRecentSearch(_ search: String) {

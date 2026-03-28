@@ -58,36 +58,38 @@ struct OpenAIServiceTests {
     @Test
     func aiMethodsRequirePremiumBeforeDoingWork() async throws {
         clearPillrUserDefaults()
-        UserSettings.shared.setPremiumStatus(false)
-        UserSettings.shared.setSubscriptionType(nil)
+        await userSettingsTestGate.withExclusiveAccess {
+            UserSettings.shared.setPremiumStatus(false)
+            UserSettings.shared.setSubscriptionType(nil)
 
-        do {
-            _ = try await OpenAIService.shared.checkMedicationInteractions(medications: ["Aspirin", "Warfarin"])
-            #expect(Bool(false))
-        } catch {
-            guard case OpenAIError.premiumRequired = error else {
+            do {
+                _ = try await OpenAIService.shared.checkMedicationInteractions(medications: ["Aspirin", "Warfarin"])
                 #expect(Bool(false))
-                return
+            } catch {
+                guard case OpenAIError.premiumRequired = error else {
+                    #expect(Bool(false))
+                    return
+                }
             }
-        }
 
-        do {
-            _ = try await OpenAIService.shared.getFocusTimingGuidance(for: "Vyvanse")
-            #expect(Bool(false))
-        } catch {
-            guard case OpenAIError.premiumRequired = error else {
+            do {
+                _ = try await OpenAIService.shared.getFocusTimingGuidance(for: "Vyvanse")
                 #expect(Bool(false))
-                return
+            } catch {
+                guard case OpenAIError.premiumRequired = error else {
+                    #expect(Bool(false))
+                    return
+                }
             }
-        }
 
-        do {
-            _ = try await OpenAIService.shared.getMedicationInfoOptions(medicationName: "Vyvanse")
-            #expect(Bool(false))
-        } catch {
-            guard case OpenAIError.premiumRequired = error else {
+            do {
+                _ = try await OpenAIService.shared.getMedicationInfoOptions(medicationName: "Vyvanse")
                 #expect(Bool(false))
-                return
+            } catch {
+                guard case OpenAIError.premiumRequired = error else {
+                    #expect(Bool(false))
+                    return
+                }
             }
         }
     }

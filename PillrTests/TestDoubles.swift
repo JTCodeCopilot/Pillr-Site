@@ -1,6 +1,5 @@
 import Foundation
 import UserNotifications
-import CloudKit
 @testable import Pillr
 
 final class FakeNotificationManager: NotificationManagerProtocol {
@@ -15,6 +14,7 @@ final class FakeNotificationManager: NotificationManagerProtocol {
     private(set) var scheduledOneTime: [(Medication, Int)] = []
     private(set) var scheduledOneTimeContext: [(UUID?, Int?, Date?)] = []
     private(set) var rescheduledOccurrences: [(Medication, Date, UUID, Int?, Date)] = []
+    private(set) var dailyCheckInSchedules: [(UUID, Date)] = []
     var pendingMedicationReminderRequests: [UNNotificationRequest] = []
     private(set) var canceledMedicationIDs: [UUID] = []
     private(set) var badgeCounts: [Int] = []
@@ -63,7 +63,9 @@ final class FakeNotificationManager: NotificationManagerProtocol {
 
     func scheduleStimulantPhaseNotifications(for medication: Medication, doseTime: Date, logID: UUID) {}
 
-    func scheduleDailyCheckInReminder(for medication: Medication, referenceDate: Date) {}
+    func scheduleDailyCheckInReminder(for medication: Medication, referenceDate: Date) {
+        dailyCheckInSchedules.append((medication.id, referenceDate))
+    }
 
     func cancelNotification(with id: UUID) {
         canceledSingle.append(id)
@@ -115,39 +117,4 @@ final class FakeNotificationManager: NotificationManagerProtocol {
     }
     func clearDeliveredMedicationReminders() {}
     func purgeNotifications(excluding validMedicationIDs: Set<UUID>) {}
-}
-
-final class FakeCloudKitSync: CloudKitMedicationSyncProtocol {
-    private(set) var savedMedications: [Medication] = []
-    private(set) var savedLogs: [MedicationLog] = []
-
-    func ensureSubscriptions() {}
-
-    func fetchAllRecords(
-        completion: @escaping (Result<(medications: [Medication], logs: [MedicationLog]), Error>) -> Void
-    ) {
-        completion(.success((medications: [], logs: [])))
-    }
-
-    func save(medication: Medication, completion: ((Result<CKRecord, Error>) -> Void)?) {
-        savedMedications.append(medication)
-        completion?(.failure(NSError(domain: "FakeCloudKit", code: 0)))
-    }
-
-    func save(
-        log: MedicationLog,
-        medication: Medication,
-        completion: ((Result<CKRecord, Error>) -> Void)?
-    ) {
-        savedLogs.append(log)
-        completion?(.failure(NSError(domain: "FakeCloudKit", code: 0)))
-    }
-
-    func markMedicationDeleted(_ medication: Medication, completion: ((Result<Void, Error>) -> Void)?) {
-        completion?(.success(()))
-    }
-
-    func markLogDeleted(_ log: MedicationLog, completion: ((Result<Void, Error>) -> Void)?) {
-        completion?(.success(()))
-    }
 }

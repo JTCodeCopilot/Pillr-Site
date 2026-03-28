@@ -57,7 +57,7 @@ class NotificationManager: ObservableObject {
     private let notificationMutationSubmissionQueue = DispatchQueue(
         label: "NotificationManager.notificationMutationSubmissionQueue"
     )
-    private let reliabilityTelemetryQueue = DispatchQueue(label: "NotificationManager.reliabilityTelemetryQueue")
+    private static let reliabilityTelemetryQueue = DispatchQueue(label: "NotificationManager.reliabilityTelemetryQueue")
     private var trackedMedicationIDs = Set<UUID>()
     private var pendingNotificationMutationTask: Task<Void, Never>?
     // iOS only keeps a limited number of pending local notifications.
@@ -75,13 +75,13 @@ class NotificationManager: ObservableObject {
 
     func registerTrackedMedicationID(_ id: UUID) {
         trackedMedicationIDsQueue.sync(flags: .barrier) {
-            trackedMedicationIDs.insert(id)
+            _ = trackedMedicationIDs.insert(id)
         }
     }
 
     func unregisterTrackedMedicationID(_ id: UUID) {
         trackedMedicationIDsQueue.sync(flags: .barrier) {
-            trackedMedicationIDs.remove(id)
+            _ = trackedMedicationIDs.remove(id)
         }
     }
 
@@ -147,11 +147,7 @@ class NotificationManager: ObservableObject {
     }
 
     private var defaultAuthorizationOptions: UNAuthorizationOptions {
-        if #available(iOS 15.0, *) {
-            return [.alert, .badge, .sound, .timeSensitive]
-        } else {
-            return [.alert, .badge, .sound]
-        }
+        [.alert, .badge, .sound]
     }
 
     func requestAuthorization(
@@ -313,8 +309,8 @@ class NotificationManager: ObservableObject {
         case notificationMutationError
     }
 
-    private func recordReliabilityEvent(_ event: ReliabilityEvent, amount: Int = 1) {
-        reliabilityTelemetryQueue.async {
+    private static func recordReliabilityEvent(_ event: ReliabilityEvent, amount: Int = 1) {
+        Self.reliabilityTelemetryQueue.async {
             let key = "notification_reliability_\(event.rawValue)"
             let current = UserDefaults.standard.integer(forKey: key)
             UserDefaults.standard.set(current + amount, forKey: key)
@@ -362,10 +358,10 @@ class NotificationManager: ObservableObject {
         }
 
         await withCheckedContinuation { continuation in
-            UNUserNotificationCenter.current().add(request) { [weak self] error in
+            UNUserNotificationCenter.current().add(request) { error in
                 if let error {
                     print("Error scheduling \(context): \(error.localizedDescription)")
-                    self?.recordReliabilityEvent(.notificationMutationError)
+                    Self.recordReliabilityEvent(.notificationMutationError)
                 }
                 continuation.resume()
             }
@@ -603,7 +599,7 @@ class NotificationManager: ObservableObject {
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
                 let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
                 await self.addNotificationRequest(request, context: "notification")
-                self.recordReliabilityEvent(.reminderScheduled)
+                Self.recordReliabilityEvent(.reminderScheduled)
                 knownIdentifiers.insert(identifier)
                 remainingSlots -= 1
             }
@@ -646,7 +642,7 @@ class NotificationManager: ObservableObject {
         enqueueNotificationMutation { [weak self] in
             guard let self else { return }
             await self.addNotificationRequest(request, context: "notification")
-            self.recordReliabilityEvent(.reminderRescheduled)
+            Self.recordReliabilityEvent(.reminderRescheduled)
         }
     }
 
@@ -1481,7 +1477,8 @@ class NotificationFeedbackManager {
 // MARK: - Notification Delegate
 // This delegate will handle notification responses and trigger appropriate haptics
 
-class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+@MainActor
+class NotificationDelegate: NSObject, @preconcurrency UNUserNotificationCenterDelegate {
     static let shared = NotificationDelegate(
         notificationManager: NotificationManager.shared,
         medicationStore: MedicationStore.shared

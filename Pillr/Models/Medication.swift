@@ -35,7 +35,7 @@ struct Medication: Identifiable, Codable, Hashable {
     var iconName: String = "pill" // Default icon
     var createdAt: Date? = Date() // When the medication was added
     var updatedAt: Date? = Date() // Last local update time
-    var cloudLastModified: Date? = nil // The last time this record was synced with CloudKit
+    var cloudLastModified: Date? = nil // Legacy field kept so older saved data still loads cleanly
     
     var dosageWithUnit: String {
         let amount = dosage.trimmingCharacters(in: .whitespacesAndNewlines)

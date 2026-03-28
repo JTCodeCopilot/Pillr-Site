@@ -232,7 +232,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 1630;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					4935BAAD2F45BEEB00A11920 = {
 						CreatedOnToolsVersion = 26.2;
@@ -535,6 +535,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				SHARED_PRECOMPS_DIR = "$(SRCROOT)/SharedPrecompiledHeaders";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_SERIALIZE_DEBUGGING_OPTIONS = NO;
@@ -598,6 +599,7 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
 				SHARED_PRECOMPS_DIR = "$(SRCROOT)/SharedPrecompiledHeaders";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_SERIALIZE_DEBUGGING_OPTIONS = NO;
 				SWIFT_USE_PARALLEL_SOURCEINFO = YES;

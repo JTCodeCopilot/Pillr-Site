@@ -2,13 +2,18 @@ import SwiftUI
 import StoreKit
 import UIKit
 import UserNotifications
-import CloudKit
 import LocalAuthentication
 import WebKit
 
 struct SettingsView: View {
     private enum ScrollTarget: Hashable {
         case feedbackForm
+    }
+
+    private enum ICloudDriveStatus {
+        case checking
+        case available
+        case unavailable
     }
 
     @EnvironmentObject var userSettings: UserSettings
@@ -21,7 +26,7 @@ struct SettingsView: View {
     @State private var showingInteractionHistory = false
     @State private var showingInteractionSelectionSheet = false
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus?
-    @State private var iCloudAccountStatus: CKAccountStatus?
+    @State private var iCloudDriveStatus: ICloudDriveStatus = .checking
     @State private var isHealthSettingsExpanded = false
     @State private var isPremiumSettingsExpanded = false
     @State private var isHomeShortcutsExpanded = false
@@ -921,58 +926,39 @@ struct SettingsView: View {
     }
 
     private func refreshICloudStatus() async {
-        do {
-            let status = try await CKContainer.default().accountStatus()
-            iCloudAccountStatus = status
-        } catch {
-            print("Failed to read iCloud account status: \(error)")
-            iCloudAccountStatus = nil
-        }
+        let containerURL = FileManager.default.url(forUbiquityContainerIdentifier: "iCloud.app.Pillr")
+        iCloudDriveStatus = containerURL == nil ? .unavailable : .available
     }
 
     private var backupConnectionTitle: String {
-        switch iCloudAccountStatus {
+        switch iCloudDriveStatus {
         case .available:
             return "Connected"
-        case .noAccount:
-            return "Sign in to iCloud"
-        case .restricted:
+        case .unavailable:
             return "Unavailable"
-        case .temporarilyUnavailable:
-            return "Temporarily unavailable"
-        case .couldNotDetermine, .none:
+        case .checking:
             return "Checking…"
-        @unknown default:
-            return "Unknown status"
         }
     }
 
     private var backupConnectionDetail: String {
-        switch iCloudAccountStatus {
+        switch iCloudDriveStatus {
         case .available:
             return "Backups can be saved to iCloud Drive."
-        case .noAccount:
-            return "Sign in to iCloud to save a backup copy in iCloud Drive."
-        case .restricted:
-            return "This device cannot use iCloud Drive right now."
-        case .temporarilyUnavailable:
-            return "iCloud Drive is temporarily unavailable. Try again shortly."
-        case .couldNotDetermine, .none:
+        case .unavailable:
+            return "iCloud Drive is not available right now. Check that iCloud Drive is turned on for this device."
+        case .checking:
             return "Checking whether iCloud Drive is ready."
-        @unknown default:
-            return "Account status currently unavailable."
         }
     }
 
     private var backupConnectionColor: Color {
-        switch iCloudAccountStatus {
+        switch iCloudDriveStatus {
         case .available:
             return Color.pillrAccent
-        case .noAccount, .restricted, .temporarilyUnavailable:
+        case .unavailable:
             return Color(hex: "#F87171")
-        case .couldNotDetermine, .none:
-            return SettingsPalette.mainText
-        @unknown default:
+        case .checking:
             return SettingsPalette.mainText
         }
     }

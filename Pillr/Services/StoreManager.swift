@@ -81,7 +81,7 @@ class StoreManager: ObservableObject {
             for product in storeProducts {
                 print("Loaded product: \(product.id)")
                 print("  - Display name: \(product.displayName)")
-                print("  - Price: \(product.price) \(product.priceFormatStyle.locale.currencyCode ?? "Unknown")")
+                print("  - Price: \(product.price) \(product.priceFormatStyle.locale.currency?.identifier ?? "Unknown")")
                 print("  - Formatted price: \(product.displayPrice)")
                 print("  - Locale: \(product.priceFormatStyle.locale.identifier)")
             }
@@ -239,9 +239,9 @@ class StoreManager: ObservableObject {
     // Get the localized price for a country if product is not available
     func getLocalizedFallbackPrice() -> String {
         let locale = Locale.current
-        let currencyCode = locale.currencyCode ?? "USD"
+        let currencyCode = locale.currency?.identifier ?? "USD"
         let currencySymbol = locale.currencySymbol ?? "$"
-        let regionCode = locale.regionCode ?? "US"
+        let regionCode = locale.region?.identifier ?? "US"
         
         // Fallback prices for different regions
         let priceMappings: [String: String] = [

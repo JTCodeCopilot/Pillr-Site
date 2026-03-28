@@ -86,8 +86,8 @@ struct PremiumUpgradeView: View {
             if !isPreview {
                 await storeManager.loadProducts()
                 print("User locale: \(Locale.current.identifier)")
-                print("User region: \(Locale.current.regionCode ?? "Unknown")")
-                print("User currency: \(Locale.current.currencyCode ?? "Unknown")")
+                print("User region: \(Locale.current.region?.identifier ?? "Unknown")")
+                print("User currency: \(Locale.current.currency?.identifier ?? "Unknown")")
                 await storeManager.updatePurchasedProducts()
                 if storeManager.isPremiumPurchased() {
                     alertMessage = "You've already purchased Premium!"
@@ -452,7 +452,7 @@ struct PremiumUpgradeView: View {
     private func purchasePremium(product: Product) {
         Task {
             do {
-                if let transaction = try await storeManager.purchase(product) {
+                if try await storeManager.purchase(product) != nil {
                     alertMessage = "Purchase successful! All premium features are now unlocked."
                     showingAlert = true
                     OpenAIService.shared.setPremiumPurchased()

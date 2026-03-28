@@ -407,10 +407,10 @@ struct FocusTimelineView: View {
     }
 
     private var nextShiftDetail: String {
-        if currentActiveWindowCount > 0, let currentOpenWindowEnd {
+        if currentActiveWindowCount > 0 {
             return "Expect this current stretch to soften around then."
         }
-        if let nextUpcomingWindowStart {
+        if nextUpcomingWindowStart != nil {
             return "A stronger focus window is expected to begin then."
         }
         return "Nothing else is mapped for the rest of today."

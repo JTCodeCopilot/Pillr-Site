@@ -15,14 +15,10 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
         // Set notification delegate to handle user responses
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
 
-        registerForRemoteNotificationsIfEligible(application)
-
         return true
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        registerForRemoteNotificationsIfEligible(application)
-
         Task { @MainActor in
             MedicationStore.shared.checkAndResetBadge()
             MedicationStore.shared.kickstartActiveReminderSchedules(referenceDate: Date(), force: true)
@@ -33,14 +29,6 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
     
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Foreground-specific work is handled in applicationDidBecomeActive.
-    }
-
-    func application(
-        _ application: UIApplication,
-        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
-        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
-    ) {
-        completionHandler(.noData)
     }
 
     private func incrementAppLaunchCountIfNeeded() {
@@ -54,28 +42,11 @@ final class PillrAppDelegate: NSObject, UIApplicationDelegate {
         UserDefaults.standard.set(currentCount + 1, forKey: key)
     }
 
-    private func registerForRemoteNotificationsIfEligible(_ application: UIApplication) {
-        guard UserSettings.shared.hasCompletedAppOnboarding else { return }
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            let isAllowed: Bool
-            switch settings.authorizationStatus {
-            case .authorized, .provisional, .ephemeral:
-                isAllowed = true
-            default:
-                isAllowed = false
-            }
-            guard isAllowed else { return }
-            DispatchQueue.main.async {
-                application.registerForRemoteNotifications()
-            }
-        }
-    }
-
 }
 
 @main
 struct PillrApp: App {
-    // IMPORTANT: Medication data stays on-device and mirrors to iCloud for backup.
+    // IMPORTANT: Medication data stays on-device and can be backed up to iCloud Drive.
     // Data is only removed when the app is completely uninstalled.
     
     @UIApplicationDelegateAdaptor private var appDelegate: PillrAppDelegate
@@ -169,18 +140,14 @@ struct PillrApp: App {
             tabBarAppearance.shadowColor = .clear
             applyBadgeColors(to: tabBarAppearance)
             UITabBar.appearance().standardAppearance = tabBarAppearance
-            if #available(iOS 15.0, *) {
-                UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
-            }
+            UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
         } else {
             let tabBarAppearance = UITabBarAppearance()
             tabBarAppearance.configureWithTransparentBackground()
             tabBarAppearance.backgroundColor = UIColor(Color.pillrPrimary)
             applyBadgeColors(to: tabBarAppearance)
             UITabBar.appearance().standardAppearance = tabBarAppearance
-            if #available(iOS 15.0, *) {
-                UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
-            }
+            UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
         }
 
         // Keep enabled switches consistent across the whole app.

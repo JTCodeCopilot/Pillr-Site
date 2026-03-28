@@ -357,7 +357,6 @@ struct MedicationsListView: View {
                 guard scenePhase == .active else { return }
                 referenceDate = output
                 store.refreshOverdueMedicationIDs(referenceDate: output)
-                store.refreshCloudSyncIfNeeded()
             }
             .onChange(of: store.logs) { _, _ in
                 guard scenePhase == .active else { return }
@@ -476,7 +475,9 @@ struct MedicationsListView: View {
         }
 
         if delay > 0 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: showPrompt)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                showPrompt()
+            }
         } else {
             showPrompt()
         }
@@ -520,12 +521,6 @@ struct MedicationsListView: View {
     }
 
     private func performPullToRefresh() async {
-        let _ = await withCheckedContinuation { continuation in
-            store.refreshCloudSyncIfNeeded { _ in
-                continuation.resume()
-            }
-        }
-
         await MainActor.run {
             store.loadMedications()
             store.loadLogs()

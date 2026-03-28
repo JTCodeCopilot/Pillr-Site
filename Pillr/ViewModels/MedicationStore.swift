@@ -8,9 +8,7 @@
 
 import SwiftUI
 import UserNotifications
-import CloudKit
 import UIKit
-import Combine
 
 struct ADHDDoseTimelineEntry: Identifiable, Equatable {
     let id = UUID()
@@ -75,7 +73,6 @@ class MedicationStore: ObservableObject {
 
     @Published var medications: [Medication] = []
     @Published var logs: [MedicationLog] = []
-    @Published private(set) var lastCloudSyncDate: Date?
     @Published var recentADHDDoseTimeline: ADHDDoseTimelineEntry?
     /// When set (typically from a notification tap), the UI
     /// should present a Reflection logging sheet for this medication.
@@ -92,17 +89,10 @@ class MedicationStore: ObservableObject {
     @Published var requestedMainTab: MainTab?
     @Published private(set) var overdueMedicationIDs: Set<UUID> = []
     @Published private(set) var overdueReminderNotificationIDs: Set<String> = []
-    @Published private(set) var isCloudSyncInProgress = false
-    @Published private(set) var cloudSyncStatusMessage: String?
     private let notificationManager: NotificationManagerProtocol
     private let hapticManager = HapticManager.shared
-    private let cloudSync: CloudKitMedicationSyncProtocol
     private var dayChangeObserver: NSObjectProtocol?
     private var appActiveObserver: NSObjectProtocol?
-    private var cloudSyncPreferenceCancellable: AnyCancellable?
-    private var cloudSyncOperationCount = 0
-    private var lastCloudSyncPreferenceState: Bool = false
-    private var isPerformingInitialCloudSync = false
     private var lastReminderKickstartDate: Date?
     private let reminderKickstartMinimumInterval: TimeInterval = 30
     private var hasPerformedInitialReminderWindowRefresh = false
@@ -128,17 +118,8 @@ class MedicationStore: ObservableObject {
     private let logsBackupKey = "medicationLogsData_backup"
     private let deletedMedicationIDsKey = "deletedMedicationIDs"
     private let legacyLogMedicationIDRepairV1Key = "legacyLogMedicationIDRepair_v1_complete"
-    private let initialCloudRestoreCompletedKey = "initialCloudRestoreCompleted"
-    private let pendingCloudMedicationSyncsKey = "pendingCloudMedicationSyncs"
-    private let pendingCloudLogSyncsKey = "pendingCloudLogSyncs"
     private var deletedMedicationIDs: Set<UUID> = []
-    private var pendingCloudMedicationSyncs: [UUID: Medication] = [:]
-    private var pendingCloudLogSyncs: [UUID: MedicationLog] = [:]
     private let isPreviewMode: Bool
-
-    private var shouldUseCloudSync: Bool {
-        false
-    }
 
     var activeMedications: [Medication] {
         medications.filter { !$0.isDeleted }
@@ -156,26 +137,15 @@ class MedicationStore: ObservableObject {
 
     init(
         isPreview: Bool = false,
-        notificationManager: NotificationManagerProtocol = NotificationManager.shared,
-        cloudSync: CloudKitMedicationSyncProtocol = CloudKitMedicationSync.shared
+        notificationManager: NotificationManagerProtocol = NotificationManager.shared
     ) {
         self.isPreviewMode = isPreview
         self.notificationManager = notificationManager
-        self.cloudSync = cloudSync
         if !isPreview {
             if let stored = UserDefaults.standard.stringArray(forKey: deletedMedicationIDsKey) {
                 deletedMedicationIDs = Set(stored.compactMap { UUID(uuidString: $0) })
             }
-            if let data = UserDefaults.standard.data(forKey: pendingCloudMedicationSyncsKey),
-               let stored = try? JSONDecoder().decode([Medication].self, from: data) {
-                pendingCloudMedicationSyncs = Dictionary(uniqueKeysWithValues: stored.map { ($0.id, $0) })
-            }
-            if let data = UserDefaults.standard.data(forKey: pendingCloudLogSyncsKey),
-               let stored = try? JSONDecoder().decode([MedicationLog].self, from: data) {
-                pendingCloudLogSyncs = Dictionary(uniqueKeysWithValues: stored.map { ($0.id, $0) })
-            }
         }
-        self.lastCloudSyncPreferenceState = shouldUseCloudSync
         notificationManager.badgeCountProvider = { [weak self] date in
             guard let self else { return 0 }
             if Thread.isMainThread {
@@ -190,13 +160,9 @@ class MedicationStore: ObservableObject {
         if !isPreview {
             loadMedications()
             loadLogs()
-            runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: !shouldUseCloudSync)
-            if shouldUseCloudSync {
-                fetchCloudData()
-            }
+            runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
             lastNotificationResetDay = Calendar.current.startOfDay(for: Date())
             startObservingDayChanges()
-            observeCloudSyncPreference()
         }
     }
 
@@ -207,7 +173,6 @@ class MedicationStore: ObservableObject {
         if let observer = appActiveObserver {
             NotificationCenter.default.removeObserver(observer)
         }
-        cloudSyncPreferenceCancellable?.cancel()
     }
     
     // Find a medication by its ID
@@ -309,7 +274,6 @@ class MedicationStore: ObservableObject {
         medications.append(newMed)
         lastAddedMedicationID = newMed.id
         saveMedications()
-        syncMedicationWithCloud(newMed)
         scheduleDailyCheckInReminderIfNeeded(for: newMed)
         return true // Successfully added medication
     }
@@ -400,7 +364,6 @@ class MedicationStore: ObservableObject {
             // Update in the array
             medications[index] = updatedMedication
             saveMedications()
-            syncMedicationWithCloud(updatedMedication)
             let dailyCheckInSettingsChanged = oldMedication.enableDailyCheckIn != updatedMedication.enableDailyCheckIn
                 || oldMedication.dailyCheckInTime != updatedMedication.dailyCheckInTime
             if dailyCheckInSettingsChanged {
@@ -630,10 +593,6 @@ class MedicationStore: ObservableObject {
             medications[index] = updatedMedication
             saveMedications()
         }
-        syncLogWithCloud(newLog)
-        if let index = medications.firstIndex(where: { $0.id == medication.id }) {
-            syncMedicationWithCloud(medications[index])
-        }
         
         clearNotificationsForLoggedDose(
             medication: medication,
@@ -706,25 +665,6 @@ class MedicationStore: ObservableObject {
     // Public method that can be called from app delegate/scene
     func checkAndResetBadge() {
         resetBadgeIfNeeded()
-    }
-
-    func refreshCloudSyncIfNeeded(completion: ((UIBackgroundFetchResult) -> Void)? = nil) {
-        guard shouldUseCloudSync else {
-            completion?(.noData)
-            return
-        }
-        clearCloudSyncStatus()
-        fetchCloudData(completion: completion)
-    }
-
-    func recoverCloudFromCurrentDevice(completion: ((Bool) -> Void)? = nil) {
-        guard shouldUseCloudSync else {
-            completion?(false)
-            return
-        }
-        clearCloudSyncStatus()
-        pushAllLocalDataToCloud()
-        completion?(true)
     }
 
     /// Re-applies scheduled reminder windows for active medications that already
@@ -941,7 +881,9 @@ class MedicationStore: ObservableObject {
         if Thread.isMainThread {
             apply()
         } else {
-            DispatchQueue.main.async(execute: apply)
+            DispatchQueue.main.async {
+                apply()
+            }
         }
     }
 
@@ -1260,13 +1202,11 @@ class MedicationStore: ObservableObject {
 
         logs.remove(at: insertedIndex)
         saveLogs()
-        syncDeleteLog(action.newLog)
 
         if let replacedLog = action.replacedLog {
             let restoreIndex = min(action.replacedLogIndex ?? 0, logs.count)
             logs.insert(replacedLog, at: restoreIndex)
             saveLogs()
-            syncLogWithCloud(replacedLog)
         }
 
         if action.pillCountDelta != 0,
@@ -1276,7 +1216,6 @@ class MedicationStore: ObservableObject {
             medications[index].pillCount = pillCount
             medications[index].updatedAt = Date()
             saveMedications()
-            syncMedicationWithCloud(medications[index])
         }
 
         resetBadgeIfNeeded()
@@ -1299,7 +1238,6 @@ class MedicationStore: ObservableObject {
                 updatedMedication.updatedAt = Date()
                 medications[index] = updatedMedication
                 saveMedications()
-                syncMedicationWithCloud(updatedMedication)
             }
         }
 
@@ -1313,7 +1251,6 @@ class MedicationStore: ObservableObject {
             updatedMedication.updatedAt = Date()
             medications[index] = updatedMedication
             saveMedications()
-            syncMedicationWithCloud(updatedMedication)
         }
     }
     
@@ -1340,7 +1277,6 @@ class MedicationStore: ObservableObject {
                 medications[index].updatedAt = Date()
                 deletedMedicationIDs.insert(medications[index].id)
                 persistDeletedMedicationIDs()
-                syncMedicationWithCloud(medications[index])
             }
         }
         saveMedications()
@@ -1353,7 +1289,6 @@ class MedicationStore: ObservableObject {
         medications[index].updatedAt = Date()
         deletedMedicationIDs.insert(medications[index].id)
         persistDeletedMedicationIDs()
-        syncMedicationWithCloud(medications[index])
         saveMedications()
     }
 
@@ -1387,19 +1322,14 @@ class MedicationStore: ObservableObject {
     }
     
     func deleteLog(at offsets: IndexSet) {
-        let logsToRemove = offsets.compactMap { index in logs[index] }
         logs.remove(atOffsets: offsets)
         saveLogs()
-        for log in logsToRemove {
-            syncDeleteLog(log)
-        }
     }
 
     func deleteLog(_ log: MedicationLog) {
         guard let index = logs.firstIndex(where: { $0.id == log.id }) else { return }
         logs.remove(at: index)
         saveLogs()
-        syncDeleteLog(log)
     }
 
     func updateLogDate(_ log: MedicationLog, newDate: Date) {
@@ -1409,7 +1339,6 @@ class MedicationStore: ObservableObject {
         updatedLog.updatedAt = Date()
         logs[index] = updatedLog
         saveLogs()
-        syncLogWithCloud(updatedLog)
     }
 
     func hideLogFromMyMeds(_ log: MedicationLog) {
@@ -1420,7 +1349,6 @@ class MedicationStore: ObservableObject {
         updatedLog.updatedAt = Date()
         logs[index] = updatedLog
         saveLogs()
-        syncLogWithCloud(updatedLog)
     }
 
     private func preservedReminderIdentifiers(
@@ -1635,7 +1563,6 @@ class MedicationStore: ObservableObject {
         }
         logs[index] = logEntry
         saveLogs()
-        syncLogWithCloud(logEntry)
         hapticManager.successNotification()
     }
 
@@ -1823,9 +1750,6 @@ class MedicationStore: ObservableObject {
             }
         }
         saveLogs()
-        for log in updatedLogs {
-            syncLogWithCloud(log)
-        }
     }
 
     // --- Local Device Persistence ---
@@ -1992,9 +1916,6 @@ class MedicationStore: ObservableObject {
 
         if repaired {
             saveLogs()
-            for log in repairedLogs {
-                syncLogWithCloud(log)
-            }
             resetBadgeIfNeeded()
             refreshOverdueMedicationIDs(referenceDate: Date())
             if !allowInPreview {
@@ -2031,41 +1952,6 @@ class MedicationStore: ObservableObject {
                 self?.reconcileNotificationSchedules(referenceDate: Date())
             }
         }
-    }
-
-    private func observeCloudSyncPreference() {
-        cloudSyncPreferenceCancellable = UserSettings.shared.$shouldUseCloudSync
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.handleCloudSyncPreferenceChange()
-            }
-    }
-
-    private func handleCloudSyncPreferenceChange() {
-        let enabled = shouldUseCloudSync
-        if enabled && !lastCloudSyncPreferenceState {
-            cloudSync.ensureSubscriptions()
-            performInitialCloudSync()
-        } else if !enabled {
-            cloudSyncOperationCount = 0
-            isCloudSyncInProgress = false
-        }
-        lastCloudSyncPreferenceState = enabled
-    }
-
-    private func beginCloudSyncOperation() {
-        guard shouldUseCloudSync else { return }
-        cloudSyncOperationCount += 1
-        isCloudSyncInProgress = cloudSyncOperationCount > 0
-    }
-
-    private func endCloudSyncOperation() {
-        guard cloudSyncOperationCount > 0 else {
-            isCloudSyncInProgress = false
-            return
-        }
-        cloudSyncOperationCount -= 1
-        isCloudSyncInProgress = cloudSyncOperationCount > 0
     }
 
     private func performDailyResetIfNeeded() {
@@ -2323,503 +2209,6 @@ class MedicationStore: ObservableObject {
         }
     }
     
-    private func fetchCloudData(completion: ((UIBackgroundFetchResult) -> Void)? = nil) {
-        guard shouldUseCloudSync else { return }
-        beginCloudSyncOperation()
-        cloudSync.fetchAllRecords { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                defer { self.endCloudSyncOperation() }
-                switch result {
-                case let .success(payload):
-                    self.clearCloudSyncStatus()
-                    self.mergeCloudMedications(payload.medications)
-                    self.mergeCloudLogs(payload.logs)
-                    self.runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
-                    self.flushPendingCloudChanges()
-                    self.lastCloudSyncDate = Date()
-                    completion?(.newData)
-                case let .failure(error):
-                    self.setCloudSyncStatus(error)
-                    print("CloudKit fetch failed: \(error)")
-                    completion?(.failed)
-                }
-            }
-        }
-    }
-
-    private func syncMedicationWithCloud(_ medication: Medication) {
-        guard shouldUseCloudSync else { return }
-        queuePendingMedicationSync(medication)
-        beginCloudSyncOperation()
-        cloudSync.save(medication: medication) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                defer { self.endCloudSyncOperation() }
-                switch result {
-                case let .success(record):
-                    self.clearPendingMedicationSync(for: medication.id)
-                    self.clearCloudSyncStatus()
-                    if let modificationDate = record.modificationDate {
-                        self.updateCloudLastModified(for: medication.id, date: modificationDate)
-                    }
-                    self.lastCloudSyncDate = Date()
-                case let .failure(error):
-                    self.setCloudSyncStatus(error)
-                    print("CloudKit medication save failed: \(error)")
-                }
-            }
-        }
-    }
-
-    private func syncLogWithCloud(_ log: MedicationLog) {
-        guard shouldUseCloudSync else { return }
-        queuePendingLogSync(log)
-        guard let medication = medications.first(where: { $0.id == log.medicationID }) else { return }
-        beginCloudSyncOperation()
-        cloudSync.save(log: log, medication: medication) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                defer { self.endCloudSyncOperation() }
-                if case let .failure(error) = result {
-                    self.setCloudSyncStatus(error)
-                    print("CloudKit log save failed: \(error)")
-                } else {
-                    self.clearPendingLogSync(for: log.id)
-                    self.clearCloudSyncStatus()
-                    self.lastCloudSyncDate = Date()
-                }
-            }
-        }
-    }
-
-    private func syncDeleteMedication(_ medication: Medication) {
-        guard shouldUseCloudSync else { return }
-        var tombstone = medication
-        tombstone.isDeleted = true
-        tombstone.updatedAt = Date()
-        deletedMedicationIDs.insert(tombstone.id)
-        persistDeletedMedicationIDs()
-        beginCloudSyncOperation()
-        cloudSync.markMedicationDeleted(tombstone) { result in
-            DispatchQueue.main.async {
-                defer { self.endCloudSyncOperation() }
-                if case let .failure(error) = result {
-                    self.setCloudSyncStatus(error)
-                    print("CloudKit medication delete failed: \(error)")
-                }
-            }
-        }
-    }
-
-    private func syncDeleteLog(_ log: MedicationLog) {
-        guard shouldUseCloudSync else { return }
-        var tombstone = log
-        tombstone.isDeleted = true
-        tombstone.updatedAt = Date()
-        queuePendingLogSync(tombstone)
-        beginCloudSyncOperation()
-        cloudSync.markLogDeleted(tombstone) { result in
-            DispatchQueue.main.async {
-                defer { self.endCloudSyncOperation() }
-                if case let .failure(error) = result {
-                    self.setCloudSyncStatus(error)
-                    print("CloudKit log delete failed: \(error)")
-                } else {
-                    self.clearPendingLogSync(for: log.id)
-                    self.clearCloudSyncStatus()
-                    self.lastCloudSyncDate = Date()
-                }
-            }
-        }
-    }
-
-    private func updateCloudLastModified(for medicationID: UUID, date: Date) {
-        guard shouldUseCloudSync else { return }
-        if let index = medications.firstIndex(where: { $0.id == medicationID }) {
-            var medication = medications[index]
-            medication.cloudLastModified = date
-            medications[index] = medication
-            saveMedications()
-            lastCloudSyncDate = Date()
-        }
-    }
-
-    private func mergeCloudMedications(_ remote: [Medication]) {
-        guard !remote.isEmpty else { return }
-        var updated = self.medications
-        var hasChanges = false
-        let deletedIDs = self.deletedMedicationIDs
-        let remoteIDs = Set(remote.map { $0.id })
-
-        for remoteMedication in remote {
-            if remoteMedication.isDeleted {
-                if let index = updated.firstIndex(where: { $0.id == remoteMedication.id }) {
-                    let toRemove = updated[index]
-                    self.notificationManager.cancelMedicationNotifications(for: toRemove.id)
-                    self.notificationManager.unregisterTrackedMedicationID(toRemove.id)
-                    self.clearReminderState(for: toRemove)
-                    updated.remove(at: index)
-                    hasChanges = true
-                }
-                self.deletedMedicationIDs.insert(remoteMedication.id)
-                self.persistDeletedMedicationIDs()
-                continue
-            }
-
-            if deletedIDs.contains(remoteMedication.id) {
-                if let index = updated.firstIndex(where: { $0.id == remoteMedication.id }) {
-                    let toRemove = updated[index]
-                    self.notificationManager.cancelMedicationNotifications(for: toRemove.id)
-                    self.notificationManager.unregisterTrackedMedicationID(toRemove.id)
-                    self.clearReminderState(for: toRemove)
-                    updated.remove(at: index)
-                    hasChanges = true
-                }
-                var tombstone = remoteMedication
-                tombstone.isDeleted = true
-                tombstone.updatedAt = Date()
-                self.syncMedicationWithCloud(tombstone)
-                continue
-            }
-
-            if let index = updated.firstIndex(where: { $0.id == remoteMedication.id }) {
-                if self.shouldReplace(local: updated[index], with: remoteMedication) {
-                    let merged = self.scheduleNotificationsForCloudMedication(
-                        remoteMedication,
-                        preservingLocalReminderStateFrom: updated[index]
-                    )
-                    updated[index] = merged
-                    hasChanges = true
-                }
-            } else {
-                let merged = self.scheduleNotificationsForCloudMedication(
-                    remoteMedication,
-                    preservingLocalReminderStateFrom: nil
-                )
-                updated.append(merged)
-                hasChanges = true
-            }
-        }
-
-        let missingDeletedIDs = deletedIDs.subtracting(remoteIDs)
-        if !missingDeletedIDs.isEmpty {
-            for id in missingDeletedIDs {
-                let tombstone = Medication(
-                    id: id,
-                    name: "Deleted Medication",
-                    dosage: "Deleted",
-                    dosageUnit: "",
-                    iconName: "pill",
-                    createdAt: nil,
-                    updatedAt: Date(),
-                    frequency: "Once daily",
-                    timeToTake: Date(),
-                    isDeleted: true
-                )
-                self.syncMedicationWithCloud(tombstone)
-            }
-        }
-
-        self.notificationManager.updateTrackedMedicationIDs(
-            Set(updated.filter { !$0.isDeleted }.map { $0.id })
-        )
-
-        if hasChanges {
-            self.medications = updated
-            self.saveMedications()
-            self.resetBadgeIfNeeded()
-        }
-        self.kickstartActiveReminderSchedules(referenceDate: Date(), force: true)
-    }
-
-    private func performInitialCloudSync() {
-        guard shouldUseCloudSync else { return }
-        guard !isPerformingInitialCloudSync else { return }
-        isPerformingInitialCloudSync = true
-        beginCloudSyncOperation()
-        cloudSync.fetchAllRecords { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                defer { self.endCloudSyncOperation() }
-                self.isPerformingInitialCloudSync = false
-                switch result {
-                case let .success(payload):
-                    if payload.medications.isEmpty && payload.logs.isEmpty {
-                        self.markInitialCloudRestoreCompleted()
-                        self.runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
-                        self.flushPendingCloudChanges()
-                        self.lastCloudSyncDate = Date()
-                        self.clearCloudSyncStatus()
-                        return
-                    }
-
-                    self.mergeCloudMedications(payload.medications)
-                    self.mergeCloudLogs(payload.logs)
-                    self.runLegacyLogMedicationIDRepair(markCompleteWhenNoChanges: true)
-                    self.flushPendingCloudChanges()
-                    self.markInitialCloudRestoreCompleted()
-                    self.lastCloudSyncDate = Date()
-                    self.clearCloudSyncStatus()
-                case let .failure(error):
-                    self.setCloudSyncStatus(error)
-                    print("CloudKit fetch failed: \(error)")
-                }
-            }
-        }
-    }
-
-    private func pushAllLocalDataToCloud() {
-        guard shouldUseCloudSync else { return }
-        for medication in medications {
-            syncMedicationWithCloud(medication)
-        }
-        for log in logs {
-            syncLogWithCloud(log)
-        }
-
-        let medicationIDs = Set(medications.map { $0.id })
-        let missingDeletedIDs = deletedMedicationIDs.subtracting(medicationIDs)
-        for id in missingDeletedIDs {
-            let tombstone = Medication(
-                id: id,
-                name: "Deleted Medication",
-                dosage: "Deleted",
-                dosageUnit: "",
-                iconName: "pill",
-                createdAt: nil,
-                updatedAt: Date(),
-                frequency: "Once daily",
-                timeToTake: Date(),
-                isDeleted: true
-            )
-            syncMedicationWithCloud(tombstone)
-        }
-    }
-
-    private func pushLocalChangesToCloud(remoteMedications: [Medication], remoteLogs: [MedicationLog]) {
-        guard shouldUseCloudSync else { return }
-        let remoteMedsByID = Dictionary(uniqueKeysWithValues: remoteMedications.map { ($0.id, $0) })
-        for medication in medications {
-            if let remote = remoteMedsByID[medication.id],
-               !shouldPushLocalMedicationToCloud(local: medication, remote: remote) {
-                continue
-            }
-            syncMedicationWithCloud(medication)
-        }
-
-        let remoteLogsByID = Dictionary(uniqueKeysWithValues: remoteLogs.map { ($0.id, $0) })
-        for log in logs {
-            if let remote = remoteLogsByID[log.id],
-               !shouldPushLocalLogToCloud(local: log, remote: remote) {
-                continue
-            }
-            syncLogWithCloud(log)
-        }
-
-        let remoteIDs = Set(remoteMedications.map { $0.id })
-        let missingDeletedIDs = deletedMedicationIDs.subtracting(remoteIDs)
-        for id in missingDeletedIDs {
-            let tombstone = Medication(
-                id: id,
-                name: "Deleted Medication",
-                dosage: "Deleted",
-                dosageUnit: "",
-                iconName: "pill",
-                createdAt: nil,
-                updatedAt: Date(),
-                frequency: "Once daily",
-                timeToTake: Date(),
-                isDeleted: true
-            )
-            syncMedicationWithCloud(tombstone)
-        }
-    }
-
-    private func mergeCloudLogs(_ remoteLogs: [MedicationLog]) {
-        guard !remoteLogs.isEmpty else { return }
-        var updated = self.logs
-        var changed = false
-        var syncedLogs: [MedicationLog] = []
-
-        for log in remoteLogs {
-            if log.isDeleted {
-                if let index = updated.firstIndex(where: { $0.id == log.id }),
-                   self.shouldReplace(local: updated[index], with: log) {
-                    updated.remove(at: index)
-                    changed = true
-                }
-                continue
-            }
-
-            if let index = updated.firstIndex(where: { $0.id == log.id }) {
-                if self.shouldReplace(local: updated[index], with: log) {
-                    updated[index] = log
-                    changed = true
-                    syncedLogs.append(log)
-                }
-            } else {
-                updated.insert(log, at: 0)
-                changed = true
-                syncedLogs.append(log)
-            }
-        }
-
-        if changed {
-            updated.sort(by: { $0.takenAt > $1.takenAt })
-            self.logs = updated
-            self.saveLogs()
-            self.clearSyncedLogNotificationsIfNeeded(syncedLogs)
-        }
-    }
-
-    private func shouldReplace(local: Medication, with remote: Medication) -> Bool {
-        guard let remoteDate = remote.updatedAt ?? remote.cloudLastModified else {
-            return false
-        }
-
-        let localDate = local.updatedAt ?? local.cloudLastModified ?? local.createdAt ?? Date.distantPast
-        return remoteDate > localDate
-    }
-
-    private func shouldPushLocalMedicationToCloud(local: Medication, remote: Medication) -> Bool {
-        let localDate = local.updatedAt ?? local.cloudLastModified ?? local.createdAt ?? Date.distantPast
-        let remoteDate = remote.updatedAt ?? remote.cloudLastModified ?? remote.createdAt ?? Date.distantPast
-        return localDate > remoteDate
-    }
-
-    private func shouldReplace(local: MedicationLog, with remote: MedicationLog) -> Bool {
-        guard let remoteDate = remote.updatedAt else {
-            return false
-        }
-
-        let localDate = local.updatedAt ?? local.takenAt
-        return remoteDate > localDate
-    }
-
-    private func shouldPushLocalLogToCloud(local: MedicationLog, remote: MedicationLog) -> Bool {
-        let localDate = local.updatedAt ?? local.takenAt
-        let remoteDate = remote.updatedAt ?? remote.takenAt
-        return localDate > remoteDate
-    }
-
-    private func markInitialCloudRestoreCompleted() {
-        UserDefaults.standard.set(true, forKey: initialCloudRestoreCompletedKey)
-    }
-
-    private func persistPendingCloudSyncs() {
-        guard !isPreviewMode else { return }
-
-        if let encodedMedications = try? JSONEncoder().encode(Array(pendingCloudMedicationSyncs.values)) {
-            UserDefaults.standard.set(encodedMedications, forKey: pendingCloudMedicationSyncsKey)
-        }
-
-        if let encodedLogs = try? JSONEncoder().encode(Array(pendingCloudLogSyncs.values)) {
-            UserDefaults.standard.set(encodedLogs, forKey: pendingCloudLogSyncsKey)
-        }
-    }
-
-    private func queuePendingMedicationSync(_ medication: Medication) {
-        pendingCloudMedicationSyncs[medication.id] = medication
-        persistPendingCloudSyncs()
-    }
-
-    private func clearPendingMedicationSync(for medicationID: UUID) {
-        pendingCloudMedicationSyncs.removeValue(forKey: medicationID)
-        persistPendingCloudSyncs()
-    }
-
-    private func queuePendingLogSync(_ log: MedicationLog) {
-        pendingCloudLogSyncs[log.id] = log
-        persistPendingCloudSyncs()
-    }
-
-    private func clearPendingLogSync(for logID: UUID) {
-        pendingCloudLogSyncs.removeValue(forKey: logID)
-        persistPendingCloudSyncs()
-    }
-
-    private func flushPendingCloudChanges() {
-        guard shouldUseCloudSync else { return }
-
-        for medication in Array(pendingCloudMedicationSyncs.values) {
-            syncMedicationWithCloud(medication)
-        }
-
-        for log in Array(pendingCloudLogSyncs.values) {
-            if log.isDeleted {
-                syncDeleteLog(log)
-            } else {
-                syncLogWithCloud(log)
-            }
-        }
-    }
-
-    private func setCloudSyncStatus(_ error: Error) {
-        if let ckError = error as? CKError {
-            cloudSyncStatusMessage = ckError.localizedDescription
-        } else {
-            cloudSyncStatusMessage = error.localizedDescription
-        }
-    }
-
-    private func clearCloudSyncStatus() {
-        cloudSyncStatusMessage = nil
-    }
-
-    private func clearSyncedLogNotificationsIfNeeded(_ syncedLogs: [MedicationLog]) {
-        guard !syncedLogs.isEmpty else { return }
-        let uniqueLogs = Dictionary(grouping: syncedLogs, by: { $0.id }).compactMap { $0.value.first }
-
-        for log in uniqueLogs {
-            if let medication = medications.first(where: { $0.id == log.medicationID }) {
-                clearNotificationsForLoggedDose(
-                    medication: medication,
-                    storedMedication: medication,
-                    actualTime: log.takenAt,
-                    reminderIndex: log.reminderIndex,
-                    isDailyCheckIn: log.isDailyCheckIn
-                )
-            } else {
-                notificationManager.cancelMedicationNotifications(for: log.medicationID)
-            }
-        }
-    }
-
-    private func scheduleNotificationsForCloudMedication(
-        _ medication: Medication,
-        preservingLocalReminderStateFrom localMedication: Medication?
-    ) -> Medication {
-        var mutable = medication
-        mutable.notificationID = localMedication?.notificationID
-        mutable.notificationIDs = localMedication?.notificationIDs ?? []
-
-        if mutable.shouldScheduleReminder {
-            notificationManager.registerTrackedMedicationID(mutable.id)
-        } else {
-            notificationManager.unregisterTrackedMedicationID(mutable.id)
-        }
-
-        guard let localMedication else {
-            return refreshNotificationSchedule(for: mutable)
-        }
-
-        guard mutable.shouldScheduleReminder else {
-            notificationManager.cancelMedicationNotifications(for: mutable.id)
-            mutable.notificationID = nil
-            mutable.notificationIDs = []
-            return mutable
-        }
-
-        if !localMedication.shouldScheduleReminder
-            || !mutable.hasActiveReminder
-            || medicationReminderSettingsChanged(old: localMedication, updated: mutable) {
-            return refreshNotificationSchedule(for: mutable)
-        }
-
-        return mutable
-    }
-
     private func persistDeletedMedicationIDs() {
         let ids = deletedMedicationIDs.map { $0.uuidString }
         UserDefaults.standard.set(ids, forKey: deletedMedicationIDsKey)
@@ -2956,30 +2345,6 @@ extension MedicationStore {
             withPendingRequests: requests,
             referenceDate: referenceDate
         )
-    }
-
-    func _test_mergeCloudMedications(_ remote: [Medication]) {
-        mergeCloudMedications(remote)
-    }
-
-    func _test_mergeCloudLogs(_ remote: [MedicationLog]) {
-        mergeCloudLogs(remote)
-    }
-
-    func _test_shouldReplace(local: Medication, with remote: Medication) -> Bool {
-        shouldReplace(local: local, with: remote)
-    }
-
-    func _test_shouldReplace(local: MedicationLog, with remote: MedicationLog) -> Bool {
-        shouldReplace(local: local, with: remote)
-    }
-
-    func _test_shouldPushLocalMedicationToCloud(local: Medication, remote: Medication) -> Bool {
-        shouldPushLocalMedicationToCloud(local: local, remote: remote)
-    }
-
-    func _test_shouldPushLocalLogToCloud(local: MedicationLog, remote: MedicationLog) -> Bool {
-        shouldPushLocalLogToCloud(local: local, remote: remote)
     }
 
     func _test_setDeletedMedicationIDs(_ ids: Set<UUID>) {

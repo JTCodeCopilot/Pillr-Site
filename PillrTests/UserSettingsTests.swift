@@ -9,7 +9,6 @@ struct UserSettingsTests {
 
         let settings = UserSettings()
         settings.saveUserName("Taylor")
-        settings.setCloudSyncPreference(false)
         settings.markPrivacyNoticeAsShown()
         settings.markNotificationOnboardingPromptSeen()
         settings.markAppOnboardingComplete()
@@ -17,7 +16,6 @@ struct UserSettingsTests {
         settings.markOnboardingStageSeen("history")
 
         #expect(UserDefaults.standard.string(forKey: "userName") == "Taylor")
-        #expect(UserDefaults.standard.object(forKey: "should_use_cloud_sync") as? Bool == false)
         #expect(UserDefaults.standard.bool(forKey: "hasShownPrivacyNotice") == true)
         #expect(UserDefaults.standard.bool(forKey: "hasSeenNotificationOnboardingPrompt") == true)
         #expect(UserDefaults.standard.bool(forKey: "has_completed_app_onboarding") == true)
@@ -49,6 +47,10 @@ struct UserSettingsTests {
         let settings = UserSettings()
         settings.setPremiumStatus(false)
         settings.setSubscriptionType(nil)
+        defer {
+            settings.setPremiumStatus(false)
+            settings.setSubscriptionType(nil)
+        }
 
         #expect(settings.canAddMedication(currentCount: 2) == true)
         #expect(settings.canAddMedication(currentCount: UserSettings.maxFreeMedications) == false)

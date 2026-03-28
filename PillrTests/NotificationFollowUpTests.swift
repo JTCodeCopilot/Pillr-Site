@@ -9,11 +9,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let baseTime = makeDate(year: 2025, month: 2, day: 1, hour: 8, minute: 0)
@@ -85,11 +83,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let baseTime = makeDate(year: 2025, month: 2, day: 1, hour: 8, minute: 0)
@@ -163,11 +159,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let baseTime = makeDate(year: 2025, month: 2, day: 1, hour: 8, minute: 0)
@@ -240,11 +234,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let now = Date()
@@ -313,11 +305,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let baseTime = makeDate(year: 2025, month: 2, day: 1, hour: 8, minute: 0)
@@ -389,11 +379,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let missingID = UUID()
@@ -425,11 +413,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let baseTime = makeDate(year: 2025, month: 2, day: 3, hour: 8, minute: 0)
@@ -494,11 +480,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let baseTime = makeDate(year: 2025, month: 2, day: 4, hour: 8, minute: 0)
@@ -567,11 +551,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let baseTime = makeDate(year: 2025, month: 2, day: 5, hour: 8, minute: 0)
@@ -631,11 +613,9 @@ struct NotificationFollowUpTests {
         clearPillrUserDefaults()
 
         let notificationManager = FakeNotificationManager()
-        let cloudSync = FakeCloudKitSync()
         let store = MedicationStore(
             isPreview: true,
-            notificationManager: notificationManager,
-            cloudSync: cloudSync
+            notificationManager: notificationManager
         )
 
         let baseTime = makeDate(year: 2025, month: 2, day: 6, hour: 8, minute: 0)

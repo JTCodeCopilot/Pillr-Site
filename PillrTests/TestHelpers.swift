@@ -1,6 +1,14 @@
 import Foundation
 @testable import Pillr
 
+actor UserSettingsTestGate {
+    func withExclusiveAccess<T>(_ body: () async throws -> T) async rethrows -> T {
+        try await body()
+    }
+}
+
+let userSettingsTestGate = UserSettingsTestGate()
+
 func makeDate(
     year: Int,
     month: Int,
@@ -43,7 +51,6 @@ func clearPillrUserDefaults() {
         "hasSeenNotificationOnboardingPrompt",
         "has_completed_app_onboarding",
         "is_biometric_lock_enabled",
-        "should_use_cloud_sync",
         "should_show_apple_health_data",
         "is_history_tab_enabled",
         "is_reflection_tab_enabled",
