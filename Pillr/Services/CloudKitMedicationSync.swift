@@ -18,6 +18,76 @@ final class CloudKitMedicationSync {
         case drugInteraction = "DrugInteraction"
     }
 
+    static func resolvedReminderNotificationsEnabled(
+        storedValue: Bool?,
+        frequency: String
+    ) -> Bool {
+        Medication.resolvedReminderNotificationsEnabled(
+            storedValue: storedValue,
+            frequency: frequency,
+            hasLegacyScheduledNotifications: false
+        )
+    }
+
+    // Live iCloud can lag behind development when new CloudKit fields are added.
+    // If a save is rejected because newer keys are unknown, retry with the last
+    // known-safe field set so the core medication or log record still syncs.
+    static func legacyCompatibleRecord(from record: CKRecord) -> CKRecord {
+        let allowedKeys: Set<String>
+        switch record.recordType {
+        case RecordType.medication.rawValue:
+            allowedKeys = [
+                Field.name,
+                Field.dosage,
+                Field.dosageUnit,
+                Field.iconName,
+                Field.frequency,
+                Field.medicationType,
+                Field.isExtendedRelease,
+                Field.onsetMinutes,
+                Field.durationMinutes,
+                Field.enableDailyCheckIn,
+                Field.enableStimulantPhaseNotifications,
+                Field.dailyCheckInTime,
+                Field.timeToTake,
+                Field.reminderTimes,
+                Field.scheduledReminderTimes,
+                Field.notes,
+                Field.pillCount,
+                Field.pillsPerDose,
+                Field.refillThreshold,
+                Field.isSkipped,
+                Field.isOneTimeWithFollowUp,
+                Field.isDeleted,
+                Field.logReferenceID,
+                Field.logEntryID,
+                Field.createdAt,
+                Field.updatedAt
+            ]
+        case RecordType.medicationLog.rawValue:
+            allowedKeys = [
+                Field.medicationReference,
+                Field.medicationName,
+                Field.takenAt,
+                Field.logUpdatedAt,
+                Field.logIsDeleted,
+                Field.skipped,
+                Field.notesLog,
+                Field.pillsConsumed,
+                Field.reminderIndex,
+                Field.isDailyCheckIn
+            ]
+        default:
+            allowedKeys = Set(record.allKeys())
+        }
+
+        let legacyRecord = CKRecord(recordType: record.recordType, recordID: record.recordID)
+        for key in record.allKeys() where allowedKeys.contains(key) {
+            legacyRecord[key] = record[key]
+        }
+        return legacyRecord
+    }
+
     private struct Field {
         static let name = "name"
         static let dosage = "dosage"
@@ -83,10 +153,19 @@ final class CloudKitMedicationSync {
         let record = medicationRecord(from: medication)
         let updatedAt = medication.updatedAt ?? Date()
         record[Field.updatedAt] = updatedAt as CKRecordValue
+        let legacyFallbackRecord = Self.legacyCompatibleRecord(from: record)
         if medication.isDeleted {
-            saveForce(record: record, completion: completion)
+            saveForce(
+                record: record,
+                legacyFallbackRecord: legacyFallbackRecord,
+                completion: completion
+            )
         } else {
-            saveWithConflictResolution(record: record, completion: completion)
+            saveWithConflictResolution(
+                record: record,
+                legacyFallbackRecord: legacyFallbackRecord,
+                completion: completion
+            )
         }
     }
 
@@ -94,10 +173,19 @@ final class CloudKitMedicationSync {
     func save(log: MedicationLog, medication: Medication, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
         let record = medicationLogRecord(from: log, medication: medication)
         record[Field.logUpdatedAt] = (log.updatedAt ?? Date()) as CKRecordValue
+        let legacyFallbackRecord = Self.legacyCompatibleRecord(from: record)
         if log.isDeleted {
-            saveForce(record: record, completion: completion)
+            saveForce(
+                record: record,
+                legacyFallbackRecord: legacyFallbackRecord,
+                completion: completion
+            )
         } else {
-            saveWithConflictResolution(record: record, completion: completion)
+            saveWithConflictResolution(
+                record: record,
+                legacyFallbackRecord: legacyFallbackRecord,
+                completion: completion
+            )
         }
     }
 
@@ -437,7 +525,10 @@ final class CloudKitMedicationSync {
         } else {
             reminderTimes = []
         }
-        let reminderNotificationsEnabled = record[Field.reminderNotificationsEnabled] as? Bool ?? false
+        let reminderNotificationsEnabled = Self.resolvedReminderNotificationsEnabled(
+            storedValue: record[Field.reminderNotificationsEnabled] as? Bool,
+            frequency: frequency
+        )
         let notes = record[Field.notes] as? String
         let pillCount = record[Field.pillCount] as? Int
         let pillsPerDose = record[Field.pillsPerDose] as? Int ?? 1
@@ -639,6 +730,7 @@ final class CloudKitMedicationSync {
 
     private func saveWithConflictResolution(
         record: CKRecord,
+        legacyFallbackRecord: CKRecord? = nil,
         completion: ((Result<CKRecord, Error>) -> Void)? = nil
     ) {
         let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
@@ -666,6 +758,14 @@ final class CloudKitMedicationSync {
                     }
                 }
                 self?.database.add(retryOperation)
+                return
+            }
+
+            if let error,
+               let self,
+               let legacyFallbackRecord,
+               self.shouldRetryWithLegacyRecord(for: error) {
+                self.saveLegacyCompatibleRecord(legacyFallbackRecord, completion: completion)
                 return
             }
 
@@ -703,7 +803,11 @@ final class CloudKitMedicationSync {
         return client
     }
 
-    private func saveForce(record: CKRecord, completion: ((Result<CKRecord, Error>) -> Void)? = nil) {
+    private func saveForce(
+        record: CKRecord,
+        legacyFallbackRecord: CKRecord? = nil,
+        completion: ((Result<CKRecord, Error>) -> Void)? = nil
+    ) {
         let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
         operation.savePolicy = .changedKeys
         operation.modifyRecordsCompletionBlock = { [weak self] savedRecords, _, error in
@@ -732,6 +836,14 @@ final class CloudKitMedicationSync {
                 return
             }
 
+            if let error,
+               let self,
+               let legacyFallbackRecord,
+               self.shouldRetryWithLegacyRecord(for: error) {
+                self.saveLegacyCompatibleRecord(legacyFallbackRecord, completion: completion)
+                return
+            }
+
             DispatchQueue.main.async {
                 if let error {
                     completion?(.failure(error))
@@ -741,5 +853,39 @@ final class CloudKitMedicationSync {
             }
         }
         database.add(operation)
+    }
+
+    private func saveLegacyCompatibleRecord(
+        _ record: CKRecord,
+        completion: ((Result<CKRecord, Error>) -> Void)? = nil
+    ) {
+        let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        operation.savePolicy = .changedKeys
+        operation.modifyRecordsCompletionBlock = { savedRecords, _, error in
+            DispatchQueue.main.async {
+                if let error {
+                    completion?(.failure(error))
+                } else if let record = savedRecords?.first {
+                    completion?(.success(record))
+                }
+            }
+        }
+        database.add(operation)
+    }
+
+    private func shouldRetryWithLegacyRecord(for error: Error) -> Bool {
+        guard let ckError = error as? CKError else {
+            return false
+        }
+
+        switch ckError.code {
+        case .partialFailure:
+            let nestedErrors = ckError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error] ?? [:]
+            return nestedErrors.values.contains(where: shouldRetryWithLegacyRecord)
+        case .invalidArguments, .serverRejectedRequest:
+            return true
+        default:
+            return false
+        }
     }
 }

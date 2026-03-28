@@ -41,7 +41,7 @@ class InteractionStore: ObservableObject {
     }
     
     private var shouldUseCloudSync: Bool {
-        !isPreviewMode && !isRunningTests && UserSettings.shared.shouldUseCloudSync
+        false
     }
 
     private var isRunningTests: Bool {
@@ -418,7 +418,14 @@ class InteractionStore: ObservableObject {
                 print("Error loading recent searches: \(error)")
                 recentSearches = []
             }
+        } else {
+            recentSearches = []
         }
+    }
+
+    func reloadFromStorage() {
+        loadInteractionHistory()
+        loadRecentSearches()
     }
     
     // MARK: - Search and Filtering

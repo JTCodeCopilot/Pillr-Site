@@ -14,6 +14,7 @@ struct SettingsView: View {
     @EnvironmentObject var userSettings: UserSettings
     @EnvironmentObject var store: MedicationStore
     @ObservedObject private var storeManager = StoreManager.shared
+    @ObservedObject private var backupManager = LocalBackupManager.shared
     @AppStorage("healthSnapshotDistanceUnit") private var distanceUnitRawValue = HealthDistanceUnit.miles.rawValue
     @AppStorage("healthSnapshotDailyStepGoal") private var dailyStepGoal = 10000
     @State private var showingPremiumUpgrade = false
@@ -24,8 +25,6 @@ struct SettingsView: View {
     @State private var isHealthSettingsExpanded = false
     @State private var isPremiumSettingsExpanded = false
     @State private var isHomeShortcutsExpanded = false
-    @State private var showingCloudSyncChoiceAgain = false
-    @State private var cloudSyncRotation: Double = 0
     @State private var isUpdatingBiometricLock = false
     @State private var biometricAlertMessage: String?
     @State private var notificationTestMessage: String?
@@ -33,10 +32,6 @@ struct SettingsView: View {
 
     private var isPremiumActive: Bool {
         storeManager.isPremiumPurchased() || OpenAIService.shared.isPremiumUser()
-    }
-    
-    private var shouldUseCloudSync: Bool {
-        userSettings.shouldUseCloudSync
     }
     
     var body: some View {
@@ -58,7 +53,7 @@ struct SettingsView: View {
                             securitySection
                             interactionsSection
                             notificationPermissionsSection
-                            iCloudSyncSection
+                            backupSection
                             supportLinksSection
                             feedbackFormSection
                                 .id(ScrollTarget.feedbackForm)
@@ -74,13 +69,6 @@ struct SettingsView: View {
                     Task {
                         await refreshICloudStatus()
                     }
-                }
-                if showingCloudSyncChoiceAgain {
-                    CloudSyncChoiceOverlay { choice in
-                        handleCloudSyncSelection(choice)
-                    }
-                    .transition(.opacity)
-                    .zIndex(3)
                 }
             }
             .navigationBarHidden(true)
@@ -194,71 +182,58 @@ struct SettingsView: View {
         }
     }
     
-    private var iCloudSyncSection: some View {
-        settingsSection(title: "iCloud Sync") {
+    private var backupSection: some View {
+        settingsSection(title: "Backup") {
             settingsStatusRow(
                 iconName: "icloud",
                 title: "Connection",
-                value: iCloudConnectionTitle,
-                detail: iCloudConnectionDetail,
-                valueColor: iCloudConnectionColor
+                value: backupConnectionTitle,
+                detail: backupConnectionDetail,
+                valueColor: backupConnectionColor
             )
 
             settingsStatusRow(
                 iconName: "arrow.triangle.2.circlepath",
-                title: "Last sync",
-                value: iCloudLastSyncTitle,
-                detail: iCloudLastSyncDetail
+                title: "Last backup",
+                value: backupLastSavedTitle,
+                detail: backupLastSavedDetail
             )
 
             settingsActionRow(
-                title: store.isCloudSyncInProgress ? "Syncing with iCloud..." : "Resync iCloud now",
-                subtitle: shouldUseCloudSync
-                    ? "Tap to manually fetch your latest iCloud medication data."
-                    : "Enable iCloud Sync to manually resync.",
+                title: "Back up now",
+                subtitle: "Save your latest app data to iCloud Drive.",
                 showChevron: false,
                 accessoryIcon: nil,
                 leadingIcon: "icloud",
-                trailingIcon: shouldUseCloudSync ? nil : "lock"
+                trailingIcon: nil
             ) {
-                triggerManualCloudResync()
+                backupManager.performBackupNow()
             }
-            .overlay(alignment: .trailing) {
-                if shouldUseCloudSync {
-                    Image(systemName: store.isCloudSyncInProgress ? "arrow.triangle.2.circlepath.circle.fill" : "icloud")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(SettingsPalette.secondaryText)
-                        .padding(.top, 2)
-                        .rotationEffect(.degrees(cloudSyncRotation))
-                        .animation(.easeInOut(duration: 0.2), value: store.isCloudSyncInProgress)
+
+            settingsActionRow(
+                title: "Restore from backup",
+                subtitle: "Restore the latest saved backup from iCloud Drive.",
+                showChevron: false,
+                accessoryIcon: nil,
+                leadingIcon: "arrow.down.doc",
+                trailingIcon: nil
+            ) {
+                backupManager.restoreLatestBackup { success in
+                    guard success else { return }
+                    userSettings.reloadFromStorage()
+                    store.loadMedications()
+                    store.loadLogs()
+                    InteractionStore.shared.reloadFromStorage()
+                    store.checkAndResetBadge()
+                    store.kickstartActiveReminderSchedules(referenceDate: Date(), force: true)
                 }
             }
-            .disabled(!shouldUseCloudSync || store.isCloudSyncInProgress)
-            .opacity(!shouldUseCloudSync ? 0.7 : 1)
-            .onAppear {
-                updateCloudSyncAnimation(isSyncing: store.isCloudSyncInProgress)
-            }
-            .onChange(of: store.isCloudSyncInProgress) { _, syncing in
-                updateCloudSyncAnimation(isSyncing: syncing)
-            }
 
-            if !shouldUseCloudSync {
-                Text("You chose to keep everything on this device. Connect to iCloud later whenever you’re ready.")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(SettingsPalette.secondaryText.opacity(0.9))
-                    .multilineTextAlignment(.leading)
-                    .padding(.top, 8)
-
-                settingsActionRow(
-                    title: "Change sync preference",
-                    subtitle: "Reopen the iCloud choice screen to enable sync again.",
-                    accessoryIcon: "icloud",
-                    leadingIcon: "arrow.triangle.2.circlepath",
-                    action: {
-                        showingCloudSyncChoiceAgain = true
-                    }
-                )
-            }
+            Text("Pillr now keeps your data on this device and saves a backup copy to iCloud Drive.")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundColor(SettingsPalette.secondaryText.opacity(0.9))
+                .multilineTextAlignment(.leading)
+                .padding(.top, 8)
         }
     }
     
@@ -666,12 +641,6 @@ struct SettingsView: View {
         }
     }
 
-    private func handleCloudSyncSelection(_ choice: CloudSyncChoice) {
-        let enableSync = choice == .connect
-        userSettings.setCloudSyncPreference(enableSync)
-        showingCloudSyncChoiceAgain = false
-    }
-
     @ViewBuilder
     private func collapsibleSettingsSection<Content: View>(
         title: String,
@@ -911,28 +880,6 @@ struct SettingsView: View {
         }
     }
 
-    private func triggerManualCloudResync() {
-        guard shouldUseCloudSync else { return }
-        store.refreshCloudSyncIfNeeded { _ in
-            Task { @MainActor in
-                await refreshICloudStatus()
-            }
-        }
-    }
-
-    private func updateCloudSyncAnimation(isSyncing: Bool) {
-        if isSyncing {
-            cloudSyncRotation = 0
-            withAnimation(.linear(duration: 0.9).repeatForever(autoreverses: false)) {
-                cloudSyncRotation = 360
-            }
-        } else {
-            withAnimation(.easeOut(duration: 0.15)) {
-                cloudSyncRotation = 0
-            }
-        }
-    }
-
     private func openLink(_ urlString: String) {
         guard let url = URL(string: urlString), UIApplication.shared.canOpenURL(url) else {
             return
@@ -983,17 +930,14 @@ struct SettingsView: View {
         }
     }
 
-    private var iCloudConnectionTitle: String {
-        if !shouldUseCloudSync {
-            return "On-device only"
-        }
+    private var backupConnectionTitle: String {
         switch iCloudAccountStatus {
         case .available:
             return "Connected"
         case .noAccount:
             return "Sign in to iCloud"
         case .restricted:
-            return "iCloud Restricted"
+            return "Unavailable"
         case .temporarilyUnavailable:
             return "Temporarily unavailable"
         case .couldNotDetermine, .none:
@@ -1003,30 +947,24 @@ struct SettingsView: View {
         }
     }
 
-    private var iCloudConnectionDetail: String {
-        if !shouldUseCloudSync {
-            return "Medication records stay on this device, but you can connect to iCloud anytime from the prompt below."
-        }
+    private var backupConnectionDetail: String {
         switch iCloudAccountStatus {
         case .available:
-            return "Your medications and logs are backed up securely."
+            return "Backups can be saved to iCloud Drive."
         case .noAccount:
-            return "Open iOS Settings to sign in and enable sync."
+            return "Sign in to iCloud to save a backup copy in iCloud Drive."
         case .restricted:
-            return "Restrictions on this device prevent iCloud usage."
+            return "This device cannot use iCloud Drive right now."
         case .temporarilyUnavailable:
-            return "iCloud is temporarily unavailable. Try again shortly."
+            return "iCloud Drive is temporarily unavailable. Try again shortly."
         case .couldNotDetermine, .none:
-            return "Waiting for iCloud to report your account status."
+            return "Checking whether iCloud Drive is ready."
         @unknown default:
             return "Account status currently unavailable."
         }
     }
 
-    private var iCloudConnectionColor: Color {
-        if !shouldUseCloudSync {
-            return SettingsPalette.secondaryText
-        }
+    private var backupConnectionColor: Color {
         switch iCloudAccountStatus {
         case .available:
             return Color.pillrAccent
@@ -1039,22 +977,16 @@ struct SettingsView: View {
         }
     }
 
-    private var iCloudLastSyncTitle: String {
-        if !shouldUseCloudSync {
-            return "Sync disabled"
-        }
-        guard let date = store.lastCloudSyncDate else {
-            return "Not yet synced"
+    private var backupLastSavedTitle: String {
+        guard let date = backupManager.lastBackupDate else {
+            return "No backup yet"
         }
         return DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .short)
     }
 
-    private var iCloudLastSyncDetail: String? {
-        if !shouldUseCloudSync {
-            return "Last sync tracking is paused while iCloud sync is off."
-        }
-        guard store.lastCloudSyncDate != nil else {
-            return "Waiting for Pillr to finish its first sync"
+    private var backupLastSavedDetail: String? {
+        guard backupManager.lastBackupDate != nil else {
+            return "Pillr will create a backup after your data changes."
         }
         return nil
     }

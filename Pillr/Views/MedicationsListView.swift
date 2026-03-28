@@ -73,41 +73,21 @@ struct MedicationsListView: View {
     }
 
     private var reminderMedications: [Medication] {
-        store.activeMedications.filter { medication in
-            if medication.frequency == "As needed" {
-                return false
-            }
-            if !notificationsEnabledForReminders {
-                return true
-            }
-            return medication.shouldScheduleReminder
-        }
+        store.activeMedications.filter { !$0.isCabinetMedication }
     }
     
     private var cabinetMedications: [Medication] {
-        store.activeMedications.filter { medication in
-            if medication.frequency == "As needed" {
-                return true
-            }
-            if !notificationsEnabledForReminders {
-                return false
-            }
-            return !medication.shouldScheduleReminder
-        }
-    }
-
-    private var notificationsEnabledForReminders: Bool {
-        guard let status = notificationAuthorizationStatus else { return true }
-        switch status {
-        case .authorized, .provisional, .ephemeral:
-            return true
-        default:
-            return false
-        }
+        store.activeMedications.filter { $0.isCabinetMedication }
     }
 
     private var shouldShowNotificationEnableBanner: Bool {
-        !notificationsEnabledForReminders
+        guard let status = notificationAuthorizationStatus else { return false }
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            return false
+        default:
+            return true
+        }
     }
 
     init(addFlowCoordinator: AddMedicationFlowCoordinator = AddMedicationFlowCoordinator()) {

@@ -22,7 +22,6 @@ struct MainTabView: View {
     @State private var showDiscardAlert = false
     @State private var activeOnboardingStage: OnboardingStageInfo?
     @State private var activeOnboardingTab: MainTab?
-    @State private var showCloudSyncChoice = false
     @State private var showNotificationOnboardingPrompt = false
     @State private var needsOnboardingAfterNotificationPrompt = false
     @State private var isRequestingNotificationAuthorization = false
@@ -46,7 +45,6 @@ struct MainTabView: View {
     @AppStorage("lastSeenWhatsNewAnnouncementID") private var lastSeenWhatsNewAnnouncementID = ""
     private var isUITestMode: Bool { UserSettings.isUITestMode }
     
-    private static let cloudSyncOnboardingKey = "cloudSyncChoice"
     private static let reviewPromptURL = "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?action=write-review"
     private static let whatsNewAnnouncementID = "whatsnew-menu-tabs-faceid-2026-02"
     private static let reviewPromptDelaySeconds: TimeInterval = 1.2
@@ -180,20 +178,13 @@ struct MainTabView: View {
                         .transition(.opacity)
                         .zIndex(1)
                     }
-                    if showCloudSyncChoice {
-                        CloudSyncChoiceOverlay { choice in
-                            handleCloudSyncSelection(choice)
-                        }
-                        .transition(modalOverlayTransition)
-                        .zIndex(4)
-                    }
                     if showNotificationOnboardingPrompt {
                         NotificationPermissionOnboardingPrompt(
                             onContinue: handleNotificationPromptContinue,
                             onSkip: handleNotificationPromptSkip
                         )
                         .transition(modalOverlayTransition)
-                        .zIndex(3)
+                        .zIndex(4)
                     }
                 }
                 if showReviewPrompt {
@@ -348,12 +339,6 @@ struct MainTabView: View {
         guard !showWelcomeOnboardingFlow else { return }
         guard activeOnboardingStage == nil else { return }
         let key = tab.rawValue
-        if tab == .meds && !userSettings.hasSeenOnboardingStage(Self.cloudSyncOnboardingKey) {
-            withAnimation(modalOverlayAnimation) {
-                showCloudSyncChoice = true
-            }
-            return
-        }
         guard !userSettings.hasSeenOnboardingStage(key) else { return }
         guard let info = tab.onboardingInfo else { return }
         activeOnboardingTab = tab
@@ -396,7 +381,6 @@ struct MainTabView: View {
 
     private var isBlockingReviewPrompt: Bool {
         activeOnboardingStage != nil
-            || showCloudSyncChoice
             || showNotificationOnboardingPrompt
             || showWelcomeOnboardingFlow
             || showBiometricAppLock
@@ -443,12 +427,9 @@ struct MainTabView: View {
         if !wasExistingUserAtLaunch {
             lastSeenWhatsNewAnnouncementID = Self.whatsNewAnnouncementID
         }
-        userSettings.setCloudSyncPreference(result.useCloudSync)
         userSettings.setBiometricLockEnabled(result.enableBiometricLock)
         userSettings.markNotificationOnboardingPromptSeen()
         userSettings.markAppOnboardingComplete()
-        // Mark cloud sync onboarding as handled because it's now part of the new welcome flow.
-        userSettings.markOnboardingStageSeen(Self.cloudSyncOnboardingKey)
 
         requiresBiometricOnNextActive = false
 
@@ -456,7 +437,6 @@ struct MainTabView: View {
             showWelcomeOnboardingFlow = false
             activeOnboardingStage = nil
             activeOnboardingTab = nil
-            showCloudSyncChoice = false
             showNotificationOnboardingPrompt = false
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
@@ -568,7 +548,6 @@ struct MainTabView: View {
         guard wasExistingUserAtLaunch else { return }
         guard lastSeenWhatsNewAnnouncementID != Self.whatsNewAnnouncementID else { return }
         guard activeOnboardingStage == nil else { return }
-        guard !showCloudSyncChoice else { return }
         guard !showNotificationOnboardingPrompt else { return }
         guard !showBiometricAppLock else { return }
 
@@ -601,71 +580,6 @@ struct MainTabView: View {
         }
         scheduleReviewPromptIfNeeded()
     }
-
-
-    private func handleCloudSyncSelection(_ choice: CloudSyncChoice) {
-        let enableSync = choice == .connect
-        userSettings.setCloudSyncPreference(enableSync)
-        userSettings.markOnboardingStageSeen(Self.cloudSyncOnboardingKey)
-        withAnimation(modalOverlayAnimation) {
-            showCloudSyncChoice = false
-        }
-        handleCloudSyncCompletion()
-    }
-
-    private func handleCloudSyncCompletion() {
-        guard !isUITestMode else {
-            DispatchQueue.main.async {
-                scheduleOnboarding(for: selectedTab)
-            }
-            return
-        }
-        guard !userSettings.hasSeenNotificationOnboardingPrompt else {
-            DispatchQueue.main.async {
-                scheduleOnboarding(for: selectedTab)
-                scheduleReviewPromptIfNeeded()
-            }
-            return
-        }
-
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            DispatchQueue.main.async {
-                if settings.authorizationStatus == .notDetermined {
-                    needsOnboardingAfterNotificationPrompt = true
-                    userSettings.markNotificationOnboardingPromptSeen()
-                    presentNotificationPromptAfterCloudChoiceDismissal()
-                } else {
-                    scheduleOnboarding(for: selectedTab)
-                    scheduleReviewPromptIfNeeded()
-                }
-            }
-        }
-    }
-
-    private func presentNotificationPromptAfterCloudChoiceDismissal(attempt: Int = 0) {
-        let maxAttempts = 10
-        guard attempt <= maxAttempts else {
-            withAnimation(modalOverlayAnimation) {
-                showNotificationOnboardingPrompt = true
-            }
-            return
-        }
-
-        // Ensure the sync chooser sheet is fully dismissed first.
-        guard !showCloudSyncChoice else {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                presentNotificationPromptAfterCloudChoiceDismissal(attempt: attempt + 1)
-            }
-            return
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            withAnimation(modalOverlayAnimation) {
-                showNotificationOnboardingPrompt = true
-            }
-        }
-    }
-
     private func handleNotificationPromptContinue() {
         guard !isRequestingNotificationAuthorization else { return }
 
@@ -966,7 +880,6 @@ struct WhatsNewSheet: View {
 }
 
 private struct PillrOnboardingResult {
-    let useCloudSync: Bool
     let enableBiometricLock: Bool
 }
 
@@ -1063,7 +976,6 @@ private struct PillrWelcomeOnboardingFlow: View {
     let onFinish: (PillrOnboardingResult) -> Void
 
     @State private var step: Step = .welcome
-    @State private var useCloudSync = true
     @State private var enableBiometricLock = false
     @State private var isWorking = false
     @State private var helperMessage: String?
@@ -1261,7 +1173,7 @@ private struct PillrWelcomeOnboardingFlow: View {
                             .foregroundColor(Color.pillrSecondary.opacity(0.94))
                             .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
                             .lineSpacing(4)
-                            .lineLimit(step == .storage ? 3 : nil)
+                            .lineLimit(nil)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: usesEditorialLayout ? .leading : .center)
                             .padding(.top, (usesEditorialLayout ? 18 : 0) + (step == .storage ? 2 : 0))
@@ -1377,23 +1289,35 @@ private struct PillrWelcomeOnboardingFlow: View {
                             }
 
                             if step == .storage {
-                                VStack(spacing: 10) {
-                                    PillrOnboardingOptionCard(
-                                        title: "Use iCloud Sync (recommended)",
-                                        subtitle: "Back up and sync across your Apple devices.",
-                                        isSelected: useCloudSync
-                                    ) {
-                                        useCloudSync = true
-                                    }
+                                HStack(alignment: .top, spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Automatic iCloud Drive Backup")
+                                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                            .foregroundColor(Color.pillrBackground)
 
-                                    PillrOnboardingOptionCard(
-                                        title: "Keep data on this iPhone",
-                                        subtitle: "Store everything only on this device.",
-                                        isSelected: !useCloudSync
-                                    ) {
-                                        useCloudSync = false
+                                        Text("Pillr automatically saves your medications, reminders, and history to iCloud Drive so you can restore them if you delete the app or move to a new device.")
+                                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                                            .foregroundColor(Color.pillrSecondary.opacity(0.86))
+                                            .multilineTextAlignment(.leading)
+                                            .fixedSize(horizontal: false, vertical: true)
                                     }
+                                    .layoutPriority(1)
+
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 22, weight: .semibold))
+                                        .foregroundColor(Color.pillrBackground.opacity(0.95))
+                                        .frame(width: 24, height: 24, alignment: .topTrailing)
                                 }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 13)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(Color.white.opacity(0.14))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(Color.white.opacity(0.42), lineWidth: 1)
+                                )
                                 .padding(.top, 22)
                             }
 
@@ -1899,7 +1823,7 @@ private struct PillrWelcomeOnboardingFlow: View {
         case .notifications:
             return "Notifications"
         case .storage:
-            return biometryType == .none ? "Storage" : "Storage"
+            return "Back Up Your Data"
         case .health:
             return "Apple Health"
         case .done:
@@ -1919,10 +1843,7 @@ private struct PillrWelcomeOnboardingFlow: View {
         case .notifications:
             return "Turn on notifications so Pillr can remind you when it’s time for your meds."
         case .storage:
-            if biometryType == .none {
-                return "Choose where to keep your medication data: on this iPhone only, or synced with iCloud across your Apple devices."
-            }
-            return "Choose where to keep your medication data: on this iPhone only, or synced with iCloud across your Apple devices."
+            return "Pillr automatically saves your medications, reminders, and history to iCloud Drive so you can restore them if you delete the app or move to a new device."
         case .health:
             return "Connect your Apple Health data with Pillr to show key health metrics right on your home screen."
         case .done:
@@ -2003,7 +1924,6 @@ private struct PillrWelcomeOnboardingFlow: View {
         case .done:
             onFinish(
                 PillrOnboardingResult(
-                    useCloudSync: useCloudSync,
                     enableBiometricLock: enableBiometricLock
                 )
             )
@@ -2029,7 +1949,6 @@ private struct PillrWelcomeOnboardingFlow: View {
         guard orderedSteps.indices.contains(currentIndex + 1) else {
             onFinish(
                 PillrOnboardingResult(
-                    useCloudSync: useCloudSync,
                     enableBiometricLock: enableBiometricLock
                 )
             )
@@ -2334,47 +2253,6 @@ private struct DoneConfettiPiece {
     let isCapsule: Bool
     let color: Color
     let drift: CGFloat
-}
-
-private struct PillrOnboardingOptionCard: View {
-    let title: String
-    let subtitle: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundColor(Color.pillrBackground)
-
-                    Text(subtitle)
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(Color.pillrSecondary.opacity(0.86))
-                        .multilineTextAlignment(.leading)
-                }
-
-                Spacer()
-
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(Color.pillrBackground.opacity(isSelected ? 0.95 : 0.45))
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 13)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(isSelected ? 0.14 : 0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(isSelected ? 0.42 : 0.14), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
 }
 
 private struct BiometricAppLockOverlay: View {

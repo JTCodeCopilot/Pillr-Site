@@ -138,7 +138,26 @@ struct Medication: Identifiable, Codable, Hashable {
     }
 
     var isCabinetMedication: Bool {
-        frequency == "As needed" || !shouldScheduleReminder
+        frequency == "As needed"
+    }
+
+    static func resolvedReminderNotificationsEnabled(
+        storedValue: Bool?,
+        frequency: String,
+        hasLegacyScheduledNotifications: Bool
+    ) -> Bool {
+        if let storedValue {
+            return storedValue
+        }
+
+        if hasLegacyScheduledNotifications {
+            return true
+        }
+
+        // Older saved medications predate the explicit reminder toggle.
+        // Scheduled medications should keep reminders on unless they were
+        // intentionally saved as "As needed".
+        return frequency != "As needed"
     }
 
     enum CodingKeys: String, CodingKey {
@@ -273,8 +292,11 @@ struct Medication: Identifiable, Codable, Hashable {
         self.notes = try container.decodeIfPresent(String.self, forKey: .notes)
         self.notificationID = try container.decodeIfPresent(UUID.self, forKey: .notificationID)
         self.notificationIDs = try container.decodeIfPresent([UUID].self, forKey: .notificationIDs) ?? []
-        self.reminderNotificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .reminderNotificationsEnabled)
-            ?? (self.notificationID != nil || !self.notificationIDs.isEmpty)
+        self.reminderNotificationsEnabled = Self.resolvedReminderNotificationsEnabled(
+            storedValue: try container.decodeIfPresent(Bool.self, forKey: .reminderNotificationsEnabled),
+            frequency: self.frequency,
+            hasLegacyScheduledNotifications: self.notificationID != nil || !self.notificationIDs.isEmpty
+        )
         self.pillCount = try container.decodeIfPresent(Int.self, forKey: .pillCount)
         self.initialPillCount = try container.decodeIfPresent(Int.self, forKey: .initialPillCount)
         self.pillsPerDose = try container.decodeIfPresent(Int.self, forKey: .pillsPerDose) ?? 1

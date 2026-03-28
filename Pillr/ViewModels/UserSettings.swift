@@ -323,6 +323,27 @@ class UserSettings: ObservableObject {
     func setCloudSyncPreference(_ enabled: Bool) {
         shouldUseCloudSync = enabled
     }
+
+    func reloadFromStorage() {
+        guard !isPreviewMode, !forceUITestMode else { return }
+
+        userName = UserDefaults.standard.string(forKey: userNameKey) ?? "User"
+        hasShownPrivacyNotice = UserDefaults.standard.bool(forKey: privacyNoticeKey)
+        isPremiumUser = UserDefaults.standard.bool(forKey: premiumStatusKey)
+        subscriptionType = UserDefaults.standard.string(forKey: subscriptionTypeKey)
+        seenOnboardingStages = Set(UserDefaults.standard.stringArray(forKey: onboardingStagesKey) ?? [])
+        hasSeenCabinetIntroOverlay = UserDefaults.standard.bool(forKey: cabinetIntroOverlayKey)
+        hasSeenNotificationOnboardingPrompt = UserDefaults.standard.bool(forKey: notificationOnboardingPromptKey)
+        hasCompletedAppOnboarding = UserDefaults.standard.bool(forKey: appOnboardingCompleteKey)
+        isBiometricLockEnabled = UserDefaults.standard.bool(forKey: biometricLockEnabledKey)
+        shouldUseCloudSync = (UserDefaults.standard.object(forKey: cloudSyncPreferenceKey) as? Bool) ?? true
+        shouldShowAppleHealthData = (UserDefaults.standard.object(forKey: appleHealthVisibilityKey) as? Bool) ?? true
+        isHistoryTabEnabled = (UserDefaults.standard.object(forKey: historyTabEnabledKey) as? Bool) ?? true
+        isReflectionTabEnabled = (UserDefaults.standard.object(forKey: reflectionTabEnabledKey) as? Bool) ?? true
+        isTimelineTabEnabled = (UserDefaults.standard.object(forKey: timelineTabEnabledKey) as? Bool) ?? true
+        isInteractionCheckerShortcutEnabled = (UserDefaults.standard.object(forKey: interactionCheckerShortcutEnabledKey) as? Bool) ?? true
+        customSideEffects = UserDefaults.standard.stringArray(forKey: customSideEffectsKey) ?? []
+    }
     
     func markPrivacyNoticeAsShown() {
         hasShownPrivacyNotice = true

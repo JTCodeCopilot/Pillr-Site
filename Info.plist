@@ -31,6 +31,18 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+	<key>NSUbiquitousContainers</key>
+	<dict>
+		<key>iCloud.app.Pillr</key>
+		<dict>
+			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
+			<true/>
+			<key>NSUbiquitousContainerName</key>
+			<string>Pillr</string>
+			<key>NSUbiquitousContainerSupportedFolderLevels</key>
+			<string>Any</string>
+		</dict>
+	</dict>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>Pillr helps you stay on track with gentle reminders when it is time to take your medication. You can adjust or turn off these notifications in Settings.</string>
 	<key>NSFaceIDUsageDescription</key>

@@ -1,4 +1,5 @@
 import Foundation
+import CloudKit
 import Testing
 @testable import Pillr
 
@@ -109,6 +110,41 @@ struct CloudSyncTests {
     }
 
     @Test
+    func equalTimestampsDoNotPushLocalMedicationOrLogBackToCloud() async throws {
+        let store = MedicationStore(isPreview: true)
+        let timestamp = makeDate(year: 2025, month: 1, day: 16, hour: 8, minute: 0)
+
+        let localMedication = makeMedication(name: "Local", updatedAt: timestamp)
+        let remoteMedication = makeMedication(id: localMedication.id, name: "Remote", updatedAt: timestamp)
+        #expect(
+            store._test_shouldPushLocalMedicationToCloud(
+                local: localMedication,
+                remote: remoteMedication
+            ) == false
+        )
+
+        let localLog = MedicationLog(
+            medicationID: localMedication.id,
+            medicationName: localMedication.name,
+            takenAt: timestamp,
+            updatedAt: timestamp
+        )
+        let remoteLog = MedicationLog(
+            id: localLog.id,
+            medicationID: localMedication.id,
+            medicationName: localMedication.name,
+            takenAt: timestamp,
+            updatedAt: timestamp
+        )
+        #expect(
+            store._test_shouldPushLocalLogToCloud(
+                local: localLog,
+                remote: remoteLog
+            ) == false
+        )
+    }
+
+    @Test
     func mergeCloudLogsReplacesAndRemovesDeleted() async throws {
         clearPillrUserDefaults()
         let store = MedicationStore(isPreview: true)
@@ -160,5 +196,63 @@ struct CloudSyncTests {
 
         store._test_setDeletedMedicationIDs(ids)
         #expect(store._test_getDeletedMedicationIDs() == ids)
+    }
+
+    @Test
+    func legacyCloudMedicationsDefaultReminderFlagToEnabledForScheduledMeds() async throws {
+        #expect(
+            CloudKitMedicationSync.resolvedReminderNotificationsEnabled(
+                storedValue: nil,
+                frequency: "Once daily"
+            ) == true
+        )
+        #expect(
+            CloudKitMedicationSync.resolvedReminderNotificationsEnabled(
+                storedValue: nil,
+                frequency: "As needed"
+            ) == false
+        )
+        #expect(
+            CloudKitMedicationSync.resolvedReminderNotificationsEnabled(
+                storedValue: false,
+                frequency: "Once daily"
+            ) == false
+        )
+    }
+
+    @Test
+    func legacyCompatibleMedicationRecordDropsNewestSchemaFields() async throws {
+        let record = CKRecord(recordType: "Medication", recordID: .init(recordName: UUID().uuidString))
+        record["name"] = "Test" as CKRecordValue
+        record["frequency"] = "Once daily" as CKRecordValue
+        record["timeToTake"] = Date() as CKRecordValue
+        record["updatedAt"] = Date() as CKRecordValue
+        record["reminderNotificationsEnabled"] = true as CKRecordValue
+        record["effectsGoneMinutes"] = 120 as CKRecordValue
+
+        let legacy = CloudKitMedicationSync.legacyCompatibleRecord(from: record)
+
+        #expect(legacy["name"] as? String == "Test")
+        #expect(legacy["reminderNotificationsEnabled"] == nil)
+        #expect(legacy["effectsGoneMinutes"] == nil)
+    }
+
+    @Test
+    func legacyCompatibleLogRecordDropsNewestSchemaFields() async throws {
+        let medicationID = UUID()
+        let reference = CKRecord.Reference(recordID: .init(recordName: medicationID.uuidString), action: .none)
+        let record = CKRecord(recordType: "MedicationLog", recordID: .init(recordName: UUID().uuidString))
+        record["medicationReference"] = reference
+        record["medicationName"] = "Test" as CKRecordValue
+        record["takenAt"] = Date() as CKRecordValue
+        record["updatedAt"] = Date() as CKRecordValue
+        record["medicationID"] = medicationID.uuidString as CKRecordValue
+        record["reflectionSummary"] = "Summary" as CKRecordValue
+
+        let legacy = CloudKitMedicationSync.legacyCompatibleRecord(from: record)
+
+        #expect(legacy["medicationReference"] as? CKRecord.Reference != nil)
+        #expect(legacy["medicationID"] == nil)
+        #expect(legacy["reflectionSummary"] == nil)
     }
 }

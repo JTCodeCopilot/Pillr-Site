@@ -5,11 +5,10 @@ import Testing
 @MainActor
 struct MedicationUpdateSyncTests {
     @Test
-    func editingMedicationReschedulesRemindersAndSyncsToCloud() async throws {
+    func editingMedicationReschedulesRemindersWithCloudSyncDisabled() async throws {
         clearPillrUserDefaults()
         UserSettings.shared.setPremiumStatus(true)
         UserSettings.shared.setSubscriptionType("one-time-purchase")
-        UserSettings.shared.setCloudSyncPreference(true)
 
         let fakeNotifications = FakeNotificationManager()
         let fakeCloud = FakeCloudKitSync()
@@ -42,7 +41,7 @@ struct MedicationUpdateSyncTests {
 
         #expect(fakeNotifications.scheduledMultiple.count == 1)
         #expect(fakeNotifications.canceledMultiple.count == 1)
-        #expect(fakeCloud.savedMedications.count >= 1)
+        #expect(fakeCloud.savedMedications.isEmpty)
 
         guard let stored = store.medications.first else {
             #expect(Bool(false))

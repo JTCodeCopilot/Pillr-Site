@@ -51,6 +51,8 @@ struct ModelTests {
         med.notificationID = nil
         med.notificationIDs = []
         med.reminderNotificationsEnabled = false
+        #expect(med.isCabinetMedication == false)
+
         med.frequency = "As needed"
         #expect(med.isCabinetMedication == true)
     }
@@ -106,6 +108,46 @@ struct ModelTests {
         let medication = try decoder.decode(Medication.self, from: Data(json.utf8))
         #expect(medication.reminderNotificationsEnabled == true)
         #expect(medication.hasActiveReminder == true)
+    }
+
+    @Test
+    func medicationDecodeDefaultsLegacyScheduledMedicationToReminderEnabled() async throws {
+        let json = """
+        {
+          "id": "\(UUID().uuidString)",
+          "name": "Legacy Med",
+          "dosage": "10",
+          "dosageUnit": "mg",
+          "frequency": "Once daily",
+          "timeToTake": 0
+        }
+        """
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .deferredToDate
+        let medication = try decoder.decode(Medication.self, from: Data(json.utf8))
+        #expect(medication.reminderNotificationsEnabled == true)
+        #expect(medication.isCabinetMedication == false)
+    }
+
+    @Test
+    func medicationDecodeKeepsLegacyAsNeededMedicationOutOfReminderScheduling() async throws {
+        let json = """
+        {
+          "id": "\(UUID().uuidString)",
+          "name": "Legacy PRN",
+          "dosage": "10",
+          "dosageUnit": "mg",
+          "frequency": "As needed",
+          "timeToTake": 0
+        }
+        """
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .deferredToDate
+        let medication = try decoder.decode(Medication.self, from: Data(json.utf8))
+        #expect(medication.reminderNotificationsEnabled == false)
+        #expect(medication.isCabinetMedication == true)
     }
 
     @Test
