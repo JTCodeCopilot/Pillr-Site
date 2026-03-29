@@ -101,33 +101,20 @@ class NotificationManager: ObservableObject {
     }
 
     private func setupNotificationActions() {
-        // Define the actions
-        let trackAction = UNNotificationAction(
-            identifier: NotificationActionIdentifier.trackNow,
-            title: "Take Now",
-            options: []
-        )
-        
-        let remindAction = UNNotificationAction(
-            identifier: NotificationActionIdentifier.remindLater,
-            title: "Remind Me in 30 Minutes",
-            options: []
-        )
-        
         let dismissAction = UNNotificationAction(
             identifier: NotificationActionIdentifier.dismiss,
             title: "Dismiss",
             options: .destructive
         )
         
-        // Define the medication reminder category (group of actions)
+        // Keep the medication reminder category registered, but without the quick log actions for now.
         let medicationCategory = UNNotificationCategory(
             identifier: NotificationCategoryIdentifier.medicationReminder,
-            actions: [trackAction, remindAction],
+            actions: [],
             intentIdentifiers: [],
             hiddenPreviewsBodyPlaceholder: "Notification",
             categorySummaryFormat: nil,
-            options: [.customDismissAction, .hiddenPreviewsShowTitle]
+            options: [.hiddenPreviewsShowTitle]
         )
 
         let stimulantCategory = UNNotificationCategory(

@@ -4633,9 +4633,9 @@ struct MedicationRow: View {
         case .skipped:
             return "Skipped. Tap to log or tap status/chevron to expand details."
         case .due(_), .overdue(_):
-            return "Tap 'Take Now' to log, or tap status/chevron to expand details."
+            return "Tap to log in the app, or tap status/chevron to expand details."
         case .asNeeded: // Add .asNeeded case
-            return "Tap 'Take Now' to log, or tap status/chevron to expand details."
+            return "Tap to log in the app, or tap status/chevron to expand details."
         }
     }
 
