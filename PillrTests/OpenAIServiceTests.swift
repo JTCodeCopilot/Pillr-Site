@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Pillr
 
+@Suite(.serialized)
 struct OpenAIServiceTests {
     @Test
     func extractJSONStripsCodeFencesAndExtraText() async throws {

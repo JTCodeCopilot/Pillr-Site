@@ -560,10 +560,7 @@ struct DailyCheckInHistoryView: View {
         VStack(alignment: .leading, spacing: 18) {
             ForEach(groupedCheckIns, id: \.date) { date, logs in
                 VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 8) {
-                        Text(dayLabel(for: date))
-                            .journalSectionHeader()
-                    }
+                    dayHeader(for: date)
 
                     VStack(spacing: 18) {
                         ForEach(Array(logs.enumerated()), id: \.element.id) { index, log in
@@ -584,6 +581,24 @@ struct DailyCheckInHistoryView: View {
             }
         }
         .padding(.top, 28)
+    }
+
+    private func dayHeader(for date: Date) -> some View {
+        HStack(spacing: 12) {
+            Text(dayLabel(for: date))
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(ReflectJournalTheme.textPrimary)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.10))
+                .frame(height: 1)
+
+            Text(dayHeaderRightLabel(for: date))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(ReflectJournalTheme.textSecondary)
+                .fixedSize(horizontal: true, vertical: false)
+        }
     }
 
     private var newReflectionControl: some View {
@@ -655,8 +670,21 @@ struct DailyCheckInHistoryView: View {
         } else if calendar.isDateInYesterday(date) {
             return "Yesterday"
         } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE"
+            return formatter.string(from: date)
+        }
+    }
+
+    private func dayHeaderRightLabel(for date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
             return DailyCheckInHistoryView.dayFormatter.string(from: date)
         }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
     }
 
     private var dateRangeSheet: some View {
@@ -1017,23 +1045,7 @@ private struct DailyCheckInTimelineRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(spacing: 6) {
-                let dotValue = CGFloat(max(0, min(log.feelingRating ?? 0, 5))) / 5.0
-                Circle()
-                    .fill(Color.white.opacity(0.20 + (0.35 * dotValue)))
-                    .frame(width: 12, height: 12)
-                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
-
-                Rectangle()
-                    .fill(Color.white.opacity(0.045))
-                    .frame(width: 0.6)
-                    .frame(maxHeight: .infinity)
-                    .opacity(isLast ? 0 : 1)
-            }
-            .alignmentGuide(VerticalAlignment.center) { $0[VerticalAlignment.center] }
-
-            VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
                 if isExpanded {
                     HStack(alignment: .top, spacing: 10) {
                         VStack(alignment: .leading, spacing: 4) {
@@ -1191,29 +1203,28 @@ private struct DailyCheckInTimelineRow: View {
                         .padding(.top, 2)
                     }
                 }
+        }
+        .journalSheet(isExpanded: isExpanded)
+        .frame(minHeight: isExpanded ? nil : 110)
+        .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .confirmationDialog("Reflection options", isPresented: $showingActionMenu, titleVisibility: .hidden) {
+            Button("Edit Reflection") {
+                onEdit()
             }
-            .journalSheet(isExpanded: isExpanded)
-            .frame(minHeight: isExpanded ? nil : 110)
-            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .confirmationDialog("Reflection options", isPresented: $showingActionMenu, titleVisibility: .hidden) {
-                Button("Edit Reflection") {
-                    onEdit()
-                }
 
-                Button("Delete", role: .destructive) {
-                    showingDeleteConfirm = true
-                }
+            Button("Delete", role: .destructive) {
+                showingDeleteConfirm = true
+            }
 
-                Button("Cancel", role: .cancel) {}
+            Button("Cancel", role: .cancel) {}
+        }
+        .alert("Delete?", isPresented: $showingDeleteConfirm) {
+            Button("Delete", role: .destructive) {
+                onDelete()
             }
-            .alert("Delete?", isPresented: $showingDeleteConfirm) {
-                Button("Delete", role: .destructive) {
-                    onDelete()
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This reflection will be permanently deleted.")
-            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This reflection will be permanently deleted.")
         }
     }
 }

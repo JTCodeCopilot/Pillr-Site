@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Pillr
 
+@Suite(.serialized)
 @MainActor
 struct NotificationFollowUpTests {
     @Test

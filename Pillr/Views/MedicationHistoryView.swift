@@ -754,7 +754,7 @@ private struct MedicationTimelineRow: View {
 
     private var statusColor: Color {
         if log.skipped {
-            return Color(hex: "#8B7366")
+            return Color(hex: "#A65A4A")
         }
         return Color(hex: "#DDE5DF")
     }
@@ -793,7 +793,7 @@ private struct MedicationTimelineRow: View {
 
             HStack(alignment: .center, spacing: 8) {
                 Text(statusLabel)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(statusColor)
 
                 Spacer(minLength: 8)
