@@ -754,7 +754,7 @@ struct DailyCheckInHistoryView: View {
         let logs = filteredCheckInLogs
         guard !logs.isEmpty else { return nil }
 
-        var csv = "Date,Time,Medication,Overall,Focus,SideEffectsSeverity,Mood,ReflectionSummary,Notes,CheckInNotes,SideEffects\n"
+        var csv = "Date,Time,Medication,Overall feeling,Focus level,Side-effect impact,Mood overall,Notes,Side effects picked\n"
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .short
         let timeFormatter = DateFormatter()
@@ -762,8 +762,6 @@ struct DailyCheckInHistoryView: View {
 
         for log in logs {
             let noteParts = splitNotesAndSideEffects(for: log)
-            let summary = log.reflectionSummary?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let notes = noteParts.notes ?? ""
             let checkInNotes = noteParts.checkInNotes ?? ""
             let sideEffects = noteParts.sideEffects ?? ""
             let mood = noteParts.mood ?? ""
@@ -775,8 +773,6 @@ struct DailyCheckInHistoryView: View {
                 ratingDisplay(log.focusRating),
                 ratingDisplay(log.sideEffectSeverity),
                 mood,
-                summary,
-                notes,
                 checkInNotes,
                 sideEffects
             ]
@@ -823,18 +819,27 @@ struct DailyCheckInHistoryView: View {
             .font: UIFont.systemFont(ofSize: 13, weight: .medium),
             .foregroundColor: UIColor.darkGray
         ]
-        let dateHeaderAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 15, weight: .semibold),
+        let cardTitleAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 15, weight: .bold),
             .foregroundColor: UIColor.black
         ]
-        let entryTitleAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 12, weight: .semibold),
-            .foregroundColor: UIColor.black
-        ]
-        let bodyAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 12, weight: .regular),
+        let cardBodyAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 11.5, weight: .regular),
             .foregroundColor: UIColor.darkGray
         ]
+        let cardLabelAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 11.5, weight: .bold),
+            .foregroundColor: UIColor.darkGray
+        ]
+        let cardValueAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 11.5, weight: .regular),
+            .foregroundColor: UIColor.black
+        ]
+        let cardFill = UIColor.white.withAlphaComponent(0.88)
+        let cardStroke = UIColor.black.withAlphaComponent(0.08)
+        let cardPadding: CGFloat = 14
+        let cardSpacing: CGFloat = 14
+        let sectionGap: CGFloat = 12
 
         let pdfData = renderer.pdfData { context in
             var currentY = margin
@@ -853,41 +858,71 @@ struct DailyCheckInHistoryView: View {
                 currentY += height + spacingAfter
             }
 
+            func drawCardBackground(height: CGFloat) {
+                let rect = CGRect(x: margin, y: currentY, width: contentWidth, height: height)
+                let path = UIBezierPath(roundedRect: rect, cornerRadius: 16)
+                cardFill.setFill()
+                path.fill()
+                cardStroke.setStroke()
+                path.lineWidth = 1
+                path.stroke()
+            }
+
+            func drawReflectionCard(for log: MedicationLog) {
+                let noteParts = splitNotesAndSideEffects(for: log)
+                var lines: [(NSAttributedString, CGFloat)] = []
+                lines.append((NSAttributedString(string: dateFormatter.string(from: log.takenAt), attributes: cardTitleAttributes), 4))
+                lines.append((NSAttributedString(string: "\(timeFormatter.string(from: log.takenAt)) • \(log.medicationName)", attributes: cardBodyAttributes), 6))
+
+                let ratingsText = "Overall feeling: \(ratingDisplay(log.feelingRating))   Focus level: \(ratingDisplay(log.focusRating))   Side-effect impact: \(ratingDisplay(log.sideEffectSeverity))"
+                lines.append((NSAttributedString(string: ratingsText, attributes: cardBodyAttributes), sectionGap))
+
+                if let mood = noteParts.mood?.trimmingCharacters(in: .whitespacesAndNewlines), !mood.isEmpty {
+                    lines.append((NSAttributedString(string: "Mood overall", attributes: cardLabelAttributes), 4))
+                    lines.append((NSAttributedString(string: mood, attributes: cardValueAttributes), sectionGap))
+                }
+                if let checkInNotes = noteParts.checkInNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !checkInNotes.isEmpty {
+                    lines.append((NSAttributedString(string: "Notes", attributes: cardLabelAttributes), 4))
+                    lines.append((NSAttributedString(string: checkInNotes, attributes: cardValueAttributes), sectionGap))
+                }
+                if let sideEffects = noteParts.sideEffects?.trimmingCharacters(in: .whitespacesAndNewlines), !sideEffects.isEmpty {
+                    lines.append((NSAttributedString(string: "Side effects picked", attributes: cardLabelAttributes), 4))
+                    lines.append((NSAttributedString(string: sideEffects, attributes: cardValueAttributes), 0))
+                }
+
+                let usableWidth = contentWidth - (cardPadding * 2)
+                let cardHeight = lines.reduce(CGFloat(0)) { total, line in
+                    total + height(for: line.0, width: usableWidth) + line.1
+                } + cardPadding * 2 + 4
+
+                if currentY + cardHeight > pageRect.height - margin {
+                    beginPage()
+                }
+
+                drawCardBackground(height: cardHeight)
+
+                var yCursor = currentY + cardPadding
+                for (index, line) in lines.enumerated() {
+                    let lineHeight = height(for: line.0, width: usableWidth)
+                    line.0.draw(in: CGRect(x: margin + cardPadding, y: yCursor, width: usableWidth, height: lineHeight))
+                    yCursor += lineHeight + line.1
+                    if index == 0 {
+                        yCursor += 2
+                    }
+                }
+
+                currentY += cardHeight + cardSpacing
+            }
+
             beginPage()
             drawText(NSAttributedString(string: "Reflection Notes Export", attributes: titleAttributes), spacingAfter: 4)
             let exportedOn = "Exported on \(exportedOnFormatter.string(from: Date()))"
             drawText(NSAttributedString(string: exportedOn, attributes: subtitleAttributes), spacingAfter: 12)
 
             for date in sortedDates {
-                let dateHeader = NSAttributedString(string: dateFormatter.string(from: date), attributes: dateHeaderAttributes)
-                drawText(dateHeader, spacingAfter: 6)
-
                 let entries = (grouped[date] ?? []).sorted(by: { $0.takenAt > $1.takenAt })
                 for log in entries {
-                    let headerText = "\(timeFormatter.string(from: log.takenAt)) • \(log.medicationName)"
-                    drawText(NSAttributedString(string: headerText, attributes: entryTitleAttributes), spacingAfter: 4)
-
-                    let ratingsText = "Overall: \(ratingDisplay(log.feelingRating))  Focus: \(ratingDisplay(log.focusRating))  Side effects: \(ratingDisplay(log.sideEffectSeverity))"
-                    drawText(NSAttributedString(string: ratingsText, attributes: bodyAttributes), spacingAfter: 4)
-
-                    let noteParts = splitNotesAndSideEffects(for: log)
-                    if let mood = noteParts.mood?.trimmingCharacters(in: .whitespacesAndNewlines), !mood.isEmpty {
-                        drawText(NSAttributedString(string: "Mood: \(mood)", attributes: bodyAttributes), spacingAfter: 4)
-                    }
-                    if let summary = log.reflectionSummary?.trimmingCharacters(in: .whitespacesAndNewlines), !summary.isEmpty {
-                        drawText(NSAttributedString(string: "Summary: \(summary)", attributes: bodyAttributes), spacingAfter: 4)
-                    }
-                    if let notes = noteParts.notes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
-                        drawText(NSAttributedString(string: "Notes: \(notes)", attributes: bodyAttributes), spacingAfter: 4)
-                    }
-                    if let checkInNotes = noteParts.checkInNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !checkInNotes.isEmpty {
-                        drawText(NSAttributedString(string: "Check-in: \(checkInNotes)", attributes: bodyAttributes), spacingAfter: 4)
-                    }
-                    if let sideEffects = noteParts.sideEffects?.trimmingCharacters(in: .whitespacesAndNewlines), !sideEffects.isEmpty {
-                        drawText(NSAttributedString(string: "Side effects: \(sideEffects)", attributes: bodyAttributes), spacingAfter: 8)
-                    } else {
-                        currentY += 8
-                    }
+                    drawReflectionCard(for: log)
                 }
             }
         }
@@ -1078,7 +1113,7 @@ private struct DailyCheckInTimelineRow: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Mood overall")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(ReflectJournalTheme.textTertiary)
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
 
                             Text(mood)
                                 .font(.system(size: 14, weight: .regular))
@@ -1092,7 +1127,7 @@ private struct DailyCheckInTimelineRow: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Notes")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(ReflectJournalTheme.textTertiary)
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
 
                             Text(expandedNote)
                                 .font(.system(size: 14, weight: .regular))
@@ -1106,7 +1141,7 @@ private struct DailyCheckInTimelineRow: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Side effects picked")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(ReflectJournalTheme.textTertiary)
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
 
                             DailyCheckInFlowLayout(spacing: 6) {
                                 ForEach(sideEffectChips, id: \.self) { effect in
@@ -1250,7 +1285,7 @@ private struct DailyCheckInScaleView: View {
         let clampedValue = max(0, min(value ?? 0, maxValue))
         let fraction = CGFloat(clampedValue) / CGFloat(maxValue)
 
-        let labelColor = isHero ? ReflectJournalTheme.textPrimary : ReflectJournalTheme.textSecondary
+        let labelColor = ReflectJournalTheme.textPrimary
         let lineHeight: CGFloat = isHero ? 8 : 6
 
         Group {

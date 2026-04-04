@@ -13,6 +13,7 @@ struct MedicationHistoryView: View {
     @State private var selectedEndDate: Date = Date()
     @State private var showingDateRangePopover = false
     @State private var logToEdit: MedicationLog?
+    @State private var showingManualEntrySheet = false
     
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -60,6 +61,14 @@ struct MedicationHistoryView: View {
         let names = Set(store.logs.filter { $0.isDoseLog }.map { $0.medicationName })
         return ["All"] + names.sorted()
     }
+
+    private var manuallyAddableMedications: [Medication] {
+        store.medications
+            .filter { !$0.isDeleted }
+            .sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+    }
     
     private var filteredLogs: [MedicationLog] {
         let start = min(selectedStartDate, selectedEndDate)
@@ -72,7 +81,7 @@ struct MedicationHistoryView: View {
             let matchesMedication = selectedMedication == "All" || log.medicationName == selectedMedication
             let matchesSkipFilter = includeSkipped || !log.skipped
             let inRange = log.takenAt >= rangeStart && log.takenAt <= rangeEnd
-            return matchesMedication && matchesSkipFilter && inRange && log.isDoseLog
+            return matchesMedication && matchesSkipFilter && inRange && log.isDoseLog && !log.hiddenFromHistory
         }
         .sorted { $0.takenAt > $1.takenAt }
     }
@@ -204,6 +213,28 @@ struct MedicationHistoryView: View {
                 }
             )
         }
+        .sheet(isPresented: $showingManualEntrySheet) {
+            ManualHistoryEntrySheet(
+                medications: manuallyAddableMedications,
+                onCancel: { showingManualEntrySheet = false },
+                onSave: { medication, entryDate, skipped in
+                    store.addManualHistoryEntry(for: medication, at: entryDate, skipped: skipped)
+                    let entryDay = Calendar.current.startOfDay(for: entryDate)
+                    if entryDay < Calendar.current.startOfDay(for: selectedStartDate) {
+                        selectedStartDate = entryDate
+                    }
+                    if entryDate > selectedEndDate {
+                        selectedEndDate = entryDate
+                    }
+                    if selectedMedication != "All" && selectedMedication != medication.name {
+                        selectedMedication = "All"
+                    }
+                    showingManualEntrySheet = false
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
         .onChange(of: selectedStartDate) { _, newValue in
             if selectedEndDate < newValue {
                 selectedEndDate = newValue
@@ -231,6 +262,7 @@ struct MedicationHistoryView: View {
 
     private var headerActionsSection: some View {
         HStack(spacing: 12) {
+            addControl
             includeSkippedControl
             exportControl
         }
@@ -505,6 +537,19 @@ struct MedicationHistoryView: View {
         .buttonStyle(.plain)
         .disabled(filteredLogs.isEmpty)
     }
+
+    private var addControl: some View {
+        Button {
+            showingManualEntrySheet = true
+        } label: {
+            HistoryActionButton(
+                icon: "plus",
+                title: "Add"
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(manuallyAddableMedications.isEmpty)
+    }
     
     private var statsSection: some View {
         GlassContainer(spacing: 18) {
@@ -566,11 +611,7 @@ struct MedicationHistoryView: View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(groupedLogs, id: \.date) { date, logs in
                 VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 8) {
-                        Text(dayLabel(for: date))
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(Color.pillrBackground)
-                    }
+                    dayHeader(for: date)
                     
                     VStack(spacing: 18) {
                         ForEach(Array(logs.enumerated()), id: \.element.id) { index, log in
@@ -581,11 +622,8 @@ struct MedicationHistoryView: View {
                             showDoseChip: log.recordedHasMultipleReminders,
                             timeText: MedicationHistoryView.timeFormatter.string(from: log.takenAt),
                             isLast: index == logs.count - 1,
-                            onEditDate: {
-                                logToEdit = log
-                            },
                             onDelete: {
-                                store.deleteLog(log)
+                                store.hideDoseLogFromHistory(log)
                             }
                         )
                         }
@@ -595,6 +633,34 @@ struct MedicationHistoryView: View {
         }
         .padding(.top, 28)
     }
+
+    private func dayHeader(for date: Date) -> some View {
+        HStack(spacing: 12) {
+            Text(dayLabel(for: date))
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(Color.pillrBackground)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Rectangle()
+                .fill(Color.white.opacity(0.10))
+                .frame(height: 1)
+
+            Text(dayHeaderRightLabel(for: date))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(Color.pillrSecondary.opacity(0.72))
+                .fixedSize(horizontal: true, vertical: false)
+        }
+    }
+
+    private func dayHeaderRightLabel(for date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return MedicationHistoryView.dayFormatter.string(from: date)
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
+    }
     
     private func dayLabel(for date: Date) -> String {
         let calendar = Calendar.current
@@ -603,7 +669,9 @@ struct MedicationHistoryView: View {
         } else if calendar.isDateInYesterday(date) {
             return "Yesterday"
         } else {
-            return MedicationHistoryView.dayFormatter.string(from: date)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE"
+            return formatter.string(from: date)
         }
     }
     
@@ -630,13 +698,11 @@ private struct MedicationTimelineRow: View {
     let showDoseChip: Bool
     let timeText: String
     let isLast: Bool
-    let onEditDate: () -> Void
     let onDelete: () -> Void
     @State private var showingDeleteConfirm = false
     @State private var showingActionMenu = false
 
     private var hasSupportingDetails: Bool {
-        log.pillsConsumed != nil ||
         (log.reminderIndex != nil && showDoseChip) ||
         log.feelingRating != nil ||
         log.focusRating != nil ||
@@ -651,147 +717,335 @@ private struct MedicationTimelineRow: View {
         return notes
     }
 
-    var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(spacing: 6) {
-                Circle()
-                    .fill(Color.white.opacity(log.skipped ? 0.3 : 0.45))
-                    .frame(width: 12, height: 12)
-                    .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
-                
-                Rectangle()
-                    .fill(Color.white.opacity(0.035))
-                    .frame(width: 0.6)
-                    .frame(maxHeight: .infinity)
-                    .opacity(isLast ? 0 : 1)
-            }
-            .alignmentGuide(VerticalAlignment.center) { $0[VerticalAlignment.center] }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(log.medicationName)
-                            .font(.body.weight(.semibold))
-                            .foregroundColor(Color.pillrBackground)
-                        
-                        if let dosageText {
-                            Text(dosageText)
-                                .font(.body.weight(.regular))
-                                .foregroundColor(Color.pillrSecondary.opacity(0.65))
-                        }
-
-                        Text(timeText)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Color.pillrSecondary.opacity(0.78))
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        showingActionMenu = true
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(Color.pillrSecondary.opacity(0.85))
-                            .frame(width: 28, height: 28)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+    private var expandedActions: some View {
+        VStack(spacing: 10) {
+            Button {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
+                    showingDeleteConfirm = true
                 }
-                
-                HStack(spacing: 8) {
-                    HistoryChip(
-                        text: log.skipped ? "Skipped" : "Taken",
-                        tint: log.skipped ? Color(hex: "#E7E0D9") : Color.pillrSecondary,
-                        style: .prominent
-                    )
-
-                    if let reminder = log.reminderIndex,
-                       showDoseChip {
-                        HistoryChip(
-                            text: "Dose \(reminder + 1)",
-                            tint: Color.pillrSecondary,
-                            style: .subtle
-                        )
-                    }
-                }
-                
-                if hasSupportingDetails {
-                    VStack(alignment: .leading, spacing: 8) {
-                        if let feeling = log.feelingRating {
-                            HistoryChip(
-                                text: "Feeling \(feeling)/5",
-                                tint: Color.pillrSecondary,
-                                style: .subtle
+            } label: {
+                Text("Delete")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color.red.opacity(0.95))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(Color.red.opacity(0.22), lineWidth: 0.8)
                             )
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.top, 4)
+    }
+
+    private var statusLabel: String {
+        log.skipped ? "Skipped" : "Taken"
+    }
+
+    private var doseLabel: String? {
+        guard let reminder = log.reminderIndex, showDoseChip else { return nil }
+        return "Dose \(reminder + 1)"
+    }
+
+    private var statusColor: Color {
+        if log.skipped {
+            return Color(hex: "#8B7366")
+        }
+        return Color(hex: "#DDE5DF")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(log.medicationName)
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundColor(Color.pillrBackground)
+                        .lineLimit(1)
+
+                    if let dosageText {
+                        Text(dosageText)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.72))
+                    }
+                }
+
+                Spacer(minLength: 6)
+
+                Text(timeText)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.72))
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.8)) {
+                    showingActionMenu.toggle()
+                }
+            }
+
+            Divider()
+                .overlay(Color.white.opacity(0.08))
+
+            HStack(alignment: .center, spacing: 8) {
+                Text(statusLabel)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(statusColor)
+
+                Spacer(minLength: 8)
+
+                if let doseLabel {
+                    HistoryChip(
+                        text: doseLabel,
+                        tint: Color.pillrSecondary,
+                        style: .subtle
+                    )
+                }
+            }
+
+            if showingActionMenu {
+                if hasSupportingDetails {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if let feeling = log.feelingRating {
+                            detailSection(title: "Feeling", value: "\(feeling)/5")
                         }
 
                         if let focus = log.focusRating {
-                            HistoryChip(
-                                text: "Focus \(focus)/5",
-                                tint: Color.pillrSecondary,
-                                style: .subtle
-                            )
+                            detailSection(title: "Focus", value: "\(focus)/5")
                         }
                         
                         if let sideEffects = log.sideEffectSeverity {
-                            HistoryChip(
-                                text: "Side effects \(sideEffects)/5",
-                                tint: Color.pillrSecondary,
-                                style: .subtle
-                            )
+                            detailSection(title: "Side effects", value: "\(sideEffects)/5")
                         }
                     }
                 }
                 
                 if let trimmedNotes {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Rectangle()
-                            .fill(Color.white.opacity(0.07))
-                            .frame(height: 1)
-
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("Notes")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color.pillrSecondary.opacity(0.78))
-                        
+                            .foregroundColor(Color.pillrBackground)
+
                         Text(trimmedNotes)
-                            .font(.system(size: 15))
-                            .foregroundColor(Color.pillrBackground.opacity(0.96))
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(Color.pillrSecondary.opacity(0.72))
+                            .lineSpacing(4)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color.white.opacity(0.05))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 5)
-            .confirmationDialog("History options", isPresented: $showingActionMenu, titleVisibility: .hidden) {
-                Button("Edit Date") {
-                    onEditDate()
-                }
-
-                Button("Delete", role: .destructive) {
-                    showingDeleteConfirm = true
-                }
-
-                Button("Cancel", role: .cancel) {}
-            }
-            .alert("Delete log entry?", isPresented: $showingDeleteConfirm) {
-                Button("Delete", role: .destructive) {
-                    onDelete()
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This entry will be permanently removed from your history.")
+                
+                expandedActions
             }
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.white.opacity(0.075))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 5)
+        .alert("Delete log entry?", isPresented: $showingDeleteConfirm) {
+            Button("Delete", role: .destructive) {
+                onDelete()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This entry will be permanently removed from your history.")
+        }
+    }
+}
+
+private struct ManualHistoryEntrySheet: View {
+    let medications: [Medication]
+    let onCancel: () -> Void
+    let onSave: (Medication, Date, Bool) -> Void
+
+    @State private var selectedMedicationID: UUID?
+    @State private var selectedDate: Date = Date()
+    @State private var selectedStatus: ManualEntryStatus = .taken
+
+    private var selectedMedication: Medication? {
+        guard let selectedMedicationID else { return nil }
+        return medications.first(where: { $0.id == selectedMedicationID })
+    }
+
+    private enum ManualEntryStatus: String, CaseIterable, Identifiable {
+        case taken
+        case skipped
+
+        var id: String { rawValue }
+
+        var title: String {
+            rawValue.capitalized
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.pillrPrimary
+                    .ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        Text("Add History")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(Color.pillrBackground)
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("MEDICATION")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(Color.pillrSecondary.opacity(0.75))
+
+                            if medications.isEmpty {
+                                Text("No medications available yet.")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color.pillrSecondary)
+                            } else {
+                                VStack(spacing: 8) {
+                                    ForEach(medications) { medication in
+                                        Button {
+                                            selectedMedicationID = medication.id
+                                        } label: {
+                                            HStack(spacing: 12) {
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(medication.name)
+                                                        .font(.system(size: 15, weight: .semibold))
+                                                        .foregroundColor(Color.pillrBackground)
+
+                                                    Text(medication.dosageWithUnit)
+                                                        .font(.system(size: 12, weight: .medium))
+                                                        .foregroundColor(Color.pillrSecondary.opacity(0.75))
+                                                }
+
+                                                Spacer()
+
+                                                Image(systemName: selectedMedicationID == medication.id ? "checkmark.circle.fill" : "circle")
+                                                    .font(.system(size: 18, weight: .semibold))
+                                                    .foregroundColor(selectedMedicationID == medication.id ? Color.pillrAccent : Color.pillrSecondary.opacity(0.6))
+                                            }
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 10)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                    .fill(Color.white.opacity(selectedMedicationID == medication.id ? 0.08 : 0.035))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                            .stroke(Color.white.opacity(selectedMedicationID == medication.id ? 0.14 : 0.06), lineWidth: 1)
+                                                    )
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+
+                        manualEntryCard(
+                            title: "Date and time",
+                            subtitle: selectedMedication == nil ? "Pick a medication first" : "Choose when this happened"
+                        ) {
+                            DatePicker(
+                                "",
+                                selection: $selectedDate,
+                                in: ...Date(),
+                                displayedComponents: [.date, .hourAndMinute]
+                            )
+                            .datePickerStyle(.wheel)
+                            .labelsHidden()
+                            .tint(Color.pillrBackground)
+                            .disabled(selectedMedication == nil)
+                            .opacity(selectedMedication == nil ? 0.45 : 1)
+                            .frame(height: 180)
+                            .frame(maxWidth: .infinity)
+                        }
+
+                        manualEntryCard(
+                            title: "Status",
+                            subtitle: "Choose whether it was taken or skipped"
+                        ) {
+                            Picker("", selection: $selectedStatus) {
+                                ForEach(ManualEntryStatus.allCases) { status in
+                                    Text(status.title).tag(status)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .tint(Color.pillrBackground)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+
+                        Button {
+                            guard let selectedMedication else { return }
+                            onSave(selectedMedication, selectedDate, selectedStatus == .skipped)
+                        } label: {
+                            Text("Add History")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(Color.pillrPrimary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color.pillrBackground)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(selectedMedication == nil)
+                        .opacity(selectedMedication == nil ? 0.5 : 1)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+                    .padding(.bottom, 20)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        onCancel()
+                    }
+                    .foregroundColor(Color.pillrSecondary)
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    @ViewBuilder
+    private func manualEntryCard<Content: View>(
+        title: String,
+        subtitle: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title.uppercased())
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.75))
+
+                Text(subtitle)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.72))
+            }
+
+            content()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -876,9 +1130,9 @@ private struct HistoryChip: View {
     let style: Style
     
     var body: some View {
-        Text(text)
-            .font(.caption.weight(.medium))
-        .foregroundColor(style == .prominent ? Color.pillrPrimary : Color.pillrSecondary.opacity(0.92))
+            Text(text)
+                .font(.caption.weight(.medium))
+        .foregroundColor(style == .prominent ? Color.pillrPrimary : Color.pillrSecondary.opacity(0.72))
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(minHeight: 28)
@@ -890,6 +1144,20 @@ private struct HistoryChip: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(style == .prominent ? Color.clear : Color.white.opacity(0.06), lineWidth: 1)
         )
+    }
+}
+
+private extension MedicationTimelineRow {
+    func detailSection(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color.pillrBackground)
+
+            Text(value)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundColor(Color.pillrSecondary.opacity(0.72))
+        }
     }
 }
 
@@ -912,17 +1180,35 @@ extension MedicationHistoryView {
         let logs = filteredLogs
         guard !logs.isEmpty else { return nil }
         
-        var csv = "Date,Time,Medication,Dosage,Status,Notes\n"
+        let sortedLogs = logs.sorted { $0.takenAt > $1.takenAt }
+        let startDate = min(selectedStartDate, selectedEndDate)
+        let endDate = max(selectedStartDate, selectedEndDate)
+        let periodFormatter = DateFormatter()
+        periodFormatter.dateFormat = "d MMM yyyy"
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .short
         let timeFormatter = DateFormatter()
         timeFormatter.timeStyle = .short
+        let exportedOnFormatter = DateFormatter()
+        exportedOnFormatter.dateFormat = "d MMM yyyy, h:mm a"
+        let exportedTimestamp = exportedOnFormatter.string(from: Date())
+            .replacingOccurrences(of: " AM", with: " am")
+            .replacingOccurrences(of: " PM", with: " pm")
+
+        var csv = "Medication History Report\n"
+        csv += "Period,\"\(periodFormatter.string(from: startDate)) – \(periodFormatter.string(from: endDate))\"\n"
+        csv += "Exported,\"\(exportedTimestamp)\"\n"
+        csv += "Entries,\(logs.count)\n"
+        csv += "Taken,\(logs.filter { !$0.skipped }.count)\n"
+        csv += "Skipped,\(logs.filter { $0.skipped }.count)\n"
+        csv += "\n"
+        csv += "Date,Time,Medication,Dosage,Status,Manual Entry\n"
         
-        for log in logs {
+        for log in sortedLogs {
             let dosage = log.recordedDosageWithUnit
-            let cleanNotes = (log.notes ?? "").replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: ",", with: ";")
             let status = log.skipped ? "Skipped" : "Taken"
-            csv += "\(dateFormatter.string(from: log.takenAt)),\(timeFormatter.string(from: log.takenAt)),\(log.medicationName),\(dosage),\(status),\(cleanNotes)\n"
+            let manualEntry = log.isManuallyAdded ? "Yes" : "No"
+            csv += "\(csvField(dateFormatter.string(from: log.takenAt))),\(csvField(timeFormatter.string(from: log.takenAt))),\(csvField(log.medicationName)),\(csvField(dosage)),\(csvField(status)),\(manualEntry)\n"
         }
         
         let fileName = "MedicationHistory_\(DateFormatter.fileNameFormatter.string(from: Date())).csv"
@@ -935,209 +1221,260 @@ extension MedicationHistoryView {
             return nil
         }
     }
+
+    private func csvField(_ value: String) -> String {
+        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+        return "\"\(escaped)\""
+    }
     
     private func createPDFFile() -> URL? {
         let logs = filteredLogs
         guard !logs.isEmpty else { return nil }
-        
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: logs) { calendar.startOfDay(for: $0.takenAt) }
-        let sortedDates = grouped.keys.sorted(by: >)
-        let sectionDateFormatter = DateFormatter()
-        sectionDateFormatter.dateStyle = .long
+
+        let sortedLogs = logs.sorted { $0.takenAt > $1.takenAt }
+        let startDate = min(selectedStartDate, selectedEndDate)
+        let endDate = max(selectedStartDate, selectedEndDate)
+        let periodFormatter = DateFormatter()
+        periodFormatter.dateFormat = "d MMM yyyy"
         let timeFormatter = DateFormatter()
-        timeFormatter.timeStyle = .short
-        let coverageFormatter = DateFormatter()
-        coverageFormatter.dateStyle = .medium
+        timeFormatter.dateFormat = "h:mm a"
         let exportedOnFormatter = DateFormatter()
-        exportedOnFormatter.dateStyle = .long
-        exportedOnFormatter.timeStyle = .short
-        
-        let coverageText: String
-        if let earliest = logs.last?.takenAt, let latest = logs.first?.takenAt {
-            coverageText = "Covers \(coverageFormatter.string(from: earliest)) – \(coverageFormatter.string(from: latest))"
-        } else {
-            coverageText = "Generated on \(coverageFormatter.string(from: Date()))"
-        }
-        
-        let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)
-        let margin: CGFloat = 36
+        exportedOnFormatter.dateFormat = "d MMM yyyy, h:mm a"
+
+        let pageRect = CGRect(x: 0, y: 0, width: 595.28, height: 841.89)
+        let margin: CGFloat = 38
         let contentWidth = pageRect.width - (margin * 2)
+        let takenCount = logs.filter { !$0.skipped }.count
+        let skippedCount = logs.filter { $0.skipped }.count
+        let uniqueMedicationNames = Array(Set(logs.map(\.medicationName))).sorted()
+        let medicationsTracked = uniqueMedicationNames.count
+        let reportPeriod = "Period: \(periodFormatter.string(from: startDate)) – \(periodFormatter.string(from: endDate))"
+        let exportedTimestamp = exportedOnFormatter.string(from: Date())
+            .replacingOccurrences(of: " AM", with: " am")
+            .replacingOccurrences(of: " PM", with: " pm")
+        let exportedAt = "Exported \(exportedTimestamp)"
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
-        
+
         let titleAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 24, weight: .bold),
-            .foregroundColor: UIColor.black
+            .font: UIFont.systemFont(ofSize: 22, weight: .semibold),
+            .foregroundColor: UIColor(white: 0.10, alpha: 1)
         ]
-        let subtitleAttributes: [NSAttributedString.Key: Any] = [
+        let monoLabelAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedSystemFont(ofSize: 10, weight: .medium),
+            .foregroundColor: UIColor(white: 0.48, alpha: 1)
+        ]
+        let monoValueAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedSystemFont(ofSize: 11, weight: .regular),
+            .foregroundColor: UIColor(white: 0.28, alpha: 1)
+        ]
+        let summaryLabelAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .medium),
+            .foregroundColor: UIColor(white: 0.28, alpha: 1)
+        ]
+        let summaryValueAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 22, weight: .medium),
+            .foregroundColor: UIColor(white: 0.10, alpha: 1)
+        ]
+        let summaryValueAccentAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 22, weight: .medium),
+            .foregroundColor: UIColor(red: 0.12, green: 0.62, blue: 0.46, alpha: 1)
+        ]
+        let headerCellAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedSystemFont(ofSize: 11, weight: .medium),
+            .foregroundColor: UIColor(white: 0.48, alpha: 1)
+        ]
+        let cellAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+            .foregroundColor: UIColor(white: 0.28, alpha: 1)
+        ]
+        let medicationNameAttributes: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 14, weight: .medium),
-            .foregroundColor: UIColor.darkGray
+            .foregroundColor: UIColor(white: 0.10, alpha: 1)
         ]
-        let dateBadgeAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 14, weight: .semibold),
-            .foregroundColor: UIColor.black
+        let medicationMetaAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedSystemFont(ofSize: 10, weight: .regular),
+            .foregroundColor: UIColor(white: 0.50, alpha: 1)
         ]
-        let bodyAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 12, weight: .regular),
-            .foregroundColor: UIColor.darkGray
-        ]
-        
+
         let pdfData = renderer.pdfData { context in
             var currentY = margin
-            
-            func drawHeader() {
-                let title = NSAttributedString(string: "Medication History Report", attributes: titleAttributes)
-                let titleHeight = height(for: title, width: contentWidth)
-                title.draw(in: CGRect(x: margin, y: currentY, width: contentWidth, height: titleHeight))
-                currentY += titleHeight + 2
-                
-                let subtitle = NSAttributedString(string: coverageText, attributes: subtitleAttributes)
-                let subtitleHeight = height(for: subtitle, width: contentWidth)
-                subtitle.draw(in: CGRect(x: margin, y: currentY, width: contentWidth, height: subtitleHeight))
-                currentY += subtitleHeight + 12
-                
-                context.cgContext.setStrokeColor(UIColor(white: 0.85, alpha: 1).cgColor)
-                context.cgContext.setLineWidth(0.5)
-                context.cgContext.move(to: CGPoint(x: margin, y: currentY))
-                context.cgContext.addLine(to: CGPoint(x: pageRect.width - margin, y: currentY))
-                context.cgContext.strokePath()
-                currentY += 18
+
+            let tableDateWidth: CGFloat = 104
+            let tableMedicationWidth: CGFloat = 215
+            let tableDoseWidth: CGFloat = 82
+            let tableTimeWidth: CGFloat = 96
+            let tablePillsWidth = contentWidth - tableDateWidth - tableMedicationWidth - tableDoseWidth - tableTimeWidth
+            let tableRowHeight: CGFloat = 54
+
+            func drawText(_ text: String, in rect: CGRect, attributes: [NSAttributedString.Key: Any], alignment: NSTextAlignment = .left) {
+                let style = NSMutableParagraphStyle()
+                style.alignment = alignment
+                style.lineBreakMode = .byTruncatingTail
+                var mergedAttributes = attributes
+                mergedAttributes[.paragraphStyle] = style
+                NSAttributedString(string: text, attributes: mergedAttributes).draw(in: rect)
             }
-            
+
             func beginPage() {
                 context.beginPage()
                 currentY = margin
-                drawHeader()
             }
-            
-            func ensureSpace(for blockHeight: CGFloat) {
-                if currentY + blockHeight > pageRect.height - margin {
-                    beginPage()
-                }
-            }
-            
-            func drawSummaryCard() {
-                let takenCount = logs.filter { !$0.skipped }.count
-                let skippedCount = logs.filter { $0.skipped }.count
-                let uniqueMedications = Set(logs.map { $0.medicationName }).count
-                let summaryText = """
-                Entries logged: \(logs.count)
-                Doses taken: \(takenCount)
-                Doses skipped: \(skippedCount)
-                Medications tracked: \(uniqueMedications)
-                Exported on: \(exportedOnFormatter.string(from: Date()))
-                """
-                let summaryAttributed = NSAttributedString(string: summaryText, attributes: bodyAttributes)
-                let textHeight = height(for: summaryAttributed, width: contentWidth - 40)
-                let cardHeight = textHeight + 28
-                ensureSpace(for: cardHeight)
-                
-                let cardRect = CGRect(x: margin, y: currentY, width: contentWidth, height: cardHeight)
-                let cardPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 14)
-                UIColor(white: 0.98, alpha: 1).setFill()
-                cardPath.fill()
-                UIColor(white: 0.85, alpha: 1).setStroke()
-                cardPath.lineWidth = 0.6
-                cardPath.stroke()
-                
-                summaryAttributed.draw(in: cardRect.insetBy(dx: 20, dy: 14))
-                currentY += cardHeight + 24
-            }
-            
-            func drawLogEntry(_ log: MedicationLog) {
-                let dosageText = log.recordedDosageWithUnit
-                
-                let dateString = sectionDateFormatter.string(from: log.takenAt)
-                let timeString = timeFormatter.string(from: log.takenAt)
-                var lines: [String] = []
-                lines.append("Date: \(dateString)")
-                lines.append("Time: \(timeString)")
-                lines.append("Medication: \(log.medicationName)")
-                lines.append("Amount: \(dosageText.isEmpty ? "—" : dosageText)")
-                
-                let pillsText: String
-                if log.skipped {
-                    pillsText = "Skipped"
-                } else if let pills = log.pillsConsumed, pills > 0 {
-                    pillsText = pills == 1 ? "1 pill" : "\(pills) pills"
+
+            func drawHeader(isFirstPage: Bool) {
+                drawText(
+                    "Medication History Report",
+                    in: CGRect(x: margin, y: currentY, width: contentWidth * 0.54, height: 28),
+                    attributes: titleAttributes
+                )
+
+                drawText(
+                    isFirstPage ? "Patient Record" : "Patient Record • Continued",
+                    in: CGRect(x: margin + contentWidth * 0.54, y: currentY + 2, width: contentWidth * 0.46, height: 14),
+                    attributes: monoValueAttributes,
+                    alignment: .right
+                )
+
+                currentY += 26
+
+                if isFirstPage {
+                    drawText(
+                        reportPeriod,
+                        in: CGRect(x: margin, y: currentY, width: contentWidth * 0.60, height: 14),
+                        attributes: monoValueAttributes
+                    )
+                    drawText(
+                        exportedAt,
+                        in: CGRect(x: margin + contentWidth * 0.60, y: currentY, width: contentWidth * 0.40, height: 14),
+                        attributes: monoValueAttributes,
+                        alignment: .right
+                    )
+                    currentY += 22
                 } else {
-                    pillsText = "Not recorded"
-                }
-                lines.append("Pills Taken: \(pillsText)")
-                
-                let noteParts = splitNotesAndSideEffects(for: log)
-                if let notesText = noteParts.notes {
-                    lines.append("Notes: \(notesText)")
-                }
-                if let checkInText = noteParts.checkInNotes {
-                    if noteParts.notes != nil {
-                        lines.append("---")
-                    }
-                    lines.append("Reflection Notes: \(checkInText)")
+                    drawText(
+                        reportPeriod,
+                        in: CGRect(x: margin, y: currentY - 2, width: contentWidth, height: 12),
+                        attributes: monoLabelAttributes
+                    )
+                    currentY += 12
                 }
 
-                if let feeling = log.feelingRating {
-                    lines.append("Feeling Rating: \(feeling)/5")
-                }
-                if let sideEffects = log.sideEffectSeverity {
-                    lines.append("Side Effects Rating: \(sideEffects)/5")
-                }
-                if let focus = log.focusRating {
-                    lines.append("Focus Rating: \(focus)/5")
-                }
-                
-                if let sideEffectsText = noteParts.sideEffects {
-                    lines.append("Side Effects: \(sideEffectsText)")
-                }
-                
-                let entryAttributed = NSAttributedString(string: lines.joined(separator: "\n"), attributes: bodyAttributes)
-                let textHeight = height(for: entryAttributed, width: contentWidth - 24)
-                let cardHeight = textHeight + 22
-                ensureSpace(for: cardHeight)
-                
-                let cardRect = CGRect(x: margin, y: currentY, width: contentWidth, height: cardHeight)
-                let entryPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 12)
-                UIColor(white: 0.99, alpha: 1).setFill()
-                entryPath.fill()
-                UIColor(white: 0.88, alpha: 1).setStroke()
-                entryPath.lineWidth = 0.6
-                entryPath.stroke()
-                
-                entryAttributed.draw(in: cardRect.insetBy(dx: 12, dy: 11))
-                currentY += cardHeight + 10
+                context.cgContext.setStrokeColor(UIColor(white: 0.12, alpha: 1).cgColor)
+                context.cgContext.setLineWidth(2)
+                context.cgContext.move(to: CGPoint(x: margin, y: currentY))
+                context.cgContext.addLine(to: CGPoint(x: pageRect.width - margin, y: currentY))
+                context.cgContext.strokePath()
+                currentY += isFirstPage ? 12 : 10
             }
-            
-            func drawDateSection(for date: Date) {
-                let dateString = sectionDateFormatter.string(from: date)
-                let attributedDate = NSAttributedString(string: dateString, attributes: dateBadgeAttributes)
-                let badgeHeight: CGFloat = 28
-                let textRect = attributedDate.boundingRect(
-                    with: CGSize(width: contentWidth, height: CGFloat.greatestFiniteMagnitude),
-                    options: [.usesLineFragmentOrigin, .usesFontLeading],
-                    context: nil
+
+            func drawSummaryCards() {
+                let cardGap: CGFloat = 10
+                let cardHeight: CGFloat = 76
+                let cardWidth = (contentWidth - cardGap) / 2
+                let cards: [(String, String, Bool)] = [
+                    ("ENTRIES", "\(logs.count)", false),
+                    ("TAKEN", "\(takenCount)", true),
+                    ("SKIPPED", "\(skippedCount)", false),
+                    ("MEDICATIONS", "\(medicationsTracked)", false)
+                ]
+
+                for (index, card) in cards.enumerated() {
+                    let row = CGFloat(index / 2)
+                    let column = CGFloat(index % 2)
+                    let cardX = margin + column * (cardWidth + cardGap)
+                    let cardY = currentY + row * (cardHeight + cardGap)
+                    let cardRect = CGRect(x: cardX, y: cardY, width: cardWidth, height: cardHeight)
+                    let path = UIBezierPath(roundedRect: cardRect, cornerRadius: 16)
+                    UIColor(white: 0.97, alpha: 1).setFill()
+                    path.fill()
+
+                    drawText(card.0, in: CGRect(x: cardRect.minX + 14, y: cardRect.minY + 14, width: cardRect.width - 28, height: 18), attributes: summaryLabelAttributes)
+                    drawText(
+                        card.1,
+                        in: CGRect(x: cardRect.minX + 14, y: cardRect.minY + 36, width: cardRect.width - 28, height: 24),
+                        attributes: card.2 ? summaryValueAccentAttributes : summaryValueAttributes
+                    )
+                }
+
+                currentY += (cardHeight * 2) + cardGap + 18
+            }
+
+            func drawTableHeader() {
+                let y = currentY
+                drawText("DATE", in: CGRect(x: margin, y: y, width: tableDateWidth, height: 16), attributes: headerCellAttributes)
+                drawText("MEDICATION", in: CGRect(x: margin + tableDateWidth, y: y, width: tableMedicationWidth, height: 16), attributes: headerCellAttributes)
+                drawText("DOSE", in: CGRect(x: margin + tableDateWidth + tableMedicationWidth, y: y, width: tableDoseWidth, height: 16), attributes: headerCellAttributes, alignment: .right)
+                drawText("TIME", in: CGRect(x: margin + tableDateWidth + tableMedicationWidth + tableDoseWidth, y: y, width: tableTimeWidth, height: 16), attributes: headerCellAttributes, alignment: .right)
+
+                currentY += 22
+                context.cgContext.setStrokeColor(UIColor(white: 0.84, alpha: 1).cgColor)
+                context.cgContext.setLineWidth(1)
+                context.cgContext.move(to: CGPoint(x: margin, y: currentY))
+                context.cgContext.addLine(to: CGPoint(x: pageRect.width - margin, y: currentY))
+                context.cgContext.strokePath()
+                currentY += 8
+            }
+
+            func drawTableRow(_ log: MedicationLog) {
+                let rowTop = currentY
+                let doseText = log.recordedDosageWithUnit.isEmpty ? "—" : log.recordedDosageWithUnit
+                let exportedTime = timeFormatter.string(from: log.takenAt).lowercased()
+
+                drawText(periodFormatter.string(from: log.takenAt), in: CGRect(x: margin, y: rowTop + 8, width: tableDateWidth - 12, height: 20), attributes: cellAttributes)
+
+                let medicationX = margin + tableDateWidth
+                drawText(log.medicationName, in: CGRect(x: medicationX, y: rowTop + 6, width: tableMedicationWidth - 6, height: 18), attributes: medicationNameAttributes)
+
+                let statusText = log.skipped ? "Skipped" : "Taken"
+                drawText(statusText, in: CGRect(x: medicationX, y: rowTop + 22, width: tableMedicationWidth - 6, height: 14), attributes: medicationMetaAttributes)
+
+                if log.isManuallyAdded {
+                    drawText("Manual entry", in: CGRect(x: medicationX, y: rowTop + 34, width: tableMedicationWidth - 6, height: 14), attributes: medicationMetaAttributes)
+                }
+
+                drawText(
+                    doseText,
+                    in: CGRect(x: margin + tableDateWidth + tableMedicationWidth, y: rowTop + 8, width: tableDoseWidth - 8, height: 20),
+                    attributes: cellAttributes,
+                    alignment: .right
                 )
-                let calculatedWidth = min(textRect.width + 24, contentWidth)
-                ensureSpace(for: badgeHeight + 8)
-                let badgeRect = CGRect(x: margin, y: currentY, width: calculatedWidth, height: badgeHeight)
-                let badgePath = UIBezierPath(roundedRect: badgeRect, cornerRadius: 8)
-                UIColor(red: 0.92, green: 0.95, blue: 0.93, alpha: 1).setFill()
-                badgePath.fill()
-                attributedDate.draw(in: badgeRect.insetBy(dx: 12, dy: 6))
-                currentY += badgeHeight + 6
-                
-                for log in (grouped[date] ?? []).sorted(by: { $0.takenAt > $1.takenAt }) {
-                    drawLogEntry(log)
-                }
-                currentY += 6
+                drawText(
+                    exportedTime,
+                    in: CGRect(x: margin + tableDateWidth + tableMedicationWidth + tableDoseWidth, y: rowTop + 8, width: tableTimeWidth - 8, height: 20),
+                    attributes: cellAttributes,
+                    alignment: .right
+                )
+
+                context.cgContext.setStrokeColor(UIColor(white: 0.88, alpha: 1).cgColor)
+                context.cgContext.setLineWidth(0.8)
+                context.cgContext.move(to: CGPoint(x: margin, y: rowTop + tableRowHeight - 2))
+                context.cgContext.addLine(to: CGPoint(x: pageRect.width - margin, y: rowTop + tableRowHeight - 2))
+                context.cgContext.strokePath()
+
+                currentY += 48
             }
-            
-            beginPage()
-            drawSummaryCard()
-            for date in sortedDates {
-                drawDateSection(for: date)
+
+            func beginReportPage(isFirstPage: Bool) {
+                beginPage()
+                drawHeader(isFirstPage: isFirstPage)
+                if isFirstPage {
+                    drawSummaryCards()
+                }
+                drawTableHeader()
+            }
+
+            func ensureRowSpace() {
+                if currentY + tableRowHeight > pageRect.height - margin {
+                    beginReportPage(isFirstPage: false)
+                }
+            }
+
+            beginReportPage(isFirstPage: true)
+            for log in sortedLogs {
+                ensureRowSpace()
+                drawTableRow(log)
             }
         }
-        
+
         let fileName = "MedicationHistory_Full_\(DateFormatter.fileNameFormatter.string(from: Date())).pdf"
         let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         do {

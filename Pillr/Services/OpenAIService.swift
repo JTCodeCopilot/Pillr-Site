@@ -9,13 +9,6 @@ let openAIService = AIProxy.openAIService(
 
 struct OpenAIService {
     static let shared = OpenAIService()
-
-    private static let reflectionDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter
-    }()
     
     private init() {}
     
@@ -85,68 +78,6 @@ struct OpenAIService {
         return try await performFocusTimingRequest(medicationName: medicationName)
     }
 
-    func summarizeDailyReflection(
-        medicationName: String,
-        date: Date,
-        feeling: Int?,
-        focus: Int?,
-        emotionalTone: String?,
-        sideEffectSeverity: Int?,
-        sideEffects: [String],
-        notes: String?
-    ) async throws -> String {
-        guard UserSettings.shared.hasAIAccess() else {
-            throw OpenAIError.premiumRequired
-        }
-
-        let dateString = Self.reflectionDateFormatter.string(from: date)
-        let trimmedNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let sideEffectsText = sideEffects.isEmpty ? "None noted" : sideEffects.joined(separator: ", ")
-
-        let prompt = """
-        Write a short journal entry in first person using 2 to 3 sentences.
-
-        Make it sound like the user wrote it about this specific day.
-        Blend mood, focus, medication impact, side effects, and notes naturally.
-        Use only the details provided below.
-
-        Be supportive and non judgmental.
-        Do not give medical advice.
-        Do not use emojis or quotes.
-        Do not assume timelines, trends, or history (for example, avoid phrases like "since starting \(medicationName)").
-
-        Reflection data:
-        Medication: \(medicationName)
-        Date: \(dateString)
-        Feeling: \(feeling.map { "\($0)/5" } ?? "Not set")
-        Focus: \(focus.map { "\($0)/5" } ?? "Not set")
-        Emotional tone: \(emotionalTone ?? "Not set")
-        Side effects severity: \(sideEffectSeverity.map { "\($0)/5" } ?? "Not set")
-        Side effects: \(sideEffectsText)
-        Notes: \(trimmedNotes.isEmpty ? "None" : trimmedNotes)
-        """
-
-        let response = try await openAIService.chatCompletionRequest(body: .init(
-            model: "gpt-4o-mini",
-            messages: [
-                .system(content: .text("You are a concise, empathetic assistant writing in first person as the user. Respond with 2 to 3 sentences only, grounded only in provided data.")),
-                .user(content: .text(prompt))
-            ],
-            temperature: 0.2
-        ))
-
-        guard let content = response.choices.first?.message.content else {
-            throw OpenAIError.noContent
-        }
-
-        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            throw OpenAIError.noContent
-        }
-
-        return trimmed.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-    }
-    
     private func performRequestWithRetry(medications: [String], prompt: String, attempt: Int = 1) async throws -> [DrugInteraction] {
         let maxAttempts = 3
         
@@ -389,7 +320,7 @@ struct OpenAIService {
         // If no array or object brackets found, return the cleaned content
         return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-    
+
     private func checkKnownInteractions(medications: [String]) -> [DrugInteraction] {
         var interactions: [DrugInteraction] = []
         

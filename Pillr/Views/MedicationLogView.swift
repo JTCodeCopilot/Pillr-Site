@@ -728,6 +728,10 @@ struct MedicationLogView: View {
                 lines.append("Time: \(timeString)")
                 lines.append("Medication: \(log.medicationName)")
                 lines.append("Amount: \(dosageText.isEmpty ? "—" : dosageText)")
+
+                if log.isManuallyAdded {
+                    lines.append("Added: Manually added")
+                }
                 
                 let pillsText: String
                 if log.skipped {

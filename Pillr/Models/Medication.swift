@@ -369,6 +369,8 @@ struct MedicationLog: Identifiable, Codable, Hashable {
     var sideEffectSeverity: Int? // 1–5 overall side-effect severity
     var reflectionSummary: String? // AI reflection summary
     var hiddenFromMyMeds: Bool = false // Hide from My Meds list while keeping it in history
+    var hiddenFromHistory: Bool = false // Hide from history while keeping the log for schedule logic
+    var isManuallyAdded: Bool = false
     var medicationDosageText: String = ""
     var medicationIconName: String = "pill"
     var medicationReminderCount: Int = 0
@@ -390,6 +392,8 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         case sideEffectSeverity
         case reflectionSummary
         case hiddenFromMyMeds
+        case hiddenFromHistory
+        case isManuallyAdded
         case medicationDosageText
         case medicationIconName
         case medicationReminderCount
@@ -412,6 +416,8 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         sideEffectSeverity: Int? = nil,
         reflectionSummary: String? = nil,
         hiddenFromMyMeds: Bool = false,
+        hiddenFromHistory: Bool = false,
+        isManuallyAdded: Bool = false,
         medicationDosageText: String = "",
         medicationIconName: String = "pill",
         medicationReminderCount: Int = 0
@@ -432,6 +438,8 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.sideEffectSeverity = sideEffectSeverity
         self.reflectionSummary = reflectionSummary
         self.hiddenFromMyMeds = hiddenFromMyMeds
+        self.hiddenFromHistory = hiddenFromHistory
+        self.isManuallyAdded = isManuallyAdded
         self.medicationDosageText = medicationDosageText
         self.medicationIconName = medicationIconName
         self.medicationReminderCount = medicationReminderCount
@@ -456,6 +464,8 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         self.sideEffectSeverity = try container.decodeIfPresent(Int.self, forKey: .sideEffectSeverity)
         self.reflectionSummary = try container.decodeIfPresent(String.self, forKey: .reflectionSummary)
         self.hiddenFromMyMeds = try container.decodeIfPresent(Bool.self, forKey: .hiddenFromMyMeds) ?? false
+        self.hiddenFromHistory = try container.decodeIfPresent(Bool.self, forKey: .hiddenFromHistory) ?? false
+        self.isManuallyAdded = try container.decodeIfPresent(Bool.self, forKey: .isManuallyAdded) ?? false
         self.medicationDosageText = try container.decodeIfPresent(String.self, forKey: .medicationDosageText) ?? ""
         self.medicationIconName = try container.decodeIfPresent(String.self, forKey: .medicationIconName) ?? "pill"
         self.medicationReminderCount = try container.decodeIfPresent(Int.self, forKey: .medicationReminderCount) ?? 0
@@ -479,6 +489,8 @@ struct MedicationLog: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(sideEffectSeverity, forKey: .sideEffectSeverity)
         try container.encodeIfPresent(reflectionSummary, forKey: .reflectionSummary)
         try container.encode(hiddenFromMyMeds, forKey: .hiddenFromMyMeds)
+        try container.encode(hiddenFromHistory, forKey: .hiddenFromHistory)
+        try container.encode(isManuallyAdded, forKey: .isManuallyAdded)
         try container.encode(medicationDosageText, forKey: .medicationDosageText)
         try container.encode(medicationIconName, forKey: .medicationIconName)
         try container.encode(medicationReminderCount, forKey: .medicationReminderCount)

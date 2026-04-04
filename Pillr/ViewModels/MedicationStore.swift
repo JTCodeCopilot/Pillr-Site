@@ -443,6 +443,9 @@ class MedicationStore: ObservableObject {
             if isDailyCheckIn {
                 return nil
             }
+            guard medication.pillCount != nil || medication.initialPillCount != nil else {
+                return nil
+            }
             return skipped ? 0 : medication.pillsPerDose
         }()
         let calendar = Calendar.current
@@ -507,6 +510,7 @@ class MedicationStore: ObservableObject {
 
         if isDailyCheckIn,
            let existingIndex = logs.firstIndex(where: { log in
+            log.isDailyCheckIn &&
             log.medicationID == medication.id &&
             calendar.isDate(log.takenAt, inSameDayAs: actualTime)
            }) {
@@ -655,6 +659,28 @@ class MedicationStore: ObservableObject {
             replacedLogIndex: previousLogIndex,
             pillCountDelta: pillCountDelta
         )
+    }
+
+    func addManualHistoryEntry(for medication: Medication, at date: Date, skipped: Bool = false) {
+        let resolvedReminderIndex = inferReminderIndexIfNeeded(for: medication, actualTime: date)
+        let newLog = MedicationLog(
+            medicationID: medication.id,
+            medicationName: medication.name,
+            takenAt: date,
+            updatedAt: Date(),
+            notes: nil,
+            skipped: skipped,
+            isDailyCheckIn: false,
+            pillsConsumed: skipped ? 0 : nil,
+            reminderIndex: resolvedReminderIndex,
+            isManuallyAdded: true,
+            medicationDosageText: medication.dosageWithUnit,
+            medicationIconName: medication.iconName,
+            medicationReminderCount: medication.reminderTimes.count
+        )
+
+        logs.insert(newLog, at: 0)
+        saveLogs()
     }
     
     // Helper method to update badge count based on overdue medication reminders
@@ -1223,7 +1249,6 @@ class MedicationStore: ObservableObject {
 
     func removeDoseLog(_ log: MedicationLog) {
         guard log.isDoseLog else { return }
-
         deleteLog(log)
 
         if !log.skipped,
@@ -1240,6 +1265,18 @@ class MedicationStore: ObservableObject {
                 saveMedications()
             }
         }
+
+        resetBadgeIfNeeded()
+    }
+
+    func hideDoseLogFromHistory(_ log: MedicationLog) {
+        guard log.isDoseLog else { return }
+        guard let index = logs.firstIndex(where: { $0.id == log.id }) else { return }
+        var updatedLog = logs[index]
+        updatedLog.hiddenFromHistory = true
+        updatedLog.updatedAt = Date()
+        logs[index] = updatedLog
+        saveLogs()
 
         resetBadgeIfNeeded()
     }
@@ -1546,9 +1583,8 @@ class MedicationStore: ObservableObject {
         var logEntry = logs[index]
         logEntry.isDailyCheckIn = true
         logEntry.updatedAt = Date()
-        if let mergedNotes = mergeNotes(existing: logEntry.notes, with: notes) {
-            logEntry.notes = mergedNotes
-        }
+        let trimmedNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines)
+        logEntry.notes = trimmedNotes?.isEmpty == true ? nil : trimmedNotes
         if let feelingRating {
             logEntry.feelingRating = feelingRating
         }
@@ -1720,24 +1756,6 @@ class MedicationStore: ObservableObject {
         medication.enableStimulantPhaseNotifications && medication.medicationType == .stimulant && medication.dailyCheckInTime == nil
     }
 
-
-    private func mergeNotes(existing: String?, with newNotes: String?) -> String? {
-        let trimmedExisting = existing?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedNew = newNotes?.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if let trimmedExisting, !trimmedExisting.isEmpty {
-            if let trimmedNew, !trimmedNew.isEmpty {
-                return "\(trimmedExisting)\n\n\(trimmedNew)"
-            }
-            return trimmedExisting
-        }
-
-        if let trimmedNew, !trimmedNew.isEmpty {
-            return trimmedNew
-        }
-
-        return nil
-    }
 
     // Helper function to update medication names in existing logs
     private func updateMedicationNameInLogs(medicationID: UUID, newName: String) {
