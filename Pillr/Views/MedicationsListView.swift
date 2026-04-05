@@ -3256,7 +3256,7 @@ fileprivate enum MedicationCardPalette {
     static let secondaryText = Color(hex: "#D6DBD3")
     static let timeText = Color(hex: "#E8ECE6")
     static let primaryAction = Color(hex: "#424C43")
-    static let urgency = Color(hex: "#F4D4A0")
+    static let urgency = Color(hex: "#F5C4B3")
     static let takenBackground = Color(hex: "#DDE5DF")
     static let takenTitleText = Color(hex: "#2F3A33")
     static let takenSecondaryText = Color(hex: "#5F6E64")
@@ -5097,16 +5097,16 @@ fileprivate struct MedicationRowDetailsView: View {
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(log.medicationName)
                                                     .font(.system(size: 14, weight: .semibold))
-                                                    .foregroundColor(actionButtonTextColor)
+                                                    .foregroundColor(.white)
                                                     .lineLimit(1)
                                                 Text(log.skipped ? "Skipped at \(commonFormatTime(log.takenAt))" : "Taken at \(commonFormatTime(log.takenAt))")
                                                     .font(.system(size: 12, weight: .medium))
-                                                    .foregroundColor(detailSecondaryTextColor.opacity(0.78))
+                                                    .foregroundColor(.white)
                                             }
                                             Spacer(minLength: 0)
                                                 Text(log.reminderIndex != nil ? "Dose \(log.reminderIndex! + 1)" : "Dose")
                                                     .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(detailSecondaryTextColor.opacity(0.78))
+                                                    .foregroundColor(.white)
                                         }
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.vertical, 10)

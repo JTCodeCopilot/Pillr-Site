@@ -99,12 +99,34 @@ struct MedicationHistoryView: View {
     private var rangeTakenCount: Int {
         filteredLogs.filter { !$0.skipped }.count
     }
+
+    private var rangeSkippedCount: Int {
+        filteredLogs.filter { $0.skipped }.count
+    }
+
+    private var rangeMedicationCount: Int {
+        Set(filteredLogs.map { $0.medicationName }).count
+    }
     
     private var rangeAdherenceRate: String {
         let total = filteredLogs.count
         guard total > 0 else { return "—" }
         let rate = Int((Double(rangeTakenCount) / Double(total)) * 100)
         return "\(rate)%"
+    }
+
+    private var rangeAdherenceColor: Color {
+        let total = filteredLogs.count
+        guard total > 0 else { return Color(hex: "#E07676") }
+
+        let rate = Double(rangeTakenCount) / Double(total) * 100
+        if rate < 50 {
+            return Color(hex: "#E07676")
+        } else if rate < 75 {
+            return Color(hex: "#E0A876")
+        } else {
+            return Color(hex: "#76C48E")
+        }
     }
     
     private var rangeDaysDisplayed: Int {
@@ -136,6 +158,13 @@ struct MedicationHistoryView: View {
     private var dateRangeSummaryText: String {
         rangeDaysDisplayed == 1 ? "Single day selected" : "\(rangeDaysDisplayed) days selected"
     }
+
+    private func horizontalInsets(for width: CGFloat) -> CGFloat {
+        if UIScreen.main.traitCollection.horizontalSizeClass == .regular && width > 768 {
+            return max((width - 650) / 2, 16)
+        }
+        return 16
+    }
     
     var body: some View {
         NavigationView {
@@ -144,11 +173,9 @@ struct MedicationHistoryView: View {
                     .ignoresSafeArea()
                 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 24) {
+                    let horizontalInset = horizontalInsets(for: UIScreen.main.bounds.width)
+                    VStack(alignment: .leading, spacing: 6) {
                         headerSection
-                        if !isModal {
-                            headerActionsSection
-                        }
                         statsSection
                         
                         if groupedLogs.isEmpty {
@@ -157,7 +184,7 @@ struct MedicationHistoryView: View {
                             timelineSection
                         }
                     }
-                    .padding(.horizontal, 18)
+                    .padding(.horizontal, horizontalInset)
                     .padding(.top, 8)
                     .padding(.bottom, 20)
                 }
@@ -175,27 +202,6 @@ struct MedicationHistoryView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     toolbarIncludeSkippedControl
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button {
-                            exportHistoryAsCSV()
-                        } label: {
-                            Label("Export CSV", systemImage: "doc.text")
-                        }
-                        
-                        Button {
-                            exportHistoryAsPDF()
-                        } label: {
-                            Label("Export PDF", systemImage: "doc.richtext")
-                        }
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color.pillrSecondary)
-                    }
-                    .disabled(filteredLogs.isEmpty)
-                    .accessibilityLabel("Export history")
                 }
             }
         }
@@ -248,26 +254,63 @@ struct MedicationHistoryView: View {
     }
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text("History")
-                .font(.system(size: 30, weight: .semibold))
-                .foregroundColor(Color.pillrBackground)
-            
-            Text("Logged doses: \(rangeTakenCount)  •  Adherence: \(rangeAdherenceRate)")
-                .font(.system(size: 15, weight: .regular))
-                .foregroundColor(Color.pillrSecondary.opacity(0.65))
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("History")
+                        .font(.system(size: 36, weight: .bold))
+                        .foregroundColor(Color.pillrBackground)
+
+                    Text(" ")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.9))
+                        .accessibilityHidden(true)
+                }
+
+                Spacer()
+
+                Menu {
+                    Button {
+                        exportHistoryAsCSV()
+                    } label: {
+                        Label("Export CSV", systemImage: "doc.text")
+                    }
+
+                    Button {
+                        exportHistoryAsPDF()
+                    } label: {
+                        Label("Export PDF", systemImage: "doc.richtext")
+                    }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color.pillrBackground)
+                        .frame(width: 46, height: 46)
+                }
+                .buttonStyle(.plain)
+                .frame(width: 46, height: 46)
+                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                .contentShape(Circle())
+                .disabled(filteredLogs.isEmpty)
+                .accessibilityLabel("Export history")
+
+                Button {
+                    showingManualEntrySheet = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color.pillrBackground)
+                        .frame(width: 46, height: 46)
+                }
+                .buttonStyle(.plain)
+                .frame(width: 46, height: 46)
+                .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+                .contentShape(Circle())
+            }
         }
-        .padding(.top, 4)
+        .padding(.top, 12)
     }
 
-    private var headerActionsSection: some View {
-        HStack(spacing: 12) {
-            addControl
-            includeSkippedControl
-            exportControl
-        }
-    }
-    
     private var dateRangeFullScreen: some View {
         NavigationStack {
             ZStack {
@@ -507,10 +550,24 @@ struct MedicationHistoryView: View {
                 }
             }
         } label: {
-            HistoryActionButton(
-                icon: includeSkipped ? "checkmark.circle.fill" : "circle",
-                title: includeSkipped ? "Skipped shown" : "Skipped hidden"
-            )
+            HStack(spacing: 10) {
+                Image(systemName: includeSkipped ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(includeSkipped ? Color.pillrSecondary : Color.white.opacity(0.7))
+
+                Text(includeSkipped ? "Skipped shown" : "Skipped hidden")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color.pillrBackground)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundColor(Color.pillrSecondary)
+                    .opacity(0.45)
+            }
+            .padding(.horizontal, 2)
+            .padding(.vertical, 2)
         }
         .buttonStyle(.plain)
     }
@@ -538,36 +595,106 @@ struct MedicationHistoryView: View {
         .disabled(filteredLogs.isEmpty)
     }
 
-    private var addControl: some View {
-        Button {
-            showingManualEntrySheet = true
+    private var exportToolbarControl: some View {
+        Menu {
+            Button {
+                exportHistoryAsCSV()
+            } label: {
+                Label("Export CSV", systemImage: "doc.text")
+            }
+
+            Button {
+                exportHistoryAsPDF()
+            } label: {
+                Label("Export PDF", systemImage: "doc.richtext")
+            }
         } label: {
-            HistoryActionButton(
-                icon: "plus",
-                title: "Add"
-            )
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color.pillrBackground)
+                .frame(width: 46, height: 46)
         }
         .buttonStyle(.plain)
-        .disabled(manuallyAddableMedications.isEmpty)
+        .frame(width: 46, height: 46)
+        .glassCircleBackground(diameter: 46, isSelected: false, opacity: 0.95)
+        .contentShape(Circle())
+        .disabled(filteredLogs.isEmpty)
+        .accessibilityLabel("Export history")
     }
-    
-    private var statsSection: some View {
-        GlassContainer(spacing: 18) {
-            VStack(alignment: .leading, spacing: 0) {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 12) {
-                        dateRangeControl
-                        filterControl
-                    }
 
-                    VStack(spacing: 12) {
-                        dateRangeControl
-                        filterControl
-                    }
-                }
+    private var statsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            summaryRow
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
+                .background(historyDashboardCardBackground)
+                .zIndex(1)
+
+            VStack(spacing: 0) {
+                dateRangeControl
+
+                Divider()
+                    .overlay(Color.white.opacity(0.12))
+                    .padding(.vertical, 12)
+
+                filterControl
+                    .padding(.vertical, 2)
+
+                Divider()
+                    .overlay(Color.white.opacity(0.12))
+                    .padding(.vertical, 12)
+
+                includeSkippedControl
+                    .padding(.vertical, 2)
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 30)
+            .padding(.bottom, 8)
+            .background(historyConnectedControlsBackground)
+            .padding(.top, -18)
         }
-        .padding(.top, 16)
+        .padding(.top, 0)
+        .padding(.bottom, 6)
+    }
+
+    private var historyDashboardCardBackground: some View {
+        RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .fill(Color(hex: "#59655B"))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color(hex: "#8C988E").opacity(0.75), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 6)
+    }
+
+    private var historyConnectedControlsBackground: some View {
+        ZStack(alignment: .top) {
+            UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 22,
+                bottomTrailingRadius: 22,
+                topTrailingRadius: 0,
+                style: .continuous
+            )
+            .fill(Color(hex: "#424C43"))
+            .overlay(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: 22,
+                    bottomTrailingRadius: 22,
+                    topTrailingRadius: 0,
+                    style: .continuous
+                )
+                .stroke(Color(hex: "#8C988E").opacity(0.75), lineWidth: 1)
+            )
+
+            Rectangle()
+                .fill(Color(hex: "#59655B"))
+                .frame(height: 6)
+                .opacity(0.95)
+        }
+        .shadow(color: Color.black.opacity(0.16), radius: 10, x: 0, y: 6)
     }
 
     private var filterControl: some View {
@@ -580,52 +707,143 @@ struct MedicationHistoryView: View {
                 }
             }
         } label: {
-            HistoryControlButton(
-                icon: "slider.horizontal.3",
-                title: "Filter",
-                value: selectedMedication,
-                detail: nil
-            )
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("FILTER")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.7))
+                        .kerning(0.45)
+
+                    Text(selectedMedication)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Color.pillrBackground)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundColor(Color.pillrSecondary)
+                    .opacity(0.45)
+            }
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var dateRangeControl: some View {
         Button {
             showingDateRangePopover = true
         } label: {
-            HistoryControlButton(
-                icon: "calendar",
-                title: "Date range",
-                value: compactDateRangeLabel,
-                detail: dateRangeSummaryText
-            )
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DATE RANGE")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.7))
+                        .kerning(0.45)
+
+                    Text(compactDateRangeLabel)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Color.pillrBackground)
+                        .lineLimit(1)
+
+                    Text(dateRangeSummaryText)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundColor(Color.pillrSecondary)
+                    .opacity(0.45)
+            }
         }
         .buttonStyle(.plain)
         .fullScreenCover(isPresented: $showingDateRangePopover) {
             dateRangeFullScreen
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
+    private var summaryRow: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("CONSISTENCY")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
+                    .kerning(0.45)
+
+                Text(rangeAdherenceRate)
+                    .font(.system(size: 54, weight: .bold, design: .monospaced))
+                    .foregroundColor(rangeAdherenceColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Divider()
+                .overlay(Color.white.opacity(0.10))
+                .frame(width: 1, height: 86)
+
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 20) {
+                    HistorySummaryItem(label: "Meds", value: "\(rangeMedicationCount)", valueFontSize: 22)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HistorySummaryItem(label: "logs", value: "\(filteredLogs.count)", valueFontSize: 22)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                HStack(alignment: .top, spacing: 20) {
+                    HistorySummaryItem(label: "Taken", value: "\(rangeTakenCount)", valueFontSize: 22)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HistorySummaryItem(
+                        label: "Skipped",
+                        value: "\(rangeSkippedCount)",
+                        valueColor: rangeSkippedCount > 0 ? Color(hex: "#E0A876") : Color.pillrBackground,
+                        valueFontSize: 22
+                    )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+        }
+        .frame(maxWidth: .infinity, minHeight: 110, alignment: .center)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color(hex: "#59655B"))
+        )
+    }
+
     private var timelineSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             ForEach(groupedLogs, id: \.date) { date, logs in
                 VStack(alignment: .leading, spacing: 12) {
                     dayHeader(for: date)
-                    
-                    VStack(spacing: 18) {
+
+                    VStack(spacing: 12) {
                         ForEach(Array(logs.enumerated()), id: \.element.id) { index, log in
-                        MedicationTimelineRow(
-                            log: log,
-                            iconName: log.recordedIconName,
-                            dosageText: log.recordedDosageWithUnit.isEmpty ? nil : log.recordedDosageWithUnit,
-                            showDoseChip: log.recordedHasMultipleReminders,
-                            timeText: MedicationHistoryView.timeFormatter.string(from: log.takenAt),
-                            isLast: index == logs.count - 1,
-                            onDelete: {
-                                store.hideDoseLogFromHistory(log)
-                            }
-                        )
+                            MedicationTimelineRow(
+                                log: log,
+                                iconName: log.recordedIconName,
+                                dosageText: log.recordedDosageWithUnit.isEmpty ? nil : log.recordedDosageWithUnit,
+                                showDoseChip: log.recordedHasMultipleReminders,
+                                timeText: MedicationHistoryView.timeFormatter.string(from: log.takenAt),
+                                isLast: index == logs.count - 1,
+                                onEdit: {
+                                    logToEdit = log
+                                },
+                                onDelete: {
+                                    store.hideDoseLogFromHistory(log)
+                                }
+                            )
                         }
                     }
                 }
@@ -698,6 +916,7 @@ private struct MedicationTimelineRow: View {
     let showDoseChip: Bool
     let timeText: String
     let isLast: Bool
+    let onEdit: () -> Void
     let onDelete: () -> Void
     @State private var showingDeleteConfirm = false
     @State private var showingActionMenu = false
@@ -718,25 +937,54 @@ private struct MedicationTimelineRow: View {
     }
 
     private var expandedActions: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
+            Button {
+                onEdit()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Edit")
+                        .font(.system(size: 14, weight: .semibold))
+                    Spacer(minLength: 0)
+                }
+                .foregroundColor(Color.pillrBackground)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.white.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+
             Button {
                 withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
                     showingDeleteConfirm = true
                 }
             } label: {
-                Text("Delete")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color.red.opacity(0.95))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color.white.opacity(0.08))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(Color.red.opacity(0.22), lineWidth: 0.8)
-                            )
-                    )
+                HStack(spacing: 8) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Delete")
+                        .font(.system(size: 14, weight: .semibold))
+                    Spacer(minLength: 0)
+                }
+                .foregroundColor(Color.red.opacity(0.95))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color(hex: "#4A4A45"))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color.red.opacity(0.22), lineWidth: 1)
+                        )
+                )
             }
             .buttonStyle(.plain)
         }
@@ -754,9 +1002,9 @@ private struct MedicationTimelineRow: View {
 
     private var statusColor: Color {
         if log.skipped {
-            return Color(hex: "#A65A4A")
+            return Color(hex: "#F5C4B3")
         }
-        return Color(hex: "#DDE5DF")
+        return Color(hex: "#6DBF8A")
     }
 
     var body: some View {
@@ -844,14 +1092,14 @@ private struct MedicationTimelineRow: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.white.opacity(0.075))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .stroke(Color.white.opacity(0.14), lineWidth: 1)
                 )
         )
-        .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 5)
+        .shadow(color: Color.black.opacity(0.10), radius: 10, x: 0, y: 6)
         .alert("Delete log entry?", isPresented: $showingDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 onDelete()
@@ -1572,14 +1820,118 @@ private struct HistoryControlButton: View {
             Spacer()
 
             Image(systemName: "chevron.down")
-                .font(.system(size: 7, weight: .semibold))
+                .font(.system(size: 8, weight: .semibold))
                 .foregroundColor(Color.pillrSecondary)
-                .opacity(0.28)
+                .opacity(0.45)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .frame(minHeight: 72)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                )
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+private struct HistoryMiniStatCard: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color.pillrSecondary.opacity(0.7))
+                .kerning(0.45)
+
+            Text(value)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(Color.pillrBackground)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                )
+        )
+    }
+}
+
+private struct HistorySummaryItem: View {
+    let label: String
+    let value: String
+    var valueColor: Color = Color.pillrBackground
+    var valueFontSize: CGFloat = 20
+
+    var body: some View {
+        VStack(alignment: .center, spacing: 4) {
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color.pillrSecondary.opacity(0.7))
+                .kerning(0.45)
+
+            Text(value)
+                .font(.system(size: valueFontSize, weight: .bold, design: .monospaced))
+                .foregroundColor(valueColor)
+                .lineLimit(1)
+                .frame(height: 30, alignment: .center)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct HistoryCompactControlCard: View {
+    let eyebrow: String
+    let value: String
+    var detail: String? = nil
+    var chevronHidden: Bool = false
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(eyebrow)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.7))
+                    .kerning(0.45)
+
+                Text(value)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color.pillrBackground)
+                    .lineLimit(1)
+
+                if let detail {
+                    Text(detail)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            if !chevronHidden {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundColor(Color.pillrSecondary)
+                    .opacity(0.45)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color.white.opacity(0.04))

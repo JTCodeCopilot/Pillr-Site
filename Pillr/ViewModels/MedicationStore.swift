@@ -2267,7 +2267,7 @@ class MedicationStore: ObservableObject {
         )
         
         medications = [sampleMed1, sampleMed2]
-        
+
         // Schedule notifications for sample data only if not in preview mode
         if !isPreviewMode {
             // Schedule notifications for each medication
