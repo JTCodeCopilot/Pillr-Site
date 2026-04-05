@@ -274,7 +274,7 @@ struct DailyCheckInHistoryView: View {
         let previousWeekValues = previousWeekCheckIns.compactMap { $0.feelingRating }.filter { $0 > 0 }
 
         guard !thisWeekValues.isEmpty, !previousWeekValues.isEmpty else {
-            return "+0.0/5"
+            return "+0.0"
         }
 
         let thisWeekAverage = Double(thisWeekValues.reduce(0, +)) / Double(thisWeekValues.count)
@@ -283,11 +283,11 @@ struct DailyCheckInHistoryView: View {
         let formatted = String(format: "%.1f", abs(difference))
 
         if difference > 0 {
-            return "+\(formatted)/5"
+            return "+\(formatted)"
         } else if difference < 0 {
-            return "-\(formatted)/5"
+            return "-\(formatted)"
         } else {
-            return "0.0/5"
+            return "0.0"
         }
     }
 
@@ -634,7 +634,7 @@ struct DailyCheckInHistoryView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 30)
-            .padding(.bottom, 40)
+            .padding(.bottom, 20)
             .background(historyConnectedControlsBackground)
             .padding(.top, -18)
         }
@@ -683,22 +683,16 @@ struct DailyCheckInHistoryView: View {
 
     private var summaryRow: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Last 7 days")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(Color.pillrSecondary.opacity(0.7))
-                .kerning(0.45)
-                .frame(maxWidth: .infinity, alignment: .center)
-
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Avg Overall")
+                    Text("Avg Overall (last 7 days)")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(Color.pillrSecondary.opacity(0.7))
                         .kerning(0.45)
                         .frame(height: 16, alignment: .topLeading)
 
                     Text(overallLastSevenDaysAverage.map { String(format: "%.1f/5", $0) } ?? "—")
-                        .font(.system(size: 54, weight: .bold, design: .monospaced))
+                        .font(.system(size: 48, weight: .bold, design: .monospaced))
                         .foregroundColor(ReflectJournalTheme.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -717,7 +711,7 @@ struct DailyCheckInHistoryView: View {
                         .frame(height: 16, alignment: .topLeading)
 
                     Text(trendText)
-                        .font(.system(size: 54, weight: .bold, design: .monospaced))
+                        .font(.system(size: 48, weight: .bold, design: .monospaced))
                         .foregroundColor(ReflectJournalTheme.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -726,9 +720,10 @@ struct DailyCheckInHistoryView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 96, alignment: .center)
+        .frame(maxWidth: .infinity, minHeight: 88, alignment: .center)
         .padding(.horizontal, 18)
-        .padding(.vertical, 12)
+        .padding(.top, 12)
+        .padding(.bottom, 6)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(Color(hex: "#59655B"))

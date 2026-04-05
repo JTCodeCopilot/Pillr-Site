@@ -786,7 +786,7 @@ struct MedicationHistoryView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Divider()
-                .overlay(Color.white.opacity(0.10))
+                .overlay(Color.white.opacity(0.22))
                 .frame(width: 1, height: 86)
 
             VStack(alignment: .leading, spacing: 14) {
