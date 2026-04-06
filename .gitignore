@@ -1,0 +1,16 @@
+DerivedData/
+
+DerivedData/
+
+DerivedData/
+build/
+*.xcarchive
+*.ipa
+.DS_Store
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
