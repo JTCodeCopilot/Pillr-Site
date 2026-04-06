@@ -11,6 +11,7 @@
 		4911A1532E88B7070009E975 /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = 4911A1522E88B7070009E975 /* TelemetryDeck */; };
 		4920B01E2F5C2AAC002735AB /* AIProxy in Frameworks */ = {isa = PBXBuildFile; productRef = 4920B0162F5C2AAC002735AB /* AIProxy */; };
 		4920B0202F5C2AAC002735AB /* TelemetryDeck in Frameworks */ = {isa = PBXBuildFile; productRef = 4920B0182F5C2AAC002735AB /* TelemetryDeck */; };
+		49FB3E912F83ABC0009B6060 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 49FB3E902F83ABC0009B6060 /* FirebaseAnalyticsCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -91,6 +92,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4901EA942DE700CB000B3979 /* AIProxy in Frameworks */,
+				49FB3E912F83ABC0009B6060 /* FirebaseAnalyticsCore in Frameworks */,
 				4911A1532E88B7070009E975 /* TelemetryDeck in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -196,6 +198,7 @@
 			packageProductDependencies = (
 				4901EA932DE700CB000B3979 /* AIProxy */,
 				4911A1522E88B7070009E975 /* TelemetryDeck */,
+				49FB3E902F83ABC0009B6060 /* FirebaseAnalyticsCore */,
 			);
 			productName = Pillr;
 			productReference = 4964701E2DD3F0E9003964BD /* Pillr.app */;
@@ -259,6 +262,7 @@
 			packageReferences = (
 				4901EA922DE700CB000B3979 /* XCRemoteSwiftPackageReference "AIProxySwift" */,
 				4911A1512E88B7070009E975 /* XCRemoteSwiftPackageReference "SwiftSDK" */,
+				49FB3E8F2F83ABC0009B6060 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4964701F2DD3F0E9003964BD /* Products */;
@@ -620,7 +624,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Pillr – AI Enhancements";
+				INFOPLIST_KEY_CFBundleDisplayName = Pillr;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pillr uses Face ID to protect access to your medication information on this device.";
@@ -641,7 +645,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "app.Pillr-aienhancements";
+				PRODUCT_BUNDLE_IDENTIFIER = app.Pillr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -661,7 +665,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Pillr – AI Enhancements";
+				INFOPLIST_KEY_CFBundleDisplayName = Pillr;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pillr uses Face ID to protect access to your medication information on this device.";
@@ -682,7 +686,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "app.Pillr-aienhancements";
+				PRODUCT_BUNDLE_IDENTIFIER = app.Pillr;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -817,6 +821,14 @@
 				minimumVersion = 2.9.4;
 			};
 		};
+		49FB3E8F2F83ABC0009B6060 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.11.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -839,6 +851,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4920B0192F5C2AAC002735AB /* XCRemoteSwiftPackageReference "SwiftSDK" */;
 			productName = TelemetryDeck;
+		};
+		49FB3E902F83ABC0009B6060 /* FirebaseAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49FB3E8F2F83ABC0009B6060 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
