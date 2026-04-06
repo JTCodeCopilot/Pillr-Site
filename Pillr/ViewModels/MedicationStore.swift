@@ -443,6 +443,9 @@ class MedicationStore: ObservableObject {
             if isDailyCheckIn {
                 return nil
             }
+            guard medication.pillCount != nil || medication.initialPillCount != nil else {
+                return nil
+            }
             return skipped ? 0 : medication.pillsPerDose
         }()
         let calendar = Calendar.current
@@ -507,6 +510,7 @@ class MedicationStore: ObservableObject {
 
         if isDailyCheckIn,
            let existingIndex = logs.firstIndex(where: { log in
+            log.isDailyCheckIn &&
             log.medicationID == medication.id &&
             calendar.isDate(log.takenAt, inSameDayAs: actualTime)
            }) {
@@ -655,6 +659,28 @@ class MedicationStore: ObservableObject {
             replacedLogIndex: previousLogIndex,
             pillCountDelta: pillCountDelta
         )
+    }
+
+    func addManualHistoryEntry(for medication: Medication, at date: Date, skipped: Bool = false) {
+        let resolvedReminderIndex = inferReminderIndexIfNeeded(for: medication, actualTime: date)
+        let newLog = MedicationLog(
+            medicationID: medication.id,
+            medicationName: medication.name,
+            takenAt: date,
+            updatedAt: Date(),
+            notes: nil,
+            skipped: skipped,
+            isDailyCheckIn: false,
+            pillsConsumed: skipped ? 0 : nil,
+            reminderIndex: resolvedReminderIndex,
+            isManuallyAdded: true,
+            medicationDosageText: medication.dosageWithUnit,
+            medicationIconName: medication.iconName,
+            medicationReminderCount: medication.reminderTimes.count
+        )
+
+        logs.insert(newLog, at: 0)
+        saveLogs()
     }
     
     // Helper method to update badge count based on overdue medication reminders
@@ -950,48 +976,12 @@ class MedicationStore: ObservableObject {
         notificationManager.fetchDeliveredMedicationReminders { [weak self] notifications in
             guard let self else { return }
             DispatchQueue.main.async {
-                let calendar = Calendar.current
-                let dayStart = calendar.startOfDay(for: referenceDate)
-                var overdueIDs = Set<UUID>()
-                var reminderIDs = Set<String>()
+                let overdueIDs = self.overdueMedicationIDsFromDeliveredNotifications(
+                    notifications,
+                    referenceDate: referenceDate
+                )
 
-                for notification in notifications {
-                    guard calendar.isDate(notification.date, inSameDayAs: referenceDate) else {
-                        continue
-                    }
-                    let userInfo = notification.request.content.userInfo
-                    guard let medicationIDString = userInfo["medicationID"] as? String,
-                          let medicationID = UUID(uuidString: medicationIDString),
-                          let medication = self.findMedication(with: medicationID),
-                          medication.frequency != "As needed" else {
-                        continue
-                    }
-
-                    let reminderIndex = userInfo["reminderIndex"] as? Int
-                    let medicationLogs = self.logs.filter { log in
-                        log.medicationID == medication.id &&
-                        log.isDoseLog &&
-                        calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
-                        log.takenAt <= referenceDate
-                    }
-                    let takenIndices = self.resolvedTakenReminderIndices(
-                        medication: medication,
-                        dayStart: dayStart,
-                        logs: medicationLogs
-                    )
-
-                    if let reminderIndex, takenIndices.contains(reminderIndex) {
-                        continue
-                    }
-                    if reminderIndex == nil, !medicationLogs.isEmpty {
-                        continue
-                    }
-
-                    overdueIDs.insert(medication.id)
-                    reminderIDs.insert(notification.request.identifier)
-                }
-
-                if reminderIDs.isEmpty {
+                if overdueIDs.isEmpty {
                     let snapshotIDs = self.overdueMedicationIDsSnapshot(referenceDate: referenceDate)
                     let snapshotCount = self.overdueReminderCountSnapshot(referenceDate: referenceDate)
                     self.overdueReminderNotificationIDs = []
@@ -1000,11 +990,71 @@ class MedicationStore: ObservableObject {
                     return
                 }
 
-                self.overdueReminderNotificationIDs = reminderIDs
+                self.overdueReminderNotificationIDs = Set(notifications.compactMap { notification in
+                    guard Calendar.current.isDate(notification.date, inSameDayAs: referenceDate) else { return nil }
+                    let userInfo = notification.request.content.userInfo
+                    guard let medicationIDString = userInfo["medicationID"] as? String,
+                          let medicationID = UUID(uuidString: medicationIDString),
+                          overdueIDs.contains(medicationID),
+                          (userInfo["isFollowUp"] as? Bool) != true else {
+                        return nil
+                    }
+                    return notification.request.identifier
+                })
                 self.updateOverdueMedicationIDs(overdueIDs)
-                self.notificationManager.setApplicationBadge(count: reminderIDs.count)
+                self.notificationManager.setApplicationBadge(count: self.overdueReminderCountSnapshot(referenceDate: referenceDate))
             }
         }
+    }
+
+    private func overdueMedicationIDsFromDeliveredNotifications(
+        _ notifications: [UNNotification],
+        referenceDate: Date
+    ) -> Set<UUID> {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: referenceDate)
+        var overdueIDs = Set<UUID>()
+
+        for notification in notifications {
+            guard calendar.isDate(notification.date, inSameDayAs: referenceDate) else {
+                continue
+            }
+            let userInfo = notification.request.content.userInfo
+            guard let medicationIDString = userInfo["medicationID"] as? String,
+                  let medicationID = UUID(uuidString: medicationIDString),
+                  let medication = self.findMedication(with: medicationID),
+                  medication.frequency != "As needed" else {
+                continue
+            }
+
+            if (userInfo["isFollowUp"] as? Bool) == true {
+                continue
+            }
+
+            let reminderIndex = userInfo["reminderIndex"] as? Int
+            let medicationLogs = self.logs.filter { log in
+                log.medicationID == medication.id &&
+                log.isDoseLog &&
+                calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
+                log.takenAt <= referenceDate
+            }
+            let takenIndices = self.resolvedTakenReminderIndices(
+                medication: medication,
+                dayStart: dayStart,
+                logs: medicationLogs
+            )
+
+            if let reminderIndex, takenIndices.contains(reminderIndex) {
+                continue
+            }
+            if reminderIndex == nil, !medicationLogs.isEmpty {
+                continue
+            }
+
+            overdueIDs.insert(medication.id)
+        }
+
+        return overdueIDs
     }
 
     private func resolvedTakenReminderIndices(
@@ -1223,7 +1273,6 @@ class MedicationStore: ObservableObject {
 
     func removeDoseLog(_ log: MedicationLog) {
         guard log.isDoseLog else { return }
-
         deleteLog(log)
 
         if !log.skipped,
@@ -1240,6 +1289,18 @@ class MedicationStore: ObservableObject {
                 saveMedications()
             }
         }
+
+        resetBadgeIfNeeded()
+    }
+
+    func hideDoseLogFromHistory(_ log: MedicationLog) {
+        guard log.isDoseLog else { return }
+        guard let index = logs.firstIndex(where: { $0.id == log.id }) else { return }
+        var updatedLog = logs[index]
+        updatedLog.hiddenFromHistory = true
+        updatedLog.updatedAt = Date()
+        logs[index] = updatedLog
+        saveLogs()
 
         resetBadgeIfNeeded()
     }
@@ -1546,9 +1607,8 @@ class MedicationStore: ObservableObject {
         var logEntry = logs[index]
         logEntry.isDailyCheckIn = true
         logEntry.updatedAt = Date()
-        if let mergedNotes = mergeNotes(existing: logEntry.notes, with: notes) {
-            logEntry.notes = mergedNotes
-        }
+        let trimmedNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines)
+        logEntry.notes = trimmedNotes?.isEmpty == true ? nil : trimmedNotes
         if let feelingRating {
             logEntry.feelingRating = feelingRating
         }
@@ -1581,6 +1641,11 @@ class MedicationStore: ObservableObject {
             return false
         }
         return !hasCompletedDailyCheckIn(for: medication, referenceDate: referenceDate)
+    }
+
+    func hasCompletedDailyCheckInToday(for medication: Medication, referenceDate: Date = Date()) -> Bool {
+        guard medication.enableDailyCheckIn else { return false }
+        return hasCompletedDailyCheckIn(for: medication, referenceDate: referenceDate)
     }
 
     private func dailyCheckInTriggerDate(for medication: Medication, referenceDate: Date) -> Date? {
@@ -1720,24 +1785,6 @@ class MedicationStore: ObservableObject {
         medication.enableStimulantPhaseNotifications && medication.medicationType == .stimulant && medication.dailyCheckInTime == nil
     }
 
-
-    private func mergeNotes(existing: String?, with newNotes: String?) -> String? {
-        let trimmedExisting = existing?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedNew = newNotes?.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if let trimmedExisting, !trimmedExisting.isEmpty {
-            if let trimmedNew, !trimmedNew.isEmpty {
-                return "\(trimmedExisting)\n\n\(trimmedNew)"
-            }
-            return trimmedExisting
-        }
-
-        if let trimmedNew, !trimmedNew.isEmpty {
-            return trimmedNew
-        }
-
-        return nil
-    }
 
     // Helper function to update medication names in existing logs
     private func updateMedicationNameInLogs(medicationID: UUID, newName: String) {
@@ -2249,7 +2296,7 @@ class MedicationStore: ObservableObject {
         )
         
         medications = [sampleMed1, sampleMed2]
-        
+
         // Schedule notifications for sample data only if not in preview mode
         if !isPreviewMode {
             // Schedule notifications for each medication

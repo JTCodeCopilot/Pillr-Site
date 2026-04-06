@@ -2213,7 +2213,7 @@ fileprivate struct MedicationCabinetSheet: View {
                             )
                             .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
                         } else {
-                            cabinetSection(title: "As needed", medications: asNeededMedications)
+                            cabinetSection(title: "Ready when you need them.", medications: asNeededMedications)
                         }
 
                         Spacer(minLength: 20)
@@ -2318,7 +2318,6 @@ fileprivate struct CabinetMedicationRow: View {
     let onEditTap: () -> Void
     let onDeleteTap: (() -> Void)?
     @State private var showDetails = false
-    @State private var showingDeleteAction = false
 
     private var expandedActions: some View {
         VStack(spacing: 10) {
@@ -2335,32 +2334,9 @@ fileprivate struct CabinetMedicationRow: View {
                         )
                 }
                 .buttonStyle(.plain)
-
-                Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
-                        showingDeleteAction.toggle()
-                    }
-                } label: {
-                    Text("...")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color.pillrBackground)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color(hex: "#444C44"))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
-                            )
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(onDeleteTap == nil)
-                .opacity(onDeleteTap == nil ? 0.5 : 1)
             }
 
-            if showingDeleteAction, let deleteTap = onDeleteTap {
+            if let deleteTap = onDeleteTap {
                 Button {
                     HapticManager.shared.warningNotification()
                     deleteTap()
@@ -2440,19 +2416,20 @@ fileprivate struct CabinetMedicationRow: View {
             Button(action: {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     showDetails.toggle()
-                    if !showDetails {
-                        showingDeleteAction = false
-                    }
                 }
             }) {
                 Image(systemName: showDetails ? "chevron.up" : "chevron.down")
                     .font(.system(size: 13))
                     .foregroundColor(MedicationCardPalette.secondaryText.opacity(0.75))
-                    .frame(width: 34, height: 34)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        Circle()
+                            .fill(MedicationCardPalette.background.opacity(0.92))
+                    )
             }
             .buttonStyle(.plain)
             .padding(.top, 10)
-            .padding(.trailing, 10)
+            .padding(.trailing, 24)
         }
     }
 }
@@ -3279,7 +3256,7 @@ fileprivate enum MedicationCardPalette {
     static let secondaryText = Color(hex: "#D6DBD3")
     static let timeText = Color(hex: "#E8ECE6")
     static let primaryAction = Color(hex: "#424C43")
-    static let urgency = Color(hex: "#F4D4A0")
+    static let urgency = Color(hex: "#F5C4B3")
     static let takenBackground = Color(hex: "#DDE5DF")
     static let takenTitleText = Color(hex: "#2F3A33")
     static let takenSecondaryText = Color(hex: "#5F6E64")
@@ -3625,12 +3602,13 @@ fileprivate struct MedicationRowHeaderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: stackSpacing) {
-            HStack(alignment: .center, spacing: 16) {
+            HStack(alignment: .center, spacing: 10) {
                 medicationInfoSection
                 Spacer()
                 VStack(alignment: .trailing, spacing: 10) {
                     if !usesTimelineLayout && !compactLayout {
                         actionButtonRow
+                            .padding(.top, cycleStatus == .asNeeded ? 34 : 0)
                     }
                 }
             }
@@ -3762,7 +3740,7 @@ fileprivate struct MedicationRowHeaderView: View {
 
     private var takeOnlyButtonRow: some View {
         takeButton
-            .frame(width: 148)
+            .frame(width: cycleStatus == .asNeeded ? 144 : 148)
     }
     
     private var takeButton: some View {
@@ -3867,24 +3845,21 @@ fileprivate struct MedicationRowHeaderView: View {
             } else if state.status == .skipped {
                 MedicationStatusLabel(
                     text: state.loggedTimeLabel ?? "Dose skipped",
-                    foregroundColor: Color(hex: "#9A5E45"),
+                    foregroundColor: MedicationCardPalette.timeText.opacity(0.96),
+                    iconForegroundColor: Color(hex: "#8C6B5D"),
                     iconName: "xmark",
-                    iconCircleColor: Color(hex: "#F6DED2"),
-                    textFont: .system(.body, weight: .semibold),
-                    iconSize: 10,
+                    iconCircleColor: Color(hex: "#F2E4DA"),
+                    textFont: .system(size: 14, weight: .medium),
+                    iconSize: 7,
                     iconWeight: .medium,
-                    circleSize: 18
+                    circleSize: 14
                 )
-                .padding(.vertical, 10)
-                .padding(.horizontal, 16)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
                 .frame(minWidth: logButtonMinWidth, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(hex: "#FBF1EB"))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color(hex: "#E7C6B8"), lineWidth: 0.8)
+                        .fill(Color.white.opacity(0.12))
                 )
             } else {
                 HStack(spacing: interButtonSpacing) {
@@ -4078,8 +4053,16 @@ struct MedicationRow: View {
         todaysLogsForMedication.contains { $0.skipped }
     }
 
+    private var hasAnyLoggedDoseToday: Bool {
+        hasTakenDoseToday || hasSkippedDoseToday
+    }
+
     private var isDailyCheckInOverdue: Bool {
         store.isDailyCheckInOverdue(for: medication, referenceDate: referenceDate)
+    }
+
+    private var hasCompletedDailyCheckInToday: Bool {
+        store.hasCompletedDailyCheckInToday(for: medication, referenceDate: referenceDate)
     }
     
     private var doseButtonStates: [DoseButtonState] {
@@ -4400,14 +4383,12 @@ struct MedicationRow: View {
                     useTakenStyle: usesLightLoggedCardStyle,
                     useSkippedStyle: cycleStatus == .skipped,
                     onEditTap: onEditTap,
-                    moreActionTitle: cycleStatus == .taken ? "Untake medication" : (cycleStatus == .skipped ? "Unskip medication" : nil),
-                    onMoreActionTap: cycleStatus == .taken ? {
+                    moreActionTitle: hasAnyLoggedDoseToday ? "Undo dose" : nil,
+                    onMoreActionTap: nil,
+                    onMoreActionTapForLog: hasAnyLoggedDoseToday ? { log in
                         HapticManager.shared.lightImpact()
-                        undoMostRecentLog(skipped: false)
-                    } : (cycleStatus == .skipped ? {
-                        HapticManager.shared.lightImpact()
-                        undoMostRecentLog(skipped: true)
-                    } : nil),
+                        store.removeDoseLog(log)
+                    } : nil,
                     onDeleteTap: onDeleteTap
                 )
                 .padding(.top, 8)
@@ -4426,25 +4407,37 @@ struct MedicationRow: View {
         .clipped()
         .overlay(notificationGlowOverlay)
         .overlay(alignment: .bottomTrailing) {
-            if medication.enableDailyCheckIn && hasTakenDoseToday {
+            if medication.enableDailyCheckIn && hasTakenDoseToday && !showsDetails {
                 Button(action: {
+                    guard !hasCompletedDailyCheckInToday else { return }
                     onDailyCheckInTap()
                 }) {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "book.pages")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(accessoryIconColor)
+                            .foregroundColor(hasCompletedDailyCheckInToday ? accessoryIconColor.opacity(0.45) : accessoryIconColor)
                             .padding(6)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(accessoryBackgroundColor)
+                                    .fill(hasCompletedDailyCheckInToday ? accessoryBackgroundColor.opacity(0.55) : accessoryBackgroundColor)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
-                                            .stroke(accessoryBorderColor, lineWidth: 0.7)
+                                            .stroke(accessoryBorderColor.opacity(hasCompletedDailyCheckInToday ? 0.45 : 1.0), lineWidth: 0.7)
                                     )
                             )
 
-                        if isDailyCheckInOverdue {
+                        if hasCompletedDailyCheckInToday {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 6, weight: .bold))
+                                .foregroundColor(accessoryIconColor.opacity(0.8))
+                                .padding(1)
+                                .background(
+                                    Circle()
+                                        .fill(accessoryBackgroundColor)
+                                )
+                                .offset(x: 4, y: -4)
+                                .accessibilityHidden(true)
+                        } else if isDailyCheckInOverdue {
                             Circle()
                                 .fill(Color(hex: "#FF5A5A"))
                                 .frame(width: 8, height: 8)
@@ -4458,9 +4451,10 @@ struct MedicationRow: View {
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(hasCompletedDailyCheckInToday)
                 .padding(.trailing, 10)
                 .padding(.bottom, 10)
-                .accessibilityLabel("Log Reflection")
+                .accessibilityLabel(hasCompletedDailyCheckInToday ? "Reflection completed today" : "Log Reflection")
             }
         }
         .overlay(alignment: .topTrailing) {
@@ -4781,9 +4775,11 @@ fileprivate struct MedicationRowDetailsView: View {
     let onEditTap: () -> Void
     let moreActionTitle: String?
     let onMoreActionTap: (() -> Void)?
+    let onMoreActionTapForLog: ((MedicationLog) -> Void)?
     let onDeleteTap: (() -> Void)?
     @EnvironmentObject var store: MedicationStore
     @State private var showingDeleteAction = false
+    @State private var showingUntakeOptions = false
 
     private var detailBackgroundColor: Color {
         if useSkippedStyle {
@@ -4793,11 +4789,17 @@ fileprivate struct MedicationRowDetailsView: View {
     }
 
     private var detailPrimaryTextColor: Color {
-        useTakenStyle ? MedicationCardPalette.takenTitleText : Color.pillrBackground
+        if useSkippedStyle {
+            return MedicationCardPalette.skippedStatusText
+        }
+        return useTakenStyle ? MedicationCardPalette.takenTitleText : Color.pillrBackground
     }
 
     private var detailSecondaryTextColor: Color {
-        useTakenStyle ? MedicationCardPalette.takenSecondaryText : Color.pillrSecondary
+        if useSkippedStyle {
+            return MedicationCardPalette.skippedStatusText.opacity(0.82)
+        }
+        return useTakenStyle ? MedicationCardPalette.takenSecondaryText : Color.pillrSecondary
     }
 
     private var detailDividerColor: Color {
@@ -4808,7 +4810,7 @@ fileprivate struct MedicationRowDetailsView: View {
     }
 
     private var actionButtonTextColor: Color {
-        useTakenStyle ? Color.white.opacity(0.92) : detailPrimaryTextColor
+        Color.white.opacity(0.92)
     }
 
     private var notificationsEnabled: Bool {
@@ -4821,11 +4823,14 @@ fileprivate struct MedicationRowDetailsView: View {
             .filter { log in
                 log.medicationID == medication.logIdentifier &&
                 !log.hiddenFromMyMeds &&
-                !log.skipped &&
                 log.isDoseLog &&
                 calendar.isDate(log.takenAt, inSameDayAs: referenceDate)
             }
             .sorted(by: { $0.takenAt < $1.takenAt })
+    }
+
+    private var untakeableLogs: [MedicationLog] {
+        todaysLogsForMedication
     }
 
     private var pillsTakenToday: Int {
@@ -5064,31 +5069,101 @@ fileprivate struct MedicationRowDetailsView: View {
                             )
                     }
                     .buttonStyle(.plain)
-                    .disabled(onDeleteTap == nil && onMoreActionTap == nil)
-                    .opacity((onDeleteTap == nil && onMoreActionTap == nil) ? 0.5 : 1)
+                    .disabled(onDeleteTap == nil && onMoreActionTap == nil && onMoreActionTapForLog == nil)
+                    .opacity((onDeleteTap == nil && onMoreActionTap == nil && onMoreActionTapForLog == nil) ? 0.5 : 1)
                 }
 
-                if showingDeleteAction, let moreActionTitle, let moreActionTap = onMoreActionTap {
-                    Button {
-                        moreActionTap()
-                        collapseCard()
-                    } label: {
-                        Text(moreActionTitle)
+                if showingDeleteAction, let moreActionTitle {
+                    if moreActionTitle == "Undo dose", onMoreActionTapForLog != nil, untakeableLogs.count > 0 {
+                        Button {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
+                                showingUntakeOptions.toggle()
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Text(moreActionTitle)
+                                Spacer(minLength: 0)
+                                Image(systemName: showingUntakeOptions ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(actionButtonTextColor)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
+                            .padding(.horizontal, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color(hex: "#4A4A45"))
+                                    .fill(Color(hex: "#444C44"))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                                             .stroke(detailDividerColor.opacity(0.65), lineWidth: 0.8)
                                     )
                             )
+                        }
+                        .buttonStyle(.plain)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+
+                        if showingUntakeOptions {
+                            VStack(spacing: 8) {
+                                ForEach(untakeableLogs, id: \.id) { log in
+                                    Button {
+                                        onMoreActionTapForLog?(log)
+                                        collapseCard()
+                                    } label: {
+                                        HStack(spacing: 10) {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(log.medicationName)
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(.white)
+                                                    .lineLimit(1)
+                                                Text(log.skipped ? "Skipped at \(commonFormatTime(log.takenAt))" : "Taken at \(commonFormatTime(log.takenAt))")
+                                                    .font(.system(size: 12, weight: .medium))
+                                                    .foregroundColor(.white)
+                                            }
+                                            Spacer(minLength: 0)
+                                                Text(log.reminderIndex != nil ? "Dose \(log.reminderIndex! + 1)" : "Dose")
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .foregroundColor(.white)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.vertical, 10)
+                                        .padding(.horizontal, 12)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(Color(hex: "#3F463F"))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                        .stroke(detailDividerColor.opacity(0.5), lineWidth: 0.8)
+                                                )
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        }
+                    } else if let moreActionTap = onMoreActionTap {
+                        Button {
+                            moreActionTap()
+                            collapseCard()
+                        } label: {
+                            Text(moreActionTitle)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(actionButtonTextColor)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color(hex: "#4A4A45"))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .stroke(detailDividerColor.opacity(0.65), lineWidth: 0.8)
+                                        )
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                     }
-                    .buttonStyle(.plain)
-                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
                 if showingDeleteAction, let deleteTap = onDeleteTap {
@@ -5170,6 +5245,7 @@ fileprivate struct MedicationRowDetailsView: View {
                 DetailEntry(
                     label: "Reflection",
                     value: checkInDescription,
+                    valueColor: detailPrimaryTextColor,
                     lineLimit: 1
                 )
             )
@@ -5220,11 +5296,6 @@ fileprivate struct MedicationLogTimePickerSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Capsule()
-                .fill(Color.white.opacity(0.5))
-                .frame(width: 42, height: 4)
-                .padding(.top, 8)
-
             VStack(spacing: 4) {
                 Text("When did you take \(medication.name)?")
                     .font(.system(size: 16, weight: .semibold))

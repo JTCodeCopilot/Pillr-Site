@@ -1081,426 +1081,430 @@ private struct PillrWelcomeOnboardingFlow: View {
                         .allowsHitTesting(false)
                 }
 
-                VStack(spacing: 0) {
-                    HStack(spacing: 7) {
-                        ForEach(Array(orderedSteps.enumerated()), id: \.offset) { index, _ in
-                            Capsule()
-                                .fill(index <= completedProgressIndex ? Color.white.opacity(0.88) : Color.white.opacity(0.20))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 4)
-                                .shadow(
-                                    color: index <= completedProgressIndex ? Color.white.opacity(0.12) : .clear,
-                                    radius: 4,
-                                    x: 0,
-                                    y: 0
-                                )
-                        }
-                    }
-                    .animation(.easeInOut(duration: 0.22), value: completedProgressIndex)
-                    .padding(.horizontal, 22)
-                    .padding(.top, geometry.safeAreaInsets.top + 6)
-
-                    VStack(spacing: 26) {
-                        Group {
-                            if step == .welcome {
-                                Color.clear
-                                    .frame(width: 248, height: 72)
-                            } else if step == .notifications {
-                                Color.clear
-                                    .frame(width: 248, height: 72)
-                            } else if step == .storage {
-                                Color.clear
-                                    .frame(width: 248, height: 72)
-                            } else if step == .health {
-                                Color.clear
-                                    .frame(width: 248, height: 72)
-                            } else if step == .biometric {
-                                Color.clear
-                                    .frame(width: 248, height: 72)
-                            } else if step == .done {
-                                Color.clear
-                                    .frame(width: 248, height: 72)
-                            } else {
-                                onboardingHeroImage(
-                                    assetName: heroAssetName,
-                                    fallbackSystemName: iconName,
-                                    size: step == .welcome ? 285 : 248
-                                )
-                                .rotationEffect(.degrees(step == .welcome ? welcomeHeroRotation : 0))
-                                .rotationEffect(
-                                    .degrees(step == .notifications ? notificationHeroRingRotation : 0),
-                                    anchor: .top
-                                )
-                                        .offset(
-                                            x: (step == .biometric ? biometricHeroShakeOffset : 0)
-                                        + 0,
-                                            y: 0
-                                        )
-                                .scaleEffect(step == .welcome ? welcomeHeroScale : 1)
-                                .opacity(step == .welcome ? welcomeHeroOpacity : 1)
-                                .shadow(color: Color.black.opacity(0.3), radius: 14, x: 0, y: 7)
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        HStack(spacing: 7) {
+                            ForEach(Array(orderedSteps.enumerated()), id: \.offset) { index, _ in
+                                Capsule()
+                                    .fill(index <= completedProgressIndex ? Color.white.opacity(0.88) : Color.white.opacity(0.20))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 4)
+                                    .shadow(
+                                        color: index <= completedProgressIndex ? Color.white.opacity(0.12) : .clear,
+                                        radius: 4,
+                                        x: 0,
+                                        y: 0
+                                    )
                             }
                         }
-                        .frame(maxWidth: .infinity, minHeight: usesEditorialLayout ? 72 : 170, maxHeight: usesEditorialLayout ? 72 : 170, alignment: .top)
-                        .padding(.bottom, usesEditorialLayout ? 20 : 64)
+                        .animation(.easeInOut(duration: 0.22), value: completedProgressIndex)
+                        .padding(.horizontal, 22)
+                        .padding(.top, geometry.safeAreaInsets.top + 6)
 
-                        VStack(spacing: 12) {
-                            Text(title)
-                                .font(
-                                    .system(
-                                        size: step == .welcome ? 96 : (step == .done ? 52 : ((step == .notifications || step == .storage || step == .health || step == .biometric) ? 58 : 48)),
-                                        weight: .regular,
-                                        design: .rounded
+                        VStack(spacing: 26) {
+                            Group {
+                                if step == .welcome {
+                                    Color.clear
+                                        .frame(width: 248, height: 72)
+                                } else if step == .notifications {
+                                    Color.clear
+                                        .frame(width: 248, height: 72)
+                                } else if step == .storage {
+                                    Color.clear
+                                        .frame(width: 248, height: 72)
+                                } else if step == .health {
+                                    Color.clear
+                                        .frame(width: 248, height: 72)
+                                } else if step == .biometric {
+                                    Color.clear
+                                        .frame(width: 248, height: 72)
+                                } else if step == .done {
+                                    Color.clear
+                                        .frame(width: 248, height: 72)
+                                } else {
+                                    onboardingHeroImage(
+                                        assetName: heroAssetName,
+                                        fallbackSystemName: iconName,
+                                        size: step == .welcome ? 285 : 248
                                     )
-                                )
-                                .foregroundColor(Color.pillrBackground)
-                                .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
-                                .lineLimit(2)
-                                .minimumScaleFactor(0.75)
-                                .opacity(titleSectionVisible ? 1 : 0)
-                                .offset(y: titleSectionVisible ? 0 : -10)
-                                .frame(maxWidth: .infinity, alignment: usesEditorialLayout ? .leading : .center)
+                                    .rotationEffect(.degrees(step == .welcome ? welcomeHeroRotation : 0))
+                                    .rotationEffect(
+                                        .degrees(step == .notifications ? notificationHeroRingRotation : 0),
+                                        anchor: .top
+                                    )
+                                    .offset(
+                                        x: (step == .biometric ? biometricHeroShakeOffset : 0) + 0,
+                                        y: 0
+                                    )
+                                    .scaleEffect(step == .welcome ? welcomeHeroScale : 1)
+                                    .opacity(step == .welcome ? welcomeHeroOpacity : 1)
+                                    .shadow(color: Color.black.opacity(0.3), radius: 14, x: 0, y: 7)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, minHeight: usesEditorialLayout ? 72 : 170, maxHeight: usesEditorialLayout ? 72 : 170, alignment: .top)
+                            .padding(.bottom, usesEditorialLayout ? 20 : 64)
+
+                            VStack(spacing: 12) {
+                                Text(title)
+                                    .font(
+                                        .system(
+                                            size: step == .welcome ? 96 : (step == .done ? 52 : ((step == .notifications || step == .storage || step == .health || step == .biometric) ? 58 : 48)),
+                                            weight: .regular,
+                                            design: .rounded
+                                        )
+                                    )
+                                    .foregroundColor(Color.pillrBackground)
+                                    .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
+                                    .lineLimit(2)
+                                    .minimumScaleFactor(0.75)
+                                    .opacity(titleSectionVisible ? 1 : 0)
+                                    .offset(y: titleSectionVisible ? 0 : -10)
+                                    .frame(maxWidth: .infinity, alignment: usesEditorialLayout ? .leading : .center)
+
+                                if step != .storage {
+                                    Group {
+                                        if step == .welcome {
+                                            Text(message)
+                                                .font(.system(size: 22, weight: .regular, design: .default))
+                                        } else {
+                                            Text(message)
+                                                .font(.system(size: 18, weight: .medium, design: .rounded))
+                                        }
+                                    }
+                                    .foregroundColor(Color.pillrSecondary.opacity(0.94))
+                                    .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
+                                    .lineSpacing(4)
+                                    .lineLimit(nil)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity, alignment: usesEditorialLayout ? .leading : .center)
+                                    .padding(.top, usesEditorialLayout ? 18 : 0)
+                                    .padding(.horizontal, usesEditorialLayout ? 0 : 16)
+                                    .opacity(messageSectionVisible ? 1 : 0)
+                                    .offset(y: messageSectionVisible ? 0 : 12)
+                                }
+                            }
+                            .padding(.horizontal, usesEditorialLayout ? 14 : 0)
+                            .offset(y: usesEditorialLayout ? 34 : 0)
 
                             Group {
                                 if step == .welcome {
-                                    Text(message)
-                                        .font(.system(size: 22, weight: .regular, design: .default))
-                                } else {
-                                    Text(message)
-                                        .font(.system(size: step == .storage ? 17 : 18, weight: .medium, design: .rounded))
-                                }
-                            }
-                            .foregroundColor(Color.pillrSecondary.opacity(0.94))
-                            .multilineTextAlignment(usesEditorialLayout ? .leading : .center)
-                            .lineSpacing(4)
-                            .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: usesEditorialLayout ? .leading : .center)
-                            .padding(.top, (usesEditorialLayout ? 18 : 0) + (step == .storage ? 2 : 0))
-                            .padding(.horizontal, usesEditorialLayout ? 0 : 16)
-                            .opacity(messageSectionVisible ? 1 : 0)
-                            .offset(y: messageSectionVisible ? 0 : 12)
-                        }
-                        .padding(.horizontal, usesEditorialLayout ? 14 : 0)
-                        .offset(y: usesEditorialLayout ? 34 : 0)
-
-                        Group {
-                            if step == .welcome {
-                                HStack {
-                                    Button(action: handlePrimaryAction) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.white.opacity(0.12))
-                                                .frame(width: 62, height: 62)
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.32), lineWidth: 1.5)
-                                                .frame(width: 66, height: 66)
-                                            Image(systemName: "arrow.right")
-                                                .font(.system(size: 22, weight: .semibold))
-                                                .foregroundColor(Color.pillrBackground)
-                                        }
-                                    }
-                                    .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
-                                    .scaleEffect(welcomePrimaryButtonPulseScale)
-                                    .shadow(color: Color.white.opacity(welcomePrimaryButtonPulseGlow), radius: 14)
-                                    .disabled(isWorking)
-
-                                    Spacer()
-                                }
-                                .padding(.top, 32)
-                                .padding(.horizontal, 14)
-                            }
-
-                            if step == .done {
-                                HStack(spacing: 14) {
-                                    Button(action: handlePrimaryAction) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.pillrBackground)
-                                                .frame(width: 68, height: 68)
-                                            Image(systemName: "arrow.right")
-                                                .font(.system(size: 22, weight: .semibold))
-                                                .foregroundColor(Color.pillrPrimary)
-                                        }
-                                    }
-                                    .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
-                                    .disabled(isWorking)
-
-                                    Text("Start using Pillr")
-                                        .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                        .foregroundColor(Color.pillrSecondary.opacity(0.95))
-
-                                    Spacer()
-                                }
-                                .padding(.top, 18)
-                                .padding(.horizontal, 14)
-                            }
-
-                            if step == .notifications {
-                                HStack(spacing: 22) {
-                                    Button(action: handlePrimaryAction) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.pillrBackground)
-                                                .frame(width: 68, height: 68)
-
-                                            if isWorking {
-                                                ProgressView()
-                                                    .tint(Color.pillrPrimary)
-                                            } else {
-                                                Text("On")
-                                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                                    .foregroundColor(Color.pillrPrimary)
+                                    HStack {
+                                        Button(action: handlePrimaryAction) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.white.opacity(0.12))
+                                                    .frame(width: 62, height: 62)
+                                                Circle()
+                                                    .stroke(Color.white.opacity(0.32), lineWidth: 1.5)
+                                                    .frame(width: 66, height: 66)
+                                                Image(systemName: "arrow.right")
+                                                    .font(.system(size: 22, weight: .semibold))
+                                                    .foregroundColor(Color.pillrBackground)
                                             }
                                         }
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
-                                    .disabled(isWorking)
-                                    .overlay(alignment: .bottom) {
-                                        Text("(recommended)")
-                                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                                            .foregroundColor(Color.pillrSecondary.opacity(0.8))
-                                            .fixedSize(horizontal: true, vertical: false)
-                                            .offset(y: 24)
-                                    }
+                                        .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
+                                        .scaleEffect(welcomePrimaryButtonPulseScale)
+                                        .shadow(color: Color.white.opacity(welcomePrimaryButtonPulseGlow), radius: 14)
+                                        .disabled(isWorking)
 
-                                    Button(action: handleSecondaryAction) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.white.opacity(0.08))
-                                                .frame(width: 68, height: 68)
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
-                                                .frame(width: 68, height: 68)
-                                            Text("Off")
-                                                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                                .foregroundColor(Color.pillrSecondary.opacity(0.95))
-                                        }
+                                        Spacer()
                                     }
-                                    .buttonStyle(ScaleButtonStyle())
-                                    .disabled(isWorking)
-
-                                    Spacer(minLength: 0)
+                                    .padding(.top, 32)
+                                    .padding(.horizontal, 14)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, 30)
-                                .padding(.horizontal, 14)
-                                .padding(.bottom, 18)
-                            }
 
-                            if step == .storage {
-                                HStack(alignment: .top, spacing: 10) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Automatic iCloud Drive Backup")
-                                            .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                            .foregroundColor(Color.pillrBackground)
-
-                                        Text("Pillr automatically saves your medications, reminders, and history to iCloud Drive so you can restore them if you delete the app or move to a new device.")
-                                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                                            .foregroundColor(Color.pillrSecondary.opacity(0.86))
-                                            .multilineTextAlignment(.leading)
-                                            .fixedSize(horizontal: false, vertical: true)
-                                    }
-                                    .layoutPriority(1)
-
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 22, weight: .semibold))
-                                        .foregroundColor(Color.pillrBackground.opacity(0.95))
-                                        .frame(width: 24, height: 24, alignment: .topTrailing)
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 13)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(Color.white.opacity(0.14))
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .stroke(Color.white.opacity(0.42), lineWidth: 1)
-                                )
-                                .padding(.top, 22)
-                            }
-
-                            if step == .health {
-                                HStack(spacing: 22) {
-                                    Button(action: handlePrimaryAction) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.pillrBackground)
-                                                .frame(width: 68, height: 68)
-
-                                            if isWorking {
-                                                ProgressView()
-                                                    .tint(Color.pillrPrimary)
-                                            } else {
-                                                Text("On")
-                                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                                    .foregroundColor(Color.pillrPrimary)
-                                            }
-                                        }
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
-                                    .disabled(isWorking)
-                                    .overlay(alignment: .bottom) {
-                                        Text("(recommended)")
-                                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                                            .foregroundColor(Color.pillrSecondary.opacity(0.8))
-                                            .fixedSize(horizontal: true, vertical: false)
-                                            .offset(y: 24)
-                                    }
-
-                                    Button(action: handleSecondaryAction) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.white.opacity(0.08))
-                                                .frame(width: 68, height: 68)
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
-                                                .frame(width: 68, height: 68)
-                                            Text("Off")
-                                                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                                .foregroundColor(Color.pillrSecondary.opacity(0.95))
-                                        }
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
-                                    .disabled(isWorking)
-
-                                    Spacer(minLength: 0)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, 30)
-                                .padding(.horizontal, 14)
-                                .padding(.bottom, 18)
-                            }
-
-                            if step == .biometric && biometryType != .none {
-                                HStack(spacing: 22) {
-                                    Button(action: handlePrimaryAction) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.pillrBackground)
-                                                .frame(width: 68, height: 68)
-
-                                            if isWorking {
-                                                ProgressView()
-                                                    .tint(Color.pillrPrimary)
-                                            } else {
-                                                Text("On")
-                                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                                    .foregroundColor(Color.pillrPrimary)
-                                            }
-                                        }
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
-                                    .disabled(isWorking)
-
-                                    Button(action: handleSecondaryAction) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.white.opacity(0.08))
-                                                .frame(width: 68, height: 68)
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
-                                                .frame(width: 68, height: 68)
-                                            Text("Off")
-                                                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                                .foregroundColor(Color.pillrSecondary.opacity(0.95))
-                                        }
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
-                                    .disabled(isWorking)
-
-                                    Spacer(minLength: 0)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, 30)
-                                .padding(.horizontal, 14)
-                                .padding(.bottom, 18)
-                            }
-
-                            if let helperMessage {
-                                Text(helperMessage)
-                                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                                    .foregroundColor(Color.pillrSecondary.opacity(0.8))
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 18)
-                            }
-                        }
-                        .opacity(detailSectionVisible ? 1 : 0)
-                        .offset(y: detailSectionVisible ? 0 : -10)
-                    }
-                    .padding(.top, 26)
-                    .padding(.horizontal, 22)
-
-                    Spacer(minLength: 20)
-
-                    if step != .welcome && step != .notifications && step != .health && step != .biometric && step != .done {
-                        VStack(spacing: 14) {
-                            if step == .storage {
-                                HStack {
-                                    Button(action: handlePrimaryAction) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.pillrBackground)
-                                                .frame(width: 68, height: 68)
-
-                                            if isWorking {
-                                                ProgressView()
-                                                    .tint(Color.pillrPrimary)
-                                            } else {
+                                if step == .done {
+                                    HStack(spacing: 14) {
+                                        Button(action: handlePrimaryAction) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.pillrBackground)
+                                                    .frame(width: 68, height: 68)
                                                 Image(systemName: "arrow.right")
                                                     .font(.system(size: 22, weight: .semibold))
                                                     .foregroundColor(Color.pillrPrimary)
                                             }
                                         }
+                                        .buttonStyle(ScaleButtonStyle(scaleAmount: 0.94, hapticStyle: .pulseButton))
+                                        .disabled(isWorking)
+
+                                        Text("Start using Pillr")
+                                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                            .foregroundColor(Color.pillrSecondary.opacity(0.95))
+
+                                        Spacer()
+                                    }
+                                    .padding(.top, 18)
+                                    .padding(.horizontal, 14)
+                                }
+
+                                if step == .notifications {
+                                    HStack(spacing: 22) {
+                                        Button(action: handlePrimaryAction) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.pillrBackground)
+                                                    .frame(width: 68, height: 68)
+
+                                                if isWorking {
+                                                    ProgressView()
+                                                        .tint(Color.pillrPrimary)
+                                                } else {
+                                                    Text("On")
+                                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                                        .foregroundColor(Color.pillrPrimary)
+                                                }
+                                            }
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
+                                        .disabled(isWorking)
+                                        .overlay(alignment: .bottom) {
+                                            Text("(recommended)")
+                                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                                .foregroundColor(Color.pillrSecondary.opacity(0.8))
+                                                .fixedSize(horizontal: true, vertical: false)
+                                                .offset(y: 24)
+                                        }
+
+                                        Button(action: handleSecondaryAction) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.white.opacity(0.08))
+                                                    .frame(width: 68, height: 68)
+                                                Circle()
+                                                    .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
+                                                    .frame(width: 68, height: 68)
+                                                Text("Off")
+                                                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                                    .foregroundColor(Color.pillrSecondary.opacity(0.95))
+                                            }
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
+                                        .disabled(isWorking)
+
+                                        Spacer(minLength: 0)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, 30)
+                                    .padding(.horizontal, 14)
+                                    .padding(.bottom, 18)
+                                }
+
+                                if step == .storage {
+                                    HStack(alignment: .top, spacing: 10) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Automatic iCloud Drive Backup")
+                                                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                                .foregroundColor(Color.pillrBackground)
+
+                                            Text("Pillr automatically saves your medications, reminders, and history to iCloud Drive so you can restore them if you delete the app or move to a new device.")
+                                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                                .foregroundColor(Color.pillrSecondary.opacity(0.86))
+                                                .multilineTextAlignment(.leading)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                        .layoutPriority(1)
+
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 22, weight: .semibold))
+                                            .foregroundColor(Color.pillrBackground.opacity(0.95))
+                                            .frame(width: 24, height: 24, alignment: .topTrailing)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 13)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .fill(Color.white.opacity(0.14))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .stroke(Color.white.opacity(0.42), lineWidth: 1)
+                                    )
+                                    .padding(.top, 22)
+                                }
+
+                                if step == .health {
+                                    HStack(spacing: 22) {
+                                        Button(action: handlePrimaryAction) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.pillrBackground)
+                                                    .frame(width: 68, height: 68)
+
+                                                if isWorking {
+                                                    ProgressView()
+                                                        .tint(Color.pillrPrimary)
+                                                } else {
+                                                    Text("On")
+                                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                                        .foregroundColor(Color.pillrPrimary)
+                                                }
+                                            }
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
+                                        .disabled(isWorking)
+                                        .overlay(alignment: .bottom) {
+                                            Text("(recommended)")
+                                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                                .foregroundColor(Color.pillrSecondary.opacity(0.8))
+                                                .fixedSize(horizontal: true, vertical: false)
+                                                .offset(y: 24)
+                                        }
+
+                                        Button(action: handleSecondaryAction) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.white.opacity(0.08))
+                                                    .frame(width: 68, height: 68)
+                                                Circle()
+                                                    .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
+                                                    .frame(width: 68, height: 68)
+                                                Text("Off")
+                                                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                                    .foregroundColor(Color.pillrSecondary.opacity(0.95))
+                                            }
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
+                                        .disabled(isWorking)
+
+                                        Spacer(minLength: 0)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, 30)
+                                    .padding(.horizontal, 14)
+                                    .padding(.bottom, 18)
+                                }
+
+                                if step == .biometric && biometryType != .none {
+                                    HStack(spacing: 22) {
+                                        Button(action: handlePrimaryAction) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.pillrBackground)
+                                                    .frame(width: 68, height: 68)
+
+                                                if isWorking {
+                                                    ProgressView()
+                                                        .tint(Color.pillrPrimary)
+                                                } else {
+                                                    Text("On")
+                                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                                        .foregroundColor(Color.pillrPrimary)
+                                                }
+                                            }
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
+                                        .disabled(isWorking)
+
+                                        Button(action: handleSecondaryAction) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.white.opacity(0.08))
+                                                    .frame(width: 68, height: 68)
+                                                Circle()
+                                                    .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
+                                                    .frame(width: 68, height: 68)
+                                                Text("Off")
+                                                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                                    .foregroundColor(Color.pillrSecondary.opacity(0.95))
+                                            }
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
+                                        .disabled(isWorking)
+
+                                        Spacer(minLength: 0)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, 30)
+                                    .padding(.horizontal, 14)
+                                    .padding(.bottom, 18)
+                                }
+
+                                if let helperMessage {
+                                    Text(helperMessage)
+                                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                                        .foregroundColor(Color.pillrSecondary.opacity(0.8))
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 18)
+                                }
+                            }
+                            .opacity(detailSectionVisible ? 1 : 0)
+                            .offset(y: detailSectionVisible ? 0 : -10)
+                        }
+                        .padding(.top, 26)
+                        .padding(.horizontal, 22)
+
+                        if step != .welcome && step != .notifications && step != .health && step != .biometric && step != .done {
+                            VStack(spacing: 14) {
+                                if step == .storage {
+                                    HStack {
+                                        Button(action: handlePrimaryAction) {
+                                            ZStack {
+                                                Circle()
+                                                    .fill(Color.pillrBackground)
+                                                    .frame(width: 68, height: 68)
+
+                                                if isWorking {
+                                                    ProgressView()
+                                                        .tint(Color.pillrPrimary)
+                                                } else {
+                                                    Image(systemName: "arrow.right")
+                                                        .font(.system(size: 22, weight: .semibold))
+                                                        .foregroundColor(Color.pillrPrimary)
+                                                }
+                                            }
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
+                                        .disabled(isWorking)
+
+                                        Spacer()
+                                    }
+                                    .padding(.top, 18)
+                                } else {
+                                    Button(action: handlePrimaryAction) {
+                                        HStack(spacing: 10) {
+                                            if isWorking {
+                                                ProgressView()
+                                                    .tint(Color.pillrPrimary)
+                                            } else if step == .biometric && biometryType != .none {
+                                                Image(systemName: biometryType.iconName)
+                                                    .font(.system(size: 18, weight: .semibold))
+                                            }
+
+                                            Text(primaryButtonTitle)
+                                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        }
+                                        .foregroundColor(Color.pillrPrimary)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 17)
+                                        .background(
+                                            Capsule()
+                                                .fill(Color.pillrBackground)
+                                        )
                                     }
                                     .buttonStyle(ScaleButtonStyle())
                                     .disabled(isWorking)
-
-                                    Spacer()
                                 }
-                            } else {
-                                Button(action: handlePrimaryAction) {
-                                    HStack(spacing: 10) {
-                                        if isWorking {
-                                            ProgressView()
-                                                .tint(Color.pillrPrimary)
-                                        } else if step == .biometric && biometryType != .none {
-                                            Image(systemName: biometryType.iconName)
-                                                .font(.system(size: 18, weight: .semibold))
-                                        }
 
-                                        Text(primaryButtonTitle)
-                                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                                if let secondaryTitle = secondaryButtonTitle {
+                                    Button(action: handleSecondaryAction) {
+                                        Text(secondaryTitle)
+                                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                            .foregroundColor(Color.pillrSecondary.opacity(0.88))
+                                            .underline()
                                     }
-                                    .foregroundColor(Color.pillrPrimary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 17)
-                                    .background(
-                                        Capsule()
-                                            .fill(Color.pillrBackground)
-                                    )
+                                    .buttonStyle(.plain)
+                                    .disabled(isWorking)
                                 }
-                                .buttonStyle(ScaleButtonStyle())
-                                .disabled(isWorking)
                             }
-
-                            if let secondaryTitle = secondaryButtonTitle {
-                                Button(action: handleSecondaryAction) {
-                                    Text(secondaryTitle)
-                                        .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                        .foregroundColor(Color.pillrSecondary.opacity(0.88))
-                                        .underline()
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(isWorking)
-                            }
+                            .opacity(actionsSectionVisible ? 1 : 0)
+                            .offset(y: actionsSectionVisible ? 0 : -8)
+                            .padding(.horizontal, 22)
+                            .padding(.bottom, geometry.safeAreaInsets.bottom + (step == .storage ? 170 : 22))
                         }
-                        .opacity(actionsSectionVisible ? 1 : 0)
-                        .offset(y: actionsSectionVisible ? 0 : -8)
-                        .padding(.horizontal, 22)
-                        .padding(.bottom, geometry.safeAreaInsets.bottom + (step == .storage ? 170 : 22))
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 24)
                 }
             }
         }

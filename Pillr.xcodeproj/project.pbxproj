@@ -620,9 +620,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Pillr;
+				INFOPLIST_KEY_CFBundleDisplayName = "Pillr – AI Enhancements";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pillr uses Face ID to protect access to your medication information on this device.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -640,7 +641,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.Pillr;
+				PRODUCT_BUNDLE_IDENTIFIER = "app.Pillr-aienhancements";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -660,9 +661,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Pillr;
+				INFOPLIST_KEY_CFBundleDisplayName = "Pillr – AI Enhancements";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.medical";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pillr uses Face ID to protect access to your medication information on this device.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Pillr needs access to your Health data so it can display today’s steps and distance.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -680,7 +682,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = app.Pillr;
+				PRODUCT_BUNDLE_IDENTIFIER = "app.Pillr-aienhancements";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

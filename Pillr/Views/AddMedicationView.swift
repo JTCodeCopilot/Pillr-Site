@@ -122,6 +122,23 @@ struct AddMedicationView: View {
         )
     }
 
+    private var finalDosageUnit: String {
+        dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+    }
+
+    private var supportsPillTracker: Bool {
+        let normalizedUnit = finalDosageUnit.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalizedUnit == "mg" || normalizedUnit == "tablets" || normalizedUnit == "capsules"
+    }
+
+    private var hasExistingPillTracking: Bool {
+        medicationToEdit?.pillCount != nil
+    }
+
+    private var canShowPillTracker: Bool {
+        supportsPillTracker || hasExistingPillTracking
+    }
+
     private enum ScrollAnchor {
         static let top = "AddMedicationViewTopAnchor"
         static let bottom = "AddMedicationViewBottomAnchor"
@@ -322,6 +339,17 @@ struct AddMedicationView: View {
                     frequency = "Once daily"
                 }
                 reminderTimes = []
+            }
+        }
+        .onChange(of: finalDosageUnit) { _, newValue in
+            guard !hasExistingPillTracking else { return }
+            let normalizedUnit = newValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let canTrackPills = normalizedUnit == "mg" || normalizedUnit == "tablets" || normalizedUnit == "capsules"
+
+            if !canTrackPills {
+                trackPillCount = false
+                pillCountError = nil
+                refillThresholdError = nil
             }
         }
         .onChange(of: onsetMinutesString) { _, _ in
@@ -1130,7 +1158,8 @@ struct AddMedicationView: View {
                 }
             }
 
-            FormSection(title: "INVENTORY", icon: "cube.box.fill") {
+            if canShowPillTracker {
+                FormSection(title: "INVENTORY", icon: "cube.box.fill") {
                 VStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
                         Toggle(isOn: $trackPillCount.animation(toggleTransitionAnimation)) {
@@ -1222,6 +1251,7 @@ struct AddMedicationView: View {
                         )
                     }
                 }
+            }
             }
         }
     }
@@ -2005,7 +2035,7 @@ struct AddMedicationView: View {
     }
 
     private func validateInventoryFields() -> Bool {
-        guard trackPillCount && userSettings.isPremiumUser else {
+        guard canShowPillTracker && trackPillCount && userSettings.isPremiumUser else {
             pillCountError = nil
             refillThresholdError = nil
             return true
@@ -2337,11 +2367,10 @@ struct AddMedicationView: View {
     }
 
     private func saveMedication() {
-        let pillCount = trackPillCount ? Int(pillCountString) : nil
-        let pillsPerDose = trackPillCount ? (Int(pillsPerDoseString) ?? 1) : 1
-        let refillThreshold = trackPillCount && !refillThresholdString.isEmpty ? Int(refillThresholdString) : nil
-
-        let finalDosageUnit = dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+        let shouldTrackPills = canShowPillTracker && trackPillCount
+        let pillCount = shouldTrackPills ? Int(pillCountString) : nil
+        let pillsPerDose = shouldTrackPills ? (Int(pillsPerDoseString) ?? 1) : 1
+        let refillThreshold = shouldTrackPills && !refillThresholdString.isEmpty ? Int(refillThresholdString) : nil
 
         let hasFocusWindow = isADHDMedication && medicationType == .stimulant && enableStimulantPhaseNotifications
         let supportsGeneralCheckIn = medicationType != .stimulant
@@ -2393,7 +2422,7 @@ struct AddMedicationView: View {
                 updatedMedication.enableStimulantPhaseNotifications = false
             }
 
-            if trackPillCount {
+            if shouldTrackPills {
                 updatedMedication.pillCount = Int(pillCountString) ?? 0
                 updatedMedication.pillsPerDose = Int(pillsPerDoseString) ?? 1
                 updatedMedication.refillThreshold = refillThresholdString.isEmpty ? nil : Int(refillThresholdString)

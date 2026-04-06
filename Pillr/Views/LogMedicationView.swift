@@ -43,9 +43,6 @@ import UIKit
     @State private var currentReflectStepIndex: Int = 0
     @State private var reflectStepAnimationDirection: ReflectStepTransitionDirection = .forward
     @State private var showingReflectionSummary = false
-    @State private var isGeneratingReflectionSummary = false
-    @State private var reflectionSummaryText: String = ""
-    @State private var reflectionSummaryError: String?
     @State private var summaryItemOrder: [ReflectionSummaryItem] = []
     init(
         medicationToLog: Medication,
@@ -583,7 +580,6 @@ import UIKit
 
     private var reflectPagedSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            reflectSummarySection
             if shouldShowMedicationSelection && currentReflectStep == .date {
                 medicationSelectionSection
             }
@@ -613,12 +609,14 @@ import UIKit
         let feelingValue = feelingRating > 0 ? "\(feelingRating)/5" : "Not set"
         let sideEffectValue = sideEffectSeverity > 0 ? "\(sideEffectSeverity)/5" : "Not set"
         let effectsValue = sideEffectTags.isEmpty ? "Not set" : "\(sideEffectTags.count)"
+        let noteValue = logNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         let itemMap: [ReflectionSummaryItem: (label: String, value: String)] = [
             .feeling: (label: "Overall feeling", value: feelingValue),
             .mood: (label: "Mood overall", value: emotionalTone?.label ?? "Not set"),
             .focus: (label: "Focus level", value: focusValue),
             .sideEffectsSeverity: (label: "Side-effect impact", value: sideEffectValue),
-            .effects: (label: "Side effects picked", value: effectsValue)
+            .effects: (label: "Side effects picked", value: effectsValue),
+            .notes: (label: "Notes", value: noteValue.isEmpty ? "Not set" : noteValue)
         ]
         let inlineItems: [(label: String, value: String)] = summaryItemOrder.compactMap { itemMap[$0] }
         return VStack(alignment: .leading, spacing: 14) {
@@ -635,7 +633,7 @@ import UIKit
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(inlineItems.indices, id: \.self) { index in
                     let item = inlineItems[index]
-                    reflectSummaryMetric(label: item.label, value: item.value)
+                    reflectSummaryMetric(label: item.label, value: item.value, isFeatured: index == 0)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                     if index != inlineItems.count - 1 {
                         Divider()
@@ -1032,30 +1030,14 @@ import UIKit
             Color.black.opacity(0.45)
                 .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Upon Reflection")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Color.pillrBackground)
-
-                if isGeneratingReflectionSummary {
-                    HStack(spacing: 12) {
-                        ProgressView()
-                            .tint(Color.pillrBackground)
-                        Text("Generating summary...")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color.pillrSecondary)
-                    }
-                } else if let reflectionSummaryError {
-                    Text(reflectionSummaryError)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#F3D6D6"))
-                } else {
-                    Text(reflectionSummaryText)
-                        .font(.system(size: 15, weight: .medium))
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Upon Reflection")
+                        .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(Color.pillrBackground)
-                        .lineSpacing(3)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
+
+                reflectSummaryCard
 
                 HStack(spacing: 12) {
                     Button {
@@ -1078,22 +1060,21 @@ import UIKit
                         HapticManager.shared.successNotification()
                         processDoseAction(skipped: false)
                     } label: {
-                        Text("Save Reflection")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color.pillrPrimary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                            Text("Save Reflection")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color.pillrPrimary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
                             .background(
                                 RoundedRectangle(cornerRadius: 14)
                                     .fill(Color.pillrBackground)
                             )
                     }
                     .buttonStyle(ScaleButtonStyle())
-                    .disabled(isGeneratingReflectionSummary)
                 }
             }
             .padding(20)
-            .frame(maxWidth: 320)
+            .frame(maxWidth: 360)
             .background(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(Color.pillrPrimary)
@@ -1108,39 +1089,6 @@ import UIKit
 
     private func presentReflectionSummary() {
         showingReflectionSummary = true
-        isGeneratingReflectionSummary = true
-        reflectionSummaryText = ""
-        reflectionSummaryError = nil
-
-        let trimmedNotes = logNotes.trimmingCharacters(in: .whitespacesAndNewlines)
-        let focusValue = medicationToLog.medicationType == .stimulant && focusRating > 0 ? focusRating : nil
-        let feelingValue = feelingRating > 0 ? feelingRating : nil
-        let sideEffectValue = sideEffectSeverity > 0 ? sideEffectSeverity : nil
-        let sideEffects = sideEffectTags.sorted()
-
-        Task {
-            do {
-                let summary = try await OpenAIService.shared.summarizeDailyReflection(
-                    medicationName: medicationToLog.name,
-                    date: checkInDate,
-                    feeling: feelingValue,
-                    focus: focusValue,
-                    emotionalTone: emotionalTone?.label,
-                    sideEffectSeverity: sideEffectValue,
-                    sideEffects: sideEffects,
-                    notes: trimmedNotes.isEmpty ? nil : trimmedNotes
-                )
-                await MainActor.run {
-                    reflectionSummaryText = summary
-                    isGeneratingReflectionSummary = false
-                }
-            } catch {
-                await MainActor.run {
-                    reflectionSummaryError = error.localizedDescription
-                    isGeneratingReflectionSummary = false
-                }
-            }
-        }
     }
 
     private func goToNextReflectStep() {
@@ -1196,17 +1144,17 @@ import UIKit
         }
     }
 
-    private func reflectSummaryMetric(label: String, value: String) -> some View {
+    private func reflectSummaryMetric(label: String, value: String, isFeatured: Bool = false) -> some View {
         let isUnset = value == "Not set"
         return VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: isFeatured ? 12 : 11, weight: .semibold))
                 .foregroundColor(Color.pillrSecondary.opacity(0.75))
             Text(value)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: isFeatured ? 18 : 15, weight: .semibold))
                 .foregroundColor(isUnset ? Color.pillrSecondary.opacity(0.6) : Color.pillrBackground)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, isFeatured ? 10 : 8)
     }
 
     private enum ReflectionSummaryItem: Hashable {
@@ -1215,6 +1163,7 @@ import UIKit
         case focus
         case sideEffectsSeverity
         case effects
+        case notes
     }
 
     private func updateSummaryItemOrder() {
@@ -1235,6 +1184,7 @@ import UIKit
         set(.focus, isAvailable: medicationToLog.medicationType == .stimulant && focusRating > 0)
         set(.sideEffectsSeverity, isAvailable: sideEffectSeverity > 0)
         set(.effects, isAvailable: !sideEffectTags.isEmpty)
+        set(.notes, isAvailable: !logNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
         if next != summaryItemOrder {
             summaryItemOrder = next
@@ -1336,11 +1286,7 @@ import UIKit
         let feelingToSave = isDailyCheckIn && feelingRating > 0 ? feelingRating : nil
         let focusToSave = isDailyCheckIn && focusRating > 0 ? focusRating : nil
         let sideEffectToSave = isDailyCheckIn && sideEffectSeverity > 0 ? sideEffectSeverity : nil
-        let reflectionSummaryToSave: String? = {
-            guard isDailyCheckIn else { return nil }
-            let trimmed = reflectionSummaryText.trimmingCharacters(in: .whitespacesAndNewlines)
-            return trimmed.isEmpty ? nil : trimmed
-        }()
+        let reflectionSummaryToSave: String? = nil
         
 	        if skipped {
 	            if let action = store.skipMedication(
@@ -1404,7 +1350,7 @@ import UIKit
         sideEffectSeverity = log.sideEffectSeverity ?? 0
 
         let noteParts = splitNotesAndSideEffects(from: log.notes)
-        logNotes = noteParts.checkInNotes ?? noteParts.notes ?? ""
+        logNotes = noteParts.checkInNotes ?? ""
         sideEffectTags = Set(noteParts.sideEffectsList)
         if let mood = noteParts.mood?.lowercased(),
            let tone = EmotionalTone(rawValue: mood) {
@@ -1526,26 +1472,18 @@ struct RatingControl: View {
                         }
                     }) {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(
-                                index <= value
-                                ? activeColor
-                                : Color.white.opacity(0.06)
-                            )
+                            .fill(index <= value ? activeColor : Color.white.opacity(0.06))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                     .stroke(Color.pillrSecondary.opacity(0.4), lineWidth: 1)
                             )
                             .overlay(
-                                Group {
-                                    if index == value {
-                                        Text("\(index)")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(Color.black.opacity(0.35))
-                                    }
-                                }
+                                Text("\(index)")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(index <= value ? Color.black.opacity(0.72) : Color.pillrSecondary.opacity(0.45))
                             )
                             .frame(maxWidth: .infinity)
-                            .frame(height: 28)
+                            .frame(height: 48)
                     }
                     .buttonStyle(ScaleButtonStyle())
                 }

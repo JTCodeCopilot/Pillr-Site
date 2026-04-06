@@ -21,6 +21,7 @@ final class FakeNotificationManager: NotificationManagerProtocol {
     private(set) var removedUntracked: [(UUID, Set<String>)] = []
     private(set) var registered: [UUID] = []
     private(set) var updatedTracked: [Set<UUID>] = []
+    var deliveredMedicationReminders: [UNNotification] = []
 
     func updateTrackedMedicationIDs(_ ids: Set<UUID>) {
         updatedTracked.append(ids)
@@ -113,7 +114,7 @@ final class FakeNotificationManager: NotificationManagerProtocol {
         completion(pendingMedicationReminderRequests)
     }
     func fetchDeliveredMedicationReminders(completion: @escaping ([UNNotification]) -> Void) {
-        completion([])
+        completion(deliveredMedicationReminders)
     }
     func clearDeliveredMedicationReminders() {}
     func purgeNotifications(excluding validMedicationIDs: Set<UUID>) {}

@@ -112,7 +112,7 @@ struct PillrApp: App {
         }
         
         // Configure tab bar appearance
-        let overdueBadgeColor = UIColor(Color(hex: "#FFB74D"))
+        let overdueBadgeColor = UIColor(Color(hex: "#F5C4B3"))
         let tabSelectedColor = UIColor(Color(hex: "#8BA091"))
         let tabNormalColor = UIColor(Color(hex: "#5E7266"))
         func applyBadgeColors(to appearance: UITabBarAppearance) {
