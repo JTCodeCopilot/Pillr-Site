@@ -32,22 +32,6 @@ class UserSettings: ObservableObject {
         }
     }
 
-    @Published var hasSeenCabinetIntroOverlay: Bool {
-        didSet {
-            if !isPreviewMode {
-                UserDefaults.standard.set(hasSeenCabinetIntroOverlay, forKey: cabinetIntroOverlayKey)
-            }
-        }
-    }
-
-    @Published var hasSeenNotificationOnboardingPrompt: Bool {
-        didSet {
-            if !isPreviewMode {
-                UserDefaults.standard.set(hasSeenNotificationOnboardingPrompt, forKey: notificationOnboardingPromptKey)
-            }
-        }
-    }
-
     @Published var hasCompletedAppOnboarding: Bool {
         didSet {
             if !isPreviewMode {
@@ -66,14 +50,6 @@ class UserSettings: ObservableObject {
     
     @Published var isFirstLaunch: Bool = false
 
-    @Published private(set) var seenOnboardingStages: Set<String> = [] {
-        didSet {
-            if !isPreviewMode {
-                UserDefaults.standard.set(Array(seenOnboardingStages), forKey: onboardingStagesKey)
-            }
-        }
-    }
-    
     // Premium status management
     @Published var isPremiumUser: Bool {
         didSet {
@@ -148,9 +124,6 @@ class UserSettings: ObservableObject {
     private let privacyNoticeKey = "hasShownPrivacyNotice"
     private let premiumStatusKey = "is_premium_user"
     private let subscriptionTypeKey = "subscription_type"
-    private let onboardingStagesKey = "seen_onboarding_stages"
-    private let cabinetIntroOverlayKey = "hasSeenCabinetIntroOverlay"
-    private let notificationOnboardingPromptKey = "hasSeenNotificationOnboardingPrompt"
     private let appOnboardingCompleteKey = "has_completed_app_onboarding"
     private let biometricLockEnabledKey = "is_biometric_lock_enabled"
     private let appleHealthVisibilityKey = "should_show_apple_health_data"
@@ -194,9 +167,6 @@ class UserSettings: ObservableObject {
             self.hasShownPrivacyNotice = true
             self.isPremiumUser = false
             self.subscriptionType = nil
-            self.seenOnboardingStages = []
-            self.hasSeenCabinetIntroOverlay = false
-            self.hasSeenNotificationOnboardingPrompt = false
             self.hasCompletedAppOnboarding = true
             self.isBiometricLockEnabled = false
             self.shouldShowAppleHealthData = true
@@ -211,16 +181,6 @@ class UserSettings: ObservableObject {
             self.hasShownPrivacyNotice = true
             self.isPremiumUser = true
             self.subscriptionType = "one-time-purchase"
-            self.seenOnboardingStages = [
-                "cloudSyncChoice",
-                "meds",
-                "history",
-                "checkIns",
-                "focus",
-                "more"
-            ]
-            self.hasSeenCabinetIntroOverlay = true
-            self.hasSeenNotificationOnboardingPrompt = true
             self.hasCompletedAppOnboarding = true
             self.isBiometricLockEnabled = false
             self.shouldShowAppleHealthData = false
@@ -237,9 +197,6 @@ class UserSettings: ObservableObject {
             // Load premium status
             self.isPremiumUser = UserDefaults.standard.bool(forKey: premiumStatusKey)
             self.subscriptionType = UserDefaults.standard.string(forKey: subscriptionTypeKey)
-            self.seenOnboardingStages = Set(UserDefaults.standard.stringArray(forKey: onboardingStagesKey) ?? [])
-            self.hasSeenCabinetIntroOverlay = UserDefaults.standard.bool(forKey: cabinetIntroOverlayKey)
-            self.hasSeenNotificationOnboardingPrompt = UserDefaults.standard.bool(forKey: notificationOnboardingPromptKey)
             self.hasCompletedAppOnboarding = UserDefaults.standard.bool(forKey: appOnboardingCompleteKey)
             self.isBiometricLockEnabled = UserDefaults.standard.bool(forKey: biometricLockEnabledKey)
             if let storedAppleHealthVisibility = UserDefaults.standard.object(forKey: appleHealthVisibilityKey) as? Bool {
@@ -311,9 +268,6 @@ class UserSettings: ObservableObject {
         hasShownPrivacyNotice = UserDefaults.standard.bool(forKey: privacyNoticeKey)
         isPremiumUser = UserDefaults.standard.bool(forKey: premiumStatusKey)
         subscriptionType = UserDefaults.standard.string(forKey: subscriptionTypeKey)
-        seenOnboardingStages = Set(UserDefaults.standard.stringArray(forKey: onboardingStagesKey) ?? [])
-        hasSeenCabinetIntroOverlay = UserDefaults.standard.bool(forKey: cabinetIntroOverlayKey)
-        hasSeenNotificationOnboardingPrompt = UserDefaults.standard.bool(forKey: notificationOnboardingPromptKey)
         hasCompletedAppOnboarding = UserDefaults.standard.bool(forKey: appOnboardingCompleteKey)
         isBiometricLockEnabled = UserDefaults.standard.bool(forKey: biometricLockEnabledKey)
         shouldShowAppleHealthData = (UserDefaults.standard.object(forKey: appleHealthVisibilityKey) as? Bool) ?? true
@@ -363,26 +317,6 @@ class UserSettings: ObservableObject {
     // Check if user can use pill tracking feature
     func canUsePillTracking() -> Bool {
         return isPremiumUser
-    }
-
-    func hasSeenOnboardingStage(_ key: String) -> Bool {
-        return seenOnboardingStages.contains(key)
-    }
-
-    func markOnboardingStageSeen(_ key: String) {
-        guard !seenOnboardingStages.contains(key) else { return }
-        var updatedStages = seenOnboardingStages
-        updatedStages.insert(key)
-        seenOnboardingStages = updatedStages
-    }
-
-    func markCabinetIntroOverlaySeen() {
-        hasSeenCabinetIntroOverlay = true
-    }
-
-    func markNotificationOnboardingPromptSeen() {
-        guard !hasSeenNotificationOnboardingPrompt else { return }
-        hasSeenNotificationOnboardingPrompt = true
     }
 
     func markAppOnboardingComplete() {

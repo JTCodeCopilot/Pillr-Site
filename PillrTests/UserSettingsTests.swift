@@ -13,17 +13,13 @@ struct UserSettingsTests {
             let settings = UserSettings()
             settings.saveUserName("Taylor")
             settings.markPrivacyNoticeAsShown()
-            settings.markNotificationOnboardingPromptSeen()
             settings.markAppOnboardingComplete()
             settings.setBiometricLockEnabled(true)
-            settings.markOnboardingStageSeen("history")
 
             #expect(UserDefaults.standard.string(forKey: "userName") == "Taylor")
             #expect(UserDefaults.standard.bool(forKey: "hasShownPrivacyNotice") == true)
-            #expect(UserDefaults.standard.bool(forKey: "hasSeenNotificationOnboardingPrompt") == true)
             #expect(UserDefaults.standard.bool(forKey: "has_completed_app_onboarding") == true)
             #expect(UserDefaults.standard.bool(forKey: "is_biometric_lock_enabled") == true)
-            #expect((UserDefaults.standard.stringArray(forKey: "seen_onboarding_stages") ?? []).contains("history"))
         }
     }
 

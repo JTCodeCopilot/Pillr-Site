@@ -20,13 +20,7 @@ struct MainTabView: View {
     @StateObject private var addFlowCoordinator = AddMedicationFlowCoordinator()
     @State private var pendingTabSelection: MainTab?
     @State private var showDiscardAlert = false
-    @State private var activeOnboardingStage: OnboardingStageInfo?
-    @State private var activeOnboardingTab: MainTab?
-    @State private var showNotificationOnboardingPrompt = false
-    @State private var needsOnboardingAfterNotificationPrompt = false
-    @State private var isRequestingNotificationAuthorization = false
     @State private var showReviewPrompt = false
-    @State private var showWhatsNewSheet = false
     @State private var showWelcomeOnboardingFlow = false
     @State private var showBiometricAppLock = false
     @State private var isBiometricAuthInProgress = false
@@ -42,11 +36,9 @@ struct MainTabView: View {
     @AppStorage("reviewPromptSeeded") private var reviewPromptSeeded = false
     @AppStorage("appLaunchCount") private var appLaunchCount: Int = 0
     @AppStorage("hasShownOnboardingSuccessCelebration") private var hasShownOnboardingSuccessCelebration = false
-    @AppStorage("lastSeenWhatsNewAnnouncementID") private var lastSeenWhatsNewAnnouncementID = ""
     private var isUITestMode: Bool { UserSettings.isUITestMode }
-    
+
     private static let reviewPromptURL = "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?action=write-review"
-    private static let whatsNewAnnouncementID = "whatsnew-menu-tabs-faceid-2026-02"
     private static let reviewPromptDelaySeconds: TimeInterval = 1.2
     private static let reviewPromptMinimumDays: Double = 3
     private static let reviewPromptSnoozeDays: Double = 30
@@ -77,10 +69,6 @@ struct MainTabView: View {
 
     private var modalOverlayAnimation: Animation {
         .spring(response: 0.42, dampingFraction: 0.86)
-    }
-
-    private var onboardingOverlayAnimation: Animation {
-        .spring(response: 0.5, dampingFraction: 0.88)
     }
 
     private var tabVisibilitySignature: String {
@@ -170,23 +158,6 @@ struct MainTabView: View {
                 )
             }
 
-                if !showWelcomeOnboardingFlow {
-                    if let stage = activeOnboardingStage {
-                        OnboardingOverlayView(info: stage) {
-                            dismissOnboarding()
-                        }
-                        .transition(.opacity)
-                        .zIndex(1)
-                    }
-                    if showNotificationOnboardingPrompt {
-                        NotificationPermissionOnboardingPrompt(
-                            onContinue: handleNotificationPromptContinue,
-                            onSkip: handleNotificationPromptSkip
-                        )
-                        .transition(modalOverlayTransition)
-                        .zIndex(4)
-                    }
-                }
                 if showReviewPrompt {
                     ReviewPromptSheet(
                         onDismiss: dismissReviewPrompt,
@@ -194,11 +165,6 @@ struct MainTabView: View {
                     )
                     .transition(modalOverlayTransition)
                     .zIndex(2)
-                }
-                if showWhatsNewSheet {
-                    WhatsNewSheet(onDismiss: dismissWhatsNewSheet)
-                        .transition(modalOverlayTransition)
-                        .zIndex(2.5)
                 }
                 if showWelcomeOnboardingFlow {
                     PillrWelcomeOnboardingFlow { result in
@@ -244,10 +210,6 @@ struct MainTabView: View {
             wasExistingUserAtLaunch = isLikelyExistingUser
             startWelcomeOnboardingIfNeeded()
             ensureSelectedTabIsVisible()
-            if !showWelcomeOnboardingFlow {
-                scheduleOnboarding(for: selectedTab)
-            }
-            scheduleWhatsNewIfNeeded()
             scheduleReviewPromptIfNeeded()
             store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
             handleBiometricGateIfNeeded()
@@ -258,7 +220,6 @@ struct MainTabView: View {
                 referenceDate = Date()
                 store.refreshOverdueMedicationIDs(referenceDate: referenceDate)
                 handleBiometricGateIfNeeded()
-                scheduleWhatsNewIfNeeded()
             case .background:
                 if userSettings.isBiometricLockEnabled {
                     requiresBiometricOnNextActive = true
@@ -290,7 +251,6 @@ struct MainTabView: View {
         .onChange(of: showWelcomeOnboardingFlow) { _, showing in
             if !showing {
                 handleBiometricGateIfNeeded()
-                scheduleWhatsNewIfNeeded()
             }
         }
         .preferredColorScheme(.dark)
@@ -299,7 +259,6 @@ struct MainTabView: View {
     private func applySelectedTab(_ tab: MainTab) {
         let resolvedTab = resolvedVisibleTab(tab)
         selectedTab = resolvedTab
-        scheduleOnboarding(for: resolvedTab)
     }
 
     private func ensureSelectedTabIsVisible() {
@@ -332,19 +291,6 @@ struct MainTabView: View {
         let verticalTravel = -value.translation.height
         let horizontalTravel = abs(value.translation.width)
         return verticalTravel > 20 && verticalTravel > (horizontalTravel * 1.2)
-    }
-
-    private func scheduleOnboarding(for tab: MainTab) {
-        guard !isUITestMode else { return }
-        guard !showWelcomeOnboardingFlow else { return }
-        guard activeOnboardingStage == nil else { return }
-        let key = tab.rawValue
-        guard !userSettings.hasSeenOnboardingStage(key) else { return }
-        guard let info = tab.onboardingInfo else { return }
-        activeOnboardingTab = tab
-        withAnimation(onboardingOverlayAnimation) {
-            activeOnboardingStage = info
-        }
     }
 
     private func scheduleReviewPromptIfNeeded() {
@@ -380,11 +326,8 @@ struct MainTabView: View {
     }
 
     private var isBlockingReviewPrompt: Bool {
-        activeOnboardingStage != nil
-            || showNotificationOnboardingPrompt
-            || showWelcomeOnboardingFlow
+        showWelcomeOnboardingFlow
             || showBiometricAppLock
-            || showWhatsNewSheet
     }
 
     private func seedReviewPromptBaselineIfNeeded() {
@@ -402,9 +345,6 @@ struct MainTabView: View {
     private var isLikelyExistingUser: Bool {
         if appLaunchCount > 1 { return true }
         if userSettings.hasShownPrivacyNotice { return true }
-        if userSettings.hasSeenCabinetIntroOverlay { return true }
-        if userSettings.hasSeenNotificationOnboardingPrompt { return true }
-        if !userSettings.seenOnboardingStages.isEmpty { return true }
         return userSettings.userName != "User"
     }
 
@@ -423,26 +363,17 @@ struct MainTabView: View {
     }
 
     private func completeWelcomeOnboarding(using result: PillrOnboardingResult) {
-        // Fresh installs should not see this release's "What's New" popup later.
-        if !wasExistingUserAtLaunch {
-            lastSeenWhatsNewAnnouncementID = Self.whatsNewAnnouncementID
-        }
         userSettings.setBiometricLockEnabled(result.enableBiometricLock)
-        userSettings.markNotificationOnboardingPromptSeen()
         userSettings.markAppOnboardingComplete()
 
         requiresBiometricOnNextActive = false
 
         withAnimation(modalOverlayAnimation) {
             showWelcomeOnboardingFlow = false
-            activeOnboardingStage = nil
-            activeOnboardingTab = nil
-            showNotificationOnboardingPrompt = false
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
             selectedTab = .meds
             triggerPostOnboardingCelebrationIfNeeded()
-            scheduleOnboarding(for: selectedTab)
             scheduleReviewPromptIfNeeded()
         }
     }
@@ -540,75 +471,6 @@ struct MainTabView: View {
         UIApplication.shared.open(url)
     }
 
-    private func scheduleWhatsNewIfNeeded() {
-        guard !isUITestMode else { return }
-        guard !showWhatsNewSheet else { return }
-        guard !showWelcomeOnboardingFlow else { return }
-        guard userSettings.hasCompletedAppOnboarding else { return }
-        guard wasExistingUserAtLaunch else { return }
-        guard lastSeenWhatsNewAnnouncementID != Self.whatsNewAnnouncementID else { return }
-        guard activeOnboardingStage == nil else { return }
-        guard !showNotificationOnboardingPrompt else { return }
-        guard !showBiometricAppLock else { return }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            guard !showWhatsNewSheet else { return }
-            guard !showWelcomeOnboardingFlow else { return }
-            guard lastSeenWhatsNewAnnouncementID != Self.whatsNewAnnouncementID else { return }
-            withAnimation(modalOverlayAnimation) {
-                showWhatsNewSheet = true
-            }
-        }
-    }
-
-    private func dismissWhatsNewSheet() {
-        lastSeenWhatsNewAnnouncementID = Self.whatsNewAnnouncementID
-        withAnimation(modalOverlayAnimation) {
-            showWhatsNewSheet = false
-        }
-        scheduleReviewPromptIfNeeded()
-    }
-
-    private func dismissOnboarding() {
-        let dismissedTab = activeOnboardingTab
-        if let tab = dismissedTab {
-            userSettings.markOnboardingStageSeen(tab.rawValue)
-        }
-        withAnimation(onboardingOverlayAnimation) {
-            activeOnboardingStage = nil
-            activeOnboardingTab = nil
-        }
-        scheduleReviewPromptIfNeeded()
-    }
-    private func handleNotificationPromptContinue() {
-        guard !isRequestingNotificationAuthorization else { return }
-
-        isRequestingNotificationAuthorization = true
-        NotificationManager.shared.requestAuthorization { _ in
-            DispatchQueue.main.async {
-                self.isRequestingNotificationAuthorization = false
-                self.finishNotificationPromptFlow()
-            }
-        }
-    }
-
-    private func handleNotificationPromptSkip() {
-        finishNotificationPromptFlow()
-    }
-
-    private func finishNotificationPromptFlow() {
-        guard needsOnboardingAfterNotificationPrompt else { return }
-        needsOnboardingAfterNotificationPrompt = false
-        withAnimation(modalOverlayAnimation) {
-            showNotificationOnboardingPrompt = false
-        }
-        isRequestingNotificationAuthorization = false
-        DispatchQueue.main.async {
-            scheduleOnboarding(for: selectedTab)
-            scheduleReviewPromptIfNeeded()
-        }
-    }
-
 }
 
 struct MedicationsHomeView: View {
@@ -636,84 +498,6 @@ struct MedicationsHomeView: View {
                 MedicationsListView(addFlowCoordinator: addFlowCoordinator)
                     .scrollContentBackground(.hidden)
                     .frame(maxHeight: .infinity)
-            }
-        }
-    }
-}
-
-struct NotificationPermissionOnboardingPrompt: View {
-    let onContinue: () -> Void
-    let onSkip: () -> Void
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color.black.opacity(0.7)
-                    .ignoresSafeArea()
-
-                VStack {
-                    Spacer()
-
-                    VStack(spacing: 24) {
-                    VStack(alignment: .center, spacing: 10) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "bell.and.waves.left.and.right")
-                                .font(.system(size: 22, weight: .semibold))
-                                .foregroundColor(.white)
-
-                            Text("Medication Reminders")
-                                .font(.system(size: 20, weight: .semibold, design: .rounded))
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        Text("Next you will be asked to allow notifications so we can remind you to take medications that have reminders set.")
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .foregroundColor(Color.white.opacity(0.85))
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(3)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                        VStack(spacing: 18) {
-                            Button(action: onContinue) {
-                                Text("Continue")
-                                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                    .foregroundColor(Color.pillrPrimary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(Color.white)
-                                            .shadow(color: Color.black.opacity(0.22), radius: 8, x: 0, y: 4)
-                                    )
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-
-                            Button(action: onSkip) {
-                                Text("Not now")
-                                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                    .foregroundColor(Color.white.opacity(0.85))
-                            }
-                        }
-                    }
-                    .padding(28)
-                    .frame(maxWidth: 460)
-                    .background(
-                        RoundedRectangle(cornerRadius: 28)
-                            .fill(Color.pillrPrimary.opacity(0.98))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28)
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                    )
-                    .shadow(color: Color.black.opacity(0.35), radius: 18, x: 0, y: 10)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom + 30)
-
-                    Spacer()
-                }
             }
         }
     }
@@ -780,102 +564,6 @@ struct ReviewPromptSheet: View {
                 }
             }
         }
-    }
-}
-
-struct WhatsNewSheet: View {
-    let onDismiss: () -> Void
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color.black.opacity(0.35)
-                    .ignoresSafeArea()
-                    .onTapGesture(perform: onDismiss)
-
-                VStack {
-                    Spacer()
-
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("What's New")
-                            .font(.system(size: 22, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white)
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            whatsNewRow(
-                                icon: "slider.horizontal.3",
-                                title: "Customize menu tabs",
-                                detail: "Turn History, Reflection, and Timeline tabs on or off."
-                            )
-
-                            whatsNewRow(
-                                icon: "faceid",
-                                title: "Face ID app lock",
-                                detail: "Lock Pillr with Face ID (or Touch ID)."
-                            )
-                        }
-
-                        Button(action: onDismiss) {
-                            Text("Got it")
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color.pillrPrimary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(Color.pillrBackground)
-                                )
-                        }
-                        .buttonStyle(ScaleButtonStyle())
-                        .padding(.top, 2)
-                    }
-                    .padding(22)
-                    .frame(maxWidth: 460)
-                    .background(
-                        RoundedRectangle(cornerRadius: 24)
-                            .fill(Color.pillrPrimary.opacity(0.98))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    .shadow(color: Color.black.opacity(0.35), radius: 16, x: 0, y: 8)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom + 20)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func whatsNewRow(icon: String, title: String, detail: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color.pillrBackground)
-                .frame(width: 30, height: 30)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.white.opacity(0.06))
-                )
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white)
-
-                Text(detail)
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.78))
-                    .lineSpacing(2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.03))
-        )
     }
 }
 
@@ -2325,98 +2013,6 @@ private struct BiometricAppLockOverlay: View {
                 .padding(.top, 4)
             }
             .padding(.horizontal, 26)
-        }
-    }
-}
-
-private extension MainTab {
-    var onboardingInfo: OnboardingStageInfo? {
-        switch self {
-        case .meds:
-                return OnboardingStageInfo(
-                    title: "My Meds",
-                    description: AnyView(
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("This is your medication home base.")
-                                .multilineTextAlignment(.leading)
-                            Text("See your medications, track doses, and stay on schedule.")
-                                .multilineTextAlignment(.leading)
-                        }
-                    ),
-                    benefits: [
-                     
-                    ],
-                    icon: .system(name: "pill.fill"),
-                    accentColor: Color.pillrAccent,
-                    buttonAccessibilityLabel: "Continue to My Meds",
-                    subtitle: "We will walk you through the app as you go.",
-                    buttonTitle: "Get Started"
-                )
-        case .history:
-                return OnboardingStageInfo(
-                    title: "Medication History",
-                    description: AnyView(
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Here you can view all your logged medications.")
-                                .multilineTextAlignment(.leading)
-                            Text("Use filters to narrow the list, and export everything as a PDF or CSV using the top right export button.")
-                                .multilineTextAlignment(.leading)
-                        }
-                    ),
-                    benefits: [
-               
-                    ],
-                    icon: .system(name: "calendar"),
-                    accentColor: Color.pillrAccent,
-                    buttonAccessibilityLabel: "Continue to History"
-                )
-        case .checkIns:
-                return OnboardingStageInfo(
-                    title: "Reflection",
-                    description: AnyView(
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Capture a short daily note about how you are feeling.")
-                                .multilineTextAlignment(.leading)
-                            Text("Your Reflection entries stay tied to the medications you logged that day.")
-                                .multilineTextAlignment(.leading)
-                        }
-                    ),
-                    benefits: [
-
-                    ],
-                    icon: .system(name: "book.pages"),
-                    accentColor: Color.pillrAccent,
-                    buttonAccessibilityLabel: "Continue to Reflection"
-                )
-        case .focus:
-                return OnboardingStageInfo(
-                    title: "Focus Timeline",
-                    description: AnyView(
-                        VStack(spacing: 12) {
-                            Text("Focus Timeline gives you a daily view of your ADHD stimulant medications.")
-                            Text("Each scheduled or logged dose becomes a visual window that shows when focus starts, peaks, and fades based on the set times.")
-                        }
-                    ),
-                    benefits: [
-       
-                    ],
-                    icon: .system(name: "hourglass"),
-                    accentColor: Color(hex: "#64B5F6"),
-                    buttonAccessibilityLabel: "Continue to Focus Timeline"
-                )
-                case .more:
-                        return OnboardingStageInfo(
-                            title: "More",
-                            description: AnyView(
-                                Text("Manage your preferences, privacy, and premium features all in one place.")
-                            ),
-                            benefits: [
- 
-                            ],
-                            icon: .system(name: "ellipsis"),
-                            accentColor: Color(hex: "#FFB74D"),
-                            buttonAccessibilityLabel: "Continue to Settings"
-                        )
         }
     }
 }

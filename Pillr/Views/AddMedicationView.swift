@@ -17,6 +17,7 @@ struct AddMedicationView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var medicationToEdit: Medication? = nil
     var onFinish: () -> Void
+    var onCloseRequested: () -> Void = {}
     var onProgressStateChange: (Bool) -> Void = { _ in }
     var resetTrigger: UUID? = nil
 
@@ -94,6 +95,7 @@ struct AddMedicationView: View {
     @State private var currentStep: AddMedicationStep = .basics
     @State private var hasInitializedForm = false
     @State private var stepAnimationDirection: StepTransitionDirection = .forward
+    @State private var showingCloseAlert = false
 
     enum Field: Hashable {
         case name, dosage, frequency, notes, pillCount, pillsPerDose, refillThreshold, onsetMinutes, durationMinutes, effectsGoneMinutes
@@ -204,6 +206,20 @@ struct AddMedicationView: View {
 
     private var isEditing: Bool {
         medicationToEdit != nil
+    }
+
+    private var closeAlertTitle: String {
+        isEditing ? "Discard your changes?" : "Delete this medication draft?"
+    }
+
+    private var closeAlertDeleteTitle: String {
+        isEditing ? "Discard changes" : "Delete"
+    }
+
+    private var closeAlertMessage: String {
+        isEditing
+            ? "If you discard them, you will lose the changes you made to this medication."
+            : "If you delete it, you will lose the medication you are currently creating."
     }
 
     private var contentExpansionKey: ContentExpansionKey {
@@ -480,24 +496,53 @@ struct AddMedicationView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Color.pillrAccent)
         }
+        .alert(closeAlertTitle, isPresented: $showingCloseAlert) {
+            Button(closeAlertDeleteTitle, role: .destructive) {
+                onCloseRequested()
+            }
+            Button("Continue editing", role: .cancel) {}
+        } message: {
+            Text(closeAlertMessage)
+        }
     }
 
     // MARK: - Top-level sections
 
     @ViewBuilder
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(isEditing ? "Edit Medication" : "Add Medication")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
-                .foregroundColor(Color.pillrBackground)
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(isEditing ? "Edit Medication" : "Add Medication")
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundColor(Color.pillrBackground)
 
-            Text("Step \(currentStep.rawValue + 1) of \(AddMedicationStep.allCases.count)")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Color.pillrSecondary.opacity(0.9))
+                Text("Step \(currentStep.rawValue + 1) of \(AddMedicationStep.allCases.count)")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color.pillrSecondary.opacity(0.9))
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                triggerStrongHaptic()
+                showingCloseAlert = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color.pillrBackground)
+                    .frame(width: 38, height: 38)
+                    .background(
+                        Circle()
+                            .fill(Color.white.opacity(0.08))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close")
         }
-        // Add a touch more leading padding so the title
-        // doesn't feel tight against the screen edge
-        .padding(.leading, 4)
     }
 
     @ViewBuilder

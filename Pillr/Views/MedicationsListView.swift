@@ -34,6 +34,8 @@ struct MedicationsListView: View {
     @State private var showingDailyCheckInFor: Medication?
     @State private var selectedMedicationToEdit: Medication?
     @State private var showingAddSheet = false
+    @State private var showAddDiscardAlert = false
+    @State private var suppressAddFlowDismissWarning = false
     @State private var scrolledOffset: CGFloat = 0
     @StateObject private var healthKitManager = HealthKitManager()
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -52,7 +54,6 @@ struct MedicationsListView: View {
     @State private var showingCabinetSheet = false
     @State private var activeCustomLogRequest: CustomLogRequest?
     @State private var refillPromptMedication: Medication?
-    @State private var showCabinetIntroOverlay = false
     @State private var referenceDate = Date()
     private let referenceTimer = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
     private let healthRefreshTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
@@ -264,7 +265,8 @@ struct MedicationsListView: View {
                 NavigationView {
                     AddMedicationView(
                         medicationToEdit: med,
-                        onFinish: { selectedMedicationToEdit = nil }
+                        onFinish: { selectedMedicationToEdit = nil },
+                        onCloseRequested: { selectedMedicationToEdit = nil }
                     )
                     .environmentObject(store)
                     .environmentObject(userSettings)
@@ -305,6 +307,18 @@ struct MedicationsListView: View {
                     }
                 )
             }
+            .alert("Delete this medication draft?", isPresented: $showAddDiscardAlert) {
+                Button("Delete", role: .destructive) {
+                    suppressAddFlowDismissWarning = true
+                    addFlowCoordinator.discardFlow()
+                }
+                Button("Continue editing", role: .cancel) {
+                    suppressAddFlowDismissWarning = true
+                    showingAddSheet = true
+                }
+            } message: {
+                Text("If you delete it, you will lose the medication you are currently creating.")
+            }
             .sheet(isPresented: $showingPremiumUpgrade) {
                 PremiumUpgradeView()
                     .environmentObject(StoreManager.shared)
@@ -313,9 +327,7 @@ struct MedicationsListView: View {
                 FocusTimelineView()
                     .environmentObject(store)
             }
-            .sheet(isPresented: $showingCabinetSheet, onDismiss: {
-                showCabinetIntroOverlay = false
-            }) {
+            .sheet(isPresented: $showingCabinetSheet) {
                 MedicationCabinetSheet(
                     medications: cabinetMedications,
                     logs: store.logs,
@@ -329,8 +341,7 @@ struct MedicationsListView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                             showDeleteAlert = true
                         }
-                    },
-                    showCabinetIntroOverlay: $showCabinetIntroOverlay
+                    }
                 )
             }
             .sheet(item: $store.dailyCheckInContext, onDismiss: {
@@ -408,13 +419,18 @@ struct MedicationsListView: View {
             }
             .onChange(of: addFlowCoordinator.dismissTrigger) { _, _ in
                 if showingAddSheet {
+                    suppressAddFlowDismissWarning = true
                     showingAddSheet = false
                 }
             }
             .onChange(of: showingAddSheet) { _, isActive in
                 addFlowCoordinator.isShowing = isActive
-                addFlowCoordinator.hasUnsavedChanges = isActive ? true : false
-                if !isActive {
+                if isActive {
+                    suppressAddFlowDismissWarning = false
+                } else if !suppressAddFlowDismissWarning && addFlowCoordinator.hasUnsavedChanges {
+                    showAddDiscardAlert = true
+                } else {
+                    addFlowCoordinator.hasUnsavedChanges = false
                     presentInteractionPromptIfNeeded(after: 0.22)
                 }
             }
@@ -427,10 +443,6 @@ struct MedicationsListView: View {
     }
     
     private func handleCabinetTap() {
-        if !userSettings.hasSeenCabinetIntroOverlay {
-            showCabinetIntroOverlay = true
-            userSettings.markCabinetIntroOverlaySeen()
-        }
         showingCabinetSheet = true
     }
 
@@ -634,11 +646,15 @@ struct MedicationsListView: View {
     }
     
     private func presentAddMedicationFlow() {
+        suppressAddFlowDismissWarning = false
+        addFlowCoordinator.hasUnsavedChanges = false
         addFlowCoordinator.resetTrigger = UUID()
         showingAddSheet = true
     }
     
     private func dismissAddMedicationFlow() {
+        suppressAddFlowDismissWarning = true
+        addFlowCoordinator.hasUnsavedChanges = false
         showingAddSheet = false
     }
     
@@ -646,11 +662,16 @@ struct MedicationsListView: View {
     private var addMedicationDestination: some View {
         AddMedicationView(
             onFinish: { dismissAddMedicationFlow() },
+            onCloseRequested: { dismissAddMedicationFlow() },
+            onProgressStateChange: { hasProgress in
+                addFlowCoordinator.hasUnsavedChanges = hasProgress
+            },
             resetTrigger: addFlowCoordinator.resetTrigger
         )
             .environmentObject(store)
             .environmentObject(userSettings)
             .toolbar(.hidden, for: .navigationBar)
+            .toolbar(.hidden, for: .tabBar)
     }
     
     private func checkAllMedicationInteractions() async {
@@ -2165,7 +2186,6 @@ fileprivate struct MedicationCabinetSheet: View {
     let onLogMedication: (Medication) -> Void
     let onEditMedication: (Medication) -> Void
     let onDeleteMedication: ((Medication) -> Void)?
-    @Binding var showCabinetIntroOverlay: Bool
     @Environment(\.dismiss) private var dismiss
 
     private var asNeededMedications: [Medication] {
@@ -2222,11 +2242,6 @@ fileprivate struct MedicationCabinetSheet: View {
                     .padding(.bottom, 30)
                 }
 
-                if showCabinetIntroOverlay {
-                    CabinetIntroOverlayView(onDismiss: hideCabinetIntroOverlay)
-                        .transition(.opacity)
-                        .zIndex(1)
-                }
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -2234,12 +2249,6 @@ fileprivate struct MedicationCabinetSheet: View {
                         .foregroundColor(Color.pillrBackground)
                 }
             }
-        }
-    }
-
-    private func hideCabinetIntroOverlay() {
-        withAnimation(.easeInOut(duration: 0.25)) {
-            showCabinetIntroOverlay = false
         }
     }
 
@@ -2261,54 +2270,6 @@ fileprivate struct MedicationCabinetSheet: View {
                 )
             }
         }
-    }
-}
-
-fileprivate struct CabinetIntroOverlayView: View {
-    let onDismiss: () -> Void
-
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.65)
-                .ignoresSafeArea()
-
-            VStack(spacing: 18) {
-                Image(systemName: "cabinet.fill")
-                    .font(.system(size: 48, weight: .semibold))
-                    .foregroundColor(.white)
-
-                Text("Medication Cabinet")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-
-                Text("Medications set as “as needed” are located here, making it easy to log a dose whenever needed.")
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.9))
-                    .multilineTextAlignment(.center)
-
-                Button(action: onDismiss) {
-                    Text("Done")
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundColor(Color.pillrPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.pillrBackground)
-                        )
-                }
-                .buttonStyle(ScaleButtonStyle())
-            }
-            .padding(28)
-            .frame(maxWidth: 360)
-            .background(
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(Color.pillrPrimary.opacity(0.95))
-                    .shadow(color: Color.black.opacity(0.45), radius: 18, x: 0, y: 12)
-            )
-            .padding(.horizontal, 20)
-        }
-        .accessibilityAddTraits(.isModal)
     }
 }
 
