@@ -4060,6 +4060,10 @@ struct MedicationRow: View {
     private var isDailyCheckInOverdue: Bool {
         store.isDailyCheckInOverdue(for: medication, referenceDate: referenceDate)
     }
+
+    private var hasCompletedDailyCheckInToday: Bool {
+        store.hasCompletedDailyCheckInToday(for: medication, referenceDate: referenceDate)
+    }
     
     private var doseButtonStates: [DoseButtonState] {
         if medication.frequency == "As needed" && medication.reminderTimes.isEmpty {
@@ -4403,25 +4407,37 @@ struct MedicationRow: View {
         .clipped()
         .overlay(notificationGlowOverlay)
         .overlay(alignment: .bottomTrailing) {
-            if medication.enableDailyCheckIn && hasTakenDoseToday {
+            if medication.enableDailyCheckIn && hasTakenDoseToday && !showsDetails {
                 Button(action: {
+                    guard !hasCompletedDailyCheckInToday else { return }
                     onDailyCheckInTap()
                 }) {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "book.pages")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(accessoryIconColor)
+                            .foregroundColor(hasCompletedDailyCheckInToday ? accessoryIconColor.opacity(0.45) : accessoryIconColor)
                             .padding(6)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(accessoryBackgroundColor)
+                                    .fill(hasCompletedDailyCheckInToday ? accessoryBackgroundColor.opacity(0.55) : accessoryBackgroundColor)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
-                                            .stroke(accessoryBorderColor, lineWidth: 0.7)
+                                            .stroke(accessoryBorderColor.opacity(hasCompletedDailyCheckInToday ? 0.45 : 1.0), lineWidth: 0.7)
                                     )
                             )
 
-                        if isDailyCheckInOverdue {
+                        if hasCompletedDailyCheckInToday {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 6, weight: .bold))
+                                .foregroundColor(accessoryIconColor.opacity(0.8))
+                                .padding(1)
+                                .background(
+                                    Circle()
+                                        .fill(accessoryBackgroundColor)
+                                )
+                                .offset(x: 4, y: -4)
+                                .accessibilityHidden(true)
+                        } else if isDailyCheckInOverdue {
                             Circle()
                                 .fill(Color(hex: "#FF5A5A"))
                                 .frame(width: 8, height: 8)
@@ -4435,9 +4451,10 @@ struct MedicationRow: View {
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+                .disabled(hasCompletedDailyCheckInToday)
                 .padding(.trailing, 10)
                 .padding(.bottom, 10)
-                .accessibilityLabel("Log Reflection")
+                .accessibilityLabel(hasCompletedDailyCheckInToday ? "Reflection completed today" : "Log Reflection")
             }
         }
         .overlay(alignment: .topTrailing) {

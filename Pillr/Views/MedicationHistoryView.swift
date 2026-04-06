@@ -772,10 +772,11 @@ struct MedicationHistoryView: View {
     private var summaryRow: some View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("CONSISTENCY")
+                Text("ADHERENCE")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(Color.pillrSecondary.opacity(0.7))
                     .kerning(0.45)
+                    .lineLimit(1)
 
                 Text(rangeAdherenceRate)
                     .font(.system(size: 54, weight: .bold, design: .monospaced))
@@ -791,19 +792,19 @@ struct MedicationHistoryView: View {
 
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 20) {
-                    HistorySummaryItem(label: "Meds", value: "\(rangeMedicationCount)", valueFontSize: 22)
+                    HistorySummaryItem(label: "Total Meds", value: "\(rangeMedicationCount)", valueFontSize: 22)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    HistorySummaryItem(label: "logs", value: "\(filteredLogs.count)", valueFontSize: 22)
+                    HistorySummaryItem(label: "Total Logs", value: "\(filteredLogs.count)", valueFontSize: 22)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 HStack(alignment: .top, spacing: 20) {
-                    HistorySummaryItem(label: "Taken", value: "\(rangeTakenCount)", valueFontSize: 22)
+                    HistorySummaryItem(label: "Doses Taken", value: "\(rangeTakenCount)", valueFontSize: 22)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     HistorySummaryItem(
-                        label: "Skipped",
+                        label: "Doses Missed",
                         value: "\(rangeSkippedCount)",
                         valueColor: rangeSkippedCount > 0 ? Color(hex: "#E0A876") : Color.pillrBackground,
                         valueFontSize: 22
@@ -1877,11 +1878,14 @@ private struct HistorySummaryItem: View {
     var valueFontSize: CGFloat = 20
 
     var body: some View {
-        VStack(alignment: .center, spacing: 4) {
+        VStack(alignment: .center, spacing: 3) {
             Text(label.uppercased())
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(Color.pillrSecondary.opacity(0.7))
                 .kerning(0.45)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
 
             Text(value)
                 .font(.system(size: valueFontSize, weight: .bold, design: .monospaced))
@@ -1889,7 +1893,7 @@ private struct HistorySummaryItem: View {
                 .lineLimit(1)
                 .frame(height: 30, alignment: .center)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 3)
     }
 }
 

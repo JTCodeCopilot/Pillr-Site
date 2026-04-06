@@ -363,10 +363,13 @@ struct DailyCheckInHistoryView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         if isPremiumActive {
                             headerSection
-                            statsSection
+                            if !checkInLogs.isEmpty {
+                                statsSection
+                            }
                         }
                         if !isPremiumActive {
                             reflectionInfoCard
+                            reflectionLivePreviewSection
                         }
 
                         if groupedCheckIns.isEmpty {
@@ -383,7 +386,24 @@ struct DailyCheckInHistoryView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 120)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if !isPremiumActive {
+                    unlockReflectionButton
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(
+                            LinearGradient(
+                                colors: [
+                                    ReflectJournalTheme.pageBottom.opacity(0.0),
+                                    ReflectJournalTheme.pageBottom.opacity(0.95)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -683,41 +703,90 @@ struct DailyCheckInHistoryView: View {
 
     private var summaryRow: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Avg Overall (last 7 days)")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(Color.pillrSecondary.opacity(0.7))
-                        .kerning(0.45)
-                        .frame(height: 16, alignment: .topLeading)
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .center, spacing: 8) {
+                    summaryColumnTitle("Avg Overall (last 7 days)")
 
-                    Text(overallLastSevenDaysAverage.map { String(format: "%.1f/5", $0) } ?? "—")
-                        .font(.system(size: 48, weight: .bold, design: .monospaced))
-                        .foregroundColor(ReflectJournalTheme.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                    if let average = overallLastSevenDaysAverage {
+                        HStack(alignment: .firstTextBaseline, spacing: 2) {
+                            Text(String(format: "%.1f", average))
+                                .font(.system(size: 54, weight: .bold, design: .monospaced))
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
+
+                            Text("/5")
+                                .font(.system(size: 22, weight: .semibold, design: .monospaced))
+                                .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
+                                .padding(.bottom, 4)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
+
+                        HStack(spacing: 6) {
+                            ForEach(scoreDotStates(for: average), id: \.self) { state in
+                                Circle()
+                                    .fill(scoreDotFill(for: state))
+                                    .overlay(
+                                        Circle()
+                                            .stroke(ReflectJournalTheme.textSecondary.opacity(0.12), lineWidth: 1)
+                                    )
+                                    .frame(width: 7, height: 7)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 14, alignment: .center)
+
+                        Text("Based on \(lastSevenDaysLoggedDays) \(lastSevenDaysLoggedDays == 1 ? "check-in" : "check-ins")")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.9)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    } else {
+                        Text("—")
+                            .font(.system(size: 54, weight: .bold, design: .monospaced))
+                            .foregroundColor(ReflectJournalTheme.textPrimary)
+                            .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
+
+                        Color.clear
+                            .frame(maxWidth: .infinity, minHeight: 14)
+
+                        Text("Based on 0 check-ins")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
 
                 Divider()
                     .overlay(Color.white.opacity(0.16))
-                    .frame(width: 1, height: 86)
+                    .frame(width: 1, height: 108)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Trend")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(Color.pillrSecondary.opacity(0.7))
-                        .kerning(0.45)
-                        .frame(height: 16, alignment: .topLeading)
+                VStack(alignment: .center, spacing: 8) {
+                    summaryColumnTitle("Trend")
 
-                    Text(trendText)
-                        .font(.system(size: 48, weight: .bold, design: .monospaced))
-                        .foregroundColor(ReflectJournalTheme.textPrimary)
+                    HStack(alignment: .center, spacing: 6) {
+                        Text(trendText)
+                            .font(.system(size: 54, weight: .bold, design: .monospaced))
+                            .foregroundColor(trendValueColor)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+
+                        Image(systemName: trendArrowIconName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(trendValueColor)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
+
+                    Color.clear
+                        .frame(maxWidth: .infinity, minHeight: 14)
+
+                    Text("vs. previous 7 days")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .minimumScaleFactor(0.9)
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 88, alignment: .center)
@@ -728,6 +797,68 @@ struct DailyCheckInHistoryView: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(Color(hex: "#59655B"))
         )
+    }
+
+    private func summaryColumnTitle(_ text: String) -> some View {
+        Text(text)
+            .foregroundColor(Color.pillrSecondary.opacity(0.7))
+            .kerning(0.45)
+            .font(.system(size: 10, weight: .semibold))
+            .frame(height: 14, alignment: .top)
+            .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private enum ScoreDotState: Hashable {
+        case filled
+        case half
+        case empty
+    }
+
+    private func scoreDotStates(for score: Double) -> [ScoreDotState] {
+        let clamped = max(0, min(score, 5))
+        return (0..<5).map { index in
+            let position = Double(index)
+            if clamped >= position + 1 {
+                return .filled
+            } else if clamped >= position + 0.5 {
+                return .half
+            } else {
+                return .empty
+            }
+        }
+    }
+
+    private func scoreDotFill(for state: ScoreDotState) -> Color {
+        switch state {
+        case .filled:
+            return ReflectJournalTheme.reflectionScoreAccent
+        case .half:
+            return ReflectJournalTheme.reflectionScoreAccent.opacity(0.55)
+        case .empty:
+            return ReflectJournalTheme.textSecondary.opacity(0.18)
+        }
+    }
+
+    private var trendValueColor: Color {
+        let trendValue = Double(trendText) ?? 0
+        if trendValue > 0 {
+            return Color(hex: "#76C48E")
+        } else if trendValue < 0 {
+            return Color(hex: "#E07676")
+        } else {
+            return ReflectJournalTheme.textSecondary.opacity(0.72)
+        }
+    }
+
+    private var trendArrowIconName: String {
+        let trendValue = Double(trendText) ?? 0
+        if trendValue > 0 {
+            return "arrow.up"
+        } else if trendValue < 0 {
+            return "arrow.down"
+        } else {
+            return "arrow.right"
+        }
     }
 
     private var medicationSummaryList: some View {
@@ -781,101 +912,298 @@ struct DailyCheckInHistoryView: View {
                         .font(.system(size: 30, weight: .semibold))
                         .foregroundColor(ReflectJournalTheme.textPrimary)
 
-                    Text("See how your medication affects mood, focus, and side effects over time.")
+                    Text("See how your medication affects your mood, focus, and side effects over time.")
                         .font(.system(size: 15, weight: .regular))
                         .foregroundColor(ReflectJournalTheme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
-            HStack(spacing: 8) {
-                reflectionFeaturePill(text: "AI summaries", icon: "sparkles")
-                reflectionFeaturePill(text: "History view", icon: "clock.arrow.circlepath")
-                reflectionFeaturePill(text: "PDF export", icon: "doc.richtext")
-            }
-
-            reflectionPreviewCard
-
-            VStack(alignment: .leading, spacing: 10) {
-                Button {
-                    showingPremiumUpgrade = true
-                } label: {
-                    HStack(spacing: 10) {
-                        Text("Unlock Reflection")
-                            .font(.system(size: 16, weight: .semibold))
-
-                        Spacer(minLength: 0)
-
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .foregroundColor(Color.pillrPrimary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.pillrBackground)
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Unlock Reflection")
-
-                Text("One purchase unlocks Reflection, export, and smart summaries.")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(ReflectJournalTheme.textTertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
         }
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func reflectionFeaturePill(text: String, icon: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .semibold))
-
-            Text(text)
-                .lineLimit(1)
-        }
-        .font(.system(size: 12, weight: .semibold))
-        .foregroundColor(ReflectJournalTheme.textPrimary.opacity(0.92))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(
-            Capsule(style: .continuous)
-                .fill(Color.white.opacity(0.07))
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(Color.white.opacity(0.09), lineWidth: 1)
-                )
-        )
-    }
-
-    private var reflectionPreviewCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+    private var reflectionLivePreviewSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Example reflection")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(ReflectJournalTheme.textTertiary)
-                    .textCase(.uppercase)
-                    .tracking(0.8)
+                Text("PREVIEW")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(ReflectJournalTheme.reflectionScoreAccent)
+                    .kerning(1.1)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(ReflectJournalTheme.reflectionScoreAccent.opacity(0.14))
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .stroke(ReflectJournalTheme.reflectionScoreAccent.opacity(0.35), lineWidth: 1)
+                            )
+                    )
 
                 Spacer(minLength: 0)
+
+                Text("Sample entries only")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(ReflectJournalTheme.reflectionScoreAccent.opacity(0.9))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(ReflectJournalTheme.reflectionScoreAccent.opacity(0.12))
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .stroke(ReflectJournalTheme.reflectionScoreAccent.opacity(0.25), lineWidth: 1)
+                            )
+                    )
             }
 
-            Image("Reflection Example")
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.16), radius: 14, x: 0, y: 8)
+            LiveReflectionPreviewStatsCard()
+
+            LiveReflectionPreviewMedicationSummaryCard(
+                items: [
+                    ("Vyvanse", 4.0, 2),
+                    ("Ritalin", 3.5, 3)
+                ]
+            )
+
+            VStack(spacing: 16) {
+                ForEach(Array(samplePreviewLogs.enumerated()), id: \.element.id) { index, log in
+                    DailyCheckInTimelineRow(
+                        log: log,
+                        timeText: DailyCheckInHistoryView.timeFormatter.string(from: log.takenAt),
+                        isLast: index == samplePreviewLogs.count - 1,
+                        onEdit: {},
+                        onDelete: {}
+                    )
+                }
+            }
+
         }
+        .padding(.top, 4)
+    }
+
+    private var unlockReflectionButton: some View {
+        Button {
+            showingPremiumUpgrade = true
+        } label: {
+            HStack(spacing: 10) {
+                Text("Unlock Reflection")
+                    .font(.system(size: 16, weight: .semibold))
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundColor(Color.pillrPrimary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.pillrBackground)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Unlock Reflection")
+    }
+
+    private struct LiveReflectionPreviewMedicationSummaryCard: View {
+        let items: [(name: String, average: Double, count: Int)]
+
+        var body: some View {
+            VStack(spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                    HStack(alignment: .center, spacing: 16) {
+                        Text(item.name)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(ReflectJournalTheme.textPrimary)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 8)
+
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(String(format: "%.1f/5", item.average))
+                                .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                .foregroundColor(ReflectJournalTheme.reflectionScoreAccent)
+
+                            Text("\(item.count) \(item.count == 1 ? "entry" : "entries")")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if index != items.count - 1 {
+                        Divider()
+                            .overlay(Color.white.opacity(0.12))
+                            .padding(.vertical, 12)
+                    }
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color(hex: "#424C43"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(Color(hex: "#8C988E").opacity(0.35), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    private struct LiveReflectionPreviewStatsCard: View {
+        private let sampleAverage: Double = 3.6
+        private let sampleTrend: String = "+0.4"
+        private let sampleCheckIns: Int = 5
+
+        private enum DotState: Hashable {
+            case filled
+            case half
+            case empty
+        }
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .center, spacing: 8) {
+                        Text("Avg Overall (last 7 days)")
+                            .foregroundColor(Color.pillrSecondary.opacity(0.7))
+                            .kerning(0.45)
+                            .font(.system(size: 10, weight: .semibold))
+                            .frame(height: 14, alignment: .top)
+                            .frame(maxWidth: .infinity, alignment: .center)
+
+                        HStack(alignment: .firstTextBaseline, spacing: 2) {
+                            Text(String(format: "%.1f", sampleAverage))
+                                .font(.system(size: 54, weight: .bold, design: .monospaced))
+                                .foregroundColor(ReflectJournalTheme.textPrimary)
+                            Text("/5")
+                                .font(.system(size: 22, weight: .semibold, design: .monospaced))
+                                .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
+                                .padding(.bottom, 4)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                        HStack(spacing: 6) {
+                            ForEach(dotStates(for: sampleAverage), id: \.self) { state in
+                                Circle()
+                                    .fill(dotFill(for: state))
+                                    .frame(width: 7, height: 7)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                        Text("Based on \(sampleCheckIns) check-ins")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                    Divider()
+                        .overlay(Color.white.opacity(0.16))
+                        .frame(width: 1, height: 108)
+
+                    VStack(alignment: .center, spacing: 8) {
+                        Text("Trend")
+                            .foregroundColor(Color.pillrSecondary.opacity(0.7))
+                            .kerning(0.45)
+                            .font(.system(size: 10, weight: .semibold))
+                            .frame(height: 14, alignment: .top)
+                            .frame(maxWidth: .infinity, alignment: .center)
+
+                        HStack(alignment: .center, spacing: 6) {
+                            Text(sampleTrend)
+                                .font(.system(size: 54, weight: .bold, design: .monospaced))
+                                .foregroundColor(Color(hex: "#76C48E"))
+
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(Color(hex: "#76C48E"))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
+
+                        Color.clear
+                            .frame(maxWidth: .infinity, minHeight: 14)
+
+                        Text("vs. previous 7 days")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 88, alignment: .center)
+            .padding(.horizontal, 18)
+            .padding(.top, 12)
+            .padding(.bottom, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color(hex: "#59655B"))
+            )
+        }
+
+        private func dotStates(for score: Double) -> [DotState] {
+            let clamped = max(0, min(score, 5))
+            return (0..<5).map { index in
+                let position = Double(index)
+                if clamped >= position + 1 {
+                    return .filled
+                } else if clamped >= position + 0.5 {
+                    return .half
+                } else {
+                    return .empty
+                }
+            }
+        }
+
+        private func dotFill(for state: DotState) -> Color {
+            switch state {
+            case .filled:
+                return ReflectJournalTheme.reflectionScoreAccent
+            case .half:
+                return ReflectJournalTheme.reflectionScoreAccent.opacity(0.55)
+            case .empty:
+                return ReflectJournalTheme.textSecondary.opacity(0.18)
+            }
+        }
+    }
+
+    private var samplePreviewLogs: [MedicationLog] {
+        let baseDate = Calendar.current.startOfDay(for: Date())
+        return [
+            MedicationLog(
+                medicationID: UUID(uuidString: "00000000-0000-0000-0000-000000000001") ?? UUID(),
+                medicationName: "Vyvanse",
+                takenAt: Calendar.current.date(byAdding: .hour, value: -6, to: baseDate) ?? baseDate,
+                notes: "Felt smooth, long lasting focus with stable mood and minimal crash, though appetite was reduced and sleep slightly delayed.",
+                isDailyCheckIn: true,
+                feelingRating: 4,
+                focusRating: 4,
+                sideEffectSeverity: 2,
+                medicationDosageText: "30 mg",
+                medicationIconName: "pill",
+                medicationReminderCount: 1
+            ),
+            MedicationLog(
+                medicationID: UUID(uuidString: "00000000-0000-0000-0000-000000000001") ?? UUID(),
+                medicationName: "Ritalin",
+                takenAt: Calendar.current.date(byAdding: .day, value: -1, to: baseDate) ?? baseDate,
+                notes: "Provided a quicker, more intense boost in focus but felt shorter lasting with noticeable ups and downs and a mild crash afterward.",
+                isDailyCheckIn: true,
+                feelingRating: 3,
+                focusRating: 3,
+                sideEffectSeverity: 1,
+                medicationDosageText: "30 mg",
+                medicationIconName: "pill",
+                medicationReminderCount: 1
+            )
+        ]
     }
 
     private var timelineSection: some View {

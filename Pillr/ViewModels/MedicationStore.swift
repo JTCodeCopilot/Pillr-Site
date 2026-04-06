@@ -1619,6 +1619,11 @@ class MedicationStore: ObservableObject {
         return !hasCompletedDailyCheckIn(for: medication, referenceDate: referenceDate)
     }
 
+    func hasCompletedDailyCheckInToday(for medication: Medication, referenceDate: Date = Date()) -> Bool {
+        guard medication.enableDailyCheckIn else { return false }
+        return hasCompletedDailyCheckIn(for: medication, referenceDate: referenceDate)
+    }
+
     private func dailyCheckInTriggerDate(for medication: Medication, referenceDate: Date) -> Date? {
         let calendar = Calendar.current
         let dayStart = calendar.startOfDay(for: referenceDate)
