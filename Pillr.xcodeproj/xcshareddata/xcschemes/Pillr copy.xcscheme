@@ -53,7 +53,7 @@
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "PILLR_ENABLE_TEST_PREMIUM"
-            value = "1"
+            value = "0"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>

@@ -99,6 +99,23 @@ struct EditMedicationView: View {
             Int(durationMinutesString) ?? focusOnsetRange.lowerBound
         )
     }
+
+    private var finalDosageUnit: String {
+        dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+    }
+
+    private var supportsPillTracker: Bool {
+        let normalizedUnit = finalDosageUnit.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalizedUnit == "mg" || normalizedUnit == "tablets" || normalizedUnit == "capsules"
+    }
+
+    private var hasExistingPillTracking: Bool {
+        medication.pillCount != nil
+    }
+
+    private var canShowPillTracker: Bool {
+        supportsPillTracker || hasExistingPillTracking
+    }
     
     // Computed properties
     private var needsMultipleReminders: Bool {
@@ -455,7 +472,8 @@ struct EditMedicationView: View {
                                 }
                             }
 
-                        FormSection(title: "INVENTORY") {
+                        if canShowPillTracker {
+                            FormSection(title: "INVENTORY") {
                             VStack(spacing: 16) {
                                 // Enhanced toggle with description
                                 VStack(alignment: .leading, spacing: 8) {
@@ -547,6 +565,7 @@ struct EditMedicationView: View {
                                     .transition(.opacity.combined(with: .move(edge: .top)))
                                 }
                             }
+                        }
                         }
                         
                         // Enhanced Notifications Section
@@ -690,6 +709,18 @@ struct EditMedicationView: View {
                         frequency = "Once daily"
                     }
                     reminderTimes = []
+                }
+            }
+            .onChange(of: finalDosageUnit) { _, newValue in
+                guard !hasExistingPillTracking else { return }
+                let normalizedUnit = newValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                let canTrackPills = normalizedUnit == "mg" || normalizedUnit == "tablets" || normalizedUnit == "capsules"
+
+                if !canTrackPills {
+                    trackPillCount = false
+                    pillCountError = nil
+                    pillsPerDoseError = nil
+                    refillThresholdError = nil
                 }
             }
             .onChange(of: onsetMinutesString) { _, _ in
@@ -1494,7 +1525,7 @@ struct EditMedicationView: View {
         scrollTargetField = nil
         
         // Use custom unit if "Custom" is selected
-        let finalDosageUnit = dosageUnit == "custom" && !customUnit.isEmpty ? customUnit : dosageUnit
+        let shouldTrackPills = canShowPillTracker && trackPillCount
         
         // Create an updated medication object with the new values
         var updatedMedication = medication
@@ -1544,7 +1575,7 @@ struct EditMedicationView: View {
         updatedMedication.isOneTimeWithFollowUp = isOneTimeWithFollowUp
         
         // Handle pill tracking
-        if trackPillCount {
+        if shouldTrackPills {
             updatedMedication.pillCount = Int(pillCountString) ?? 0
             updatedMedication.pillsPerDose = Int(pillsPerDoseString) ?? 1
             updatedMedication.refillThreshold = refillThresholdString.isEmpty ? nil : Int(refillThresholdString)
@@ -1685,7 +1716,7 @@ struct EditMedicationView: View {
     }
 
     private func validateInventoryFields() -> Bool {
-        guard trackPillCount && userSettings.isPremiumUser else {
+        guard canShowPillTracker && trackPillCount && userSettings.isPremiumUser else {
             pillCountError = nil
             pillsPerDoseError = nil
             refillThresholdError = nil

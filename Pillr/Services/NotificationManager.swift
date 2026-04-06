@@ -722,8 +722,6 @@ class NotificationManager: ObservableObject {
                 scheduledDoseDate: time,
                 isFollowUp: true
             )
-            let badgeFireDate = repeats ? nextFireDate(for: followUpTime) : followUpTime
-            applyBadge(content, fireDate: badgeFireDate)
             let followUpHour = calendar.component(.hour, from: followUpTime)
             let followUpMinute = calendar.component(.minute, from: followUpTime)
             
@@ -844,7 +842,6 @@ class NotificationManager: ObservableObject {
         )
         content.categoryIdentifier = NotificationCategoryIdentifier.medicationReminder
         content.threadIdentifier = "medication-reminders"
-        applyBadge(content, fireDate: fireDate)
         prioritizeMedicationReminder(content)
 
         // Create a time-based trigger for one-time reminder

@@ -5245,6 +5245,7 @@ fileprivate struct MedicationRowDetailsView: View {
                 DetailEntry(
                     label: "Reflection",
                     value: checkInDescription,
+                    valueColor: detailPrimaryTextColor,
                     lineLimit: 1
                 )
             )
@@ -5295,11 +5296,6 @@ fileprivate struct MedicationLogTimePickerSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Capsule()
-                .fill(Color.white.opacity(0.5))
-                .frame(width: 42, height: 4)
-                .padding(.top, 8)
-
             VStack(spacing: 4) {
                 Text("When did you take \(medication.name)?")
                     .font(.system(size: 16, weight: .semibold))

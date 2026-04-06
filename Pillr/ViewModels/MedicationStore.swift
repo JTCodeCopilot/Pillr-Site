@@ -976,48 +976,12 @@ class MedicationStore: ObservableObject {
         notificationManager.fetchDeliveredMedicationReminders { [weak self] notifications in
             guard let self else { return }
             DispatchQueue.main.async {
-                let calendar = Calendar.current
-                let dayStart = calendar.startOfDay(for: referenceDate)
-                var overdueIDs = Set<UUID>()
-                var reminderIDs = Set<String>()
+                let overdueIDs = self.overdueMedicationIDsFromDeliveredNotifications(
+                    notifications,
+                    referenceDate: referenceDate
+                )
 
-                for notification in notifications {
-                    guard calendar.isDate(notification.date, inSameDayAs: referenceDate) else {
-                        continue
-                    }
-                    let userInfo = notification.request.content.userInfo
-                    guard let medicationIDString = userInfo["medicationID"] as? String,
-                          let medicationID = UUID(uuidString: medicationIDString),
-                          let medication = self.findMedication(with: medicationID),
-                          medication.frequency != "As needed" else {
-                        continue
-                    }
-
-                    let reminderIndex = userInfo["reminderIndex"] as? Int
-                    let medicationLogs = self.logs.filter { log in
-                        log.medicationID == medication.id &&
-                        log.isDoseLog &&
-                        calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
-                        log.takenAt <= referenceDate
-                    }
-                    let takenIndices = self.resolvedTakenReminderIndices(
-                        medication: medication,
-                        dayStart: dayStart,
-                        logs: medicationLogs
-                    )
-
-                    if let reminderIndex, takenIndices.contains(reminderIndex) {
-                        continue
-                    }
-                    if reminderIndex == nil, !medicationLogs.isEmpty {
-                        continue
-                    }
-
-                    overdueIDs.insert(medication.id)
-                    reminderIDs.insert(notification.request.identifier)
-                }
-
-                if reminderIDs.isEmpty {
+                if overdueIDs.isEmpty {
                     let snapshotIDs = self.overdueMedicationIDsSnapshot(referenceDate: referenceDate)
                     let snapshotCount = self.overdueReminderCountSnapshot(referenceDate: referenceDate)
                     self.overdueReminderNotificationIDs = []
@@ -1026,11 +990,71 @@ class MedicationStore: ObservableObject {
                     return
                 }
 
-                self.overdueReminderNotificationIDs = reminderIDs
+                self.overdueReminderNotificationIDs = Set(notifications.compactMap { notification in
+                    guard Calendar.current.isDate(notification.date, inSameDayAs: referenceDate) else { return nil }
+                    let userInfo = notification.request.content.userInfo
+                    guard let medicationIDString = userInfo["medicationID"] as? String,
+                          let medicationID = UUID(uuidString: medicationIDString),
+                          overdueIDs.contains(medicationID),
+                          (userInfo["isFollowUp"] as? Bool) != true else {
+                        return nil
+                    }
+                    return notification.request.identifier
+                })
                 self.updateOverdueMedicationIDs(overdueIDs)
-                self.notificationManager.setApplicationBadge(count: reminderIDs.count)
+                self.notificationManager.setApplicationBadge(count: self.overdueReminderCountSnapshot(referenceDate: referenceDate))
             }
         }
+    }
+
+    private func overdueMedicationIDsFromDeliveredNotifications(
+        _ notifications: [UNNotification],
+        referenceDate: Date
+    ) -> Set<UUID> {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: referenceDate)
+        var overdueIDs = Set<UUID>()
+
+        for notification in notifications {
+            guard calendar.isDate(notification.date, inSameDayAs: referenceDate) else {
+                continue
+            }
+            let userInfo = notification.request.content.userInfo
+            guard let medicationIDString = userInfo["medicationID"] as? String,
+                  let medicationID = UUID(uuidString: medicationIDString),
+                  let medication = self.findMedication(with: medicationID),
+                  medication.frequency != "As needed" else {
+                continue
+            }
+
+            if (userInfo["isFollowUp"] as? Bool) == true {
+                continue
+            }
+
+            let reminderIndex = userInfo["reminderIndex"] as? Int
+            let medicationLogs = self.logs.filter { log in
+                log.medicationID == medication.id &&
+                log.isDoseLog &&
+                calendar.isDate(log.takenAt, inSameDayAs: referenceDate) &&
+                log.takenAt <= referenceDate
+            }
+            let takenIndices = self.resolvedTakenReminderIndices(
+                medication: medication,
+                dayStart: dayStart,
+                logs: medicationLogs
+            )
+
+            if let reminderIndex, takenIndices.contains(reminderIndex) {
+                continue
+            }
+            if reminderIndex == nil, !medicationLogs.isEmpty {
+                continue
+            }
+
+            overdueIDs.insert(medication.id)
+        }
+
+        return overdueIDs
     }
 
     private func resolvedTakenReminderIndices(

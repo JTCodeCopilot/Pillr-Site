@@ -269,26 +269,21 @@ struct DailyCheckInHistoryView: View {
         return checkInLogs.filter { $0.takenAt >= start && $0.takenAt <= rangeEnd }
     }
 
-    private var trendText: String {
+    private var trendValue: Double {
         let thisWeekValues = thisWeekCheckIns.compactMap { $0.feelingRating }.filter { $0 > 0 }
         let previousWeekValues = previousWeekCheckIns.compactMap { $0.feelingRating }.filter { $0 > 0 }
 
         guard !thisWeekValues.isEmpty, !previousWeekValues.isEmpty else {
-            return "+0.0"
+            return 0
         }
 
         let thisWeekAverage = Double(thisWeekValues.reduce(0, +)) / Double(thisWeekValues.count)
         let previousWeekAverage = Double(previousWeekValues.reduce(0, +)) / Double(previousWeekValues.count)
-        let difference = thisWeekAverage - previousWeekAverage
-        let formatted = String(format: "%.1f", abs(difference))
+        return thisWeekAverage - previousWeekAverage
+    }
 
-        if difference > 0 {
-            return "+\(formatted)"
-        } else if difference < 0 {
-            return "-\(formatted)"
-        } else {
-            return "0.0"
-        }
+    private var trendText: String {
+        String(format: "%.1f", abs(trendValue))
     }
 
     private var lastSevenDaysLoggedDays: Int {
@@ -712,13 +707,15 @@ struct DailyCheckInHistoryView: View {
                             Text(String(format: "%.1f", average))
                                 .font(.system(size: 54, weight: .bold, design: .monospaced))
                                 .foregroundColor(ReflectJournalTheme.textPrimary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
 
                             Text("/5")
                                 .font(.system(size: 22, weight: .semibold, design: .monospaced))
                                 .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
                                 .padding(.bottom, 4)
                         }
-                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
+                        .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
 
                         HStack(spacing: 6) {
                             ForEach(scoreDotStates(for: average), id: \.self) { state in
@@ -754,7 +751,7 @@ struct DailyCheckInHistoryView: View {
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity, minHeight: 116, alignment: .top)
 
                 Divider()
                     .overlay(Color.white.opacity(0.16))
@@ -763,18 +760,23 @@ struct DailyCheckInHistoryView: View {
                 VStack(alignment: .center, spacing: 8) {
                     summaryColumnTitle("Trend")
 
-                    HStack(alignment: .center, spacing: 6) {
+                    ZStack {
                         Text(trendText)
                             .font(.system(size: 54, weight: .bold, design: .monospaced))
                             .foregroundColor(trendValueColor)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
+                            .frame(maxWidth: .infinity, alignment: .center)
 
-                        Image(systemName: trendArrowIconName)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(trendValueColor)
+                        HStack {
+                            Image(systemName: trendArrowIconName)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(trendValueColor)
+
+                            Spacer()
+                        }
                     }
-                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
+                    .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
 
                     Color.clear
                         .frame(maxWidth: .infinity, minHeight: 14)
@@ -786,7 +788,7 @@ struct DailyCheckInHistoryView: View {
                         .minimumScaleFactor(0.9)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity, minHeight: 116, alignment: .top)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 88, alignment: .center)
@@ -840,7 +842,6 @@ struct DailyCheckInHistoryView: View {
     }
 
     private var trendValueColor: Color {
-        let trendValue = Double(trendText) ?? 0
         if trendValue > 0 {
             return Color(hex: "#76C48E")
         } else if trendValue < 0 {
@@ -851,7 +852,6 @@ struct DailyCheckInHistoryView: View {
     }
 
     private var trendArrowIconName: String {
-        let trendValue = Double(trendText) ?? 0
         if trendValue > 0 {
             return "arrow.up"
         } else if trendValue < 0 {
@@ -1057,7 +1057,7 @@ struct DailyCheckInHistoryView: View {
 
     private struct LiveReflectionPreviewStatsCard: View {
         private let sampleAverage: Double = 3.6
-        private let sampleTrend: String = "+0.4"
+        private let sampleTrend: String = "0.4"
         private let sampleCheckIns: Int = 5
 
         private enum DotState: Hashable {
@@ -1081,12 +1081,14 @@ struct DailyCheckInHistoryView: View {
                             Text(String(format: "%.1f", sampleAverage))
                                 .font(.system(size: 54, weight: .bold, design: .monospaced))
                                 .foregroundColor(ReflectJournalTheme.textPrimary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                             Text("/5")
                                 .font(.system(size: 22, weight: .semibold, design: .monospaced))
                                 .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
                                 .padding(.bottom, 4)
                         }
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
 
                         HStack(spacing: 6) {
                             ForEach(dotStates(for: sampleAverage), id: \.self) { state in
@@ -1102,7 +1104,7 @@ struct DailyCheckInHistoryView: View {
                             .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .frame(maxWidth: .infinity, minHeight: 116, alignment: .top)
 
                     Divider()
                         .overlay(Color.white.opacity(0.16))
@@ -1116,16 +1118,23 @@ struct DailyCheckInHistoryView: View {
                             .frame(height: 14, alignment: .top)
                             .frame(maxWidth: .infinity, alignment: .center)
 
-                        HStack(alignment: .center, spacing: 6) {
+                        ZStack {
                             Text(sampleTrend)
                                 .font(.system(size: 54, weight: .bold, design: .monospaced))
                                 .foregroundColor(Color(hex: "#76C48E"))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .frame(maxWidth: .infinity, alignment: .center)
 
-                            Image(systemName: "arrow.up")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color(hex: "#76C48E"))
+                            HStack {
+                                Image(systemName: "arrow.up")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(Color(hex: "#76C48E"))
+
+                                Spacer()
+                            }
                         }
-                        .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
+                        .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
 
                         Color.clear
                             .frame(maxWidth: .infinity, minHeight: 14)
@@ -1135,7 +1144,7 @@ struct DailyCheckInHistoryView: View {
                             .foregroundColor(ReflectJournalTheme.textSecondary.opacity(0.75))
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .frame(maxWidth: .infinity, minHeight: 116, alignment: .top)
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 88, alignment: .center)
