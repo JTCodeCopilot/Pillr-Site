@@ -100,17 +100,15 @@
     <div class="container header-inner">
       <a class="brand" href="index.html" aria-label="Pillr home">
         <img src="assets/pillr-brand-icon-dark.png" alt="Pillr logo" width="56" height="56" />
-        <span>Pillr</span>
       </a>
-      <nav class="nav">
-        <a href="index.html#how-it-works">How it works</a>
-        <a href="index.html#features">Features</a>
+      <nav class="nav" aria-label="Primary navigation">
         <a href="index.html#guides">Guides</a>
         <a href="index.html#faq">FAQ</a>
       </nav>
       <div class="header-actions">
-        <a class="button button-secondary" href="index.html">Home</a>
-        <a class="button button-primary" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689">Download</a>
+        <a class="app-store-btn" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_link&mttnsubad=6746717689" target="_blank" rel="noreferrer">
+          <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download on the App Store" />
+        </a>
       </div>
     </div>
   </header>
@@ -133,7 +131,7 @@
 
     <section class="article-page">
       <div class="container article-grid">
-        <article class="article-body reveal" data-reveal="left">
+        <article class="article-body">
           <h2>Why ADHD medication management is difficult</h2>
           <p>ADHD directly impacts memory, routine, and consistency. That makes daily medication harder than it should be.</p>
           <ul>
@@ -198,7 +196,7 @@
           </div>
         </article>
 
-        <aside class="article-aside reveal" data-reveal="right">
+        <aside class="article-aside">
           <h3>ADHD medication routine basics</h3>
           <ul>
             <li>use one clear system</li>
@@ -212,30 +210,30 @@
       </div>
 
       <div class="container article-points">
-        <div class="article-callout reveal" data-reveal="left">
+        <div class="article-callout">
           <h2>Built for daily medication management</h2>
           <p>Pillr helps manage ADHD medication with dose logging, clear history, ADHD medication reminders, and supply tracking in one place.</p>
         </div>
-        <div class="article-callout reveal" data-reveal="right">
+        <div class="article-callout">
           <h2>Reduce stress and guesswork</h2>
           <p>When you can see what happened clearly, it becomes easier to stay consistent and easier to talk through changes with your clinician.</p>
         </div>
       </div>
 
       <div class="container article-faq-list">
-        <details class="article-faq-item reveal" data-reveal="left">
+        <details class="article-faq-item">
           <summary>How do I remember to take ADHD medication every day</summary>
           <p>Link it to an existing habit, keep it visible, and use reminders or an app to reduce reliance on memory.</p>
         </details>
-        <details class="article-faq-item reveal" data-reveal="right">
+        <details class="article-faq-item">
           <summary>What happens if I forget my ADHD medication</summary>
           <p>Follow your doctor’s guidance. In general, consistency matters, so having a system to prevent missed doses is important.</p>
         </details>
-        <details class="article-faq-item reveal" data-reveal="left">
+        <details class="article-faq-item">
           <summary>How can I track ADHD medication effectively</summary>
           <p>Use a simple system that records doses daily, shows your history, and helps you stay consistent over time.</p>
         </details>
-        <details class="article-faq-item reveal" data-reveal="right">
+        <details class="article-faq-item">
           <summary>Is there an app to manage ADHD medication</summary>
           <p>Yes. Apps like Pillr are designed to help track doses, reminders, and supply in one place.</p>
         </details>
@@ -263,6 +261,21 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script>
+    const header = document.querySelector('.site-header');
+    const hero = document.querySelector('.hero');
+    
+    function updateHeaderVisibility() {
+      const heroBottom = hero.getBoundingClientRect().bottom;
+      if (heroBottom <= 0) {
+        header.classList.add('is-visible');
+      } else {
+        header.classList.remove('is-visible');
+      }
+    }
+    
+    window.addEventListener('scroll', updateHeaderVisibility, { passive: true });
+    updateHeaderVisibility();
+  </script>
 </body>
 </html>

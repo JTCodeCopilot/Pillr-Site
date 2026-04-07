@@ -100,17 +100,15 @@
     <div class="container header-inner">
       <a class="brand" href="index.html" aria-label="Pillr home">
         <img src="assets/pillr-brand-icon-dark.png" alt="Pillr logo" width="56" height="56" />
-        <span>Pillr</span>
       </a>
-      <nav class="nav">
-        <a href="index.html#how-it-works">How it works</a>
-        <a href="index.html#features">Features</a>
+      <nav class="nav" aria-label="Primary navigation">
         <a href="index.html#guides">Guides</a>
         <a href="index.html#faq">FAQ</a>
       </nav>
       <div class="header-actions">
-        <a class="button button-secondary" href="index.html">Home</a>
-        <a class="button button-primary" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689">Download</a>
+        <a class="app-store-btn" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_link&mttnsubad=6746717689" target="_blank" rel="noreferrer">
+          <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download on the App Store" />
+        </a>
       </div>
     </div>
   </header>
@@ -134,7 +132,7 @@
 
     <section class="article-page">
       <div class="container article-grid">
-        <article class="article-body reveal" data-reveal="left">
+        <article class="article-body">
           <h2>ADHD in adults is often subtle</h2>
           <p>In adults, ADHD tends to look different compared to childhood.</p>
           <p>Instead of visible hyperactivity, it often shows up as:</p>
@@ -282,7 +280,7 @@
           </div>
         </article>
 
-        <aside class="article-aside reveal" data-reveal="right">
+        <aside class="article-aside">
           <h3>Adult ADHD patterns</h3>
           <ul>
             <li>focus problems that keep repeating</li>
@@ -295,30 +293,30 @@
       </div>
 
       <div class="container article-points">
-        <div class="article-callout reveal" data-reveal="left">
+        <div class="article-callout">
           <h2>Why this matters</h2>
           <p>Recognising ADHD behaviour in adults is often the first step toward getting proper support, clearer routines, and less daily friction.</p>
         </div>
-        <div class="article-callout reveal" data-reveal="right">
+        <div class="article-callout">
           <h2>Where Pillr fits</h2>
           <p>If medication is part of your plan, Pillr helps you track doses, reminders, history, and supply without relying on memory alone.</p>
         </div>
       </div>
 
       <div class="container article-faq-list">
-        <details class="article-faq-item reveal" data-reveal="left">
+        <details class="article-faq-item">
           <summary>What does ADHD look like in adults</summary>
           <p>It often looks like difficulty with focus, organisation, memory, and consistency rather than obvious hyperactivity.</p>
         </details>
-        <details class="article-faq-item reveal" data-reveal="right">
+        <details class="article-faq-item">
           <summary>Can ADHD go unnoticed in adults</summary>
           <p>Yes. Many adults are undiagnosed because symptoms are subtle or misunderstood.</p>
         </details>
-        <details class="article-faq-item reveal" data-reveal="left">
+        <details class="article-faq-item">
           <summary>Is ADHD just being distracted</summary>
           <p>No. ADHD is a persistent pattern that affects multiple areas of life and daily functioning.</p>
         </details>
-        <details class="article-faq-item reveal" data-reveal="right">
+        <details class="article-faq-item">
           <summary>Can adults get diagnosed with ADHD</summary>
           <p>Yes. Diagnosis involves assessment by a qualified professional based on long term patterns.</p>
         </details>
@@ -346,6 +344,21 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script>
+    const header = document.querySelector('.site-header');
+    const hero = document.querySelector('.hero');
+    
+    function updateHeaderVisibility() {
+      const heroBottom = hero.getBoundingClientRect().bottom;
+      if (heroBottom <= 0) {
+        header.classList.add('is-visible');
+      } else {
+        header.classList.remove('is-visible');
+      }
+    }
+    
+    window.addEventListener('scroll', updateHeaderVisibility, { passive: true });
+    updateHeaderVisibility();
+  </script>
 </body>
 </html>

@@ -100,17 +100,15 @@
     <div class="container header-inner">
       <a class="brand" href="index.html" aria-label="Pillr home">
         <img src="assets/pillr-brand-icon-dark.png" alt="Pillr logo" width="56" height="56" />
-        <span>Pillr</span>
       </a>
-      <nav class="nav">
-        <a href="index.html#how-it-works">How it works</a>
-        <a href="index.html#features">Features</a>
+      <nav class="nav" aria-label="Primary navigation">
         <a href="index.html#guides">Guides</a>
         <a href="index.html#faq">FAQ</a>
       </nav>
       <div class="header-actions">
-        <a class="button button-secondary" href="index.html">Home</a>
-        <a class="button button-primary" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689">Download</a>
+        <a class="app-store-btn" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_link&mttnsubad=6746717689" target="_blank" rel="noreferrer">
+          <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download on the App Store" />
+        </a>
       </div>
     </div>
   </header>
@@ -134,7 +132,7 @@
 
     <section class="article-page">
       <div class="container article-grid">
-        <article class="article-body reveal" data-reveal="left">
+        <article class="article-body">
           <h2>The main types of ADHD treatment</h2>
           <p>ADHD treatment generally falls into three categories:</p>
           <ul>
@@ -241,7 +239,7 @@
           </div>
         </article>
 
-        <aside class="article-aside reveal" data-reveal="right">
+        <aside class="article-aside">
           <h3>What helps most</h3>
           <ul>
             <li>medication when appropriate</li>
@@ -254,30 +252,30 @@
       </div>
 
       <div class="container article-points">
-        <div class="article-callout reveal" data-reveal="left">
+        <div class="article-callout">
           <h2>What this means</h2>
           <p>ADHD treatment options are rarely about one perfect answer. The most effective plans usually combine support, structure, and systems that actually fit daily life.</p>
         </div>
-        <div class="article-callout reveal" data-reveal="right">
+        <div class="article-callout">
           <h2>Where Pillr fits</h2>
           <p>If medication is part of your plan, Pillr helps keep reminders, dose tracking, and supply management clear and reliable.</p>
         </div>
       </div>
 
       <div class="container article-faq-list">
-        <details class="article-faq-item reveal" data-reveal="left">
+        <details class="article-faq-item">
           <summary>What is the most effective treatment for ADHD</summary>
           <p>For many people, a combination of medication and behavioural strategies is the most effective approach.</p>
         </details>
-        <details class="article-faq-item reveal" data-reveal="right">
+        <details class="article-faq-item">
           <summary>Does ADHD require medication</summary>
           <p>Not always, but medication is commonly used and can significantly improve focus and consistency.</p>
         </details>
-        <details class="article-faq-item reveal" data-reveal="left">
+        <details class="article-faq-item">
           <summary>Can ADHD be treated without medication</summary>
           <p>Some people manage ADHD with behavioural strategies and systems, though medication is often part of treatment.</p>
         </details>
-        <details class="article-faq-item reveal" data-reveal="right">
+        <details class="article-faq-item">
           <summary>How long does ADHD treatment take to work</summary>
           <p>Medication can work quickly, while behavioural strategies and systems improve results over time.</p>
         </details>
@@ -305,6 +303,21 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script>
+    const header = document.querySelector('.site-header');
+    const hero = document.querySelector('.hero');
+    
+    function updateHeaderVisibility() {
+      const heroBottom = hero.getBoundingClientRect().bottom;
+      if (heroBottom <= 0) {
+        header.classList.add('is-visible');
+      } else {
+        header.classList.remove('is-visible');
+      }
+    }
+    
+    window.addEventListener('scroll', updateHeaderVisibility, { passive: true });
+    updateHeaderVisibility();
+  </script>
 </body>
 </html>
