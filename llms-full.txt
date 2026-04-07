@@ -31,7 +31,6 @@ Pillr helps people stay consistent with medication routines by combining reminde
 
 6. Privacy and platform
 - On-device data storage by default
-- Optional iCloud sync across Apple devices
 - Apple Health context support for steps and distance
 
 ## Who Pillr Is For

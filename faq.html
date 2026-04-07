@@ -46,7 +46,7 @@
           "name": "Where is my data stored?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Your data stays on device by default, with optional iCloud sync across Apple devices."
+            "text": "Your data stays on your device."
           }
         },
         {
@@ -116,13 +116,17 @@
       ]
     }
   </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
       <a class="brand" href="index.html" aria-label="Pillr home">
-        <img src="assets/pillr-brand-icon-dark.png" alt="" width="66" height="66" />
+        <img src="assets/pillr-brand-icon-dark.png" alt="Pillr logo" width="56" height="56" />
+        <span>Pillr</span>
       </a>
       <nav class="nav">
         <a href="index.html#how-it-works">How it works</a>
@@ -131,8 +135,8 @@
         <a href="faq.html">FAQ</a>
       </nav>
       <div class="header-actions">
-        <a class="button ghost" href="index.html">Home</a>
-        <a class="button primary" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689">Download</a>
+        <a class="button button-secondary" href="index.html">Home</a>
+        <a class="button button-primary" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689">Download</a>
       </div>
     </div>
   </header>
@@ -176,7 +180,7 @@
         </details>
         <details class="article-faq-item reveal" data-reveal="left">
           <summary>Where is my data stored?</summary>
-          <p>Your data stays on device by default, with optional iCloud sync across Apple devices.</p>
+          <p>Your data stays on your device.</p>
         </details>
         <details class="article-faq-item reveal" data-reveal="right">
           <summary>What can I export?</summary>
@@ -217,7 +221,7 @@
   <footer class="site-footer">
     <div class="container footer-grid">
       <div>
-        <p class="brand">Pillr</p>
+        <p class="footer-brand">Pillr</p>
         <p class="footer-note">ADHD medication tracking that keeps your routine steady.</p>
       </div>
       <div>

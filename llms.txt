@@ -15,7 +15,7 @@
 - Medication adherence stats, history views, and streak tracking.
 - Refill and supply tracking.
 - CSV and PDF exports for medication history.
-- On-device storage with optional iCloud sync.
+- On-device data storage by default
 
 ## Common User Intents
 - ADHD medication reminder app for iPhone
