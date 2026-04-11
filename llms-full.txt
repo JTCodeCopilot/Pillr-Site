@@ -54,7 +54,6 @@ Pillr helps people stay consistent with medication routines by combining reminde
 - Website: https://pillr.management/
 - App Store: https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689
 - Support: https://tally.so/r/3qMdL7
-- FAQ: https://pillr.management/faq.html
 - LLM index: https://pillr.management/llms.txt
 - Guide: https://pillr.management/do-i-have-adhd.html
 - Guide: https://pillr.management/what-does-adhd-look-like-in-adults.html
