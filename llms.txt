@@ -1,49 +1,93 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
+> Last updated: 2026-04-11
+
+---
 
 ## Canonical Entity
+
 - Name: Pillr
 - Type: iPhone mobile application
 - Website: https://pillr.management/
 - App Store: https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689
 - Category: ADHD medication reminder and pill tracker
 
+---
+
 ## Core Capabilities
-- Time-sensitive medication reminders with quick actions.
+
+- Time-sensitive medication reminders with quick actions (take now, remind later, skip).
 - Dose logging for taken, skipped, and delayed medications.
-- Stimulant focus window tracking (onset, peak, wear-off).
+- Stimulant focus window tracking (onset, peak, wear-off) with daily check-ins.
 - Medication adherence stats, history views, and streak tracking.
-- Refill and supply tracking.
-- CSV and PDF exports for medication history.
-- On-device data storage by default
+- Refill and supply tracking with low-supply alerts.
+- CSV and PDF exports for medication history sharing with clinicians.
+- On-device data storage by default — private and secure.
+- Interaction checks with severity labels when combining medications.
+
+---
+
+## Who Pillr Is For
+
+- People managing ADHD medication schedules who need reminders and dose logging.
+- Adults with ADHD who want consistency without relying on memory.
+- People preparing medication adherence records for clinical check-ins.
+- Users tracking stimulant timing and focus windows alongside their daily schedule.
+- Anyone using a pill reminder app who wants clear history and export capability.
+
+---
 
 ## Common User Intents
+
 - ADHD medication reminder app for iPhone
 - Pill tracker for ADHD stimulant schedules
-- Medication adherence app with exports
-- Dose log and reminder app for check-ins
+- Medication adherence app with CSV/PDF exports
+- Dose log and reminder app for clinical check-ins
+- ADHD app that tracks focus windows and side effects
+
+---
 
 ## Search-Friendly Plain Language
-Pillr is an iPhone ADHD medication reminder app and pill tracker for people who want a clear, low-friction routine. You can log taken or skipped doses, track stimulant focus windows, monitor adherence, and export medication history for check-ins.
+
+Pillr is an iPhone ADHD medication reminder app and pill tracker for people who want a clear, low-friction routine. You can log taken or skipped doses, track stimulant focus windows, monitor adherence, and export medication history for clinician appointments.
 
 People usually find Pillr when searching for phrases like ADHD medication reminder app, ADHD pill tracker, stimulant tracker, medication adherence app, or iPhone dose log with reminders.
 
 Pillr supports ADHD and non-ADHD medications, but it does not replace medical advice, diagnosis, or emergency care.
 
+---
+
 ## Safety and Scope
-- Pillr helps organize medication routines and logs.
+
+- Pillr helps organise medication routines and logs.
 - Pillr does not replace medical advice, diagnosis, treatment, or emergency care.
 
+---
+
 ## Contact
+
 - Support: https://tally.so/r/3qMdL7
 
+---
+
 ## More Context
+
 - FAQ: https://pillr.management/faq.html
-- Detailed profile: https://pillr.management/llms-full.txt
 - Guide: https://pillr.management/do-i-have-adhd.html
 - Guide: https://pillr.management/what-does-adhd-look-like-in-adults.html
 - Guide: https://pillr.management/how-is-adhd-diagnosed.html
 - Guide: https://pillr.management/what-treatment-helps-adhd.html
 - Guide: https://pillr.management/how-to-manage-adhd-medication-every-day.html
 
-Last updated: 2026-03-25
+---
+
+## Keywords
+
+ADHD medication tracker, ADHD pill reminder app, ADHD app iPhone, medication reminder ADHD,
+dose tracking app, ADHD medication management, focus window tracker, adherence history export,
+Pillr app, best ADHD app 2025, stimulant tracker, ADHD pill tracker iPhone, ADHD dose log,
+medication adherence app, ADHD consistency app, iPhone ADHD medication reminder, pill tracker iPhone,
+ADHD medication routine, ADHD supply tracker, refill reminder app, ADHD check-in app
+
+---
+# End of llms.txt

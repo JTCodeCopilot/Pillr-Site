@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pillr — ADHD Medication Tracker &amp; Reminder App for iPhone</title>
+  <meta name="description" content="Pillr is a free iPhone app for tracking ADHD medication. Set reminders for Vyvanse, Adderall, Concerta and more — log doses, track focus windows, check interactions, and export your history for clinician appointments." />
+  <meta name="author" content="Pillr" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <link rel="canonical" href="https://pillr.management/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Pillr" />
+  <meta property="og:title" content="Pillr — ADHD Medication Tracker &amp; Reminder App for iPhone" />
+  <meta property="og:description" content="Track doses, set smart reminders, log focus windows, and export your ADHD medication history. Free on the App Store. Built for the ADHD brain." />
+  <meta property="og:url" content="https://pillr.management/" />
+  <meta property="og:image" content="https://pillr.management/pillr-og.png" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Pillr — ADHD Medication Tracker &amp; Reminder App" />
+  <meta name="twitter:description" content="Never miss a dose of Vyvanse, Adderall, or Concerta. Pillr tracks your ADHD medication, logs focus windows, and exports your history. Free on iPhone." />
+  <meta name="twitter:image" content="https://pillr.management/pillr-og.png" />
+  <meta name="theme-color" content="#f5f1e8" />
+  <link rel="sitemap" type="application/xml" href="sitemap.xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="pillr-style.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Pillr",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "iOS",
+    "description": "Pillr is a free iPhone app for ADHD medication management. Set reminders for stimulants like Vyvanse, Adderall, Concerta, and Ritalin. Log doses, track focus windows, monitor adherence streaks, check drug interactions, and export your full medication history as CSV or PDF for clinician appointments.",
+    "url": "https://pillr.management",
+    "downloadUrl": "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "featureList": [
+      "ADHD medication reminders",
+      "Dose logging and tracking",
+      "Focus window and stimulant timing",
+      "Adherence streaks and history",
+      "Drug interaction checker",
+      "Supply and refill tracking",
+      "Daily mood and side effect check-ins",
+      "CSV and PDF export for clinicians",
+      "On-device privacy — no account required",
+      "Supports Vyvanse, Adderall, Concerta, Ritalin, Strattera, Guanfacine and more"
+    ],
+    "screenshot": "https://pillr.management/pillr-og.png",
+    "publisher": { "@type": "Organization", "name": "Pillr", "url": "https://pillr.management" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Does Pillr replace my doctor or clinician?", "acceptedAnswer": { "@type": "Answer", "text": "No. Pillr helps you track and organise medications, but it does not replace a clinician." } },
+      { "@type": "Question", "name": "Can I track non-ADHD medications in Pillr?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pillr supports any medications, with special timing tools for ADHD stimulants like Vyvanse, Adderall, Concerta, and Ritalin." } },
+      { "@type": "Question", "name": "Where is my data stored?", "acceptedAnswer": { "@type": "Answer", "text": "Your data stays on your device by default. No account is required and nothing is sent to a server." } },
+      { "@type": "Question", "name": "Can I export my medication history?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. You can export your full ADHD medication history as a CSV or PDF to share with your psychiatrist or GP." } },
+      { "@type": "Question", "name": "Does Pillr work for Vyvanse, Adderall, and Concerta?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pillr supports all common ADHD stimulants and non-stimulants including Vyvanse, Adderall, Adderall XR, Concerta, Ritalin, Strattera, and Guanfacine, as well as any other prescription or over-the-counter medications." } },
+      { "@type": "Question", "name": "What is a focus window tracker?", "acceptedAnswer": { "@type": "Answer", "text": "Pillr's focus window feature shows a visual timeline of when your ADHD medication is likely to be active — from onset through peak effect to wear-off — based on your own timing settings. This helps you plan demanding tasks during your strongest focus window." } },
+      { "@type": "Question", "name": "Is Pillr free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pillr is free to download on the App Store for iPhone. Premium features are available for users who want deeper ADHD medication management tools." } }
+    ]
+  }
+  </script>
+  <script type="module" src="firebase.js"></script>
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <header class="site-header" id="site-header" aria-label="Main navigation">
+    <div class="container header-inner">
+      <a href="/" class="brand" aria-label="Pillr home">
+        <img src="pillr-brand-icon-dark.png" alt="Pillr" width="48" height="48" />
+        <span>Pillr</span>
+      </a>
+      <nav class="nav" aria-label="Site navigation">
+        <a href="#features">How it works</a>
+        <a href="#guides">Guides</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" class="app-store-btn" target="_blank" rel="noopener" aria-label="Download Pillr on the App Store">
+          <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download on the App Store" />
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" id="home" aria-label="Hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow reveal">iPhone &middot; ADHD Medication Tracker &amp; Reminder</div>
+        <h1 class="reveal">Built for the<br />ADHD brain.</h1>
+        <p class="hero-intro reveal">Because 'I'll remember later' doesn't work.</p>
+        <div class="cta-group reveal">
+          <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" class="app-store-btn app-store-hero" target="_blank" rel="noopener" aria-label="Download Pillr on the App Store">
+            <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download on the App Store" />
+          </a>
+        </div>
+        <div class="hero-scroll reveal" aria-hidden="true">
+          <span>Explore</span>
+          <div class="scroll-line"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ── FEATURES , PINNED SCROLL NARRATIVE (8 steps) ─────────────────────── -->
+  <section class="features-section" id="features" aria-label="How Pillr works">
+    <div class="features-sticky-wrapper">
+      <div class="features-pin" id="featuresPin">
+
+        <!-- Step 01 , Medication Management -->
+        <div class="step-panel active" data-step="0" aria-label="Feature 1">
+          <div class="step-content">
+            <div class="step-counter">01 , 08</div>
+            <h2 class="step-headline">Everything in<br />one place.</h2>
+            <p class="step-body">All your meds — scheduled, as needed, or one-off — in a single view the moment you open the app. No more scattered alarms, sticky notes, or trying to remember which app you used last time. Just one place that shows you exactly where things are.</p>
+            <div class="step-tag">All your meds, one place</div>
+          </div>
+          <div class="step-visual" aria-hidden="true">
+            <div class="visual-card">
+              <div class="vc-label">Today</div>
+              <div class="vc-pill-row">
+                <div class="vc-pill complete"><span class="vc-name">Vyvanse 30mg</span><span class="vc-status">&#10003; Taken &middot; 8:04 am</span></div>
+                <div class="vc-pill active"><span class="vc-name">Guanfacine 1mg</span><span class="vc-status">&#9679; Due now</span></div>
+                <div class="vc-pill muted"><span class="vc-name">Melatonin 3mg</span><span class="vc-status">&#9679; 9:00 pm</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 02 , Reminders -->
+        <div class="step-panel" data-step="1" aria-label="Feature 2">
+          <div class="step-content">
+            <div class="step-counter">02 , 08</div>
+            <h2 class="step-headline">Alerts that actually<br />get through.</h2>
+            <p class="step-body">Pillr reminders cut through Do Not Disturb and Focus modes so you still get notified when your phone is silenced. For an ADHD brain, a reminder you can accidentally miss isn&rsquo;t really a reminder at all.</p>
+            <div class="step-tag">Bypasses Do Not Disturb</div>
+          </div>
+          <div class="step-visual" aria-hidden="true">
+            <div class="visual-card">
+              <div class="vc-label">Reminder</div>
+              <div class="vc-notification">
+                <div class="vc-notif-time">8:00 AM</div>
+                <div class="vc-notif-title">Time for Vyvanse 30mg</div>
+                <div class="vc-notif-actions">
+                  <span class="vc-notif-chip taken-chip">&#10003; Taken</span>
+                  <span class="vc-notif-chip">Skip</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 03 , Dose Logging -->
+        <div class="step-panel" data-step="2" aria-label="Feature 3">
+          <div class="step-content">
+            <div class="step-counter">03 , 08</div>
+            <h2 class="step-headline">Log a dose in<br />seconds, not steps.</h2>
+            <p class="step-body">Tap to mark a dose as taken or skipped — no menus, no typing. If you tap the wrong thing or forgot to log in the moment, there&rsquo;s undo support and manual time entry so your history stays accurate without extra effort.</p>
+            <div class="step-tag">Quick actions</div>
+          </div>
+          <div class="step-visual" aria-hidden="true">
+            <div class="visual-card">
+              <div class="vc-label">Log a dose</div>
+              <div class="vc-action-row">
+                <div class="vc-action taken">&#10003; Taken</div>
+                <div class="vc-action skipped">&#8722; Skipped</div>
+              </div>
+              <div class="vc-undo">Undo last action</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 04 , Focus Timeline -->
+        <div class="step-panel" data-step="3" aria-label="Feature 4">
+          <div class="step-content">
+            <div class="step-counter">04 , 08</div>
+            <h2 class="step-headline">Know when your<br />medication is working.</h2>
+            <p class="step-body">A visual timeline that shows when your medication kicks in, hits its peak, and starts to fade — based on your own onset and duration settings, not a generic average. Schedule your hardest tasks when you&rsquo;re sharpest, and stop fighting yourself when you&rsquo;re not.</p>
+            <div class="step-tag">Stimulant timing</div>
+          </div>
+          <div class="step-visual" aria-hidden="true">
+            <div class="visual-card">
+              <div class="vc-label">Focus timeline &middot; Today</div>
+              <div class="vc-timeline">
+                <div class="vc-tl-bar">
+                  <div class="vc-tl-onset">Onset</div>
+                  <div class="vc-tl-peak">Peak focus</div>
+                  <div class="vc-tl-wearoff">Wear&#8209;off</div>
+                </div>
+              </div>
+              <div class="vc-time-blocks">
+                <span class="vc-time-chip peak-chip">Tasks 9&ndash;11am</span>
+                <span class="vc-time-chip">Meetings 11am&ndash;1pm</span>
+                <span class="vc-time-chip muted-chip">Wind down 3pm+</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 05 , Daily Reflections -->
+        <div class="step-panel" data-step="4" aria-label="Feature 5">
+          <div class="step-content">
+            <div class="step-counter">05 , 08</div>
+            <h2 class="step-headline">See the patterns<br />your memory misses.</h2>
+            <p class="step-body">A short end-of-day check-in where you log focus, mood, and any side effects. Over a few weeks, it builds a real picture of how your medication is actually affecting you — so you have something concrete to show your psychiatrist, not just a feeling.</p>
+            <div class="step-tag">Daily check-ins</div>
+          </div>
+          <div class="step-visual" aria-hidden="true">
+            <div class="visual-card">
+              <div class="vc-label">Today&rsquo;s check-in</div>
+              <div class="vc-rating-row">
+                <span class="vc-rating-label">Focus</span>
+                <span class="vc-rating-dots">
+                  <span class="vc-rating-dot filled"></span>
+                  <span class="vc-rating-dot filled"></span>
+                  <span class="vc-rating-dot filled"></span>
+                  <span class="vc-rating-dot filled"></span>
+                  <span class="vc-rating-dot"></span>
+                </span>
+              </div>
+              <div class="vc-rating-row">
+                <span class="vc-rating-label">Mood</span>
+                <span class="vc-rating-dots">
+                  <span class="vc-rating-dot filled"></span>
+                  <span class="vc-rating-dot filled"></span>
+                  <span class="vc-rating-dot filled highlight"></span>
+                  <span class="vc-rating-dot"></span>
+                  <span class="vc-rating-dot"></span>
+                </span>
+              </div>
+              <div class="vc-rating-row" style="border-bottom:none;">
+                <span class="vc-rating-label">Side effects</span>
+                <span class="vc-side-effect">Mild headache , noted</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 06 , Supply & Refill -->
+        <div class="step-panel" data-step="5" aria-label="Feature 6">
+          <div class="step-content">
+            <div class="step-counter">06 , 08</div>
+            <h2 class="step-headline">Don&rsquo;t get caught<br />running out.</h2>
+            <p class="step-body">Track your remaining pills with a threshold you set yourself, and get a heads-up before you&rsquo;re down to the last few. ADHD and last-minute pharmacy runs don&rsquo;t go well together. This gives you enough lead time to sort it without the panic.</p>
+            <div class="step-tag">Refill reminders</div>
+          </div>
+          <div class="step-visual" aria-hidden="true">
+            <div class="visual-card">
+              <div class="vc-label">Supply</div>
+              <div class="vc-supply-row">
+                <div class="vc-supply-item">
+                  <span class="vc-supply-name">Vyvanse 30mg</span>
+                  <div class="vc-supply-bar-wrap"><div class="vc-supply-bar warning" style="width:28%"></div></div>
+                  <span class="vc-supply-note">8 pills remaining &middot; Refill soon</span>
+                </div>
+                <div class="vc-supply-item">
+                  <span class="vc-supply-name">Guanfacine 1mg</span>
+                  <div class="vc-supply-bar-wrap"><div class="vc-supply-bar" style="width:70%"></div></div>
+                  <span class="vc-supply-note">21 pills remaining</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 07 , Safety & Interactions -->
+        <div class="step-panel" data-step="6" aria-label="Feature 7">
+          <div class="step-content">
+            <div class="step-counter">07 , 08</div>
+            <h2 class="step-headline">Check before<br />you combine.</h2>
+            <p class="step-body">Add a new prescription, supplement, or over-the-counter med and Pillr checks it against what you&rsquo;re already taking. It flags whether any combination is a minor concern, major, or something to avoid , before you find out the hard way.</p>
+            <div class="step-tag">AI interaction check</div>
+          </div>
+          <div class="step-visual" aria-hidden="true">
+            <div class="visual-card">
+              <div class="vc-label">Interaction check</div>
+              <div class="vc-interaction-row">
+                <span class="vc-int-name">Vyvanse + Sertraline</span>
+                <span class="vc-int-badge moderate">Moderate , monitor</span>
+              </div>
+              <div class="vc-interaction-row" style="border-bottom:none;">
+                <span class="vc-int-name">Vyvanse + Melatonin</span>
+                <span class="vc-int-badge minor">Minor , generally safe</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 08 , History & Exports -->
+        <div class="step-panel" data-step="7" aria-label="Feature 8">
+          <div class="step-content">
+            <div class="step-counter">08 , 08</div>
+            <h2 class="step-headline">Bring real data to<br />your appointments.</h2>
+            <p class="step-body">Export your full medication history as a PDF or CSV, filtered by date if you need it. Instead of walking into a medication review trying to remember the last three months, you show up with an actual record.</p>
+            <div class="step-tag">CSV &amp; PDF export</div>
+          </div>
+          <div class="step-visual" aria-hidden="true">
+            <div class="visual-card">
+              <div class="vc-label">Adherence &middot; Last 7 days</div>
+              <div class="vc-streak-row">
+                <div class="vc-day taken">M</div>
+                <div class="vc-day taken">T</div>
+                <div class="vc-day taken">W</div>
+                <div class="vc-day skipped">T</div>
+                <div class="vc-day taken">F</div>
+                <div class="vc-day taken">S</div>
+                <div class="vc-day active">S</div>
+              </div>
+              <div class="vc-export-row">
+                <div class="vc-export-btn">Export CSV</div>
+                <div class="vc-export-btn">Export PDF</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Progress dots -->
+        <div class="step-dots" aria-hidden="true">
+          <span class="dot active" data-dot="0"></span>
+          <span class="dot" data-dot="1"></span>
+          <span class="dot" data-dot="2"></span>
+          <span class="dot" data-dot="3"></span>
+          <span class="dot" data-dot="4"></span>
+          <span class="dot" data-dot="5"></span>
+          <span class="dot" data-dot="6"></span>
+          <span class="dot" data-dot="7"></span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+
+  <!-- GUIDES -->
+  <section class="section section-alt" id="guides" aria-label="ADHD guides">
+    <div class="container">
+      <div class="section-heading centered reveal">
+        <div class="eyebrow">Guides</div>
+        <h2>Understanding ADHD,<br />medication, and treatment.</h2>
+        <p>Plain-language guides for adults navigating ADHD diagnosis, stimulant medications like Vyvanse and Adderall, and building a daily medication routine that actually sticks.</p>
+      </div>
+      <div class="guide-grid">
+        <a href="do-i-have-adhd.html" class="guide-card reveal">
+          <div class="guide-kicker">Guide 01</div>
+          <h3>Do I have ADHD?</h3>
+          <p>A simple look at the signs adults often notice first and what to do next.</p>
+          <span class="text-link">Read guide</span>
+        </a>
+        <a href="what-does-adhd-look-like-in-adults.html" class="guide-card reveal">
+          <div class="guide-kicker">Guide 02</div>
+          <h3>What does ADHD look like in adults?</h3>
+          <p>How ADHD often shows up in daily life, from routines and timing to overwhelm.</p>
+          <span class="text-link">Read guide</span>
+        </a>
+        <a href="how-is-adhd-diagnosed.html" class="guide-card reveal">
+          <div class="guide-kicker">Guide 03</div>
+          <h3>How is ADHD diagnosed?</h3>
+          <p>What the assessment process often looks like and how to prepare for it.</p>
+          <span class="text-link">Read guide</span>
+        </a>
+        <a href="what-treatment-helps-adhd.html" class="guide-card reveal">
+          <div class="guide-kicker">Guide 04</div>
+          <h3>What treatment helps ADHD?</h3>
+          <p>A plain-language overview of medication, therapy, coaching, and support systems.</p>
+          <span class="text-link">Read guide</span>
+        </a>
+        <a href="how-to-manage-adhd-medication-every-day.html" class="guide-card reveal">
+          <div class="guide-kicker">Guide 05</div>
+          <h3>How to manage ADHD medication every day</h3>
+          <p>A daily guide to reminders, logging, missed doses, notes, and refill planning.</p>
+          <span class="text-link">Read guide</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq" aria-label="Frequently asked questions">
+    <div class="container faq-shell">
+      <div class="section-heading reveal">
+        <div class="eyebrow">FAQ</div>
+        <h2>Common questions.</h2>
+        <p>A few quick answers here, with the full list on a <a href="faq.html">separate page</a>.</p>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item reveal"><summary>Does Pillr replace my doctor or clinician?</summary><p>No. Pillr helps you track and organise medications, but it does not replace a clinician. Always follow your prescriber's advice.</p></details>
+        <details class="faq-item reveal"><summary>Does Pillr work for Vyvanse, Adderall, and Concerta?</summary><p>Yes. Pillr supports all common ADHD stimulants and non-stimulants — Vyvanse, Adderall, Adderall XR, Concerta, Ritalin, Strattera, Guanfacine, and anything else you're taking.</p></details>
+        <details class="faq-item reveal"><summary>Can I track non-ADHD medications?</summary><p>Yes. Pillr supports any medications, with special focus window timing tools built specifically for ADHD stimulants.</p></details>
+        <details class="faq-item reveal"><summary>Where is my data stored?</summary><p>Your data stays on your device by default. No account required and nothing is sent to a server.</p></details>
+        <details class="faq-item reveal"><summary>Can I export my medication history?</summary><p>Yes. Export your full ADHD medication history as CSV or PDF to share with your psychiatrist, GP, or caregiver.</p></details>
+        <details class="faq-item reveal"><summary>What is a focus window?</summary><p>Pillr shows a visual timeline of when your ADHD medication is likely to be active — from onset through peak effect to wear-off. Use it to plan your hardest tasks when you're sharpest.</p></details>
+        <details class="faq-item reveal"><summary>Is Pillr a pill reminder and tracker combined?</summary><p>Yes. Pillr combines pill tracker features with flexible reminders so you always know when to take, skip, or snooze a dose — and keeps a full log you can look back on.</p></details>
+        <details class="faq-item reveal"><summary>Does Pillr track adherence and streaks?</summary><p>Yes. Pillr tracks adherence rates, streaks, and refill status, making it easy to share proof of consistency with clinicians or caregivers.</p></details>
+      </div>
+      <div class="faq-actions reveal">
+        <a href="faq.html" class="button button-secondary">See all questions</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section section" aria-label="Download Pillr">
+    <div class="container">
+      <div class="cta-panel reveal">
+        <div class="cta-copy">
+          <div class="eyebrow">Download free</div>
+          <h2>Managing ADHD medication<br />is genuinely hard.</h2>
+          <p>Pillr makes it a little less so. Whether you're just starting treatment or have been at it for years, it helps you stay consistent without adding more to remember.</p>
+          <div class="cta-actions">
+            <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" class="app-store-btn" target="_blank" rel="noopener" aria-label="Download Pillr on the App Store">
+              <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download on the App Store" />
+            </a>
+          </div>
+        </div>
+        <div class="cta-icon" aria-hidden="true">
+          <img src="pillr-brand-icon-dark.png" alt="Pillr" width="120" height="120" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer" aria-label="Site footer">
+    <div class="container footer-grid">
+      <div class="footer-brand-col">
+        <p class="footer-brand">Pillr</p>
+        <p class="footer-note">ADHD medication tracker and reminder app for iPhone.</p>
+        <p class="footer-note" style="margin-top:0.5rem;">This app is not a medical device and does not replace clinical advice.</p>
+      </div>
+      <div class="footer-col">
+        <h4 class="footer-title">Explore</h4>
+        <a href="#features">How it works</a>
+        <a href="#guides">Guides</a>
+        <a href="#faq">FAQ</a>
+        <a href="faq.html">Full FAQ</a>
+      </div>
+      <div class="footer-col">
+        <h4 class="footer-title">Connect</h4>
+        <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" target="_blank" rel="noopener">App Store</a>
+        <a href="https://tally.so/r/3qMdL7" target="_blank" rel="noopener">Contact &amp; Support</a>
+        <a href="llms.txt">LLM Index</a>
+        <a href="sitemap.xml">Sitemap</a>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>&copy; 2025 Pillr. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    const header = document.querySelector('.site-header');
+    const updateHeaderVisibility = () => {
+      if (!header) return;
+      if (window.innerWidth <= 640) {
+        header.classList.toggle('is-visible', window.scrollY > 32);
+      } else {
+        header.classList.add('is-visible');
+      }
+      header.classList.toggle('nav-solid', window.scrollY > 48);
+    };
+    window.addEventListener('scroll', updateHeaderVisibility, { passive: true });
+    window.addEventListener('resize', updateHeaderVisibility);
+    updateHeaderVisibility();
+
+    // Pinned step switcher
+    const panels = document.querySelectorAll('.step-panel');
+    const dots   = document.querySelectorAll('.dot');
+    const wrapper = document.querySelector('.features-sticky-wrapper');
+    const totalSteps = panels.length;
+    function setStep(i) {
+      panels.forEach((p,j) => p.classList.toggle('active', j === i));
+      dots.forEach((d,j)   => d.classList.toggle('active', j === i));
+    }
+    function onScroll() {
+      if (!wrapper) return;
+      const rect = wrapper.getBoundingClientRect();
+      const progress = -rect.top / (rect.height - window.innerHeight);
+      setStep(Math.min(totalSteps-1, Math.max(0, Math.floor(progress * totalSteps))));
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Reveal
+    const revealEls = document.querySelectorAll('.reveal');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) { entry.target.classList.add('visible'); revealObserver.unobserve(entry.target); }
+      });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => revealObserver.observe(el));
+
+    // Canonical
+    const TRACKING = ['ref','utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid','mc_cid','mc_eid'];
+    (() => {
+      const u = new URL(window.location.href);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return;
+      let changed = false;
+      if (u.hostname === 'www.pillr.management') { u.hostname = 'pillr.management'; changed = true; }
+      if (u.pathname === '/index.html') { u.pathname = '/'; changed = true; }
+      TRACKING.forEach(p => { if (u.searchParams.has(p)) { u.searchParams.delete(p); changed = true; } });
+      if (changed) window.history.replaceState({}, '', `${u.origin}${u.pathname}${u.search}${u.hash}`);
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,256 +1,176 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pillr FAQ | ADHD Medication Reminder and Pill Tracker Questions</title>
-  <meta name="description" content="Answers to common questions about Pillr, including reminders, pill tracking, exports, privacy, ADHD medication routines, and stimulant schedule support." />
-  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pillr FAQ , Common Questions About ADHD Medication Tracking</title>
+  <meta name="description" content="Full answers to common questions about Pillr, the ADHD medication tracker for iPhone. Reminders, dose logging, exports, privacy, and more." />
+  <meta name="keywords" content="Pillr FAQ, ADHD medication tracker questions, pill reminder app FAQ, ADHD app support" />
+  <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://pillr.management/faq.html" />
-  <link rel="alternate" hreflang="en-US" href="https://pillr.management/faq.html" />
-  <meta property="og:title" content="Pillr FAQ | ADHD Medication Reminder and Pill Tracker Questions" />
-  <meta property="og:description" content="Answers to common questions about Pillr, including reminders, pill tracking, exports, privacy, ADHD medication routines, and stimulant schedule support." />
-  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Pillr FAQ , Common Questions About ADHD Medication Tracking" />
+  <meta property="og:description" content="Answers to common questions about Pillr. Dose logging, reminders, data storage, and more." />
   <meta property="og:url" content="https://pillr.management/faq.html" />
-  <meta property="og:image" content="https://pillr.management/assets/pillr-og.png" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Pillr FAQ | ADHD Medication Reminder and Pill Tracker Questions" />
-  <meta name="twitter:description" content="Answers to common questions about Pillr, including reminders, pill tracking, exports, privacy, ADHD medication routines, and stimulant schedule support." />
-  <meta name="twitter:image" content="https://pillr.management/assets/pillr-og.png" />
-  <link rel="icon" href="https://pillr.management/assets/pillr-og.png" type="image/png" />
-  <link rel="apple-touch-icon" href="https://pillr.management/assets/pillr-og.png" />
-  <script type="module" src="firebase.js"></script>
+  <meta property="og:image" content="https://pillr.management/pillr-og.png" />
   <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Does Pillr replace medical advice?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No. Pillr helps you track and organize medications, but it does not replace a clinician."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can I track non-ADHD medications too?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Pillr supports any medications, with special timing tools for ADHD stimulants."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Where is my data stored?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Your data stays on your device."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What can I export?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "You can export medication history as CSV or PDF for easy sharing."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is Pillr a medication management tool?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Pillr is built for medication management. You can set reminders, log doses, and review adherence on your device so your routine stays steady."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Does Pillr include an ADHD symptom tracker?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Pillr keeps symptom context in mind by capturing focus windows, side effect notes, and wear-off check-ins alongside medication data."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can I use Pillr as a pill tracker or pill reminder?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Pillr combines pill tracker features with flexible reminders so you always know when to take, skip, or snooze a dose."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Why is Pillr called an ADHD app?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Pillr was designed around the timing, consistency, and routine challenges that often come with ADHD medication management."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How does Pillr support medication adherence?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Pillr tracks adherence rates, streaks, and refill status, making it easier to stay consistent and share a clear history when needed."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can Pillr track stimulant schedules like Adderall, Vyvanse, or methylphenidate?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Pillr supports custom medication names and timing details, so you can track stimulant schedules such as Adderall, Vyvanse, or methylphenidate as directed by your clinician."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is Pillr an iPhone app for ADHD medication reminders and pill tracking?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Pillr is an iPhone app designed for ADHD medication reminders, dose tracking, focus window logging, and adherence history exports."
-          }
-        }
-      ]
-    }
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type":"Question","name":"Does Pillr replace medical advice or a clinician?","acceptedAnswer":{"@type":"Answer","text":"No. Pillr helps you track and organise medications, but it does not replace a clinician."}},
+      {"@type":"Question","name":"Can I track non-ADHD medications in Pillr?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr supports any medications, with special timing tools for ADHD stimulants."}},
+      {"@type":"Question","name":"Where is my Pillr data stored?","acceptedAnswer":{"@type":"Answer","text":"Your data stays on your device by default."}},
+      {"@type":"Question","name":"Can I export my medication history?","acceptedAnswer":{"@type":"Answer","text":"Yes. You can export medication history as CSV or PDF for easy sharing."}}
+    ]
+  }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400,500,600,700&family=Inter:wght@300,400,500,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="pillr-style.css" />
+  <script type="module" src="firebase.js"></script>
 </head>
 <body>
-  <header class="site-header">
+  <header class="site-header" aria-label="Main navigation">
     <div class="container header-inner">
-      <a class="brand" href="index.html" aria-label="Pillr home">
-        <img src="assets/pillr-brand-icon-dark.png" alt="Pillr logo" width="56" height="56" />
+      <a href="/" class="brand" aria-label="Pillr home">
+        <img src="assets/pillr-brand-icon-dark.png" alt="Pillr" width="48" height="48" />
+        <span>Pillr</span>
       </a>
-      <nav class="nav" aria-label="Primary navigation">
-        <a href="index.html#guides">Guides</a>
-        <a href="index.html#faq">FAQ</a>
+      <nav class="nav" aria-label="Site navigation">
+        <a href="/#features">How it works</a>
+        <a href="/#guides">Guides</a>
+        <a href="/#faq">FAQ</a>
       </nav>
       <div class="header-actions">
-        <a class="app-store-btn" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689?itscg=30200&itsct=apps_box_link&mttnsubad=6746717689" target="_blank" rel="noreferrer">
+        <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" class="app-store-btn" target="_blank" rel="noopener" aria-label="Download on the App Store">
           <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download on the App Store" />
         </a>
       </div>
     </div>
   </header>
 
-  <main>
-    <section class="article-hero">
-      <div class="container">
-        <div class="article-hero-shell">
-          <p class="eyebrow">Full FAQ</p>
-          <h1 class="hero-title">Questions people ask about Pillr</h1>
-          <p class="article-intro">This page keeps the longer list of common questions in one place, so the homepage can stay lighter and easier to scan.</p>
-          <p class="article-intro">If you want the short version, head back to the homepage. If you want the full answer set, it is all here.</p>
-          <div class="cta-group">
-            <a class="button primary" href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689">Download Pillr</a>
-            <a class="button ghost" href="index.html">Back to home</a>
-          </div>
-        </div>
+  <section class="article-hero" aria-label="FAQ hero">
+    <div class="container article-hero-shell">
+      <div class="eyebrow reveal">Full FAQ</div>
+      <h1 class="hero-title reveal">Questions people ask<br />about Pillr.</h1>
+      <p class="article-intro reveal">This page keeps the longer list of common questions in one place, so the homepage can stay lighter and easier to scan.</p>
+      <p class="article-intro reveal">If you want the short version, head back to the <a href="/">homepage</a>. If you want the full answer set, it is all here.</p>
+      <div class="cta-group reveal">
+        <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" class="app-store-btn" target="_blank" rel="noopener" aria-label="Download Pillr on the App Store">
+          <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download on the App Store" />
+        </a>
+        <a href="/" class="button button-secondary">Back to home</a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="article-page">
-      <div class="container article-points">
-        <div class="article-callout">
-          <h2>Built to keep routines steady</h2>
-          <p>Pillr brings reminders, logging, focus windows, and history together so medication management feels less scattered.</p>
-        </div>
-        <div class="article-callout">
-          <h2>Better for search and browsing</h2>
-          <p>This page holds the full question list, while the homepage stays more compact and easier to move through.</p>
-        </div>
+  <section class="article-page" aria-label="Full FAQ">
+    <div class="container">
+      <div class="article-callout reveal">
+        <h2>What Pillr is for</h2>
+        <p>Pillr brings reminders, logging, focus windows, and history together so medication management feels less scattered.</p>
       </div>
-
-      <div class="container article-faq-list">
-        <details class="article-faq-item">
-          <summary>Does Pillr replace medical advice?</summary>
-          <p>No. Pillr helps you track and organize medications, but it does not replace a clinician.</p>
+      <div class="article-callout reveal" style="margin-top:1.2rem;">
+        <h2>About this FAQ</h2>
+        <p>This page holds the full question list, while the homepage stays more compact and easier to move through.</p>
+      </div>
+      <div class="article-faq-list" style="margin-top:2rem;">
+        <details class="article-faq-item reveal">
+          <summary>Does Pillr replace medical advice or a clinician?</summary>
+          <p>No. Pillr helps you track and organise medications, but it does not replace a clinician.</p>
         </details>
-        <details class="article-faq-item">
-          <summary>Can I track non-ADHD medications too?</summary>
+        <details class="article-faq-item reveal">
+          <summary>Can I track non-ADHD medications in Pillr?</summary>
           <p>Yes. Pillr supports any medications, with special timing tools for ADHD stimulants.</p>
         </details>
-        <details class="article-faq-item">
+        <details class="article-faq-item reveal">
           <summary>Where is my data stored?</summary>
-          <p>Your data stays on your device.</p>
+          <p>Your data stays on your device by default.</p>
         </details>
-        <details class="article-faq-item">
-          <summary>What can I export?</summary>
-          <p>You can export medication history as CSV or PDF for easy sharing.</p>
+        <details class="article-faq-item reveal">
+          <summary>Can I export my medication history?</summary>
+          <p>You can export medication history as CSV or PDF for easy sharing with clinicians or caregivers.</p>
         </details>
-        <details class="article-faq-item">
-          <summary>Is Pillr a medication management tool?</summary>
+        <details class="article-faq-item reveal">
+          <summary>Is Pillr a medication management app?</summary>
           <p>Pillr is built for medication management. You can set reminders, log doses, and review adherence on your device so your routine stays steady.</p>
         </details>
-        <details class="article-faq-item">
+        <details class="article-faq-item reveal">
           <summary>Does Pillr include an ADHD symptom tracker?</summary>
           <p>Pillr keeps symptom context in mind by capturing focus windows, side effect notes, and wear-off check-ins alongside medication data.</p>
         </details>
-        <details class="article-faq-item">
-          <summary>Can I use Pillr as a pill tracker or pill reminder?</summary>
+        <details class="article-faq-item reveal">
+          <summary>Can I use Pillr as a pill tracker with reminders?</summary>
           <p>Yes. Pillr combines pill tracker features with flexible reminders so you always know when to take, skip, or snooze a dose.</p>
         </details>
-        <details class="article-faq-item">
+        <details class="article-faq-item reveal">
           <summary>Why is Pillr called an ADHD app?</summary>
           <p>Pillr was designed around the timing, consistency, and routine challenges that often come with ADHD medication management.</p>
         </details>
-        <details class="article-faq-item">
+        <details class="article-faq-item reveal">
           <summary>How does Pillr support medication adherence?</summary>
           <p>Pillr tracks adherence rates, streaks, and refill status, making it easier to stay consistent and share a clear history when needed.</p>
         </details>
-        <details class="article-faq-item">
-          <summary>Can Pillr track stimulant schedules like Adderall, Vyvanse, or methylphenidate?</summary>
+        <details class="article-faq-item reveal">
+          <summary>Can Pillr track stimulant medication schedules?</summary>
           <p>Pillr supports custom medication names and timing details, so you can track stimulant schedules such as Adderall, Vyvanse, or methylphenidate as directed by your clinician.</p>
         </details>
-        <details class="article-faq-item">
-          <summary>Is Pillr an iPhone app for ADHD medication reminders and pill tracking?</summary>
+        <details class="article-faq-item reveal">
+          <summary>Is Pillr an iPhone app for ADHD medication?</summary>
           <p>Yes. Pillr is an iPhone app designed for ADHD medication reminders, dose tracking, focus window logging, and adherence history exports.</p>
         </details>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
 
-  <footer class="site-footer">
+  <footer class="site-footer" aria-label="Site footer">
     <div class="container footer-grid">
-      <div>
+      <div class="footer-brand-col">
         <p class="footer-brand">Pillr</p>
         <p class="footer-note">ADHD medication tracking that keeps your routine steady.</p>
       </div>
-      <div>
-        <p class="footer-title">Explore</p>
-        <a href="index.html">Home</a>
-        <a href="index.html#guides">Guides</a>
+      <div class="footer-col">
+        <h4 class="footer-title">Explore</h4>
+        <a href="/#features">How it works</a>
+        <a href="/#guides">Guides</a>
+        <a href="/#faq">FAQ</a>
         <a href="faq.html">Full FAQ</a>
       </div>
-      <div>
-        <p class="footer-title">Contact</p>
-        <a href="https://tally.so/r/3qMdL7">Contact</a>
-        <a href="llms.txt">LLM profile</a>
+      <div class="footer-col">
+        <h4 class="footer-title">Connect</h4>
+        <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" target="_blank" rel="noopener">App Store</a>
+        <a href="https://tally.so/r/3qMdL7" target="_blank" rel="noopener">Contact &amp; Support</a>
+        <a href="llms.txt">LLM Index</a>
+        <a href="sitemap.xml">Sitemap</a>
       </div>
     </div>
+    <div class="container footer-bottom">
+      <p>&copy; 2025 Pillr. All rights reserved.</p>
+    </div>
   </footer>
-
   <script>
     const header = document.querySelector('.site-header');
-    const hero = document.querySelector('.hero');
-    
-    function updateHeaderVisibility() {
-      const heroBottom = hero.getBoundingClientRect().bottom;
-      if (heroBottom <= 0) {
-        header.classList.add('is-visible');
+    const updateHeaderVisibility = () => {
+      if (!header) return;
+      if (window.innerWidth <= 640) {
+        header.classList.toggle('is-visible', window.scrollY > 32);
       } else {
-        header.classList.remove('is-visible');
+        header.classList.add('is-visible');
       }
-    }
-    
+      header.classList.toggle('nav-solid', window.scrollY > 48);
+    };
     window.addEventListener('scroll', updateHeaderVisibility, { passive: true });
+    window.addEventListener('resize', updateHeaderVisibility);
     updateHeaderVisibility();
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) { entry.target.classList.add('is-visible'); }
+        else { entry.target.classList.remove('is-visible'); }
+      });
+    }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+    reveals.forEach(el => observer.observe(el));
   </script>
 </body>
 </html>
