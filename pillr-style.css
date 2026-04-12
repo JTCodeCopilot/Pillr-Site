@@ -123,7 +123,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 .hero-logo img { width: 120px; height: 120px; object-fit: contain; }
 .hero-copy .eyebrow { margin-bottom: 1.2rem; transition-delay: 0.05s; }
 .hero-copy h1 { font-family: var(--font-display); font-size: clamp(4.4rem, 10.4vw, 9.2rem); font-weight: 700; line-height: 0.95; letter-spacing: -0.04em; color: var(--text); margin: 0 0 1.4rem; transition-delay: 0.15s; }
-.hero-intro { font-size: clamp(1rem, 2vw, 1.18rem); color: var(--muted); line-height: 1.7; max-width: 58ch; margin: 0 auto 1.8rem; font-weight: 300; transition-delay: 0.28s; }
+.hero-intro { font-size: clamp(1rem, 2vw, 1.18rem); color: var(--muted); line-height: 1.7; max-width: 58ch; margin: 0 auto 1.8rem; font-weight: 300; font-style: italic; transition-delay: 0.28s; }
 .cta-group { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.75rem; transition-delay: 0.38s; }
 .hero-hint { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.06em; width: 100%; text-align: center; }
 .hero-scroll { margin-top: 3rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; transition-delay: 0.5s; opacity: 0.6; }
