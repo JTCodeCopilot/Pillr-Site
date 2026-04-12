@@ -338,12 +338,12 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   :root { --header-height: 72px; }
   .nav { display: none; }
   .header-inner { flex-wrap: nowrap; padding: 0.75rem 0; }
-  .hero-grid { max-width: 100%; padding: 6rem var(--space-md) var(--space-lg); }
+  .hero-grid { max-width: 100%; padding: 3rem var(--space-md) var(--space-lg); }
   .hero-copy h1 { font-size: clamp(3.5rem, 14vw, 5.5rem); }
   .stats-inner { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
   .stat-divider { display: none; }
   .features-sticky-wrapper { height: 1400vh; }
-  .step-panel { padding: calc(var(--header-height) + 0.5rem) var(--space-md) 0; gap: var(--space-md); }
+  .step-panel { padding: calc(var(--header-height) + 0.5rem) var(--space-md) 0; gap: 1rem; }
   .step-headline { font-size: clamp(2.2rem, 8vw, 3.2rem); }
   .capsule-grid, .guide-grid, .faq-list { grid-template-columns: 1fr; }
   .cta-panel { grid-template-columns: 1fr; text-align: center; }
