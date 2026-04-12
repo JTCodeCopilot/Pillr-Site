@@ -19,6 +19,28 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="pillr-style.css" />
+  <style>
+    .guide-clean-page { padding: clamp(2rem, 4vw, 3.5rem) 0 var(--space-2xl); }
+    .guide-clean-shell { max-width: 860px; margin: 0 auto; }
+    .guide-clean-body { border: 1px solid var(--line); background: rgba(255,255,255,0.82); backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); border-radius: var(--radius-lg); padding: clamp(1.5rem, 1rem + 2vw, 3rem); }
+    .guide-clean-lede { font-size: 1.05rem; line-height: 1.75; color: var(--text); max-width: 62ch; }
+    .guide-clean-summary { margin: 1.75rem 0 2.25rem; padding: 1.25rem 1.35rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(247,243,233,0.9); }
+    .guide-clean-summary h2 { margin: 0 0 0.85rem; font-size: 1.15rem; font-family: var(--font-sans); letter-spacing: -0.01em; }
+    .guide-clean-summary ul { margin: 0; padding-left: 1.3rem; color: var(--text); columns: 2; column-gap: 1.5rem; list-style: disc; }
+    .guide-clean-summary li { margin-top: 0.35rem; }
+    .guide-clean-body section + section { margin-top: 2.25rem; padding-top: 2rem; border-top: 1px solid rgba(61, 47, 35, 0.1); }
+    .guide-clean-body h2 { margin: 0 0 0.85rem; font-family: var(--font-display); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; font-size: clamp(1.65rem, 3vw, 2.15rem); }
+    .guide-clean-body p { margin: 0 0 1rem; color: var(--muted); max-width: 64ch; }
+    .guide-clean-body ul { margin: 0; padding-left: 1.35rem; color: var(--muted); max-width: 58ch; list-style: disc; }
+    .guide-clean-body li + li { margin-top: 0.45rem; }
+    .guide-clean-inline-note { margin-top: 1rem; padding-left: 1rem; border-left: 3px solid rgba(195,163,93,0.45); color: var(--text); }
+    .guide-clean-links { margin-top: 2.5rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(255,255,255,0.65); padding: 1.2rem 1.25rem; }
+    .guide-clean-links h3 { margin: 0 0 0.65rem; font-size: 1rem; }
+    .guide-clean-links p { margin: 0; }
+    @media (max-width: 760px) {
+      .guide-clean-summary ul { columns: 1; }
+    }
+  </style>
   <script type="module" src="firebase.js"></script>
 </head>
 <body>
@@ -54,118 +76,101 @@
     </div>
   </section>
 
-  <section class="article-page" aria-label="ADHD medication reminder app content">
-    <div class="container article-grid">
-      <main class="article-body">
-        <h2>What to look for in an ADHD medication reminder app</h2>
-        <p>The best app for ADHD medication reminders should support real life, not a perfect routine.</p>
-        <p>Key features to look for include:</p>
-        <ul>
-          <li>Reliable daily reminders</li>
-          <li>A simple way to log taken or missed doses</li>
-          <li>Medication history you can check later</li>
-          <li>Refill planning so you do not run out unexpectedly</li>
-          <li>A clean interface that does not feel overwhelming</li>
-          <li>Fast actions that do not require too many taps</li>
-        </ul>
-        <p>For many people with ADHD, friction is the reason habits fail. The best reminder app is the one that makes the next action obvious. For a tool focused more on records, see this <a href="medication-tracker-for-iphone-adhd.html">ADHD medication tracker</a> guide.</p>
+  <section class="guide-clean-page" aria-label="ADHD medication reminder app content">
+    <div class="container">
+      <div class="guide-clean-shell">
+        <main class="guide-clean-body">
+          <p class="guide-clean-lede">If you are comparing apps, the real question is not which one has the longest feature list. It is which one makes your routine easier to follow when your day is busy, distracted, or off schedule.</p>
 
-        <h2>Why a normal reminder app is often not enough</h2>
-        <p>Generic reminder apps can help, but they often miss the details that matter for medication routines.</p>
-        <p>They may not show whether you actually took the dose, whether you skipped it, or when you last logged it. That creates uncertainty, especially on rushed mornings or long workdays, and it makes <a href="forget-to-take-vyvanse-what-to-do.html">missed doses</a> harder to manage.</p>
-        <p>An ADHD specific medication reminder app should help answer questions like:</p>
-        <ul>
-          <li>Did I take it already?</li>
-          <li>Did I miss today?</li>
-          <li>When do I need a refill?</li>
-          <li>What has my week looked like?</li>
-        </ul>
+          <div class="guide-clean-summary">
+            <h2>What matters most</h2>
+            <ul>
+              <li>Reliable daily reminders</li>
+              <li>Fast taken or missed dose logging</li>
+              <li>Clear history you can trust</li>
+              <li>Refill planning before you run out</li>
+              <li>A calm, uncluttered design</li>
+              <li>Less second guessing on busy days</li>
+            </ul>
+          </div>
 
-        <h2>How Pillr helps</h2>
-        <p>Pillr is built to make ADHD medication routines easier to manage on iPhone.</p>
-        <p>With Pillr, you can:</p>
-        <ul>
-          <li>Set clear daily medication reminders</li>
-          <li>Log taken and missed doses</li>
-          <li>Review medication history</li>
-          <li>Keep notes when needed</li>
-          <li>Plan ahead for refills</li>
-          <li>Reduce the mental effort of trying to remember everything yourself</li>
-        </ul>
-        <p>The goal is simple: fewer forgotten doses, less uncertainty, and a routine that feels easier to stay on top of.</p>
+          <section>
+            <h2>What to look for in an ADHD medication reminder app</h2>
+            <p>The best app for ADHD medication reminders should support real life, not a perfect routine.</p>
+            <ul>
+              <li>Reliable daily reminders</li>
+              <li>A simple way to log taken or missed doses</li>
+              <li>Medication history you can check later</li>
+              <li>Refill planning so you do not run out unexpectedly</li>
+              <li>A clean interface that does not feel overwhelming</li>
+              <li>Fast actions that do not require too many taps</li>
+            </ul>
+            <p class="guide-clean-inline-note">For many people with ADHD, friction is the reason habits fail. The best reminder app is the one that makes the next action obvious. For a tool focused more on records, see this <a href="medication-tracker-for-iphone-adhd.html">ADHD medication tracker</a> guide.</p>
+          </section>
 
-        <h2>Who this is for</h2>
-        <p>Pillr may be useful if you:</p>
-        <ul>
-          <li>Forget medication when your routine changes</li>
-          <li>Struggle with consistency on busy mornings</li>
-          <li>Want a quick way to confirm whether you took your dose</li>
-          <li>Need a clearer record of your medication habits</li>
-          <li>Want an iPhone app designed around real world ADHD friction</li>
-        </ul>
+          <section>
+            <h2>Why a normal reminder app is often not enough</h2>
+            <p>Generic reminder apps can help, but they often miss the details that matter for medication routines.</p>
+            <p>They may not show whether you actually took the dose, whether you skipped it, or when you last logged it. That creates uncertainty, especially on rushed mornings or long workdays, and it makes <a href="forget-to-take-vyvanse-what-to-do.html">missed doses</a> harder to manage.</p>
+            <p>An ADHD specific medication reminder app should help answer questions like:</p>
+            <ul>
+              <li>Did I take it already?</li>
+              <li>Did I miss today?</li>
+              <li>When do I need a refill?</li>
+              <li>What has my week looked like?</li>
+            </ul>
+          </section>
 
-        <h2>Choosing the best ADHD medication reminder app</h2>
-        <p>The best app is not the one with the most features. It is the one you will actually use every day.</p>
-        <p>Look for something that is:</p>
-        <ul>
-          <li>Simple</li>
-          <li>Fast</li>
-          <li>Easy to trust</li>
-          <li>Clear when you are distracted</li>
-          <li>Built around medication routines, not generic task lists</li>
-        </ul>
+          <section>
+            <h2>How Pillr helps</h2>
+            <p>Pillr is built to make ADHD medication routines easier to manage on iPhone.</p>
+            <ul>
+              <li>Set clear daily medication reminders</li>
+              <li>Log taken and missed doses</li>
+              <li>Review medication history</li>
+              <li>Keep notes when needed</li>
+              <li>Plan ahead for refills</li>
+              <li>Reduce the mental effort of trying to remember everything yourself</li>
+            </ul>
+            <p>The goal is simple: fewer forgotten doses, less uncertainty, and a routine that feels easier to stay on top of.</p>
+          </section>
 
-        <h2>Final thoughts</h2>
-        <p>If you are looking for the best ADHD medication reminder app for iPhone, focus on tools that reduce effort and increase clarity. Consistency is easier when the system around you is simple.</p>
-        <p>Pillr is designed to help with exactly that.</p>
+          <section>
+            <h2>Who this is for</h2>
+            <p>Pillr may be useful if you:</p>
+            <ul>
+              <li>Forget medication when your routine changes</li>
+              <li>Struggle with consistency on busy mornings</li>
+              <li>Want a quick way to confirm whether you took your dose</li>
+              <li>Need a clearer record of your medication habits</li>
+              <li>Want an iPhone app designed around real world ADHD friction</li>
+            </ul>
+          </section>
 
-        <div class="article-tip">
-          <h3>Related reading</h3>
-          <p><a href="medication-tracker-for-iphone-adhd.html">ADHD medication tracker for iPhone</a> &nbsp;&middot;&nbsp; <a href="how-adults-stick-to-adhd-medication-routine.html">How adults stick to an ADHD medication routine</a> &nbsp;&middot;&nbsp; <a href="adhd-pill-reminder-for-busy-professionals.html">ADHD pill reminder for busy professionals</a></p>
-        </div>
-      </main>
+          <section>
+            <h2>Choosing the best ADHD medication reminder app</h2>
+            <p>The best app is not the one with the most features. It is the one you will actually use every day.</p>
+            <ul>
+              <li>Simple</li>
+              <li>Fast</li>
+              <li>Easy to trust</li>
+              <li>Clear when you are distracted</li>
+              <li>Built around medication routines, not generic task lists</li>
+            </ul>
+          </section>
 
-      <aside class="article-aside">
-        <h3>What matters most</h3>
-        <ul>
-          <li>Clear daily reminders</li>
-          <li>Easy dose logging</li>
-          <li>Trusted history</li>
-          <li>Refill planning</li>
-          <li>Low mental load</li>
-        </ul>
-        <p style="margin-top:1rem;">The best app is the one that stays easy to use when your day does not go to plan.</p>
-      </aside>
-    </div>
+          <section>
+            <h2>Final thoughts</h2>
+            <p>If you are looking for the best ADHD medication reminder app for iPhone, focus on tools that reduce effort and increase clarity. Consistency is easier when the system around you is simple.</p>
+            <p>Pillr is designed to help with exactly that.</p>
+          </section>
 
-    <div class="container article-points">
-      <div class="article-callout">
-        <h2>Built for real routines</h2>
-        <p>Pillr helps with reminders, missed dose tracking, refill planning, and history in one clear place.</p>
+          <div class="guide-clean-links">
+            <h3>Related reading</h3>
+            <p><a href="medication-tracker-for-iphone-adhd.html">ADHD medication tracker for iPhone</a> &nbsp;&middot;&nbsp; <a href="how-adults-stick-to-adhd-medication-routine.html">How adults stick to an ADHD medication routine</a> &nbsp;&middot;&nbsp; <a href="adhd-pill-reminder-for-busy-professionals.html">ADHD pill reminder for busy professionals</a></p>
+          </div>
+        </main>
       </div>
-      <div class="article-callout">
-        <h2>Less second guessing</h2>
-        <p>When you can check what happened quickly, it is easier to trust your routine and move on with your day.</p>
-      </div>
-    </div>
-
-    <div class="container article-faq-list">
-      <details class="article-faq-item">
-        <summary>What is the best ADHD medication reminder app for iPhone?</summary>
-        <p>The best app is one that makes reminders clear, lets you log taken or missed doses quickly, and gives you a simple history you can trust.</p>
-      </details>
-      <details class="article-faq-item">
-        <summary>Why is a basic reminder app not always enough?</summary>
-        <p>Basic reminder apps often tell you when to do something, but not whether you actually did it. Medication routines usually need both.</p>
-      </details>
-      <details class="article-faq-item">
-        <summary>What should an ADHD medication app help me track?</summary>
-        <p>It should help you track reminders, taken and missed doses, refill timing, and your medication history.</p>
-      </details>
-      <details class="article-faq-item">
-        <summary>Can Pillr help reduce mental load?</summary>
-        <p>Yes. Pillr is designed to make the next step clear, so you are not trying to keep your whole medication routine in your head.</p>
-      </details>
     </div>
   </section>
 

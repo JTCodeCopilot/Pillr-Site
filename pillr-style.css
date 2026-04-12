@@ -280,34 +280,34 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 .article-intro { max-width: 62ch; margin: 1.2rem 0 0; font-size: clamp(1.04rem, 0.98rem + 0.35vw, 1.18rem); color: var(--muted); }
 .article-intro + .article-intro { margin-top: 0.8rem; }
 .article-intro + .cta-group { margin-top: 1.8rem; }
-.article-page { position: relative; padding: var(--space-lg) 0 var(--space-2xl); }
-.article-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: var(--space-lg); align-items: start; }
-.article-body { border: 1px solid var(--line); background: rgba(255,255,255,0.7); backdrop-filter: blur(16px); box-shadow: var(--shadow-sm); border-radius: var(--radius-lg); padding: clamp(1.5rem, 1rem + 1.5vw, 2.5rem); }
-.article-body h2 { margin: 2rem 0 1rem; font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; font-size: clamp(1.6rem, 3vw, 2.2rem); }
+.article-page { position: relative; padding: clamp(2rem, 4vw, 3.5rem) 0 var(--space-2xl); }
+.article-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; align-items: start; max-width: 860px; margin: 0 auto; }
+.article-body { order: 2; border: 1px solid var(--line); background: rgba(255,255,255,0.82); backdrop-filter: blur(12px); box-shadow: var(--shadow-sm); border-radius: var(--radius-lg); padding: clamp(1.5rem, 1rem + 2vw, 3rem); }
+.article-body h2 { margin: 2.25rem 0 0.85rem; font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; font-size: clamp(1.65rem, 3vw, 2.15rem); }
 .article-body h2:first-child { margin-top: 0; }
 .article-body h3 { margin: 1.5rem 0 0.75rem; font-weight: 700; letter-spacing: -0.01em; font-size: 1.25rem; }
-.article-body p { margin: 0 0 1rem; color: var(--muted); }
-.article-body ul { margin: 0 0 1rem; padding-left: 1.2rem; color: var(--muted); }
+.article-body p { margin: 0 0 1rem; color: var(--muted); max-width: 64ch; }
+.article-body ul { margin: 0 0 1rem; padding-left: 1.35rem; color: var(--muted); max-width: 58ch; list-style: disc; }
 .article-body li + li { margin-top: 0.4rem; }
 .article-body a { color: var(--text); font-weight: 600; text-decoration: underline; text-decoration-color: var(--highlight); text-underline-offset: 2px; }
 .article-body a:hover { text-decoration-color: var(--text); }
-.article-aside { border: 1px solid var(--line); background: rgba(255,255,255,0.7); backdrop-filter: blur(16px); box-shadow: var(--shadow-sm); border-radius: var(--radius-md); padding: 1.5rem; position: sticky; top: calc(var(--header-height) + 20px); }
+.article-aside { order: 1; border: 1px solid var(--line); background: rgba(247,243,233,0.9); box-shadow: none; border-radius: var(--radius-md); padding: 1.25rem 1.35rem; position: static; }
 .article-aside h3 { margin: 0 0 1rem; font-weight: 700; letter-spacing: -0.01em; font-size: 1.1rem; }
-.article-aside ul { margin: 0 0 1rem; padding-left: 1.2rem; color: var(--muted); font-size: 0.95rem; }
+.article-aside ul { margin: 0 0 0.25rem; padding-left: 1.35rem; color: var(--text); font-size: 0.95rem; list-style: disc; columns: 2; column-gap: 1.5rem; }
 .article-aside li + li { margin-top: 0.4rem; }
-.article-aside p { margin: 0; color: var(--muted); font-size: 0.9rem; }
-.article-points { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.2rem; margin-top: var(--space-lg); }
-.article-callout { border: 1px solid var(--line); background: rgba(255,255,255,0.7); backdrop-filter: blur(16px); box-shadow: var(--shadow-sm); border-radius: var(--radius-md); padding: 1.5rem; }
-.article-callout h2 { margin: 0 0 0.75rem; font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: 1.4rem; }
-.article-callout p { margin: 0; color: var(--muted); }
-.article-faq-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin-top: var(--space-lg); }
-.article-faq-item { border: 1px solid var(--line); background: rgba(255,255,255,0.7); backdrop-filter: blur(16px); box-shadow: var(--shadow-sm); border-radius: var(--radius-md); padding: 1.5rem; cursor: pointer; }
+.article-aside p { margin: 0.9rem 0 0; color: var(--muted); font-size: 0.92rem; max-width: 60ch; }
+.article-points { display: grid; grid-template-columns: 1fr; gap: 1rem; margin: var(--space-lg) auto 0; max-width: 860px; }
+.article-callout { border: 1px solid var(--line); background: rgba(255,255,255,0.65); box-shadow: none; border-radius: var(--radius-md); padding: 1.2rem 1.25rem; }
+.article-callout h2 { margin: 0 0 0.5rem; font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: 1.3rem; }
+.article-callout p { margin: 0; color: var(--muted); max-width: 60ch; }
+.article-faq-list { display: grid; grid-template-columns: 1fr; gap: 1rem; margin: var(--space-lg) auto 0; max-width: 860px; }
+.article-faq-item { border: 1px solid var(--line); background: rgba(255,255,255,0.65); box-shadow: none; border-radius: var(--radius-md); padding: 1.2rem 1.25rem; cursor: pointer; }
 .article-faq-item summary { list-style: none; font-weight: 700; letter-spacing: -0.02em; position: relative; padding-right: 1.6rem; }
 .article-faq-item summary::-webkit-details-marker { display: none; }
 .article-faq-item summary::after { content: "+"; position: absolute; right: 0; top: 0; color: var(--muted); font-size: 1.1rem; }
 .article-faq-item[open] summary::after { content: "−"; }
 .article-faq-item p { margin: 0.8rem 0 0; color: var(--muted); }
-.article-tip { border: 1px solid var(--line); background: rgba(255,255,255,0.5); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 2rem; }
+.article-tip { border: 1px solid var(--line); background: rgba(255,255,255,0.65); border-radius: var(--radius-md); padding: 1.2rem 1.25rem; margin-top: 2.25rem; }
 .article-tip h3 { margin: 0 0 0.5rem; font-weight: 700; font-size: 1rem; }
 .article-tip p  { margin: 0; font-size: 0.95rem; }
 
@@ -332,7 +332,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   .guide-grid   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .footer-grid  { grid-template-columns: 1fr 1fr; }
   .article-grid, .article-points, .article-faq-list { grid-template-columns: 1fr; }
-  .article-aside { position: static; }
+  .article-aside ul { columns: 1; }
 }
 @media (max-width: 760px) {
   :root { --header-height: 72px; }
