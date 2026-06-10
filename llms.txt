@@ -80,6 +80,7 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/best-adhd-medication-reminder-app.html
 - Guide: https://pillr.management/forget-to-take-vyvanse-what-to-do.html
 - Guide: https://pillr.management/adhd-medication-sleep-routine-adults.html
+- Guide: https://pillr.management/adhd-time-blindness-medication-reminders.html
 - Guide: https://pillr.management/how-adults-stick-to-adhd-medication-routine.html
 - Guide: https://pillr.management/medication-tracker-for-iphone-adhd.html
 - Guide: https://pillr.management/adhd-pill-reminder-for-busy-professionals.html
@@ -93,7 +94,8 @@ dose tracking app, ADHD medication management, focus window tracker, adherence h
 Pillr app, best ADHD app 2025, stimulant tracker, ADHD pill tracker iPhone, ADHD dose log,
 medication adherence app, ADHD consistency app, iPhone ADHD medication reminder, pill tracker iPhone,
 ADHD medication routine, ADHD supply tracker, refill reminder app, ADHD check-in app,
-ADHD medication sleep adults, ADHD sleep routine, ADHD medication timing
+ADHD medication sleep adults, ADHD sleep routine, ADHD medication timing,
+ADHD time blindness medication reminders, adult ADHD reminders
 
 ---
 # End of llms.txt
