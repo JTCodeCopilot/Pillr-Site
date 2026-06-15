@@ -1,0 +1,395 @@
+- generic [active] [ref=e1]:
+  - banner "Main navigation" [ref=e2]:
+    - generic [ref=e3]:
+      - link "Pillr home" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: Pillr
+      - navigation "Site navigation" [ref=e6]:
+        - link "How it works" [ref=e7] [cursor=pointer]:
+          - /url: "#features"
+        - link "Guides" [ref=e8] [cursor=pointer]:
+          - /url: "#guides"
+        - link "FAQ" [ref=e9] [cursor=pointer]:
+          - /url: faq.html
+      - link "Download on the App Store" [ref=e11] [cursor=pointer]:
+        - /url: https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689
+        - img "Download on the App Store" [ref=e12]
+  - region "Hero" [ref=e13]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - paragraph [ref=e16]: Pillr
+        - heading "Built for the ADHD brain." [level=1] [ref=e17]:
+          - text: Built for the
+          - text: ADHD brain.
+        - paragraph [ref=e18]: Pillr helps you remember medication, log doses, track focus windows, and keep a clear record on iPhone without adding more mental clutter.
+        - link "Download Pillr on the App Store" [ref=e20] [cursor=pointer]:
+          - /url: https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689
+          - img "Download on the App Store" [ref=e21]
+        - paragraph [ref=e22]: Free to start on iPhone
+      - generic "Pillr app preview" [ref=e23]:
+        - img "Pillr app showing medication reminders, the next dose, and dose logging on iPhone" [ref=e26]
+        - generic [ref=e27]:
+          - generic [ref=e28]: Medications
+          - generic [ref=e29]:
+            - strong [ref=e30]: Vyvanse 30mg
+            - generic [ref=e31]: Daily at 8:30 AM
+          - generic [ref=e32]:
+            - strong [ref=e33]: Ritalin 5mg
+            - generic [ref=e34]: As needed
+          - generic [ref=e35]:
+            - strong [ref=e36]: Vitamin D
+            - generic [ref=e37]: Daily at 1:00 PM
+        - generic [ref=e38]:
+          - generic [ref=e39]: Focus timeline
+          - generic [ref=e42]:
+            - generic [ref=e43]: 6 AM
+            - generic [ref=e44]: 12 PM
+            - generic [ref=e45]: 6 PM
+        - generic [ref=e46]:
+          - generic [ref=e47]: This week
+          - generic [ref=e48]:
+            - strong [ref=e49]: "14"
+            - strong [ref=e50]: "12"
+            - strong [ref=e51]: "2"
+  - region "Why Pillr stands out" [ref=e58]:
+    - generic [ref=e59]:
+      - generic [ref=e60]:
+        - generic [ref=e61]: Why Pillr
+        - heading "Made for ADHD medication, not generic reminders." [level=2] [ref=e62]:
+          - text: Made for ADHD medication,
+          - text: not generic reminders.
+        - paragraph [ref=e63]: Pillr is strongest when the problem is not just getting a reminder. It is knowing what happened, trusting the record, and keeping your routine steady when life gets messy.
+      - generic [ref=e64]:
+        - article [ref=e65]:
+          - heading "Clearer than a normal reminder app" [level=3] [ref=e66]
+          - paragraph [ref=e67]: Generic reminders can tell you when to act, but they often do not help you confirm whether you actually did.
+          - link "See what a better reminder app should do" [ref=e68] [cursor=pointer]:
+            - /url: adhd-medication-reminder-app-for-iphone.html
+        - article [ref=e69]:
+          - heading "Better fit for ADHD medication routines" [level=3] [ref=e70]
+          - paragraph [ref=e71]: Pillr combines reminders, quick dose logging, focus windows, refill tracking, and exports in one calm flow.
+          - link "Read the iPhone guide" [ref=e72] [cursor=pointer]:
+            - /url: best-adhd-medication-reminder-app.html
+        - article [ref=e73]:
+          - heading "A stronger option than Apple Health alone" [level=3] [ref=e74]
+          - paragraph [ref=e75]: Apple Health is useful for basic tracking. Pillr goes further if you want faster logging, clearer routines, and ADHD-specific features.
+          - link "Compare Apple Health and Pillr" [ref=e76] [cursor=pointer]:
+            - /url: apple-health-vs-pillr-medication-reminders.html
+  - region "How Pillr works" [ref=e77]:
+    - generic [ref=e79]:
+      - generic "Feature 1" [ref=e80]:
+        - generic [ref=e81]:
+          - generic [ref=e82]: 01 , 08
+          - heading "Everything in one place." [level=2] [ref=e83]:
+            - text: Everything in
+            - text: one place.
+          - paragraph [ref=e84]: All your meds — scheduled, as needed, or one-off — in a single view the moment you open the app. No more scattered alarms, sticky notes, or trying to remember which app you used last time. Just one place that shows you exactly where things are.
+        - generic [ref=e86]:
+          - generic [ref=e87]: Today
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - generic [ref=e90]: Vyvanse 30mg
+              - generic [ref=e91]: ✓ Taken · 8:04 am
+            - generic [ref=e92]:
+              - generic [ref=e93]: Guanfacine 1mg
+              - generic [ref=e94]: ● Due now
+            - generic [ref=e95]:
+              - generic [ref=e96]: Melatonin 3mg
+              - generic [ref=e97]: ● 9:00 pm
+      - generic "Feature 2":
+        - generic:
+          - generic: 02 , 08
+          - heading "Alerts that actually get through." [level=2]:
+            - text: Alerts that actually
+            - text: get through.
+          - paragraph: Pillr reminders cut through Do Not Disturb and Focus modes so you still get notified when your phone is silenced. For an ADHD brain, a reminder you can accidentally miss isn’t really a reminder at all.
+        - generic:
+          - generic:
+            - generic: Reminder
+            - generic:
+              - generic: 8:00 AM
+              - generic: Time for Vyvanse 30mg
+              - generic:
+                - generic: ✓ Taken
+                - generic: Skip
+      - generic "Feature 3":
+        - generic:
+          - generic: 03 , 08
+          - heading "Log a dose in seconds, not steps." [level=2]:
+            - text: Log a dose in
+            - text: seconds, not steps.
+          - paragraph: Tap to mark a dose as taken or skipped — no menus, no typing. If you tap the wrong thing or forgot to log in the moment, there’s undo support and manual time entry so your history stays accurate without extra effort.
+        - generic:
+          - generic:
+            - generic: Log a dose
+            - generic:
+              - generic: ✓ Taken
+              - generic: − Skipped
+            - generic: Undo last action
+      - generic "Feature 4":
+        - generic:
+          - generic: 04 , 08
+          - heading "Know when your medication is working." [level=2]:
+            - text: Know when your
+            - text: medication is working.
+          - paragraph: A visual timeline that shows when your medication kicks in, hits its peak, and starts to fade — based on your own onset and duration settings, not a generic average. Schedule your hardest tasks when you’re sharpest, and stop fighting yourself when you’re not.
+        - generic:
+          - generic:
+            - generic: Focus timeline · Today
+            - generic:
+              - generic:
+                - generic: Onset
+                - generic: Peak focus
+                - generic: Wear‑off
+            - generic:
+              - generic: Tasks 9–11am
+              - generic: Meetings 11am–1pm
+              - generic: Wind down 3pm+
+      - generic "Feature 5":
+        - generic:
+          - generic: 05 , 08
+          - heading "See the patterns your memory misses." [level=2]:
+            - text: See the patterns
+            - text: your memory misses.
+          - paragraph: A short end-of-day check-in where you log focus, mood, and any side effects. Over a few weeks, it builds a real picture of how your medication is actually affecting you — so you have something concrete to show your psychiatrist, not just a feeling.
+        - generic:
+          - generic:
+            - generic: Today’s check-in
+            - generic:
+              - generic: Focus
+            - generic:
+              - generic: Mood
+            - generic:
+              - generic: Side effects
+              - generic: Mild headache , noted
+      - generic "Feature 6":
+        - generic:
+          - generic: 06 , 08
+          - heading "Don’t get caught running out." [level=2]:
+            - text: Don’t get caught
+            - text: running out.
+          - paragraph: Track your remaining pills with a threshold you set yourself, and get a heads-up before you’re down to the last few. ADHD and last-minute pharmacy runs don’t go well together. This gives you enough lead time to sort it without the panic.
+        - generic:
+          - generic:
+            - generic: Supply
+            - generic:
+              - generic:
+                - generic: Vyvanse 30mg
+                - generic: 8 pills remaining · Refill soon
+              - generic:
+                - generic: Guanfacine 1mg
+                - generic: 21 pills remaining
+      - generic "Feature 7":
+        - generic:
+          - generic: 07 , 08
+          - heading "Check before you combine." [level=2]:
+            - text: Check before
+            - text: you combine.
+          - paragraph: Add a new prescription, supplement, or over-the-counter med and Pillr checks it against what you’re already taking. It flags whether any combination is a minor concern, major, or something to avoid , before you find out the hard way.
+        - generic:
+          - generic:
+            - generic: Interaction check
+            - generic:
+              - generic: Vyvanse + Sertraline
+              - generic: Moderate , monitor
+            - generic:
+              - generic: Vyvanse + Melatonin
+              - generic: Minor , generally safe
+      - generic "Feature 8":
+        - generic:
+          - generic: 08 , 08
+          - heading "Bring real data to your appointments." [level=2]:
+            - text: Bring real data to
+            - text: your appointments.
+          - paragraph: Export your full medication history as a PDF or CSV, filtered by date if you need it. Instead of walking into a medication review trying to remember the last three months, you show up with an actual record.
+        - generic:
+          - generic:
+            - generic: Adherence · Last 7 days
+            - generic:
+              - generic: M
+              - generic: T
+              - generic: W
+              - generic: T
+              - generic: F
+              - generic: S
+              - generic: S
+            - generic:
+              - generic: Export CSV
+              - generic: Export PDF
+  - region "What users say about Pillr" [ref=e107]:
+    - generic [ref=e108]:
+      - generic [ref=e109]:
+        - generic [ref=e110]: Testimonials
+        - heading "From people who use it every day." [level=2] [ref=e111]:
+          - text: From people who use it
+          - text: every day.
+        - paragraph [ref=e112]: Real stories from adults managing ADHD medication with Pillr.
+      - generic [ref=e113]:
+        - generic [ref=e114]:
+          - paragraph [ref=e121]: I've tried every reminder app out there and they all just... blended into the noise. Pillr is the first one that actually stuck. The check-in streak thing sounds small but honestly it's changed my whole morning. I haven't missed a dose in 11 weeks.
+          - generic [ref=e122]:
+            - generic [ref=e123]: JM
+            - generic [ref=e124]:
+              - paragraph [ref=e125]: Jamie M.
+              - paragraph [ref=e126]: Diagnosed at 27 · Using Pillr 3 months
+            - generic [ref=e127]: Verified
+        - generic [ref=e129]:
+          - paragraph [ref=e136]: My psychiatrist actually asked me to start tracking when my meds kick in and wear off. Pillr made that so easy, I just log how I'm feeling at different points and it builds this timeline. Brought it to my last appointment and we adjusted my timing based on it. That's huge.
+          - generic [ref=e137]:
+            - generic [ref=e138]: RL
+            - generic [ref=e139]:
+              - paragraph [ref=e140]: Rachel L.
+              - paragraph [ref=e141]: ADHD + anxiety · Sydney, AU
+            - generic [ref=e142]: Verified
+        - generic [ref=e144]:
+          - paragraph [ref=e151]: As someone who takes two different meds at different times, keeping track was a mess. I used to second-guess myself constantly, did I take it or just think about taking it? Pillr basically eliminated that anxiety. The log is right there, no guessing.
+          - generic [ref=e152]:
+            - generic [ref=e153]: DK
+            - generic [ref=e154]:
+              - paragraph [ref=e155]: Daniel K.
+              - paragraph [ref=e156]: Combined type ADHD · App Store review
+            - generic [ref=e157]: Verified
+        - generic [ref=e159]:
+          - paragraph [ref=e166]: I got this for my teenage son and honestly it's helped our whole household relax. He feels independent managing it himself, I get a bit of peace of mind, and there's way less "did you take your meds?" every morning. The design doesn't feel clinical either, which matters for a 16-year-old.
+          - generic [ref=e167]:
+            - generic [ref=e168]: SW
+            - generic [ref=e169]:
+              - paragraph [ref=e170]: Sarah W.
+              - paragraph [ref=e171]: Parent · Melbourne, AU
+            - generic [ref=e172]: Verified
+  - region "ADHD guides" [ref=e174]:
+    - generic [ref=e175]:
+      - generic [ref=e176]:
+        - generic [ref=e177]: Guides
+        - heading "Understanding and living with ADHD." [level=2] [ref=e178]:
+          - text: Understanding and living
+          - text: with ADHD.
+        - paragraph [ref=e179]: Your go-to collection of guides on ADHD diagnosis, medication, daily management, and everything in between.
+      - generic [ref=e180]:
+        - link "Guide 01 Do I have ADHD? A simple look at the signs adults often notice first and what to do next. Read guide →" [ref=e181] [cursor=pointer]:
+          - /url: do-i-have-adhd.html
+          - generic [ref=e182]: Guide 01
+          - heading "Do I have ADHD?" [level=3] [ref=e183]
+          - paragraph [ref=e184]: A simple look at the signs adults often notice first and what to do next.
+          - generic [ref=e185]: Read guide →
+        - link "Guide 02 How to manage ADHD medication every day A daily guide to reminders, logging, missed doses, notes, and refill planning. Read guide →" [ref=e186] [cursor=pointer]:
+          - /url: how-to-manage-adhd-medication-every-day.html
+          - generic [ref=e187]: Guide 02
+          - heading "How to manage ADHD medication every day" [level=3] [ref=e188]
+          - paragraph [ref=e189]: A daily guide to reminders, logging, missed doses, notes, and refill planning.
+          - generic [ref=e190]: Read guide →
+        - link "Guide 03 Best ADHD medication reminder app for iPhone What to look for in a reminder app, and why clear tracking matters as much as alerts. Read guide →" [ref=e191] [cursor=pointer]:
+          - /url: best-adhd-medication-reminder-app.html
+          - generic [ref=e192]: Guide 03
+          - heading "Best ADHD medication reminder app for iPhone" [level=3] [ref=e193]
+          - paragraph [ref=e194]: What to look for in a reminder app, and why clear tracking matters as much as alerts.
+          - generic [ref=e195]: Read guide →
+      - generic "More ADHD guides" [ref=e196]:
+        - generic [ref=e197]: More ADHD guides
+        - generic [ref=e198]:
+          - link "What does ADHD look like in adults?" [ref=e199] [cursor=pointer]:
+            - /url: what-does-adhd-look-like-in-adults.html
+          - link "How is ADHD diagnosed?" [ref=e200] [cursor=pointer]:
+            - /url: how-is-adhd-diagnosed.html
+          - link "What treatment helps ADHD?" [ref=e201] [cursor=pointer]:
+            - /url: what-treatment-helps-adhd.html
+          - link "Forget to take Vyvanse? What to do next" [ref=e202] [cursor=pointer]:
+            - /url: forget-to-take-vyvanse-what-to-do.html
+          - link "ADHD body doubling for medication routines" [ref=e203] [cursor=pointer]:
+            - /url: adhd-body-doubling-medication-routine-adults.html
+          - link "ADHD medication review appointment guide for adults" [ref=e204] [cursor=pointer]:
+            - /url: adhd-medication-review-appointment-adults.html
+          - link "ADHD medication refill routine for adults" [ref=e205] [cursor=pointer]:
+            - /url: adhd-medication-refill-routine-adults.html
+          - link "ADHD time blindness and medication reminders" [ref=e206] [cursor=pointer]:
+            - /url: adhd-time-blindness-medication-reminders.html
+          - link "ADHD medication and sleep routines for adults" [ref=e207] [cursor=pointer]:
+            - /url: adhd-medication-sleep-routine-adults.html
+          - link "How adults stick to an ADHD medication routine" [ref=e208] [cursor=pointer]:
+            - /url: how-adults-stick-to-adhd-medication-routine.html
+          - link "ADHD medication tracker for iPhone" [ref=e209] [cursor=pointer]:
+            - /url: medication-tracker-for-iphone-adhd.html
+          - link "ADHD pill reminder for busy professionals" [ref=e210] [cursor=pointer]:
+            - /url: adhd-pill-reminder-for-busy-professionals.html
+          - link "ADHD medication reminder app for iPhone" [ref=e211] [cursor=pointer]:
+            - /url: adhd-medication-reminder-app-for-iphone.html
+          - link "Apple Health vs Pillr for medication reminders" [ref=e212] [cursor=pointer]:
+            - /url: apple-health-vs-pillr-medication-reminders.html
+          - link "Forgot to take Adderall? What to do next" [ref=e213] [cursor=pointer]:
+            - /url: forgot-to-take-adderall-what-to-do.html
+          - link "Forgot to take Concerta? What to do next" [ref=e214] [cursor=pointer]:
+            - /url: forgot-to-take-concerta-what-to-do.html
+          - link "Forgot to take Ritalin? What to do next" [ref=e215] [cursor=pointer]:
+            - /url: forgot-to-take-ritalin-what-to-do.html
+  - region "Frequently asked questions" [ref=e216]:
+    - generic [ref=e217]:
+      - generic [ref=e218]:
+        - generic [ref=e219]: FAQ
+        - heading "Common questions." [level=2] [ref=e220]
+        - paragraph [ref=e221]:
+          - text: A few quick answers here, with the full list on a
+          - link "separate page" [ref=e222] [cursor=pointer]:
+            - /url: faq.html
+          - text: .
+      - generic [ref=e223]:
+        - group [ref=e224] [cursor=pointer]:
+          - generic "Does Pillr replace my doctor or clinician? +" [ref=e225]
+        - group [ref=e226] [cursor=pointer]:
+          - generic "Does Pillr work for Vyvanse, Adderall, and Concerta? +" [ref=e227]
+        - group [ref=e228] [cursor=pointer]:
+          - generic "Can I track non-ADHD medications? +" [ref=e229]
+        - group [ref=e230] [cursor=pointer]:
+          - generic "Where is my data stored? +" [ref=e231]
+        - group [ref=e232] [cursor=pointer]:
+          - generic "Can I export my medication history? +" [ref=e233]
+        - group [ref=e234] [cursor=pointer]:
+          - generic "What is a focus window? +" [ref=e235]
+        - group [ref=e236] [cursor=pointer]:
+          - generic "Is Pillr a pill reminder and tracker combined? +" [ref=e237]
+        - group [ref=e238] [cursor=pointer]:
+          - generic "Does Pillr track adherence and streaks? +" [ref=e239]
+  - region "Download Pillr" [ref=e240]:
+    - generic [ref=e242]:
+      - generic [ref=e243]:
+        - generic [ref=e244]: Download free
+        - heading "Managing ADHD medication is genuinely hard." [level=2] [ref=e245]:
+          - text: Managing ADHD medication
+          - text: is genuinely hard.
+        - paragraph [ref=e246]: Pillr makes it a little less so. Whether you're just starting treatment or have been at it for years, it helps you stay consistent without adding more to remember.
+        - link "Download Pillr on the App Store" [ref=e248] [cursor=pointer]:
+          - /url: https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689
+          - img "Download on the App Store" [ref=e249]
+      - img [ref=e251]
+  - contentinfo "Site footer" [ref=e252]:
+    - generic [ref=e253]:
+      - generic [ref=e254]:
+        - paragraph [ref=e255]: Pillr
+        - paragraph [ref=e256]: ADHD medication tracker and reminder app for iPhone.
+        - paragraph [ref=e257]: This app is not a medical device and does not replace clinical advice.
+      - generic [ref=e258]:
+        - heading "Explore" [level=4] [ref=e259]
+        - link "How it works" [ref=e260] [cursor=pointer]:
+          - /url: "#features"
+        - link "Guides" [ref=e261] [cursor=pointer]:
+          - /url: "#guides"
+        - link "FAQ" [ref=e262] [cursor=pointer]:
+          - /url: faq.html
+        - link "About" [ref=e263] [cursor=pointer]:
+          - /url: about-pillr.html
+      - generic [ref=e264]:
+        - heading "Trust" [level=4] [ref=e265]
+        - link "Privacy" [ref=e266] [cursor=pointer]:
+          - /url: privacy.html
+        - link "Terms" [ref=e267] [cursor=pointer]:
+          - /url: terms.html
+        - link "Contact & Support" [ref=e268] [cursor=pointer]:
+          - /url: https://tally.so/r/3qMdL7
+      - generic [ref=e269]:
+        - heading "Connect" [level=4] [ref=e270]
+        - link "App Store" [ref=e271] [cursor=pointer]:
+          - /url: https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689
+        - link "LLM Index" [ref=e272] [cursor=pointer]:
+          - /url: llms.txt
+        - link "Sitemap" [ref=e273] [cursor=pointer]:
+          - /url: sitemap.xml
+    - paragraph [ref=e275]: © 2025-2026 Pillr. All rights reserved.
