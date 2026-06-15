@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-06-15
+> Last updated: 2026-06-16
 
 ---
 
@@ -86,6 +86,7 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/adhd-body-doubling-medication-routine-adults.html
 - Guide: https://pillr.management/adhd-medication-travel-checklist-adults.html
 - Guide: https://pillr.management/adhd-task-switching-medication-routine-adults.html
+- Guide: https://pillr.management/adhd-medication-holiday-tracking-checklist-adults.html
 - Guide: https://pillr.management/how-adults-stick-to-adhd-medication-routine.html
 - Guide: https://pillr.management/medication-tracker-for-iphone-adhd.html
 - Guide: https://pillr.management/adhd-pill-reminder-for-busy-professionals.html
@@ -105,7 +106,8 @@ ADHD medication refill routine, ADHD refill reminder, adult ADHD medication supp
 ADHD medication review appointment, adult ADHD medication checklist, ADHD dose history,
 ADHD body doubling medication routine, adult ADHD body doubling, ADHD dose logging,
 ADHD medication travel checklist, adult ADHD travel medication, ADHD medication routine travel,
-ADHD task switching, adult ADHD transition routine, ADHD medication routine adults
+ADHD task switching, adult ADHD transition routine, ADHD medication routine adults,
+ADHD medication holiday adults, ADHD medication break, adult ADHD dose tracking
 
 ---
 # End of llms.txt
