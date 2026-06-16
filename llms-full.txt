@@ -70,8 +70,9 @@ Pillr helps people stay consistent with medication routines by combining reminde
 - Guide: https://pillr.management/adhd-medication-travel-checklist-adults.html
 - Guide: https://pillr.management/adhd-task-switching-medication-routine-adults.html
 - Guide: https://pillr.management/adhd-medication-holiday-tracking-checklist-adults.html
+- Guide: https://pillr.management/adhd-medication-meal-routine-adults.html
 - Guide: https://pillr.management/how-adults-stick-to-adhd-medication-routine.html
 - Guide: https://pillr.management/medication-tracker-for-iphone-adhd.html
 - Guide: https://pillr.management/adhd-pill-reminder-for-busy-professionals.html
 
-Last updated: 2026-06-16
+Last updated: 2026-06-17
