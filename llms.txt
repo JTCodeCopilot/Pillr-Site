@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-06-19
+> Last updated: 2026-06-20
 
 ---
 
@@ -89,6 +89,7 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/adhd-medication-holiday-tracking-checklist-adults.html
 - Guide: https://pillr.management/adhd-medication-meal-routine-adults.html
 - Guide: https://pillr.management/adhd-medication-caffeine-tracking-adults.html
+- Guide: https://pillr.management/adhd-medication-afternoon-crash-tracking-adults.html
 - Guide: https://pillr.management/how-adults-stick-to-adhd-medication-routine.html
 - Guide: https://pillr.management/medication-tracker-for-iphone-adhd.html
 - Guide: https://pillr.management/adhd-pill-reminder-for-busy-professionals.html
@@ -111,7 +112,8 @@ ADHD medication travel checklist, adult ADHD travel medication, ADHD medication 
 ADHD task switching, adult ADHD transition routine, ADHD medication routine adults,
 ADHD medication holiday adults, ADHD medication break, adult ADHD dose tracking,
 ADHD medication appetite adults, ADHD meal routine, ADHD medication food, ADHD meal tracking,
-ADHD medication caffeine, ADHD caffeine tracking, ADHD coffee routine, adult ADHD dose tracking
+ADHD medication caffeine, ADHD caffeine tracking, ADHD coffee routine, adult ADHD dose tracking,
+ADHD medication wearing off, ADHD afternoon crash, ADHD focus window, adult ADHD dose tracking
 
 ---
 # End of llms.txt
