@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-06-26
+> Last updated: 2026-06-27
 
 ---
 
@@ -96,6 +96,7 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/adhd-telehealth-medication-appointment-checklist-adults.html
 - Guide: https://pillr.management/adhd-exercise-medication-routine-adults.html
 - Guide: https://pillr.management/adhd-medication-parenting-routine-adults.html
+- Guide: https://pillr.management/adhd-shift-work-medication-routine-adults.html
 - Guide: https://pillr.management/how-adults-stick-to-adhd-medication-routine.html
 - Guide: https://pillr.management/medication-tracker-for-iphone-adhd.html
 - Guide: https://pillr.management/adhd-pill-reminder-for-busy-professionals.html
@@ -126,7 +127,8 @@ ADHD medication workday routine, ADHD meetings, adult ADHD dose tracking, ADHD m
 ADHD telehealth appointment, adult ADHD medication checklist, ADHD dose history, ADHD medication tracking,
 ADHD exercise medication routine, adult ADHD workout routine, ADHD medication notes, ADHD dose tracking,
 ADHD medication routine for parents, adult ADHD parenting routine, ADHD parenting medication reminders,
-ADHD busy morning medication routine
+ADHD busy morning medication routine, ADHD shift work medication routine, adult ADHD night shift,
+ADHD rotating shifts medication reminders, ADHD dose tracking shift workers
 
 ---
 # End of llms.txt
