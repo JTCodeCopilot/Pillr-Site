@@ -33,7 +33,7 @@
     "name": "Pillr",
     "applicationCategory": "HealthApplication",
     "operatingSystem": "iOS",
-    "description": "Pillr is a free iPhone app for ADHD medication management. Set reminders for stimulants like Vyvanse, Adderall, Concerta, and Ritalin. Log doses, track focus windows, monitor adherence streaks, check drug interactions, and export your full medication history as CSV or PDF for clinician appointments.",
+    "description": "Pillr is a free iPhone app for ADHD medication reminders and dose tracking. Set reminders, log taken or skipped doses, track focus windows from your own timing settings, manage refill records, and export medication history for clinician appointments.",
     "url": "https://pillr.management",
     "downloadUrl": "https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
@@ -41,13 +41,12 @@
       "ADHD medication reminders",
       "Dose logging and tracking",
       "Focus window and stimulant timing",
-      "Adherence streaks and history",
-      "Drug interaction checker",
+      "Medication history and routine records",
       "Supply and refill tracking",
-      "Daily mood and side effect check-ins",
+      "Reflection notes for focus, mood, and side effects",
       "CSV and PDF export for clinicians",
       "Appointment recording, transcription, and editable summaries",
-      "On-device privacy — no account required",
+      "Local-first medication data with no account required",
       "Supports Vyvanse, Adderall, Concerta, Ritalin, Strattera, Guanfacine and more"
     ],
     "screenshot": "https://pillr.management/pillr-og.png",
@@ -55,20 +54,7 @@
   }
   </script>
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      { "@type": "Question", "name": "Does Pillr replace my doctor or clinician?", "acceptedAnswer": { "@type": "Answer", "text": "No. Pillr helps you track and organise medications, but it does not replace a clinician." } },
-      { "@type": "Question", "name": "Can I track non-ADHD medications in Pillr?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pillr supports any medications, with special timing tools for ADHD stimulants like Vyvanse, Adderall, Concerta, and Ritalin." } },
-      { "@type": "Question", "name": "Where is my data stored?", "acceptedAnswer": { "@type": "Answer", "text": "Your data stays on your device by default. Optional iCloud Drive backup is available, and Apple Health plus AI features are optional." } },
-      { "@type": "Question", "name": "Can I export my medication history?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. You can export your full ADHD medication history as a CSV or PDF to share with your psychiatrist or GP." } },
-      { "@type": "Question", "name": "Can Pillr record and transcribe appointments?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pillr can record an appointment, create a transcript, and turn it into an editable summary. Appointment audio, transcripts, and notes stay on your iPhone." } },
-      { "@type": "Question", "name": "Does Pillr work for Vyvanse, Adderall, and Concerta?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pillr supports all common ADHD stimulants and non-stimulants including Vyvanse, Adderall, Adderall XR, Concerta, Ritalin, Strattera, and Guanfacine, as well as any other prescription or over-the-counter medications." } },
-      { "@type": "Question", "name": "What is a focus window tracker?", "acceptedAnswer": { "@type": "Answer", "text": "Pillr's focus window feature shows a visual timeline of when your ADHD medication is likely to be active — from onset through peak effect to wear-off — based on your own timing settings. This helps you plan demanding tasks during your strongest focus window." } },
-      { "@type": "Question", "name": "Is Pillr free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pillr is free to download on the App Store for iPhone. Premium features are available for users who want deeper ADHD medication management tools." } }
-    ]
-  }
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does Pillr replace my doctor or clinician?","acceptedAnswer":{"@type":"Answer","text":"No. Pillr helps you track and organise medications, but it does not replace a clinician. Always follow your prescriber's advice."}},{"@type":"Question","name":"Does Pillr work for Vyvanse, Adderall, and Concerta?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr supports all common ADHD stimulants and non-stimulants — Vyvanse, Adderall, Adderall XR, Concerta, Ritalin, Strattera, Guanfacine, and anything else you're taking."}},{"@type":"Question","name":"Can I track non-ADHD medications?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr supports any medications, with special focus window timing tools built specifically for ADHD stimulants."}},{"@type":"Question","name":"Where is my data stored?","acceptedAnswer":{"@type":"Answer","text":"Medication records stay on your device by default. Pillr has no account system, optional iCloud Drive backup, and optional features and analytics disclosed in the privacy policy."}},{"@type":"Question","name":"Can I export my medication history?","acceptedAnswer":{"@type":"Answer","text":"Yes. Export your full ADHD medication history as CSV or PDF to share with your psychiatrist, GP, or caregiver."}},{"@type":"Question","name":"Can Pillr record and transcribe appointments?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr can record an appointment, create a transcript, and turn it into an editable summary. Appointment audio, transcripts, and notes stay on your iPhone."}},{"@type":"Question","name":"What is a focus window?","acceptedAnswer":{"@type":"Answer","text":"Pillr shows a visual timeline based on your own onset and duration settings. Use it as a routine-planning aid and a record to discuss with your clinician."}},{"@type":"Question","name":"Is Pillr a pill reminder and tracker combined?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr combines pill tracker features with flexible reminders, taken or skipped dose logs, and medication history you can review later."}},{"@type":"Question","name":"Does Pillr keep medication history?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr keeps medication history, dose logs, notes, and refill status so you can review your routine and export records for appointments."}}]}
   </script>
   <script type="module" src="firebase.js"></script>
 </head>
@@ -171,8 +157,8 @@
         <div class="step-panel" data-step="1" aria-label="Feature 2">
           <div class="step-content">
             <div class="step-counter">02 , 05</div>
-            <h2 class="step-headline">Know when your<br />medication is working.</h2>
-            <p class="step-body">A visual timeline that shows when your medication kicks in, hits its peak, and starts to fade — based on your own onset and duration settings, not a generic average. Schedule your hardest tasks when you&rsquo;re sharpest, and stop fighting yourself when you&rsquo;re not.</p>
+            <h2 class="step-headline">Track focus windows<br />beside your dose log.</h2>
+            <p class="step-body">A visual timeline based on your own onset and duration settings, not a generic average. Use it as a routine-planning aid and a record to discuss with your clinician, not as medical certainty.</p>
           </div>
         </div>
 
@@ -181,7 +167,7 @@
           <div class="step-content">
             <div class="step-counter">03 , 05</div>
             <h2 class="step-headline">See the patterns<br />your memory misses.</h2>
-            <p class="step-body">A short end-of-day check-in where you log focus, mood, and any side effects. Over a few weeks, it builds a real picture of how your medication is actually affecting you — so you have something concrete to show your psychiatrist, not just a feeling.</p>
+            <p class="step-body">A short end-of-day check-in where you can log focus, mood, and side effects. Over time, it gives you clearer notes to discuss with your clinician instead of relying on memory alone.</p>
           </div>
         </div>
 
@@ -328,14 +314,14 @@
     <div class="container">
       <div class="section-heading centered reveal">
         <div class="eyebrow">Guides</div>
-        <h2>Understanding and living<br />with ADHD.</h2>
-        <p>Your go-to collection of guides on ADHD diagnosis, medication, daily management, and everything in between.</p>
+        <h2>ADHD medication guides<br />for real routines.</h2>
+        <p>Focused guides on reminders, dose logs, refill planning, appointment notes, and safer routine tracking for adults with ADHD.</p>
       </div>
       <div class="guide-grid guide-featured-grid">
-        <a href="do-i-have-adhd.html" class="guide-card reveal">
+        <a href="adhd-time-blindness-medication-reminders.html" class="guide-card reveal">
           <div class="guide-kicker">Guide 01</div>
-          <h3>Do I have ADHD?</h3>
-          <p>A simple look at the signs adults often notice first and what to do next.</p>
+          <h3>ADHD time blindness and medication reminders</h3>
+          <p>A practical guide to reminders, dose logs, and missed-dose notes when time gets slippery.</p>
           <span class="text-link">Read guide</span>
         </a>
         <a href="how-to-manage-adhd-medication-every-day.html" class="guide-card reveal">
@@ -354,6 +340,7 @@
       <div class="guide-link-panel reveal" aria-label="More ADHD guides">
         <div class="guide-link-heading">More ADHD guides</div>
         <div class="guide-link-list">
+          <a href="do-i-have-adhd.html">Do I have ADHD?</a>
           <a href="what-does-adhd-look-like-in-adults.html">What does ADHD look like in adults?</a>
           <a href="how-is-adhd-diagnosed.html">How is ADHD diagnosed?</a>
           <a href="what-treatment-helps-adhd.html">What treatment helps ADHD?</a>
@@ -402,12 +389,12 @@
         <details class="faq-item reveal"><summary>Does Pillr replace my doctor or clinician?</summary><p>No. Pillr helps you track and organise medications, but it does not replace a clinician. Always follow your prescriber's advice.</p></details>
         <details class="faq-item reveal"><summary>Does Pillr work for Vyvanse, Adderall, and Concerta?</summary><p>Yes. Pillr supports all common ADHD stimulants and non-stimulants — Vyvanse, Adderall, Adderall XR, Concerta, Ritalin, Strattera, Guanfacine, and anything else you're taking.</p></details>
         <details class="faq-item reveal"><summary>Can I track non-ADHD medications?</summary><p>Yes. Pillr supports any medications, with special focus window timing tools built specifically for ADHD stimulants.</p></details>
-        <details class="faq-item reveal"><summary>Where is my data stored?</summary><p>Your data stays on your device by default. No account required and nothing is sent to a server.</p></details>
+        <details class="faq-item reveal"><summary>Where is my data stored?</summary><p>Medication records stay on your device by default. Pillr has no account system, optional iCloud Drive backup, and optional features and analytics disclosed in the privacy policy.</p></details>
         <details class="faq-item reveal"><summary>Can I export my medication history?</summary><p>Yes. Export your full ADHD medication history as CSV or PDF to share with your psychiatrist, GP, or caregiver.</p></details>
         <details class="faq-item reveal"><summary>Can Pillr record and transcribe appointments?</summary><p>Yes. Pillr can record an appointment, create a transcript, and turn it into an editable summary. Appointment audio, transcripts, and notes stay on your iPhone.</p></details>
-        <details class="faq-item reveal"><summary>What is a focus window?</summary><p>Pillr shows a visual timeline of when your ADHD medication is likely to be active — from onset through peak effect to wear-off. Use it to plan your hardest tasks when you're sharpest.</p></details>
-        <details class="faq-item reveal"><summary>Is Pillr a pill reminder and tracker combined?</summary><p>Yes. Pillr combines pill tracker features with flexible reminders so you always know when to take, skip, or snooze a dose — and keeps a full log you can look back on.</p></details>
-        <details class="faq-item reveal"><summary>Does Pillr track adherence and streaks?</summary><p>Yes. Pillr tracks adherence rates, streaks, and refill status, making it easy to share proof of consistency with clinicians or caregivers.</p></details>
+        <details class="faq-item reveal"><summary>What is a focus window?</summary><p>Pillr shows a visual timeline based on your own onset and duration settings. Use it as a routine-planning aid and a record to discuss with your clinician.</p></details>
+        <details class="faq-item reveal"><summary>Is Pillr a pill reminder and tracker combined?</summary><p>Yes. Pillr combines pill tracker features with flexible reminders, taken or skipped dose logs, and medication history you can review later.</p></details>
+        <details class="faq-item reveal"><summary>Does Pillr keep medication history?</summary><p>Yes. Pillr keeps medication history, dose logs, notes, and refill status so you can review your routine and export records for appointments.</p></details>
       </div>
     </div>
   </section>
@@ -419,7 +406,7 @@
         <div class="cta-copy">
           <div class="eyebrow">Download free</div>
           <h2>Managing ADHD medication<br />is genuinely hard.</h2>
-          <p>Pillr makes it a little less so. Whether you're just starting treatment or have been at it for years, it helps you stay consistent without adding more to remember.</p>
+          <p>Pillr makes it a little less so. Whether you're just starting treatment or have been at it for years, it helps you keep reminders, dose logs, and routine notes in one place.</p>
           <div class="cta-actions">
             <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" class="app-store-btn" target="_blank" rel="noopener" aria-label="Download Pillr on the App Store">
               <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us?releaseDate=1749168000" alt="Download on the App Store" />
