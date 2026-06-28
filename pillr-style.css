@@ -351,9 +351,9 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 .stat-label { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); line-height: 1.35; }
 .stat-divider { width: 1px; height: 44px; background: var(--line); flex-shrink: 0; }
 
-/* ── FEATURES — PINNED SCROLL (4 text steps) ──────────────────────────────── */
+/* ── FEATURES — PINNED SCROLL (5 text steps) ──────────────────────────────── */
 .features-section { background: transparent; }
-.features-sticky-wrapper { height: 420vh; position: relative; }
+.features-sticky-wrapper { height: 520vh; position: relative; }
 .features-pin {
   position: sticky; top: 0; height: 100vh; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
@@ -621,7 +621,7 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   .hero-depth-line { right: -38vw; top: 24vh; opacity: 0.35; }
   .stats-inner { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
   .stat-divider { display: none; }
-  .features-sticky-wrapper { height: 520vh; }
+  .features-sticky-wrapper { height: 620vh; }
   .step-panel { padding: calc(var(--header-height) + 0.5rem) var(--space-md) 0; }
   .step-headline { font-size: clamp(2.2rem, 8vw, 3.2rem); }
   .capsule-grid, .guide-grid, .faq-list { grid-template-columns: 1fr; }
