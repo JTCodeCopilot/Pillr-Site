@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-06-28
+> Last updated: 2026-06-29
 
 ---
 
