@@ -87,4 +87,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-06-30
+Last updated: 2026-07-01
