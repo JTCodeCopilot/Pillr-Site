@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-07-02
+> Last updated: 2026-07-03
 
 ---
 
@@ -117,7 +117,7 @@ Pillr app, best ADHD app 2025, stimulant tracker, ADHD pill tracker iPhone, ADHD
 medication history app, ADHD routine app, iPhone ADHD medication reminder, pill tracker iPhone,
 ADHD medication routine, ADHD supply tracker, refill reminder app, ADHD check-in app,
 ADHD medication sleep adults, ADHD sleep routine, ADHD medication timing,
-ADHD time blindness medication reminders, adult ADHD reminders,
+ADHD time blindness medication reminders, adult ADHD reminders, forgot if I took ADHD medication,
 ADHD medication refill routine, ADHD refill reminder, adult ADHD medication supply,
 ADHD medication review appointment, adult ADHD medication checklist, ADHD dose history,
 ADHD body doubling medication routine, adult ADHD body doubling, ADHD dose logging,
