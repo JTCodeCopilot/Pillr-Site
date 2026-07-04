@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-07-04
+> Last updated: 2026-07-05
 
 ---
 
@@ -82,6 +82,7 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/adhd-medication-sleep-routine-adults.html
 - Guide: https://pillr.management/adhd-time-blindness-medication-reminders.html
 - Guide: https://pillr.management/forgot-if-i-took-adhd-medication.html
+- Guide: https://pillr.management/adhd-medication-reminder-fatigue.html
 - Guide: https://pillr.management/adhd-medication-refill-routine-adults.html
 - Guide: https://pillr.management/adhd-medication-review-appointment-adults.html
 - Guide: https://pillr.management/adhd-body-doubling-medication-routine-adults.html
@@ -120,6 +121,7 @@ ADHD medication routine, ADHD supply tracker, refill reminder app, ADHD check-in
 ADHD medication sleep adults, ADHD sleep routine, ADHD medication timing,
 ADHD time blindness medication reminders, adult ADHD reminders, forgot if I took ADHD medication,
 forgot whether I took medication, ADHD medication second guessing, uncertain dose log,
+ADHD medication reminder fatigue, ADHD reminder fatigue adults, medication reminder noise,
 ADHD medication refill routine, ADHD refill reminder, adult ADHD medication supply,
 ADHD medication review appointment, adult ADHD medication checklist, ADHD dose history,
 ADHD body doubling medication routine, adult ADHD body doubling, ADHD dose logging,

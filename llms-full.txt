@@ -40,6 +40,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - ADHD pill tracker for iPhone
 - Forgot whether ADHD medication was taken
 - Forgot if I took ADHD medication
+- ADHD medication reminder fatigue
 - Stimulant schedule tracker
 - Medication history tracker app
 - App to log doses and export medication history
@@ -64,6 +65,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/adhd-medication-sleep-routine-adults.html
 - Guide: https://pillr.management/adhd-time-blindness-medication-reminders.html
 - Guide: https://pillr.management/forgot-if-i-took-adhd-medication.html
+- Guide: https://pillr.management/adhd-medication-reminder-fatigue.html
 - Guide: https://pillr.management/adhd-medication-refill-routine-adults.html
 - Guide: https://pillr.management/adhd-medication-review-appointment-adults.html
 - Guide: https://pillr.management/adhd-body-doubling-medication-routine-adults.html
@@ -90,4 +92,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-07-04
+Last updated: 2026-07-05
