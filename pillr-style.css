@@ -363,6 +363,24 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
 .step-panel { position: absolute; inset: 0; opacity: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; padding: 0 6vw; text-align: center; transition: opacity 0.55s ease; }
 .step-panel.active { opacity: 1; pointer-events: auto; }
 .step-content { width: min(680px, 100%); }
+.step-panel-with-visual { gap: clamp(2.5rem, 7vw, 7rem); text-align: left; }
+.step-panel-with-visual .step-content { width: min(560px, 46vw); }
+.step-panel-with-visual .step-body { margin-left: 0; margin-right: 0; }
+.step-visual { position: relative; width: min(300px, 23vw); max-height: 72vh; flex-shrink: 0; }
+.step-visual::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0.4rem;
+  width: 76%;
+  height: 10%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(24,50,53,0.12);
+  filter: blur(22px);
+  z-index: -1;
+}
+.step-visual img { width: 100%; height: auto; max-height: min(72vh, 620px); object-fit: contain; border-radius: 34px; box-shadow: 0 28px 70px rgba(24,50,53,0.16); }
 .step-counter { font-family: var(--font-body); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); opacity: 0.6; margin-bottom: 1.2rem; }
 .step-headline { font-family: var(--font-display); font-size: clamp(2.6rem, 5vw, 4.4rem); font-weight: 700; line-height: 1.0; letter-spacing: -0.03em; color: var(--text); margin-bottom: 1.4rem; }
 .step-body { font-size: 1.05rem; color: var(--muted); line-height: 1.75; max-width: 44rem; margin: 0 auto 1.6rem; font-weight: 300; }
@@ -599,6 +617,11 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   .step-panel { padding: calc(var(--header-height) + 1rem) var(--space-md) 0; align-items: center; justify-content: center; overflow-y: auto; }
   .step-content { max-width: 100%; }
   .step-body    { max-width: 52ch; margin-inline: auto; }
+  .step-panel-with-visual { flex-direction: column; gap: 1.4rem; text-align: center; }
+  .step-panel-with-visual .step-content { width: min(680px, 100%); }
+  .step-panel-with-visual .step-body { margin-left: auto; margin-right: auto; }
+  .step-visual { width: min(230px, 44vw); max-height: 42vh; }
+  .step-visual img { max-height: 42vh; }
   .proof-grid   { grid-template-columns: 1fr; }
   .guide-grid   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .guide-featured-grid, .guide-link-list { grid-template-columns: 1fr; }
@@ -629,6 +652,9 @@ button { cursor: pointer; border: none; background: none; font: inherit; }
   .features-sticky-wrapper { height: 620vh; }
   .step-panel { padding: calc(var(--header-height) + 0.5rem) var(--space-md) 0; }
   .step-headline { font-size: clamp(2.2rem, 8vw, 3.2rem); }
+  .step-panel-with-visual { gap: 1rem; }
+  .step-visual { width: min(190px, 48vw); max-height: 34vh; }
+  .step-visual img { max-height: 34vh; border-radius: 26px; }
   .capsule-grid, .guide-grid, .faq-list { grid-template-columns: 1fr; }
   .cta-panel { grid-template-columns: 1fr; text-align: center; }
   .cta-copy p { max-width: 100%; }
