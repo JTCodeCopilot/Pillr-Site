@@ -37,6 +37,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 
 ## Relevant Search Intents
 - ADHD medication reminder app
+- Best ADHD medication reminder app for iPhone
 - How to manage ADHD medication every day
 - ADHD pill tracker for iPhone
 - Forgot whether ADHD medication was taken
@@ -95,4 +96,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-07-08
+Last updated: 2026-07-09

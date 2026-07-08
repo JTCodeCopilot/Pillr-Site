@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-07-08
+> Last updated: 2026-07-09
 
 ---
 
@@ -39,6 +39,7 @@
 ## Common User Intents
 
 - ADHD medication reminder app for iPhone
+- Best ADHD medication reminder app for iPhone
 - How to manage ADHD medication every day
 - Pill tracker for ADHD stimulant schedules
 - Medication history app with CSV/PDF exports
