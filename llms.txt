@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-07-10
+> Last updated: 2026-07-12
 
 ---
 
@@ -46,6 +46,7 @@
 - Dose log and reminder app for clinical check-ins
 - ADHD medication appointment notes
 - ADHD medication side effect tracker
+- ADHD medication refill reminder and pill count
 - ADHD app that tracks focus windows and side effects
 
 ---
@@ -126,7 +127,7 @@ ADHD medication sleep adults, ADHD sleep routine, ADHD medication timing,
 ADHD time blindness medication reminders, adult ADHD reminders, forgot if I took ADHD medication,
 forgot whether I took medication, ADHD medication second guessing, uncertain dose log,
 ADHD medication reminder fatigue, ADHD reminder fatigue adults, medication reminder noise,
-ADHD medication refill routine, ADHD refill reminder, adult ADHD medication supply,
+ADHD medication refill reminder, ADHD pill count tracker, ADHD refill routine, adult ADHD medication supply,
 ADHD medication appointment notes, ADHD medication review appointment, adult ADHD medication checklist, ADHD dose history,
 ADHD body doubling medication routine, adult ADHD body doubling, ADHD dose logging,
 ADHD medication travel checklist, adult ADHD travel medication, ADHD medication routine travel,

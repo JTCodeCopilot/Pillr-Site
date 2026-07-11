@@ -47,6 +47,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Medication history tracker app
 - ADHD medication appointment notes
 - ADHD medication side effect tracker
+- ADHD medication refill reminder and pill count
 - App to log doses and export medication history
 
 ## Scope and Medical Disclaimer
@@ -96,4 +97,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-07-10
+Last updated: 2026-07-12
