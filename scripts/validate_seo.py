@@ -132,6 +132,7 @@ def validate_site(site_root: Path) -> tuple[list[str], ValidationStats]:
     titles: dict[str, list[str]] = defaultdict(list)
     descriptions: dict[str, list[str]] = defaultdict(list)
     jsonld_count = 0
+    expected_sitemap_urls: set[str] = set()
 
     if not pages:
         errors.append(f"No HTML pages found in {site_root}")
@@ -156,22 +157,28 @@ def validate_site(site_root: Path) -> tuple[list[str], ValidationStats]:
         if parser.main_count != 1:
             errors.append(f"{filename}: expected one main landmark, found {parser.main_count}")
 
+        robots_values = meta_values(parser, "name", "robots")
+        if len(robots_values) != 1:
+            errors.append(f"{filename}: expected one robots meta tag")
+        is_noindex = len(robots_values) == 1 and "noindex" in robots_values[0].casefold()
+
         canonical_links = [
             link.get("href", "").strip()
             for link in parser.links
             if "canonical" in link.get("rel", "").casefold().split()
         ]
         expected_url = expected_canonical(filename)
-        if canonical_links != [expected_url]:
+        if not is_noindex and canonical_links != [expected_url]:
             errors.append(
                 f"{filename}: canonical should be {expected_url}, found {canonical_links or 'none'}"
             )
+        elif is_noindex and (
+            len(canonical_links) != 1 or not canonical_links[0].startswith(BASE_URL)
+        ):
+            errors.append(f"{filename}: noindex page needs one Pillr canonical URL")
 
-        robots_values = meta_values(parser, "name", "robots")
-        if len(robots_values) != 1:
-            errors.append(f"{filename}: expected one robots meta tag")
-        elif "noindex" in robots_values[0].casefold():
-            errors.append(f"{filename}: unexpected noindex directive")
+        if not is_noindex:
+            expected_sitemap_urls.add(expected_url)
 
         for property_name in REQUIRED_OPEN_GRAPH_PROPERTIES:
             values = meta_values(parser, "property", property_name)
@@ -179,7 +186,8 @@ def validate_site(site_root: Path) -> tuple[list[str], ValidationStats]:
                 errors.append(f"{filename}: expected one non-empty {property_name} tag")
 
         og_urls = meta_values(parser, "property", "og:url")
-        if og_urls and og_urls[0] != expected_url:
+        canonical_url = canonical_links[0] if len(canonical_links) == 1 else expected_url
+        if og_urls and og_urls[0] != canonical_url:
             errors.append(f"{filename}: og:url should match its canonical")
 
         icon_links = [
@@ -239,7 +247,7 @@ def validate_site(site_root: Path) -> tuple[list[str], ValidationStats]:
     if len(sitemap_urls) != len(set(sitemap_urls)):
         errors.append("sitemap.xml contains duplicate URLs")
 
-    expected_urls = {expected_canonical(page.name) for page in pages}
+    expected_urls = expected_sitemap_urls
     actual_urls = set(sitemap_urls)
     for missing_url in sorted(expected_urls - actual_urls):
         errors.append(f"sitemap.xml is missing {missing_url}")

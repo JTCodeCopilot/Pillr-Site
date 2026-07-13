@@ -78,6 +78,30 @@ def write_valid_page(root: Path, filename: str, title: str) -> None:
     )
 
 
+def write_redirect_page(root: Path, filename: str, target: str) -> None:
+    target_url = f"https://pillr.management/{target}"
+    (root / filename).write_text(
+        f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Guide moved | Pillr</title>
+  <meta name="description" content="This guide has moved to its permanent Pillr address." />
+  <meta name="robots" content="noindex, follow" />
+  <meta http-equiv="refresh" content="0; url={target}" />
+  <link rel="canonical" href="{target_url}" />
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png" />
+  <meta property="og:title" content="Guide moved | Pillr" />
+  <meta property="og:description" content="This guide has moved to its permanent Pillr address." />
+  <meta property="og:url" content="{target_url}" />
+  <meta property="og:image" content="https://pillr.management/pillr-og.png" />
+</head>
+<body><main><h1>This guide has moved</h1><a href="{target}">Open the guide</a></main></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+
 def write_site_files(root: Path, filenames: list[str]) -> None:
     (root / "assets").mkdir()
     (root / "assets" / "favicon.png").write_bytes(b"favicon")
@@ -125,6 +149,23 @@ class SEOQuickWinTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("duplicate title", (result.stdout + result.stderr).lower())
 
+    def test_validator_accepts_noindex_redirect_outside_sitemap(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_site_files(root, ["index.html", "guide.html"])
+            write_valid_page(root, "index.html", "Home")
+            write_valid_page(root, "guide.html", "Guide")
+            write_redirect_page(root, "old-guide.html", "guide.html")
+
+            result = subprocess.run(
+                [sys.executable, str(VALIDATOR), str(root)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_every_page_has_one_main_landmark(self) -> None:
         problems = {
             path.name: parse_page(path).main_count
@@ -133,7 +174,7 @@ class SEOQuickWinTests(unittest.TestCase):
         }
         self.assertEqual(problems, {})
 
-    def test_page_titles_are_unique_and_reminder_guide_is_a_checklist(self) -> None:
+    def test_page_titles_are_unique_and_reminder_guides_are_consolidated(self) -> None:
         pages = {path.name: parse_page(path).title for path in SITE_ROOT.glob("*.html")}
         title_to_pages: dict[str, list[str]] = {}
         for filename, title in pages.items():
@@ -142,15 +183,49 @@ class SEOQuickWinTests(unittest.TestCase):
 
         self.assertEqual(duplicates, {})
         self.assertEqual(
+            pages["best-adhd-medication-reminder-app.html"],
+            "Best ADHD Medication Reminder App for iPhone | Pillr",
+        )
+        self.assertEqual(
             pages["adhd-medication-reminder-app-for-iphone.html"],
-            "ADHD Medication Reminder App Checklist for iPhone | Pillr",
+            "ADHD Medication Reminder App Guide Moved | Pillr",
         )
 
-    def test_reminder_guide_shows_its_current_update_date(self) -> None:
-        page = (SITE_ROOT / "adhd-medication-reminder-app-for-iphone.html").read_text(
+    def test_reminder_guides_use_one_search_page_and_one_redirect(self) -> None:
+        keeper = (SITE_ROOT / "best-adhd-medication-reminder-app.html").read_text(
             encoding="utf-8"
         )
-        self.assertIn('<p class="article-meta">Updated July 10, 2026</p>', page)
+        redirect = (SITE_ROOT / "adhd-medication-reminder-app-for-iphone.html").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('<p class="article-meta">Updated July 14, 2026</p>', keeper)
+        self.assertIn('<h2>Set up a reminder loop you can trust</h2>', keeper)
+        self.assertIn('<meta name="robots" content="noindex, follow" />', redirect)
+        self.assertIn(
+            '<meta http-equiv="refresh" content="0; url=best-adhd-medication-reminder-app.html" />',
+            redirect,
+        )
+        self.assertIn(
+            '<link rel="canonical" href="https://pillr.management/best-adhd-medication-reminder-app.html" />',
+            redirect,
+        )
+
+        public_listing_paths = [
+            SITE_ROOT / "sitemap.xml",
+            SITE_ROOT / "llms.txt",
+            SITE_ROOT / "llms-full.txt",
+        ]
+        public_listing_paths.extend(
+            path
+            for path in SITE_ROOT.glob("*.html")
+            if path.name != "adhd-medication-reminder-app-for-iphone.html"
+        )
+        for path in public_listing_paths:
+            self.assertNotIn(
+                "adhd-medication-reminder-app-for-iphone",
+                path.read_text(encoding="utf-8"),
+                path.name,
+            )
 
     def test_every_page_declares_the_local_favicon(self) -> None:
         problems: list[str] = []
