@@ -50,6 +50,8 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - ADHD medication wearing-off tracker for adults
 - ADHD medication refill reminder and pill count
 - App to log doses and export medication history
+- ADHD medication widget for iPhone
+- Medication reminder Home Screen or Lock Screen widget
 
 ## Scope and Medical Disclaimer
 - Pillr supports tracking and organization.
@@ -91,6 +93,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/adhd-housework-medication-routine-adults.html
 - Guide: https://pillr.management/how-adults-stick-to-adhd-medication-routine.html
 - Guide: https://pillr.management/medication-tracker-for-iphone-adhd.html
+- Guide: https://pillr.management/adhd-medication-widget-iphone.html
 - Guide: https://pillr.management/adhd-pill-reminder-for-busy-professionals.html
 - Guide: https://pillr.management/apple-health-vs-pillr-medication-reminders.html
 - Guide: https://pillr.management/medisafe-vs-mytherapy-medication-reminders.html
@@ -98,4 +101,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-07-15
+Last updated: 2026-07-17
