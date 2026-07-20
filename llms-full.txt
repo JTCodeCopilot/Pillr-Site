@@ -48,6 +48,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - ADHD medication appointment notes
 - ADHD medication side effect tracker
 - ADHD medication wearing-off tracker for adults
+- ADHD medication focus window tracker for adults
 - ADHD medication refill reminder and pill count
 - App to log doses and export medication history
 - ADHD medication widget for iPhone
@@ -83,6 +84,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/adhd-medication-meal-routine-adults.html
 - Guide: https://pillr.management/adhd-medication-caffeine-tracking-adults.html
 - Guide: https://pillr.management/adhd-medication-afternoon-crash-tracking-adults.html
+- Guide: https://pillr.management/adhd-medication-focus-window-tracker.html
 - Guide: https://pillr.management/adhd-medication-side-effect-tracking-adults.html
 - Guide: https://pillr.management/adhd-emotional-overwhelm-medication-tracking-adults.html
 - Guide: https://pillr.management/adhd-medication-workday-meeting-routine-adults.html
@@ -103,4 +105,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-07-20
+Last updated: 2026-07-21
