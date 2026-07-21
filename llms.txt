@@ -109,7 +109,6 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/how-adults-stick-to-adhd-medication-routine.html
 - Guide: https://pillr.management/medication-tracker-for-iphone-adhd.html
 - Guide: https://pillr.management/adhd-medication-widget-iphone.html
-- Guide: https://pillr.management/adhd-pill-reminder-for-busy-professionals.html
 - Guide: https://pillr.management/apple-health-vs-pillr-medication-reminders.html
 - Guide: https://pillr.management/pillr-vs-medisafe-medication-tracking.html
 - Guide: https://pillr.management/medisafe-vs-mytherapy-medication-reminders.html
