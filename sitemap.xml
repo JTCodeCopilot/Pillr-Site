@@ -262,28 +262,35 @@
 
   <url>
     <loc>https://pillr.management/apple-health-vs-pillr-medication-reminders.html</loc>
-    <lastmod>2026-07-20</lastmod>
+    <lastmod>2026-07-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://pillr.management/pillr-vs-medisafe-medication-tracking.html</loc>
-    <lastmod>2026-07-20</lastmod>
+    <lastmod>2026-07-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://pillr.management/medisafe-vs-mytherapy-medication-reminders.html</loc>
-    <lastmod>2026-07-20</lastmod>
+    <lastmod>2026-07-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://pillr.management/dosecast-vs-everydose-medication-reminders.html</loc>
-    <lastmod>2026-07-20</lastmod>
+    <lastmod>2026-07-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://pillr.management/bearable-vs-guava-medication-symptom-tracking.html</loc>
+    <lastmod>2026-07-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
