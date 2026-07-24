@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-07-24
+> Last updated: 2026-07-25
 
 ---
 
@@ -49,6 +49,7 @@
 - ADHD medication appetite tracker for adults
 - ADHD medication refill reminder and pill count
 - ADHD app that tracks focus windows and side effects
+- ADHD shift work medication routine tracker
 
 ---
 
