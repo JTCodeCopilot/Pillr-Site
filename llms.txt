@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-07-29
+> Last updated: 2026-07-31
 
 ---
 
@@ -19,7 +19,8 @@
 - Time-sensitive medication reminders with quick actions (take now, remind later, skip).
 - Dose logging for taken, skipped, and delayed medications.
 - Stimulant focus window tracking (onset, peak, wear-off) with daily check-ins.
-- Medication history and routine records.
+- A 24-hour medication timeline plus past-day taken and skipped dose records.
+- Medication history, filters, manual entries, and routine records.
 - Refill and supply tracking with low-supply alerts.
 - CSV and PDF exports for medication history sharing with clinicians.
 - Medication records stored on device by default, with optional iCloud Drive backup.
