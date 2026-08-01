@@ -106,6 +106,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/bearable-vs-guava-medication-symptom-tracking.html
 - Guide: https://pillr.management/pillr-vs-mytherapy-medication-tracking.html
 - Guide: https://pillr.management/apple-health-medications-vs-mytherapy.html
+- Guide: https://pillr.management/pillr-vs-theraview-adhd-medication-tracking.html
 - Guide: https://pillr.management/forgot-to-take-adderall-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
