@@ -104,69 +104,7 @@
     reveals.forEach((element) => observer.observe(element));
   };
 
-  const setupFeatureSteps = () => {
-    const panels = document.querySelectorAll(".step-panel");
-    const dots = document.querySelectorAll(".dot");
-    const wrapper = document.querySelector(".features-sticky-wrapper");
-
-    if (!panels.length || !wrapper) return;
-
-    let activeStep = 0;
-    let ticking = false;
-
-    const setStep = (nextStep) => {
-      if (nextStep === activeStep) return;
-      activeStep = nextStep;
-      panels.forEach((panel, index) => panel.classList.toggle("active", index === nextStep));
-      dots.forEach((dot, index) => dot.classList.toggle("active", index === nextStep));
-    };
-
-    const updateStep = () => {
-      const rect = wrapper.getBoundingClientRect();
-      const totalScroll = Math.max(1, rect.height - window.innerHeight);
-      const progress = Math.min(1, Math.max(0, -rect.top / totalScroll));
-      const nextStep = Math.min(panels.length - 1, Math.floor(progress * panels.length));
-
-      setStep(nextStep);
-      ticking = false;
-    };
-
-    const requestUpdate = () => {
-      if (ticking) return;
-      ticking = true;
-      window.requestAnimationFrame(updateStep);
-    };
-
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-    window.addEventListener("resize", requestUpdate);
-    updateStep();
-  };
-
-  const setupTiltCards = () => {
-    if (prefersReducedMotion || window.matchMedia("(pointer: coarse)").matches) return;
-
-    const cards = document.querySelectorAll(".proof-card, .guide-card, .testimonial-card, .visual-card");
-
-    cards.forEach((card) => {
-      card.addEventListener("pointermove", (event) => {
-        const rect = card.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / rect.width - 0.5;
-        const y = (event.clientY - rect.top) / rect.height - 0.5;
-
-        card.style.setProperty("--tilt-x", `${(-y * 4).toFixed(2)}deg`);
-        card.style.setProperty("--tilt-y", `${(x * 4).toFixed(2)}deg`);
-      });
-
-      card.addEventListener("pointerleave", () => {
-        card.style.removeProperty("--tilt-x");
-        card.style.removeProperty("--tilt-y");
-      });
-    });
-  };
-
   normalizeCanonicalUrl();
   setupHeader();
   setupReveals();
-  setupFeatureSteps();
-  setupTiltCards();
 })();
