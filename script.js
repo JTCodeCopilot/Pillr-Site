@@ -65,11 +65,12 @@
   const setupHeader = () => {
     const header = document.querySelector(".site-header");
     if (!header) return;
+    const isLandingHeader = header.classList.contains("landing-header");
 
     const updateHeader = () => {
-      const showHeader = window.innerWidth > 640 || window.scrollY > 32;
+      const showHeader = !isLandingHeader || window.scrollY > 16;
       header.classList.toggle("is-visible", showHeader);
-      header.classList.toggle("nav-solid", window.scrollY > 48);
+      header.classList.toggle("nav-solid", isLandingHeader ? showHeader : window.scrollY > 48);
     };
 
     window.addEventListener("scroll", updateHeader, { passive: true });
