@@ -174,7 +174,7 @@ button { font: inherit; }
   padding: 5px;
   overflow: hidden;
   border: 2px solid #626b67;
-  border-radius: 45px;
+  border-radius: 13.235% / 6.226%;
   background: linear-gradient(145deg, #9aa39f 0%, #242a27 15%, #070908 55%, #4b5450 100%);
   box-shadow: 0 28px 68px rgba(11, 48, 41, 0.16), 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
@@ -184,10 +184,10 @@ button { font: inherit; }
   inset: 4px;
   z-index: 1;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 39px;
+  border-radius: 11.89% / 5.49%;
   pointer-events: none;
 }
-.hero-phone-image img { display: block; width: 100%; height: auto; border-radius: 37px; }
+.hero-phone-image img { display: block; width: 100%; height: auto; border-radius: 11.35% / 5.22%; }
 .floating-card, .phone-top, .phone-app-head, .phone-calendar, .phone-panel { display: none; }
 
 /* Proof */
@@ -232,7 +232,7 @@ button { font: inherit; }
   padding: 5px;
   overflow: hidden;
   border: 2px solid #626b67;
-  border-radius: 45px;
+  border-radius: 14.063% / 6.628%;
   background: linear-gradient(145deg, #9aa39f 0%, #242a27 15%, #070908 55%, #4b5450 100%);
   box-shadow: 0 22px 56px rgba(11, 48, 41, 0.14), 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
@@ -242,10 +242,10 @@ button { font: inherit; }
   inset: 4px;
   z-index: 1;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 39px;
+  border-radius: 12.66% / 5.85%;
   pointer-events: none;
 }
-.step-visual img { display: block; width: 100%; height: auto; border-radius: 37px; object-fit: contain; }
+.step-visual img { display: block; width: 100%; height: auto; border-radius: 12.09% / 5.56%; object-fit: contain; }
 .step-dots { display: none; }
 
 /* Testimonials */
@@ -407,9 +407,8 @@ button { font: inherit; }
   .step-counter { margin-bottom: 18px; }
   .step-headline { font-size: clamp(2.4rem, 11vw, 3.2rem); }
   .step-body { font-size: 0.98rem; line-height: 1.7; }
-  .step-visual { width: clamp(180px, 56vw, 220px); padding: 4px; border-radius: 36px; }
-  .step-visual::after { inset: 3px; border-radius: 31px; }
-  .step-visual img { border-radius: 30px; }
+  .step-visual { width: clamp(180px, 56vw, 220px); padding: 4px; }
+  .step-visual::after { inset: 3px; }
   .testimonials-grid, .guide-grid { grid-template-columns: 1fr; }
   .testimonial-card { padding: 28px 0; }
   .testimonial-card:nth-child(odd) { border-right: 0; }
