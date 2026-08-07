@@ -121,6 +121,7 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/apple-health-medications-vs-mytherapy.html
 - Guide: https://pillr.management/pillr-vs-theraview-adhd-medication-tracking.html
 - Guide: https://pillr.management/careclinic-vs-guava-medication-tracking.html
+- Guide: https://pillr.management/mytherapy-vs-everydose-medication-tracking.html
 - Guide: https://pillr.management/forgot-to-take-adderall-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
