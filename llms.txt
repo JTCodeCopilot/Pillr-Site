@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-08-04
+> Last updated: 2026-08-08
 
 ---
 
@@ -17,7 +17,7 @@
 ## Core Capabilities
 
 - Time-sensitive medication reminders with quick actions (take now, remind later, skip).
-- Dose logging for taken, skipped, and delayed medications.
+- Dose logging for taken and skipped doses, with actual taken times kept in history.
 - Stimulant focus window tracking (onset, peak, wear-off) with daily check-ins.
 - A 24-hour medication timeline plus past-day taken and skipped dose records.
 - Medication history, filters, manual entries, and routine records.

@@ -13,7 +13,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Follow-up reminder support for one-time doses
 
 2. Dose tracking and history
-- Track taken, skipped, and delayed doses
+- Track taken and skipped doses, with actual taken times kept in history
 - Review today's 24-hour medication timeline and saved taken or skipped logs from past days
 - Filter history by medication and date range
 - Medication history and routine records
@@ -113,4 +113,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-08-04
+Last updated: 2026-08-08
