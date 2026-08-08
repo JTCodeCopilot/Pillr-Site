@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-08-08
+> Last updated: 2026-08-09
 
 ---
 
@@ -47,6 +47,7 @@
 - Dose log and reminder app for clinical check-ins
 - ADHD medication appointment notes
 - ADHD medication side effect tracker
+- ADHD emotional overwhelm tracker for adults
 - ADHD medication appetite tracker for adults
 - ADHD medication refill reminder and pill count
 - ADHD app that tracks focus windows and side effects
@@ -150,7 +151,7 @@ ADHD medication caffeine, ADHD caffeine tracking, ADHD coffee routine, adult ADH
 ADHD medication wearing off tracker, ADHD afternoon crash, ADHD focus window, adult ADHD dose tracking,
 ADHD medication focus window tracker, ADHD focus tracker, stimulant focus window, ADHD medication timeline,
 ADHD medication side effect tracker, ADHD medication side effects tracking, adult ADHD medication notes, ADHD medication review,
-ADHD emotional overwhelm, ADHD mood notes, adult ADHD medication tracking,
+ADHD emotional overwhelm tracker, ADHD mood tracker adults, ADHD mood notes, adult ADHD medication tracking,
 ADHD medication workday routine, ADHD meetings, adult ADHD dose tracking, ADHD medication reminders,
 ADHD telehealth appointment, adult ADHD medication checklist, ADHD dose history, ADHD medication tracking,
 ADHD exercise medication routine, adult ADHD workout routine, ADHD medication notes, ADHD dose tracking,
