@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-08-10
+> Last updated: 2026-08-11
 
 ---
 
@@ -154,7 +154,7 @@ ADHD medication focus window tracker, ADHD focus tracker, stimulant focus window
 ADHD medication side effect tracker, ADHD medication side effects tracking, adult ADHD medication notes, ADHD medication review,
 ADHD emotional overwhelm tracker, ADHD mood tracker adults, ADHD mood notes, adult ADHD medication tracking,
 ADHD medication workday routine, ADHD meetings, adult ADHD dose tracking, ADHD medication reminders,
-ADHD telehealth appointment, adult ADHD medication checklist, ADHD dose history, ADHD medication tracking,
+ADHD telehealth appointment checklist, ADHD medication appointment notes, adult ADHD dose history, telehealth preparation,
 ADHD exercise medication routine, adult ADHD workout routine, ADHD medication notes, ADHD dose tracking,
 ADHD medication routine for parents, adult ADHD parenting routine, ADHD parenting medication reminders,
 ADHD busy morning medication routine, ADHD shift work medication routine, adult ADHD night shift,
