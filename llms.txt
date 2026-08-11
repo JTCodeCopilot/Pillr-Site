@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-08-11
+> Last updated: 2026-08-12
 
 ---
 
@@ -52,6 +52,7 @@
 - ADHD medication refill reminder and pill count
 - ADHD app that tracks focus windows and side effects
 - ADHD shift work medication routine tracker
+- ADHD task switching medication routine for adults
 
 ---
 
@@ -145,7 +146,7 @@ ADHD medication refill reminder, ADHD pill count tracker, ADHD refill routine, a
 ADHD medication appointment notes, ADHD medication review appointment, adult ADHD medication checklist, ADHD dose history,
 ADHD body doubling medication routine, adult ADHD body doubling, ADHD dose logging,
 ADHD medication travel checklist, adult ADHD travel medication, ADHD medication routine travel,
-ADHD task switching, adult ADHD transition routine, ADHD medication routine adults,
+ADHD task switching medication routine, adult ADHD transition routine, ADHD dose tracking,
 ADHD medication holiday adults, ADHD medication break, adult ADHD dose tracking,
 ADHD medication appetite tracker, ADHD appetite log adults, ADHD meal tracking, ADHD dose tracking,
 ADHD medication caffeine, ADHD caffeine tracking, ADHD coffee routine, adult ADHD dose tracking,

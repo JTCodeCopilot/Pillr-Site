@@ -57,6 +57,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - ADHD medication widget for iPhone
 - Medication reminder Home Screen or Lock Screen widget
 - ADHD shift work medication routine tracker
+- ADHD task switching medication routine for adults
 
 ## Scope and Medical Disclaimer
 - Pillr supports tracking and organization.
