@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-08-13
+> Last updated: 2026-08-14
 
 ---
 
@@ -158,7 +158,7 @@ ADHD emotional overwhelm tracker, ADHD mood tracker adults, ADHD mood notes, adu
 ADHD medication workday routine, ADHD meetings, adult ADHD dose tracking, ADHD medication reminders,
 ADHD telehealth appointment checklist, ADHD medication appointment notes, adult ADHD dose history, telehealth preparation,
 ADHD exercise medication routine, adult ADHD workout routine, ADHD medication notes, ADHD dose tracking,
-ADHD medication routine for parents, adult ADHD parenting routine, ADHD parenting medication reminders,
+ADHD medication routine for parents with ADHD, adult ADHD parenting routine, ADHD parenting medication reminders,
 ADHD busy morning medication routine, ADHD shift work medication routine, adult ADHD night shift,
 ADHD rotating shifts medication reminders, ADHD dose tracking shift workers,
 ADHD housework routine, adult ADHD chores, ADHD medication reminders, ADHD dose tracking,
