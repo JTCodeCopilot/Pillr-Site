@@ -28,7 +28,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 
 5. Privacy and platform
 - Medication records stored on device by default
-- Optional iCloud Drive backup
+- Checked on-device recovery copies with user-chosen restore in Settings; no cloud backup or syncing
 - Optional Apple Health context support
 
 ## Who Pillr Is For

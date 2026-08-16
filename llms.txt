@@ -23,7 +23,7 @@
 - Medication history, filters, manual entries, and routine records.
 - Refill and supply tracking with low-supply alerts.
 - CSV and PDF exports for medication history sharing with clinicians.
-- Medication records stored on device by default, with optional iCloud Drive backup.
+- Medication records and checked recovery copies stored on the iPhone; restore is always chosen by the user in Settings, with no cloud backup or syncing.
 
 ---
 

@@ -55,7 +55,7 @@
   }
   </script>
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does Pillr replace my doctor or clinician?","acceptedAnswer":{"@type":"Answer","text":"No. Pillr helps you track and organise medications, but it does not replace a clinician. Always follow your prescriber's advice."}},{"@type":"Question","name":"Does Pillr work for Vyvanse, Adderall, and Concerta?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr supports all common ADHD stimulants and non-stimulants — Vyvanse, Adderall, Adderall XR, Concerta, Ritalin, Strattera, Guanfacine, and anything else you're taking."}},{"@type":"Question","name":"Can I track non-ADHD medications?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr supports any medications, with special focus window timing tools built specifically for ADHD stimulants."}},{"@type":"Question","name":"Where is my data stored?","acceptedAnswer":{"@type":"Answer","text":"Medication records stay on your device by default. Pillr has no account system, optional iCloud Drive backup, and optional features and analytics disclosed in the privacy policy."}},{"@type":"Question","name":"Can I export my medication history?","acceptedAnswer":{"@type":"Answer","text":"Yes. Export your full ADHD medication history as CSV or PDF to share with your psychiatrist, GP, or caregiver."}},{"@type":"Question","name":"Can Pillr record and transcribe appointments?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr can record an appointment, create a transcript, and turn it into an editable summary. Appointment audio, transcripts, and notes stay on your iPhone."}},{"@type":"Question","name":"What is a focus window?","acceptedAnswer":{"@type":"Answer","text":"Pillr shows a visual timeline based on your own onset and duration settings. Use it as a routine-planning aid and a record to discuss with your clinician."}},{"@type":"Question","name":"Is Pillr a pill reminder and tracker combined?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr combines pill tracker features with flexible reminders, taken or skipped dose logs, and medication history you can review later."}},{"@type":"Question","name":"Does Pillr keep medication history?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr keeps medication history, dose logs, notes, and refill status so you can review your routine and export records for appointments."}}]}
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does Pillr replace my doctor or clinician?","acceptedAnswer":{"@type":"Answer","text":"No. Pillr helps you track and organise medications, but it does not replace a clinician. Always follow your prescriber's advice."}},{"@type":"Question","name":"Does Pillr work for Vyvanse, Adderall, and Concerta?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr supports all common ADHD stimulants and non-stimulants — Vyvanse, Adderall, Adderall XR, Concerta, Ritalin, Strattera, Guanfacine, and anything else you're taking."}},{"@type":"Question","name":"Can I track non-ADHD medications?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr supports any medications, with special focus window timing tools built specifically for ADHD stimulants."}},{"@type":"Question","name":"Where is my data stored?","acceptedAnswer":{"@type":"Answer","text":"Medication records stay on your device. Pillr has no account system and keeps checked recovery copies on your iPhone, which you can choose to restore in Settings. Cloud backup, restore, and syncing are not available. Optional features and analytics are disclosed in the privacy policy."}},{"@type":"Question","name":"Can I export my medication history?","acceptedAnswer":{"@type":"Answer","text":"Yes. Export your full ADHD medication history as CSV or PDF to share with your psychiatrist, GP, or caregiver."}},{"@type":"Question","name":"Can Pillr record and transcribe appointments?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr can record an appointment, create a transcript, and turn it into an editable summary. Appointment audio, transcripts, and notes stay on your iPhone."}},{"@type":"Question","name":"What is a focus window?","acceptedAnswer":{"@type":"Answer","text":"Pillr shows a visual timeline based on your own onset and duration settings. Use it as a routine-planning aid and a record to discuss with your clinician."}},{"@type":"Question","name":"Is Pillr a pill reminder and tracker combined?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr combines pill tracker features with flexible reminders, taken or skipped dose logs, and medication history you can review later."}},{"@type":"Question","name":"Does Pillr keep medication history?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pillr keeps medication history, dose logs, notes, and refill status so you can review your routine and export records for appointments."}}]}
   </script>
   <script type="module" src="firebase.js"></script>
 </head>
@@ -91,7 +91,7 @@
     <div class="container hero-grid">
       <div class="hero-copy">
         <p class="hero-brand reveal">Pillr</p>
-        <h1 class="reveal">Built for the<br />ADHD brain.</h1>
+        <h1 class="reveal">Built for ADHD<br />medication routines.</h1>
         <p class="hero-intro reveal">Pillr helps you remember medication, log doses, track focus windows, and keep a clear record on iPhone without adding more mental clutter.</p>
         <div class="cta-group reveal">
           <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" class="app-store-btn app-store-hero" target="_blank" rel="noopener" aria-label="Download Pillr on the App Store">
@@ -107,7 +107,7 @@
       <div class="hero-depth-scene reveal" aria-label="Pillr app preview">
         <div class="phone-shadow" aria-hidden="true"></div>
         <div class="hero-phone hero-phone-image">
-          <img src="assets/pillr-screen-my-meds-hero.png" alt="Pillr app showing overdue medication, taken doses, low supply, and quick dose actions on iPhone" width="1320" height="2868" />
+          <img src="assets/pillr-screen-my-meds-hero.png" alt="Pillr home screen showing an overdue medication, daily timeline, supply count, and quick dose actions on iPhone" width="1320" height="2868" />
         </div>
       </div>
     </div>
@@ -141,7 +141,7 @@
   </section>
 
 
-  <!-- ── FEATURES , PINNED SCROLL NARRATIVE (5 text steps) ────────────────── -->
+  <!-- ── FEATURES , PINNED SCROLL NARRATIVE (4 text steps) ────────────────── -->
   <section class="features-section" id="features" aria-label="How Pillr works">
     <div class="features-sticky-wrapper">
       <div class="features-pin" id="featuresPin">
@@ -149,63 +149,50 @@
         <!-- Step 01 , Medication Management -->
         <div class="step-panel step-panel-with-visual active" data-step="0" aria-label="Feature 1">
           <div class="step-content">
-            <div class="step-counter">01 , 05</div>
+            <div class="step-counter">01 , 04</div>
             <h2 class="step-headline">Everything in<br />one place.</h2>
             <p class="step-body">All your meds — scheduled, as needed, or one-off — in a single view the moment you open the app. No more scattered alarms, sticky notes, or trying to remember which app you used last time. Just one place that shows you exactly where things are.</p>
           </div>
           <div class="step-visual" aria-label="Pillr home screen preview">
-            <img src="assets/pillr-screen-my-meds-hero.png" alt="Pillr home screen showing medication cards, overdue status, taken doses, supply, and quick dose actions" width="1320" height="2868" loading="lazy" />
+            <img src="assets/pillr-screen-my-meds-hero.png" alt="Pillr home screen showing an overdue medication, daily timeline, supply count, and quick dose actions" width="1320" height="2868" loading="lazy" />
           </div>
         </div>
 
         <!-- Step 02 , Focus Timeline -->
         <div class="step-panel step-panel-with-visual" data-step="1" aria-label="Feature 2">
           <div class="step-content">
-            <div class="step-counter">02 , 05</div>
+            <div class="step-counter">02 , 04</div>
             <h2 class="step-headline">Track focus windows<br />beside your dose log.</h2>
             <p class="step-body">A visual timeline based on your own onset and duration settings, not a generic average. Use it as a routine-planning aid and a record to discuss with your clinician, not as medical certainty.</p>
           </div>
           <div class="step-visual" aria-label="Pillr Focus Timeline preview">
-            <img src="assets/pillr-screen-focus-completed.png" alt="Pillr Focus Timeline screen showing a completed focus window, medication name, timing curve, and current point marker" width="1320" height="2868" loading="lazy" />
+            <img src="assets/pillr-screen-focus-completed.png" alt="Pillr Focus Timeline showing a Ritalin dose, estimated peak time, current point marker, and focus-window curve" width="1320" height="2868" loading="lazy" />
           </div>
         </div>
 
         <!-- Step 03 , Daily Reflections -->
         <div class="step-panel step-panel-with-visual" data-step="2" aria-label="Feature 3">
           <div class="step-content">
-            <div class="step-counter">03 , 05</div>
+            <div class="step-counter">03 , 04</div>
             <h2 class="step-headline">See the patterns<br />your memory misses.</h2>
             <p class="step-body">A short end-of-day check-in where you can log focus, mood, and side effects. Over time, it gives you clearer notes to discuss with your clinician instead of relying on memory alone.</p>
           </div>
           <div class="step-visual" aria-label="Pillr Reflection preview">
-            <img src="assets/pillr-screen-reflection-summary.png" alt="Pillr Reflection screen showing logged entries, average rating, trend, medication ratings, and check-in details" width="1320" height="2868" loading="lazy" />
+            <img src="assets/pillr-screen-reflection-summary.png" alt="Pillr Reflection screen showing a seven-day average, trend, medication ratings, and a daily check-in" width="1320" height="2868" loading="lazy" />
           </div>
         </div>
 
         <!-- Step 04 , History & Exports -->
         <div class="step-panel step-panel-with-visual" data-step="3" aria-label="Feature 4">
           <div class="step-content">
-            <div class="step-counter">04 , 05</div>
+            <div class="step-counter">04 , 04</div>
             <h2 class="step-headline">Bring real data to<br />your appointments.</h2>
             <p class="step-body">Export your full medication history as a PDF or CSV, filtered by date if you need it. Instead of walking into a medication review trying to remember the last three months, you show up with an actual record.</p>
           </div>
           <div class="step-visual" aria-label="Pillr History preview">
-            <img src="assets/pillr-screen-history-summary.png" alt="Pillr History screen showing adherence, total medication logs, filters, and medication history entries" width="1320" height="2868" loading="lazy" />
+            <img src="assets/pillr-screen-history-summary.png" alt="Pillr History screen showing adherence, medication log totals, filters, and taken-dose entries" width="1320" height="2868" loading="lazy" />
           </div>
         </div>
-
-        <!-- Step 05 , My Appointment -->
-        <div class="step-panel step-panel-with-visual" data-step="4" aria-label="Feature 5">
-          <div class="step-content">
-            <div class="step-counter">05 , 05</div>
-            <h2 class="step-headline">Capture what was said<br />at the appointment.</h2>
-            <p class="step-body">Record your appointment, turn it into a transcript and editable summary, and save the follow-up points you do not want to forget. Appointment audio, transcripts, and notes stay on your iPhone.</p>
-          </div>
-          <div class="step-visual" aria-label="Pillr My Appointment preview">
-            <img src="assets/pillr-screen-appointment-summary.png" alt="Pillr My Appointment screen showing an appointment summary, medications selected, transcript access, and PDF export" width="1320" height="2868" loading="lazy" />
-          </div>
-        </div>
-
 
         <!-- Progress dots -->
         <div class="step-dots" aria-hidden="true">
@@ -213,7 +200,6 @@
           <span class="dot" data-dot="1"></span>
           <span class="dot" data-dot="2"></span>
           <span class="dot" data-dot="3"></span>
-          <span class="dot" data-dot="4"></span>
         </div>
 
       </div>
@@ -419,7 +405,7 @@
         <details class="faq-item reveal"><summary>Does Pillr replace my doctor or clinician?</summary><p>No. Pillr helps you track and organise medications, but it does not replace a clinician. Always follow your prescriber's advice.</p></details>
         <details class="faq-item reveal"><summary>Does Pillr work for Vyvanse, Adderall, and Concerta?</summary><p>Yes. Pillr supports all common ADHD stimulants and non-stimulants — Vyvanse, Adderall, Adderall XR, Concerta, Ritalin, Strattera, Guanfacine, and anything else you're taking.</p></details>
         <details class="faq-item reveal"><summary>Can I track non-ADHD medications?</summary><p>Yes. Pillr supports any medications, with special focus window timing tools built specifically for ADHD stimulants.</p></details>
-        <details class="faq-item reveal"><summary>Where is my data stored?</summary><p>Medication records stay on your device by default. Pillr has no account system, optional iCloud Drive backup, and optional features and analytics disclosed in the privacy policy.</p></details>
+        <details class="faq-item reveal"><summary>Where is my data stored?</summary><p>Medication records stay on your device. Pillr has no account system and keeps checked recovery copies on your iPhone, which you can choose to restore in Settings. Cloud backup, restore, and syncing are not available. Optional features and analytics are disclosed in the privacy policy.</p></details>
         <details class="faq-item reveal"><summary>Can I export my medication history?</summary><p>Yes. Export your full ADHD medication history as CSV or PDF to share with your psychiatrist, GP, or caregiver.</p></details>
         <details class="faq-item reveal"><summary>Can Pillr record and transcribe appointments?</summary><p>Yes. Pillr can record an appointment, create a transcript, and turn it into an editable summary. Appointment audio, transcripts, and notes stay on your iPhone.</p></details>
         <details class="faq-item reveal"><summary>What is a focus window?</summary><p>Pillr shows a visual timeline based on your own onset and duration settings. Use it as a routine-planning aid and a record to discuss with your clinician.</p></details>
@@ -448,6 +434,10 @@
   </section>
 
   </main>
+  <a href="https://apps.apple.com/us/app/pillr-adhd-medication-tracker/id6746717689" class="sticky-app-store" target="_blank" rel="noopener" aria-label="Get Pillr on the App Store">
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M16.72 12.66c-.03-2.35 1.92-3.49 2.01-3.55-1.1-1.6-2.8-1.82-3.4-1.84-1.43-.15-2.82.86-3.55.86-.75 0-1.88-.85-3.09-.83-1.57.02-3.04.94-3.85 2.37-1.68 2.9-.43 7.17 1.18 9.52.8 1.15 1.73 2.43 2.94 2.38 1.19-.05 1.63-.76 3.06-.76 1.4 0 1.82.76 3.07.73 1.27-.02 2.07-1.15 2.84-2.31.92-1.32 1.28-2.62 1.3-2.69-.03-.01-2.48-.95-2.51-3.88ZM14.43 5.8c.65-.81 1.1-1.92.98-3.04-.94.04-2.12.65-2.79 1.44-.59.69-1.12 1.85-.98 2.92 1.06.08 2.15-.54 2.79-1.32Z" /></svg>
+    <span>Get Pillr</span>
+  </a>
   <!-- FOOTER -->
   <footer class="site-footer" aria-label="Site footer">
     <div class="container footer-grid">
