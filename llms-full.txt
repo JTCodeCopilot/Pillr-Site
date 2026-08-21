@@ -43,7 +43,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - ADHD pill tracker for iPhone
 - Forgot whether ADHD medication was taken
 - Forgot if I took ADHD medication
-- ADHD medication reminder fatigue
+- When ADHD medication reminders stop working
 - Stimulant schedule tracker
 - Medication history tracker app
 - ADHD medication appointment notes
