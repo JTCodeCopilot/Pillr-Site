@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-08-21
+> Last updated: 2026-08-22
 
 ---
 
@@ -111,7 +111,6 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/adhd-medication-parenting-routine-adults.html
 - Guide: https://pillr.management/adhd-shift-work-medication-routine-adults.html
 - Guide: https://pillr.management/adhd-housework-medication-routine-adults.html
-- Guide: https://pillr.management/how-adults-stick-to-adhd-medication-routine.html
 - Guide: https://pillr.management/medication-tracker-for-iphone-adhd.html
 - Guide: https://pillr.management/adhd-medication-widget-iphone.html
 - Guide: https://pillr.management/apple-health-vs-pillr-medication-reminders.html

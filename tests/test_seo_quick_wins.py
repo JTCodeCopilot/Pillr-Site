@@ -227,6 +227,42 @@ class SEOQuickWinTests(unittest.TestCase):
                 path.name,
             )
 
+    def test_daily_routine_guides_use_one_search_page_and_one_redirect(self) -> None:
+        keeper = (SITE_ROOT / "how-to-manage-adhd-medication-every-day.html").read_text(
+            encoding="utf-8"
+        )
+        redirect = (SITE_ROOT / "how-adults-stick-to-adhd-medication-routine.html").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('<p class="article-meta">Updated August 22, 2026</p>', keeper)
+        self.assertIn('<h2>Use a five-minute weekly check</h2>', keeper)
+        self.assertIn('<meta name="robots" content="noindex, follow" />', redirect)
+        self.assertIn(
+            '<meta http-equiv="refresh" content="0; url=how-to-manage-adhd-medication-every-day.html" />',
+            redirect,
+        )
+        self.assertIn(
+            '<link rel="canonical" href="https://pillr.management/how-to-manage-adhd-medication-every-day.html" />',
+            redirect,
+        )
+
+        public_listing_paths = [
+            SITE_ROOT / "sitemap.xml",
+            SITE_ROOT / "llms.txt",
+            SITE_ROOT / "llms-full.txt",
+        ]
+        public_listing_paths.extend(
+            path
+            for path in SITE_ROOT.glob("*.html")
+            if path.name != "how-adults-stick-to-adhd-medication-routine.html"
+        )
+        for path in public_listing_paths:
+            self.assertNotIn(
+                "how-adults-stick-to-adhd-medication-routine",
+                path.read_text(encoding="utf-8"),
+                path.name,
+            )
+
     def test_every_page_declares_the_local_favicon(self) -> None:
         problems: list[str] = []
         for path in SITE_ROOT.glob("*.html"):
