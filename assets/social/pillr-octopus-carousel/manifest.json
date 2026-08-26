@@ -1,0 +1,20 @@
+{
+  "title": "Pillr ADHD side quests Instagram carousel",
+  "format": "Instagram portrait carousel",
+  "dimensions": "1080x1350",
+  "panels": [
+    "pillr-adhd-side-quests-01.png",
+    "pillr-adhd-side-quests-02.png",
+    "pillr-adhd-side-quests-03.png",
+    "pillr-adhd-side-quests-04.png",
+    "pillr-adhd-side-quests-05.png",
+    "pillr-adhd-side-quests-06.png"
+  ],
+  "brand_palette": {
+    "evergreen": "#1C2B24",
+    "sage": "#5E8F72",
+    "attention": "#B89A62",
+    "off_white": "#F4F6F2"
+  },
+  "production": "Illustrations generated with built-in ImageGen; supplied copy was rendered deterministically."
+}
