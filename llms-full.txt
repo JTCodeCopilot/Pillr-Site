@@ -47,6 +47,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Stimulant schedule tracker
 - Medication history tracker app
 - ADHD medication appointment notes
+- ADHD medication log template for adults
 - ADHD medication side effect tracker
 - ADHD emotional overwhelm tracker for adults
 - ADHD medication appetite tracker for adults
@@ -79,6 +80,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/adhd-medication-sleep-routine-adults.html
 - Guide: https://pillr.management/adhd-time-blindness-medication-reminders.html
 - Guide: https://pillr.management/forgot-if-i-took-adhd-medication.html
+- Guide: https://pillr.management/adhd-medication-log-template-adults.html
 - Guide: https://pillr.management/adhd-medication-reminder-fatigue.html
 - Guide: https://pillr.management/adhd-medication-refill-routine-adults.html
 - Guide: https://pillr.management/adhd-medication-review-appointment-adults.html
