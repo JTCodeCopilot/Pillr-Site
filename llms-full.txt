@@ -106,6 +106,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/apple-health-vs-pillr-medication-reminders.html
 - Guide: https://pillr.management/pillr-vs-medisafe-medication-tracking.html
 - Guide: https://pillr.management/medisafe-vs-mytherapy-medication-reminders.html
+- Guide: https://pillr.management/medisafe-vs-dosecast-medication-reminders.html
 - Guide: https://pillr.management/medisafe-vs-everydose-medication-reminders.html
 - Guide: https://pillr.management/dosecast-vs-everydose-medication-reminders.html
 - Guide: https://pillr.management/bearable-vs-guava-medication-symptom-tracking.html
