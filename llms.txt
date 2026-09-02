@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-09-01
+> Last updated: 2026-09-03
 
 ---
 
@@ -41,6 +41,7 @@
 
 - ADHD medication reminder app for iPhone
 - Best ADHD medication reminder app for iPhone
+- How is ADHD diagnosed in adults
 - What treatment helps ADHD in adults
 - How to manage ADHD medication every day
 - Pill tracker for ADHD stimulant schedules
