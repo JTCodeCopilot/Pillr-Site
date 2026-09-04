@@ -118,6 +118,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/pillr-vs-theraview-adhd-medication-tracking.html
 - Guide: https://pillr.management/pillr-vs-nuro-adhd-medication-tracking.html
 - Guide: https://pillr.management/pillr-vs-careclinic-adhd-medication-tracking.html
+- Guide: https://pillr.management/pillr-vs-tookly-adhd-medication-tracking.html
 - Guide: https://pillr.management/careclinic-vs-guava-medication-tracking.html
 - Guide: https://pillr.management/mytherapy-vs-everydose-medication-tracking.html
 - Guide: https://pillr.management/pillr-vs-doz-medication-tracking.html
