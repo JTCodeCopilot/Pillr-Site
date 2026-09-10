@@ -304,7 +304,7 @@
 
   <url>
     <loc>https://pillr.management/bearable-vs-guava-medication-symptom-tracking.html</loc>
-    <lastmod>2026-09-01</lastmod>
+    <lastmod>2026-09-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -368,6 +368,13 @@
   <url>
     <loc>https://pillr.management/pillr-vs-tookly-adhd-medication-tracking.html</loc>
     <lastmod>2026-09-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://pillr.management/pillr-vs-bearable-adhd-medication-tracking.html</loc>
+    <lastmod>2026-09-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
