@@ -15,6 +15,11 @@ Increase qualified organic traffic, App Store visits, and Pillr downloads. Prior
 - Page metadata and structured data are written directly in each HTML file.
 - `sitemap.xml` and `robots.txt` are maintained by hand.
 - Shared presentation and behaviour live in `pillr-style.css` and `script.js`.
+- Pale green backgrounds use solid `#EEF4F0`, including the homepage hero, alternate sections, callouts and footer. The hero has no texture overlay so the supplied colour stays exact.
+- Shared website colours follow Pillr: evergreen `#1C2B24` headings, grey-green `#5E6A63` supporting text, sage `#5E8F72` decorative accents, and darker green `#3F6B52` links and keyboard focus outlines for readability on light backgrounds.
+- The homepage preview pairs a landscape iPad behind a portrait iPhone, using the supplied screenshots with matching metallic frames. Keep the stack within the available width on mobile and preserve screenshot proportions.
+- Hero device frames use thin metallic outer edges with black inner bezels, subtle iPhone side buttons and an iPad landscape camera. Preserve the iPhone screenshot's own Dynamic Island rather than adding a second one.
+- The floating Get Pillr capsule uses translucent glass with live backdrop blur, a highlighted rim and neutral shadow. It is a web approximation, without native Liquid Glass refraction or magnification. Preserve an opaque fallback for unsupported browsers, reduced transparency and increased contrast, plus the existing App Store link and accessible label.
 
 ## Before making changes
 
