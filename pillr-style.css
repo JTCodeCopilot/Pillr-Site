@@ -215,7 +215,7 @@ button { font: inherit; }
 }
 .hero-ipad { position: absolute; top: 0; right: 0; width: 90%; padding: 2%; border: 2px solid #77797b; border-radius: 5% / 6.5%; background: #08090a; box-shadow: inset 0 0 0 1px #242628, 0 0 0 1px #343638; }
 .hero-ipad::before { content: ""; position: absolute; top: 0.8%; left: 50%; width: 5px; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #263448, #101823 40%, #030405 75%); box-shadow: 0 0 0 1px #181a1c; }
-.hero-ipad img { width: 100%; height: auto; border-radius: 3.6% / 4.8%; }
+.hero-ipad img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: contain; border-radius: 3.6% / 4.8%; }
 .hero-device-stack .hero-ipad { right: -5%; }
 .hero-device-stack .hero-phone { position: absolute; z-index: 2; left: 0; bottom: 0; width: 32%; }
 .hero-device-stack .hero-phone-image { padding: 1%; overflow: visible; border: 2px solid #8c8e90; background: #050607; box-shadow: inset 0 0 0 1px #252729, 0 0 0 1px #3a3c3e; }
@@ -439,7 +439,7 @@ button { font: inherit; }
   .sticky-app-store { bottom: max(14px, env(safe-area-inset-bottom)); }
   .hero-note { text-align: center; }
   .hero-depth-scene { min-height: auto; }
-  .hero-device-stack .hero-ipad { right: 0; width: 85%; }
+  .hero-device-stack .hero-ipad { top: auto; bottom: 0; right: 0; width: 85%; height: auto; align-self: end; }
   .hero-phone { width: min(190px, 42vw); }
   .section { padding: 72px 0; }
   .section-heading { margin-bottom: 36px; }
