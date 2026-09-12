@@ -295,6 +295,13 @@ button { font: inherit; }
 .guide-card p { flex: 1; margin: 0; color: var(--muted); font-size: 0.93rem; }
 .guide-link-panel { margin-top: 64px; padding-top: 32px; border-top: 1px solid var(--line-strong); }
 .guide-link-heading { margin-bottom: 20px; color: var(--text); font-size: 1.05rem; font-weight: 650; }
+.guide-group { border-top: 1px solid var(--line-strong); }
+.guide-group:last-child { border-bottom: 1px solid var(--line-strong); }
+.guide-group summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 64px; padding: 16px 0; cursor: pointer; list-style: none; color: var(--text); font-size: 1rem; font-weight: 600; line-height: 1.4; }
+.guide-group summary::-webkit-details-marker { display: none; }
+.guide-group summary::after { content: "+"; flex: 0 0 24px; text-align: center; font-size: 1.4rem; font-weight: 400; }
+.guide-group[open] > summary::after { content: "−"; }
+.guide-group .guide-link-list { padding-bottom: 24px; }
 .guide-link-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 32px; }
 .guide-link-list a { display: flex; align-items: center; min-height: 54px; padding: 12px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 0.92rem; line-height: 1.4; transition: color var(--transition), border-color var(--transition); }
 .guide-link-list a:hover, .guide-link-list a:focus-visible { color: var(--text); border-bottom-color: var(--accent); }

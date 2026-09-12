@@ -67,6 +67,17 @@ Add contextual links to relevant existing pages, vary anchor text naturally, and
 
 ## Performance and accessibility
 
+### Homepage guide allocation
+
+Keep the three featured guides visible. The More ADHD guides directory uses four initially closed native details groups, with every article link present in the initial HTML. Assign each directory link once by its primary reader intent:
+
+- Understanding ADHD (`guides-understanding-adhd`): general understanding, symptoms, diagnosis and treatment explainers; this category does not expand permission to create medical content.
+- Medication routines and missed doses (`guides-medication-routines`): remembering or recording doses, missed-dose questions, refills, travel, work, parenting and everyday routines.
+- Tracking, side effects and appointments (`guides-tracking-and-appointments`): logs, symptom and side-effect notes, focus windows, appointment preparation, exports and iPhone tracking tools.
+- Comparing medication apps (`guides-comparing-apps`): app comparisons, including Apple Health comparisons.
+
+Use the existing group IDs and guide-link-list containers. Preserve link titles and destinations when regrouping. Keep all links in the delivered HTML without requiring a click or JavaScript to fetch them. Do not add a new flat list, duplicate a directory link, or automatically replace the featured guides. For overlapping topics choose the primary intent; app comparisons always go in Comparing medication apps. Check all old links are retained and each new link occurs exactly once in this directory, plus mobile disclosure and keyboard operation.
+
 Preserve mobile usability, keyboard access, semantic HTML, readable headings, clear link text, form labels, colour contrast, image dimensions, appropriate lazy loading, and layout stability. Do not trade usability or speed for SEO.
 
 ## Validation
