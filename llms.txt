@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-09-10
+> Last updated: 2026-09-16
 
 ---
 
@@ -106,6 +106,7 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/adhd-medication-caffeine-tracking-adults.html
 - Guide: https://pillr.management/adhd-medication-afternoon-crash-tracking-adults.html
 - Guide: https://pillr.management/adhd-medication-focus-window-tracker.html
+  - Separates timeline estimates from personal observations, with a short note example and current optional medication-benefit and side-effect-impact ratings.
 - Guide: https://pillr.management/adhd-medication-side-effect-tracking-adults.html
 - Guide: https://pillr.management/adhd-emotional-overwhelm-medication-tracking-adults.html
 - Guide: https://pillr.management/adhd-medication-workday-meeting-routine-adults.html

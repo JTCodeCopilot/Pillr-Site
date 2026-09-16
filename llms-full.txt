@@ -94,6 +94,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/adhd-medication-caffeine-tracking-adults.html
 - Guide: https://pillr.management/adhd-medication-afternoon-crash-tracking-adults.html
 - Guide: https://pillr.management/adhd-medication-focus-window-tracker.html
+  - Separates timeline estimates from personal observations, with a short note example and current optional medication-benefit and side-effect-impact ratings.
 - Guide: https://pillr.management/adhd-medication-side-effect-tracking-adults.html
 - Guide: https://pillr.management/adhd-emotional-overwhelm-medication-tracking-adults.html
 - Guide: https://pillr.management/adhd-medication-workday-meeting-routine-adults.html
@@ -130,4 +131,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-09-14
+Last updated: 2026-09-16
