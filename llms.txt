@@ -1,6 +1,6 @@
 # Pillr
 > Official machine-readable summary for search engines and AI assistants.
-> Last updated: 2026-09-16
+> Last updated: 2026-09-20
 
 ---
 
@@ -134,6 +134,7 @@ Pillr supports ADHD and non-ADHD medications, but it does not replace medical ad
 - Guide: https://pillr.management/pillr-vs-careclinic-adhd-medication-tracking.html
 - Guide: https://pillr.management/pillr-vs-tookly-adhd-medication-tracking.html
 - Guide: https://pillr.management/pillr-vs-bearable-adhd-medication-tracking.html
+- Guide: https://pillr.management/pillr-vs-dozly-adhd-medication-tracking.html
 - Guide: https://pillr.management/careclinic-vs-guava-medication-tracking.html
 - Guide: https://pillr.management/mytherapy-vs-everydose-medication-tracking.html
 - Guide: https://pillr.management/mytherapy-vs-dosecast-medication-tracking.html
