@@ -125,6 +125,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/pillr-vs-dozly-adhd-medication-tracking.html
 - Guide: https://pillr.management/tookly-vs-nuro-adhd-medication-tracking.html
 - Guide: https://pillr.management/pillr-vs-dosekeeper-medication-tracking.html
+- Guide: https://pillr.management/nurelio-vs-dosekeeper-medication-tracking.html
 - Guide: https://pillr.management/careclinic-vs-guava-medication-tracking.html
 - Guide: https://pillr.management/mytherapy-vs-everydose-medication-tracking.html
 - Guide: https://pillr.management/mytherapy-vs-dosecast-medication-tracking.html
@@ -134,4 +135,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-09-22
+Last updated: 2026-09-28
