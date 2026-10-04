@@ -290,7 +290,7 @@
 
   <url>
     <loc>https://pillr.management/medisafe-vs-everydose-medication-reminders.html</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -436,7 +436,7 @@
 
   <url>
     <loc>https://pillr.management/nurelio-vs-dosekeeper-medication-tracking.html</loc>
-    <lastmod>2026-09-28</lastmod>
+    <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -444,6 +444,13 @@
   <url>
     <loc>https://pillr.management/pillr-vs-kapshul-medication-tracking.html</loc>
     <lastmod>2026-10-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://pillr.management/nurelio-vs-dosealert-medication-tracking.html</loc>
+    <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
