@@ -80,7 +80,7 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/best-adhd-medication-reminder-app.html
 - Guide: https://pillr.management/forget-to-take-vyvanse-what-to-do.html
 - Guide: https://pillr.management/adhd-medication-sleep-routine-adults.html
-- Guide: https://pillr.management/adhd-time-blindness-medication-reminders.html
+- Guide: https://pillr.management/adhd-time-blindness-medication-reminders.html — Reminder interruptions, factual dose records, and the limits of an empty log. Updated 2026-10-21.
 - Guide: https://pillr.management/forgot-if-i-took-adhd-medication.html
 - Guide: https://pillr.management/adhd-medication-log-template-adults.html
 - Guide: https://pillr.management/adhd-medication-reminder-fatigue.html
@@ -138,4 +138,4 @@ Pillr helps people organise medication routines by combining reminders, quick do
 - Guide: https://pillr.management/forgot-to-take-concerta-what-to-do.html
 - Guide: https://pillr.management/forgot-to-take-ritalin-what-to-do.html
 
-Last updated: 2026-10-04
+Last updated: 2026-10-21
