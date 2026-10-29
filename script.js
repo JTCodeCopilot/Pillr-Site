@@ -14,6 +14,26 @@
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // Keep the approved Apple campaign link for visitors arriving from the Meta ad.
+  // This reads the landing-page marker only; no cookies or browser storage are used.
+  const setupMetaCampaignLinks = () => {
+    const current = new URL(window.location.href);
+    if (current.searchParams.get("ref") !== "meta-paid") return;
+
+    document.querySelectorAll("a[href]").forEach((link) => {
+      const destination = new URL(link.href, current);
+      if (
+        destination.hostname === "apps.apple.com" &&
+        /\/id6746717689\/?$/.test(destination.pathname)
+      ) {
+        destination.searchParams.set("pt", "127431610");
+        destination.searchParams.set("ct", "Meta Paid");
+        destination.searchParams.set("mt", "8");
+        link.href = destination.href;
+      }
+    });
+  };
+
   const normalizeCanonicalUrl = () => {
     const current = new URL(window.location.href);
     const isWebProtocol = current.protocol === "http:" || current.protocol === "https:";
@@ -105,6 +125,7 @@
     reveals.forEach((element) => observer.observe(element));
   };
 
+  setupMetaCampaignLinks();
   normalizeCanonicalUrl();
   setupHeader();
   setupReveals();

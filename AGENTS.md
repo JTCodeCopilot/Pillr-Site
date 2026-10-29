@@ -15,6 +15,7 @@ Increase qualified organic traffic, App Store visits, and Pillr downloads. Prior
 - Page metadata and structured data are written directly in each HTML file.
 - `sitemap.xml` and `robots.txt` are maintained by hand.
 - Shared presentation and behaviour live in `pillr-style.css` and `script.js`.
+- Meta feed ads enter at `https://pillr.management/?ref=meta-paid`. Before query cleanup, `script.js` applies the approved Apple campaign parameters (`pt=127431610`, `ct=Meta Paid`, `mt=8`) to the homepage’s Pillr App Store buttons. Ordinary visits retain their existing links; this uses no cookies or browser storage. Preserve this attribution route.
 - Pale green backgrounds use solid `#EEF4F0`, including the homepage hero, alternate sections, callouts and footer. The hero has no texture overlay so the supplied colour stays exact.
 - Shared website colours follow Pillr: evergreen `#1C2B24` headings, grey-green `#5E6A63` supporting text, sage `#5E8F72` decorative accents, and darker green `#3F6B52` links and keyboard focus outlines for readability on light backgrounds.
 - The homepage preview places a landscape iPad behind a portrait iPhone and a closed iPhone Duo, using the supplied screenshots with matching metallic frames. Keep the stack within the available width on mobile and preserve screenshot proportions.
